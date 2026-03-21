@@ -41,6 +41,7 @@ const Navbar = () => {
           <a href="#industries" className="block text-sm text-muted-foreground hover:text-foreground">Industries</a>
           <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground">Pricing</a>
           <a href="#testimonials" className="block text-sm text-muted-foreground hover:text-foreground">Testimonials</a>
+          <Link to="/trustlock" className="block text-sm font-semibold text-primary hover:text-primary/80">TrustLock →</Link>
           <div className="flex gap-2 pt-2">
             <Button variant="ghost" size="sm" className="flex-1">Log In</Button>
             <Button variant="hero" size="sm" className="flex-1">Get Started</Button>
