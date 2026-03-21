@@ -22,7 +22,7 @@ const Navbar = () => {
           <a href="#industries" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Industries</a>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
           <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-        </div>
+          <Link to="/trustlock" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">TrustLock</Link>
 
         <div className="hidden md:flex items-center gap-3">
           <Button variant="ghost" size="sm">Log In</Button>
