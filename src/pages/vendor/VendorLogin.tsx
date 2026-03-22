@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
+
+const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
 const VendorLogin = () => {
   const navigate = useNavigate();
@@ -26,7 +29,7 @@ const VendorLogin = () => {
   }, [user, authLoading, navigate]);
 
   // Detect if coming from email verification (hash contains access_token or type=recovery)
-  const comingFromVerification = window.location.hash.includes("access_token") || 
+  const comingFromVerification = window.location.hash.includes("access_token") ||
     window.location.search.includes("verified") ||
     document.referrer.includes("/verify");
 
@@ -36,6 +39,8 @@ const VendorLogin = () => {
   const [password, setPassword] = useState(comingFromVerification ? "" : "123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
 
@@ -69,11 +74,13 @@ const VendorLogin = () => {
     setEmail(!checked ? "vendor@kentetest.com" : "");
     setPassword(!checked ? "123" : "");
     setError("");
+    setResendMessage("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setResendMessage("");
     if (isLocked) { setError(`Account locked. Try again in ${remainingMin} minutes.`); return; }
 
     if (isTestnet) {
@@ -86,19 +93,62 @@ const VendorLogin = () => {
       } else {
         handleFailedAttempt();
       }
-    } else {
-      setLoading(true);
-      const { error } = await signIn(email, password);
-      setLoading(false);
-      if (error) {
-        handleFailedAttempt();
-      } else {
-        localStorage.setItem("tl_vendor_network", "mainnet");
-        localStorage.removeItem("tl_vendor_failed");
-        localStorage.removeItem("tl_vendor_lockout");
-        navigate("/trustlock/vendor");
-      }
+      return;
     }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isLikelyEmail(normalizedEmail)) {
+      setError("Mainnet sign-in requires your account email, not a vendor name.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signIn(normalizedEmail, password);
+    setLoading(false);
+
+    if (error) {
+      const normalizedError = error.message.toLowerCase();
+      if (normalizedError.includes("email not confirmed") || normalizedError.includes("email not verified")) {
+        setError("Your email is not verified yet. Check inbox/spam or resend verification below.");
+        return;
+      }
+      handleFailedAttempt();
+      return;
+    }
+
+    localStorage.setItem("tl_vendor_auth", "true");
+    localStorage.setItem("tl_vendor_network", "mainnet");
+    localStorage.removeItem("tl_vendor_failed");
+    localStorage.removeItem("tl_vendor_lockout");
+    navigate("/trustlock/vendor");
+  };
+
+  const handleResendVerification = async () => {
+    setError("");
+    setResendMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isLikelyEmail(normalizedEmail)) {
+      setError("Enter your account email first, then resend verification.");
+      return;
+    }
+
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/trustlock/vendor/login`,
+      },
+    });
+    setResendLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setResendMessage("Verification email sent. Please check inbox and spam.");
   };
 
   const handleFailedAttempt = () => {
@@ -172,9 +222,21 @@ const VendorLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email / Vendor ID</Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={isTestnet} className={isTestnet ? "bg-muted/50" : ""} disabled={isLocked} />
-                {isTestnet && <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>}
+                <Label htmlFor="email">{isTestnet ? "Email / Vendor ID" : "Email address"}</Label>
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isTestnet ? "vendor@kentetest.com" : "you@company.com"}
+                  readOnly={isTestnet}
+                  className={isTestnet ? "bg-muted/50" : ""}
+                  disabled={isLocked}
+                />
+                {isTestnet ? (
+                  <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Use the same email you registered with.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -187,6 +249,7 @@ const VendorLogin = () => {
                 {isTestnet && <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>}
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {resendMessage && <p className="text-sm text-primary">{resendMessage}</p>}
               {!isLocked && failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (
                 <p className="text-xs text-accent-foreground">{MAX_ATTEMPTS - failedAttempts} attempts remaining before lockout</p>
               )}
@@ -195,7 +258,17 @@ const VendorLogin = () => {
               </Button>
               {!isTestnet && (
                 <div className="text-center space-y-2">
-                  <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <button type="button" className="text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendLoading || loading || isLocked}
+                      className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resendLoading ? "Sending..." : "Resend verification email"}
+                    </button>
+                  </div>
                   <div>
                     <Link to="/trustlock/vendor/signup" className="text-xs text-primary hover:underline">New vendor? Create an account →</Link>
                   </div>
