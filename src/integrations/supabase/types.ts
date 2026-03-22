@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_accounts: {
+        Row: {
+          created_at: string
+          email: string | null
+          failed_attempts: number
+          id: string
+          is_setup: boolean
+          locked_at: string | null
+          name: string
+          password_hash: string | null
+          temp_password_hash: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          failed_attempts?: number
+          id?: string
+          is_setup?: boolean
+          locked_at?: string | null
+          name: string
+          password_hash?: string | null
+          temp_password_hash: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          failed_attempts?: number
+          id?: string
+          is_setup?: boolean
+          locked_at?: string | null
+          name?: string
+          password_hash?: string | null
+          temp_password_hash?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
