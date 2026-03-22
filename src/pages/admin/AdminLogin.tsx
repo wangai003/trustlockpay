@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
+import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { serverAdminLogin, serverAdminLookup, serverCheckPassword } from "@/lib/adminAuth";
 
 const AdminLogin = () => {
@@ -18,6 +18,8 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
+  const [identifierValid, setIdentifierValid] = useState(false);
 
   // Debounced reset-link check: show only when correct password OR correct identifier is entered
   useEffect(() => {
@@ -27,21 +29,24 @@ const AdminLogin = () => {
     }
 
     const timer = setTimeout(async () => {
-      let shouldShow = false;
+      let idValid = false;
+      let pwValid = false;
 
       // Check identifier (email/username) field
       if (identifier.trim().length > 2) {
         const lookup = await serverAdminLookup(identifier);
-        if (lookup.exists && lookup.isSetup) shouldShow = true;
+        if (lookup.exists && lookup.isSetup) idValid = true;
       }
 
       // Check password field against set-up accounts
-      if (!shouldShow && password.length >= 6) {
+      if (password.length >= 6) {
         const check = await serverCheckPassword(password);
-        if (check.valid) shouldShow = true;
+        if (check.valid) pwValid = true;
       }
 
-      setShowResetLink(shouldShow);
+      setIdentifierValid(idValid);
+      setPasswordValid(pwValid);
+      setShowResetLink(idValid || pwValid);
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
@@ -194,7 +199,10 @@ const AdminLogin = () => {
                 <>
                   {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND */}
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="flex items-center gap-1.5">
+                      Password
+                      {passwordValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                    </Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -213,7 +221,10 @@ const AdminLogin = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="identifier">Email / Username</Label>
+                    <Label htmlFor="identifier" className="flex items-center gap-1.5">
+                      Email / Username
+                      {identifierValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                    </Label>
                     <Input
                       id="identifier"
                       type="text"
