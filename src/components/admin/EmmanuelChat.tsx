@@ -51,7 +51,8 @@ const EmmanuelChat = () => {
   };
 
   const startCase = () => {
-    const intro = `I'd like you to investigate a case:\n- **Transaction ID:** ${caseInfo.txId || "N/A"}\n- **Buyer:** ${caseInfo.buyerName || "N/A"}\n- **Vendor:** ${caseInfo.vendorName || "N/A"}\n- **Amount:** ${caseInfo.amount || "N/A"}`;
+    if (!caseInfo.caseRef.trim()) return;
+    const intro = `Pull up case **${caseInfo.caseRef.trim()}** — give me the full breakdown (buyer, vendor, amount, reason, evidence, and your recommendation).`;
     setShowLookup(false);
     sendMessage(intro);
   };
