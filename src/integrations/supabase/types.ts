@@ -119,6 +119,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_password: { Args: { _password: string }; Returns: string }
+      verify_admin_password: {
+        Args: { _account_id: string; _password: string }
+        Returns: boolean
+      }
+      verify_admin_temp_password: {
+        Args: { _account_id: string; _password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "vendor" | "buyer"
