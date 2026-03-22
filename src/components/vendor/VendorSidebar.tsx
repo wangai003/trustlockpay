@@ -26,7 +26,7 @@ const navItems = [
 const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-
+  const { switchRole, switching, targetLabel } = useRoleSwitcher("vendor");
   const handleLogout = () => {
     localStorage.removeItem("tl_vendor_auth");
     localStorage.removeItem("tl_vendor_network");
