@@ -32,6 +32,8 @@ import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
 import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
 import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
 
+// Vendor
+import VendorLogin from "./pages/vendor/VendorLogin.tsx";
 import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
 import VendorLayout from "./pages/vendor/VendorLayout.tsx";
 import VendorOverview from "./pages/vendor/VendorOverview.tsx";
