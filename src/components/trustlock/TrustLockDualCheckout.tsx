@@ -126,7 +126,7 @@ const TrustLockDualCheckout = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">TrustLock Fee (1.5%)</span>
+                  <span className="text-muted-foreground">TrustLock Pay Fee (1.5%)</span>
                   <span className="text-muted-foreground">
                     {mode === "diaspora" ? "$4.39" : "₦6,750"}
                   </span>
