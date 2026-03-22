@@ -34,6 +34,8 @@ import BuyerDisputes from "./pages/buyer/BuyerDisputes.tsx";
 import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
 import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
 import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
+import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
+import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
@@ -47,6 +49,9 @@ import VendorSites from "./pages/vendor/VendorSites.tsx";
 import VendorKYC from "./pages/vendor/VendorKYC.tsx";
 import VendorDocuments from "./pages/vendor/VendorDocuments.tsx";
 import VendorSettings from "./pages/vendor/VendorSettings.tsx";
+import VendorAssistant from "./pages/vendor/VendorAssistant.tsx";
+import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
+import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 
 const queryClient = new QueryClient();
 
@@ -94,7 +99,10 @@ const App = () => (
               <Route path="payouts" element={<VendorPayouts />} />
               <Route path="sites" element={<VendorSites />} />
               <Route path="kyc" element={<VendorKYC />} />
+              <Route path="assistant" element={<VendorAssistant />} />
               <Route path="documents" element={<VendorDocuments />} />
+              <Route path="help" element={<VendorHelpCenter />} />
+              <Route path="pricing" element={<VendorPricing />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
@@ -109,7 +117,9 @@ const App = () => (
               <Route index element={<BuyerOverview />} />
               <Route path="orders" element={<BuyerOrders />} />
               <Route path="disputes" element={<BuyerDisputes />} />
+              <Route path="assistant" element={<BuyerAssistant />} />
               <Route path="documents" element={<BuyerDocuments />} />
+              <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 
