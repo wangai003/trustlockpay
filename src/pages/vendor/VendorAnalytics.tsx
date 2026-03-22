@@ -5,15 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Download, FileText, Calendar, TrendingUp, DollarSign, Package,
   Clock, Archive, Shield, Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { useVendor } from "@/contexts/VendorContext";
+import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area
+  AreaChart, Area
 } from "recharts";
 
 const revenueData = [
@@ -52,9 +54,20 @@ const VendorAnalytics = () => {
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState("2026-03-22");
   const [archiveSearch, setArchiveSearch] = useState("");
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [pendingReport, setPendingReport] = useState<string | null>(null);
 
-  const handleDownload = (reportName: string) => {
-    toast.success(`📄 ${reportName} for ${vendor.name} downloaded successfully.`);
+  const handleDownloadClick = (reportName: string) => {
+    setPendingReport(reportName);
+    setPayDialogOpen(true);
+  };
+
+  const handlePaymentComplete = () => {
+    setPayDialogOpen(false);
+    if (pendingReport) {
+      toast.success(`📄 ${pendingReport} for ${vendor.name} downloaded successfully.`);
+      setPendingReport(null);
+    }
   };
 
   const filteredArchives = archivedReports.filter(r =>
@@ -74,7 +87,6 @@ const VendorAnalytics = () => {
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-4">
-            {/* Date filter */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -84,7 +96,6 @@ const VendorAnalytics = () => {
               </div>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { label: "Total Revenue", value: "$35,650", icon: DollarSign },
@@ -104,7 +115,6 @@ const VendorAnalytics = () => {
               ))}
             </div>
 
-            {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-4">
               <Card>
                 <CardHeader><CardTitle className="text-sm">Revenue Trend</CardTitle></CardHeader>
@@ -170,7 +180,7 @@ const VendorAnalytics = () => {
                         <Badge variant="outline" className="text-[9px]">For: {vendor.name}</Badge>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => handleDownload(r.name)}>
+                    <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => handleDownloadClick(r.name)}>
                       <Download className="w-3 h-3 mr-1" /> PDF
                     </Button>
                   </CardContent>
@@ -209,7 +219,7 @@ const VendorAnalytics = () => {
                       <p className="text-xs font-medium">{r.name}</p>
                       <p className="text-[10px] text-muted-foreground">{r.date} · {r.type} · {r.size}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDownload(r.name)}>
+                    <Button variant="ghost" size="sm" onClick={() => handleDownloadClick(r.name)}>
                       <Download className="w-3.5 h-3.5" />
                     </Button>
                   </CardContent>
@@ -219,6 +229,19 @@ const VendorAnalytics = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* OS Pay Dialog for report downloads */}
+      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Pay for Report Download</DialogTitle>
+          <TrustLockOSPay
+            role="vendor"
+            prefillService={pendingReport ? `Report: ${pendingReport}` : ""}
+            prefillAmount="0.50"
+            onComplete={handlePaymentComplete}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

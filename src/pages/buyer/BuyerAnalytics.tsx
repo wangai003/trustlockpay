@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Download, FileText, Calendar, DollarSign, Package, Shield,
   Clock, Archive, Search, TrendingUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBuyer } from "@/contexts/BuyerContext";
+import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
@@ -41,9 +43,20 @@ const BuyerAnalytics = () => {
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState("2026-03-22");
   const [archiveSearch, setArchiveSearch] = useState("");
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [pendingReport, setPendingReport] = useState<string | null>(null);
 
-  const handleDownload = (name: string) => {
-    toast.success(`📄 ${name} for ${buyer.name} downloaded.`);
+  const handleDownloadClick = (name: string) => {
+    setPendingReport(name);
+    setPayDialogOpen(true);
+  };
+
+  const handlePaymentComplete = () => {
+    setPayDialogOpen(false);
+    if (pendingReport) {
+      toast.success(`📄 ${pendingReport} for ${buyer.name} downloaded.`);
+      setPendingReport(null);
+    }
   };
 
   const filteredArchives = archivedReports.filter(r =>
@@ -132,7 +145,7 @@ const BuyerAnalytics = () => {
                         <Badge variant="outline" className="text-[9px]">For: {buyer.name}</Badge>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => handleDownload(r.name)}>
+                    <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => handleDownloadClick(r.name)}>
                       <Download className="w-3 h-3 mr-1" /> PDF
                     </Button>
                   </CardContent>
@@ -166,7 +179,7 @@ const BuyerAnalytics = () => {
                       <p className="text-xs font-medium">{r.name}</p>
                       <p className="text-[10px] text-muted-foreground">{r.date} · {r.type} · {r.size}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDownload(r.name)}>
+                    <Button variant="ghost" size="sm" onClick={() => handleDownloadClick(r.name)}>
                       <Download className="w-3.5 h-3.5" />
                     </Button>
                   </CardContent>
@@ -176,6 +189,19 @@ const BuyerAnalytics = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* OS Pay Dialog for report downloads */}
+      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Pay for Report Download</DialogTitle>
+          <TrustLockOSPay
+            role="buyer"
+            prefillService={pendingReport ? `Report: ${pendingReport}` : ""}
+            prefillAmount="0.50"
+            onComplete={handlePaymentComplete}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
