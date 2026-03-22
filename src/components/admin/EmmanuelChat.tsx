@@ -9,10 +9,7 @@ import ReactMarkdown from "react-markdown";
 type Msg = { role: "user" | "assistant"; content: string };
 
 type CaseInfo = {
-  txId: string;
-  buyerName: string;
-  vendorName: string;
-  amount: string;
+  caseRef: string;
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/emmanuel-chat`;
