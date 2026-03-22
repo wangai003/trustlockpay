@@ -22,6 +22,18 @@ import AdminReports from "./pages/admin/AdminReports.tsx";
 import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 
+// Vendor
+import VendorLogin from "./pages/vendor/VendorLogin.tsx";
+import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
+import VendorLayout from "./pages/vendor/VendorLayout.tsx";
+import VendorOverview from "./pages/vendor/VendorOverview.tsx";
+import VendorTransactions from "./pages/vendor/VendorTransactions.tsx";
+import VendorPayouts from "./pages/vendor/VendorPayouts.tsx";
+import VendorSites from "./pages/vendor/VendorSites.tsx";
+import VendorKYC from "./pages/vendor/VendorKYC.tsx";
+import VendorDocuments from "./pages/vendor/VendorDocuments.tsx";
+import VendorSettings from "./pages/vendor/VendorSettings.tsx";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -48,6 +60,19 @@ const App = () => (
             <Route path="reports" element={<AdminReports />} />
             <Route path="documents" element={<AdminDocuments />} />
             <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
+          {/* Vendor Dashboard */}
+          <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
+          <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
+          <Route path="/trustlock/vendor" element={<VendorLayout />}>
+            <Route index element={<VendorOverview />} />
+            <Route path="transactions" element={<VendorTransactions />} />
+            <Route path="payouts" element={<VendorPayouts />} />
+            <Route path="sites" element={<VendorSites />} />
+            <Route path="kyc" element={<VendorKYC />} />
+            <Route path="documents" element={<VendorDocuments />} />
+            <Route path="settings" element={<VendorSettings />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
