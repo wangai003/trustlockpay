@@ -52,6 +52,7 @@ import VendorSettings from "./pages/vendor/VendorSettings.tsx";
 import VendorAssistant from "./pages/vendor/VendorAssistant.tsx";
 import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
 import VendorPricing from "./pages/vendor/VendorPricing.tsx";
+import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => (
               <Route path="documents" element={<VendorDocuments />} />
               <Route path="help" element={<VendorHelpCenter />} />
               <Route path="pricing" element={<VendorPricing />} />
+              <Route path="checkout" element={<VendorCheckout />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
