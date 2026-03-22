@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 type NetworkMode = "testnet" | "mainnet";
 type VendorType = "product" | "service" | null;
@@ -40,6 +42,11 @@ const defaultTestnetVendor: VendorProfile = {
   onboardingComplete: true,
 };
 
+const getInitialVendorMode = (): NetworkMode => {
+  if (typeof window === "undefined") return "testnet";
+  return localStorage.getItem("tl_vendor_network") === "mainnet" ? "mainnet" : "testnet";
+};
+
 const VendorContext = createContext<VendorContextType | null>(null);
 
 export const useVendor = () => {
@@ -49,8 +56,71 @@ export const useVendor = () => {
 };
 
 export const VendorProvider = ({ children }: { children: ReactNode }) => {
-  const [networkMode, setNetworkMode] = useState<NetworkMode>("testnet");
+  const { user, loading: authLoading } = useAuth();
+  const [networkMode, setNetworkModeState] = useState<NetworkMode>(getInitialVendorMode);
   const [vendor, setVendor] = useState<VendorProfile>(defaultTestnetVendor);
+
+  const setNetworkMode = (mode: NetworkMode) => {
+    setNetworkModeState(mode);
+    localStorage.setItem("tl_vendor_network", mode);
+  };
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      setNetworkModeState("mainnet");
+      localStorage.setItem("tl_vendor_network", "mainnet");
+      localStorage.setItem("tl_vendor_auth", "true");
+    }
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const metadataName = typeof user?.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name.trim()
+      : "";
+
+    const fallbackName = metadataName || user?.email?.split("@")[0] || "Vendor";
+
+    const loadMainnetProfile = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name,email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error || !data) {
+        setVendor((prev) => ({
+          ...prev,
+          name: fallbackName,
+          email: user.email || prev.email,
+        }));
+        return;
+      }
+
+      const fullName = (data.full_name || "").trim();
+
+      setVendor((prev) => ({
+        ...prev,
+        name: fullName || fallbackName,
+        email: data.email || user.email || prev.email,
+      }));
+    };
+
+    if (networkMode === "mainnet") {
+      void loadMainnetProfile();
+    } else {
+      setVendor(defaultTestnetVendor);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [networkMode, user]);
 
   return (
     <VendorContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", vendor, setVendor }}>

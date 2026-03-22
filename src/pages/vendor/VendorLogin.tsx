@@ -28,15 +28,16 @@ const VendorLogin = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Detect if coming from email verification (hash contains access_token or type=recovery)
+  // Prefer mainnet when arriving from verification or when last successful mode was mainnet
   const comingFromVerification = window.location.hash.includes("access_token") ||
     window.location.search.includes("verified") ||
     document.referrer.includes("/verify");
+  const shouldPreferMainnet = comingFromVerification || localStorage.getItem("tl_vendor_network") === "mainnet";
 
-  const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
+  const [isTestnet, setIsTestnet] = useState(!shouldPreferMainnet);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(comingFromVerification ? "" : "vendor@kentetest.com");
-  const [password, setPassword] = useState(comingFromVerification ? "" : "123");
+  const [email, setEmail] = useState(shouldPreferMainnet ? "" : "vendor@kentetest.com");
+  const [password, setPassword] = useState(shouldPreferMainnet ? "" : "123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
