@@ -95,8 +95,8 @@ const VendorLogin = () => {
                   </button>
                 </div>
                 {isTestnet && (
-                  <p className="text-xs text-accent font-medium flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Enter <code className="bg-muted px-1 rounded">123</code> for testnet access
+                  <p className="text-xs text-muted-foreground">
+                    Contact admin for testnet credentials
                   </p>
                 )}
               </div>
