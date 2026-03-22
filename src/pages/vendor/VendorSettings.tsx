@@ -7,19 +7,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save, Truck } from "lucide-react";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
+import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const planState = getVendorPlanState();
+
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
   });
+
+  const [payEnabled, setPayEnabled] = useState(() => {
+    return localStorage.getItem("tl_vendor_pay_enabled") !== "false";
+  });
+
+  const [disableConfirm, setDisableConfirm] = useState(false);
 
   const handleAutoDeliveryToggle = (checked: boolean) => {
     setAutoDelivery(checked);
     localStorage.setItem("tl_vendor_auto_delivery", String(checked));
     toast.success(checked ? "Auto-delivery enabled" : "Auto-delivery disabled");
+  };
+
+  const handlePayToggle = (checked: boolean) => {
+    if (!checked) {
+      setDisableConfirm(true);
+      return;
+    }
+    setPayEnabled(true);
+    localStorage.setItem("tl_vendor_pay_enabled", "true");
+    toast.success("TrustLock Pay widget re-enabled on your store.");
+  };
+
+  const confirmDisablePay = () => {
+    setPayEnabled(false);
+    localStorage.setItem("tl_vendor_pay_enabled", "false");
+    setDisableConfirm(false);
+    toast.success("TrustLock Pay widget disabled. Buyers can no longer pay via TrustLock on your store.");
   };
 
   return (
@@ -53,6 +82,51 @@ const VendorSettings = () => {
                 <Input defaultValue={vendor.type || ""} readOnly className="bg-muted/50 capitalize" />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* TrustLock Pay Widget Control */}
+        <Card className={!payEnabled ? "border-destructive/30" : ""}>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-accent" />
+              <div>
+                <CardTitle className="text-base">TrustLock Pay Widget</CardTitle>
+                <CardDescription>Control the payment widget on your store</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Enable TrustLock Pay on Store</p>
+                <p className="text-xs text-muted-foreground">
+                  When disabled, buyers cannot make payments via TrustLock on your connected sites.
+                </p>
+              </div>
+              <Switch checked={payEnabled} onCheckedChange={handlePayToggle} />
+            </div>
+            {!payEnabled && (
+              <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-destructive">Widget Disabled</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      TrustLock Pay is currently inactive on your store. New buyers cannot make payments. Toggle back on to resume accepting payments.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {payEnabled && (
+              <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Active:</strong> TrustLock Pay is live on {vendor.sites.length} connected site{vendor.sites.length !== 1 ? "s" : ""}.
+                  Current plan: <strong className="text-foreground">{PLANS[planState.currentPlan].name}</strong> ({planState.orderLimit === -1 ? "unlimited" : `${planState.orderLimit} orders/mo`}).
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -131,6 +205,8 @@ const VendorSettings = () => {
               { label: "Funds released", email: true, inApp: true },
               { label: "Dispute opened against you", email: true, inApp: true },
               { label: "KYC status update", email: true, inApp: true },
+              { label: "Plan expiry reminder", email: true, inApp: true },
+              { label: "Order limit warning", email: true, inApp: true },
             ].map((n) => (
               <div key={n.label} className="flex items-center justify-between">
                 <span className="text-sm">{n.label}</span>
@@ -145,6 +221,22 @@ const VendorSettings = () => {
 
         <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
+
+      {/* Disable TrustLock Pay Confirmation */}
+      <Dialog open={disableConfirm} onOpenChange={setDisableConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Disable TrustLock Pay?</DialogTitle>
+            <DialogDescription>
+              This will immediately remove the TrustLock Pay checkout option from your connected store(s). Pending escrows will continue to be processed, but no new payments can be initiated. You can re-enable it at any time.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisableConfirm(false)}>Keep Enabled</Button>
+            <Button variant="destructive" onClick={confirmDisablePay}>Disable Widget</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
