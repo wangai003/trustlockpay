@@ -44,9 +44,11 @@ const adminSteps: GuideStep[] = [
   { id: "a1", title: "Review Platform Overview", description: "Check transaction volume, dispute stats, and Emmanuel AI status.", route: "/trustlock/admin", action: "Review dashboard metrics" },
   { id: "a2", title: "Monitor Transactions", description: "View all platform transactions across vendors and buyers.", route: "/trustlock/admin/transactions", action: "Browse transactions" },
   { id: "a3", title: "Review Disputes", description: "Check active disputes and Emmanuel AI recommendations.", route: "/trustlock/admin/disputes", action: "Review a dispute case" },
-  { id: "a4", title: "Vendor Management", description: "View vendor list, plan statuses, and KYC compliance.", route: "/trustlock/admin/vendors", action: "Check vendor details" },
-  { id: "a5", title: "Platform Analytics", description: "Deep-dive into analytics charts and download platform reports.", route: "/trustlock/admin/analytics", action: "Download a report" },
-  { id: "a6", title: "Browse Archives", description: "Open archives to view historical reports by date range.", route: "/trustlock/admin/analytics", action: "Select archive date range" },
+  { id: "a4", title: "Process a Refund", description: "Go to TrustLock OS Pay, select Refund, enter recipient details and process.", route: "/trustlock/admin/os-pay", action: "Execute a test refund" },
+  { id: "a5", title: "Process a Split Payment", description: "Use TrustLock OS Pay Split Pay feature to divide funds between parties.", route: "/trustlock/admin/os-pay", action: "Execute a split payment" },
+  { id: "a6", title: "Vendor Management", description: "View vendor list, plan statuses, and KYC compliance.", route: "/trustlock/admin/vendors", action: "Check vendor details" },
+  { id: "a7", title: "Platform Analytics", description: "Deep-dive into analytics charts and download platform reports.", route: "/trustlock/admin/analytics", action: "Download a report" },
+  { id: "a8", title: "Browse Archives", description: "Open archives to view historical reports by date range.", route: "/trustlock/admin/analytics", action: "Select archive date range" },
 ];
 
 const stepsMap = { vendor: vendorSteps, buyer: buyerSteps, admin: adminSteps };
