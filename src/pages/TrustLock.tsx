@@ -43,6 +43,7 @@ const TrustLock = () => {
 
       <TrustLockHero />
       <TrustLockFeatures />
+      <TrustLockDualCheckout />
       <TrustLockWidget />
       <TrustLockBuyerFlow />
       <TrustLockDashboard />
