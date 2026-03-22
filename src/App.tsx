@@ -22,6 +22,16 @@ import AdminReports from "./pages/admin/AdminReports.tsx";
 import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 
+// Buyer
+import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
+import BuyerLayout from "./pages/buyer/BuyerLayout.tsx";
+import BuyerOverview from "./pages/buyer/BuyerOverview.tsx";
+import BuyerOrders from "./pages/buyer/BuyerOrders.tsx";
+import BuyerDisputes from "./pages/buyer/BuyerDisputes.tsx";
+import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
+import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
+import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
+
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
 import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
@@ -74,6 +84,19 @@ const App = () => (
             <Route path="documents" element={<VendorDocuments />} />
             <Route path="settings" element={<VendorSettings />} />
           </Route>
+
+          {/* Buyer Dashboard */}
+          <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+          <Route path="/trustlock/buyer" element={<BuyerLayout />}>
+            <Route index element={<BuyerOverview />} />
+            <Route path="orders" element={<BuyerOrders />} />
+            <Route path="disputes" element={<BuyerDisputes />} />
+            <Route path="documents" element={<BuyerDocuments />} />
+            <Route path="settings" element={<BuyerSettings />} />
+          </Route>
+
+          {/* Standalone Confirmation Page (no login required) */}
+          <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
