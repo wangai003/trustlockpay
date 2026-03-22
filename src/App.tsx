@@ -72,6 +72,8 @@ const App = () => (
 
             {/* Admin Dashboard */}
             <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+            <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
+            <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/trustlock/admin" element={
               <ProtectedRoute loginPath="/trustlock/admin/login" allowTestnet testnetKey="tl_admin_auth">
                 <AdminLayout />
