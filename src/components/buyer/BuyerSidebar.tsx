@@ -20,7 +20,7 @@ const navItems = [
 const BuyerSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-
+  const { switchRole, switching, targetLabel } = useRoleSwitcher("buyer");
   const handleLogout = () => {
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");
