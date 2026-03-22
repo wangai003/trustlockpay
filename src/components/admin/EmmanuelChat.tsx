@@ -178,37 +178,26 @@ const EmmanuelChat = () => {
           </div>
         )}
 
-        {/* Client Lookup Fields */}
+        {/* Client Lookup */}
         {showLookup && (
           <div className="bg-primary/5 border border-primary/15 rounded-lg p-3 mb-3 space-y-3">
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold">Client Lookup</span>
+              <span className="text-xs font-semibold">Case Lookup</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-[10px]">Transaction ID</Label>
-                <Input placeholder="TL-2026-XXXX" value={caseInfo.txId}
-                  onChange={e => setCaseInfo(p => ({ ...p, txId: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Amount</Label>
-                <Input placeholder="$0.00" value={caseInfo.amount}
-                  onChange={e => setCaseInfo(p => ({ ...p, amount: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Buyer Name</Label>
-                <Input placeholder="Buyer name" value={caseInfo.buyerName}
-                  onChange={e => setCaseInfo(p => ({ ...p, buyerName: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Vendor Name</Label>
-                <Input placeholder="Vendor name" value={caseInfo.vendorName}
-                  onChange={e => setCaseInfo(p => ({ ...p, vendorName: e.target.value }))} className="h-8 text-xs" />
-              </div>
+            <div>
+              <Label className="text-[10px]">Transaction ID or Dispute #</Label>
+              <Input
+                placeholder="e.g. TL-2026-0894 or DSP-001"
+                value={caseInfo.caseRef}
+                onChange={e => setCaseInfo({ caseRef: e.target.value })}
+                onKeyDown={e => e.key === "Enter" && startCase()}
+                className="h-9 text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Emmanuel will pull up all linked details automatically.</p>
             </div>
-            <Button size="sm" onClick={startCase} className="w-full gap-1 text-xs">
-              <Bot className="w-3 h-3" /> Start Investigation
+            <Button size="sm" onClick={startCase} disabled={!caseInfo.caseRef.trim()} className="w-full gap-1 text-xs">
+              <Bot className="w-3 h-3" /> Pull Up Case
             </Button>
           </div>
         )}
