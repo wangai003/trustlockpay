@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, User, AlertTriangle } from "lucide-react";
+import { Send, User, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import aiTwinGrey from "@/assets/ai-twin-grey.png";
+import aiTwinBlack from "@/assets/ai-twin-black.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -16,6 +18,9 @@ interface AssistantChatProps {
 }
 
 const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: AssistantChatProps) => {
+  const aiName = role === "vendor" ? "Amani" : "Zawadi";
+  const aiAvatar = role === "vendor" ? aiTwinGrey : aiTwinBlack;
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +33,21 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
   const FREE_QUERIES = 20;
   const remainingFree = Math.max(FREE_QUERIES - queryCount, 0);
 
+  // Load previous messages from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`tl_${role}_ai_messages`);
+    if (saved) {
+      try { setMessages(JSON.parse(saved)); } catch {}
+    }
+  }, [role]);
+
+  // Save messages to localStorage for conversation memory
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(`tl_${role}_ai_messages`, JSON.stringify(messages));
+    }
+  }, [messages, role]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
@@ -39,7 +59,6 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
     setInput("");
     setIsLoading(true);
 
-    // Track query count
     const newCount = queryCount + 1;
     setQueryCount(newCount);
     localStorage.setItem(`tl_${role}_ai_queries`, String(newCount));
@@ -111,32 +130,46 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
     sendMessage(input.trim());
   };
 
+  const clearHistory = () => {
+    setMessages([]);
+    localStorage.removeItem(`tl_${role}_ai_messages`);
+  };
+
   return (
     <Card className="flex flex-col h-[500px] lg:h-[600px]">
       <CardHeader className="pb-3 flex flex-row items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-primary" />
-          <CardTitle className="text-base">{title}</CardTitle>
+          <img src={aiAvatar} alt={aiName} className="w-8 h-8 rounded-full object-cover border-2 border-primary/20" />
+          <div>
+            <CardTitle className="text-base">{aiName}</CardTitle>
+            <p className="text-[10px] text-muted-foreground">{title}</p>
+          </div>
         </div>
-        <div className="text-[10px] text-muted-foreground">
-          {remainingFree > 0
-            ? <span>{remainingFree} free queries left</span>
-            : <span className="text-accent">$0.05/query</span>
-          }
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button onClick={clearHistory} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+              Clear
+            </button>
+          )}
+          <div className="text-[10px] text-muted-foreground">
+            {remainingFree > 0
+              ? <span>{remainingFree} free queries left</span>
+              : <span className="text-accent">$0.05/query</span>
+            }
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden p-3 pt-0">
-        {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-3">
           {messages.length === 0 && (
             <div className="text-center py-8">
-              <Bot className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm font-medium">Hi! I'm your TrustLock assistant.</p>
+              <img src={aiAvatar} alt={aiName} className="w-16 h-16 mx-auto rounded-full object-cover border-2 border-primary/20 mb-3" />
+              <p className="text-sm font-medium">Good day! I'm {aiName}, your TrustLock assistant.</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {role === "vendor"
-                  ? "Ask me about orders, payouts, KYC, delivery management, or platform features."
-                  : "Ask me about your orders, escrow protection, disputes, or how things work."}
+                  ? "How may I assist you today? I handle orders, payouts, KYC, delivery management, and platform queries."
+                  : "How may I assist you today? I handle orders, escrow protection, disputes, and platform queries."}
               </p>
               {role === "vendor" && (
                 <div className="flex flex-wrap justify-center gap-2 mt-4">
@@ -163,9 +196,7 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
           {messages.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                  <Bot className="w-3 h-3 text-primary" />
-                </div>
+                <img src={aiAvatar} alt={aiName} className="w-6 h-6 rounded-full object-cover shrink-0 mt-1 border border-primary/20" />
               )}
               <div className={`max-w-[85%] rounded-lg p-3 text-xs ${
                 msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50"
@@ -187,15 +218,12 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
           ))}
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Bot className="w-3 h-3 text-primary animate-pulse" />
-              </div>
+              <img src={aiAvatar} alt={aiName} className="w-6 h-6 rounded-full object-cover shrink-0 border border-primary/20" />
               <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">Thinking...</div>
             </div>
           )}
         </div>
 
-        {/* Escalation notice */}
         {messages.length >= 4 && messages.filter(m => m.role === "user").length >= 2 && (
           <div className="flex items-center gap-2 p-2 mb-2 rounded-lg border border-accent/30 bg-accent/5 text-[10px]">
             <AlertTriangle className="w-3 h-3 text-accent shrink-0" />
@@ -203,7 +231,6 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
           </div>
         )}
 
-        {/* Input */}
         <div className="flex gap-2 shrink-0">
           <Input
             placeholder={placeholder}
