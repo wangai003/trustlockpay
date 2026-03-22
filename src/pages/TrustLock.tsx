@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import TrustLockHero from "@/components/trustlock/TrustLockHero";
 import TrustLockFeatures from "@/components/trustlock/TrustLockFeatures";
+import TrustLockDualCheckout from "@/components/trustlock/TrustLockDualCheckout";
 import TrustLockWidget from "@/components/trustlock/TrustLockWidget";
 import TrustLockBuyerFlow from "@/components/trustlock/TrustLockBuyerFlow";
 import TrustLockDashboard from "@/components/trustlock/TrustLockDashboard";
