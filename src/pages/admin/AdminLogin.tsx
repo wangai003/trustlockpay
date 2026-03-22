@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { isValidAdminUsername, verifyAdminCredentials, lookupAdmin } from "@/lib/adminAccounts";
+import { isValidAdminUsername, verifyAdminCredentials, lookupAdmin, isValidAdminPassword } from "@/lib/adminAccounts";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -21,14 +21,16 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
 
-  // For mainnet: show reset link when a valid set-up account identifier is entered
-  // In post-setup mode, identifier is in the SECOND field
+  // Show reset link only when EITHER the correct password OR the correct identifier matches a set-up account
   useEffect(() => {
     if (!isTestnet) {
-      const account = lookupAdmin(identifier);
-      setShowResetLink(account?.isSetup === true);
+      const identifierMatch = lookupAdmin(identifier)?.isSetup === true;
+      const passwordMatch = isValidAdminPassword(password);
+      setShowResetLink(identifierMatch || passwordMatch);
+    } else {
+      setShowResetLink(false);
     }
-  }, [identifier, isTestnet]);
+  }, [identifier, password, isTestnet]);
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
