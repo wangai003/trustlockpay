@@ -199,7 +199,10 @@ const AdminLogin = () => {
                 <>
                   {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND */}
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="flex items-center gap-1.5">
+                      Password
+                      {passwordValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                    </Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -218,7 +221,10 @@ const AdminLogin = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="identifier">Email / Username</Label>
+                    <Label htmlFor="identifier" className="flex items-center gap-1.5">
+                      Email / Username
+                      {identifierValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                    </Label>
                     <Input
                       id="identifier"
                       type="text"
