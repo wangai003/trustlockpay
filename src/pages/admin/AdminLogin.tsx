@@ -29,21 +29,24 @@ const AdminLogin = () => {
     }
 
     const timer = setTimeout(async () => {
-      let shouldShow = false;
+      let idValid = false;
+      let pwValid = false;
 
       // Check identifier (email/username) field
       if (identifier.trim().length > 2) {
         const lookup = await serverAdminLookup(identifier);
-        if (lookup.exists && lookup.isSetup) shouldShow = true;
+        if (lookup.exists && lookup.isSetup) idValid = true;
       }
 
       // Check password field against set-up accounts
-      if (!shouldShow && password.length >= 6) {
+      if (password.length >= 6) {
         const check = await serverCheckPassword(password);
-        if (check.valid) shouldShow = true;
+        if (check.valid) pwValid = true;
       }
 
-      setShowResetLink(shouldShow);
+      setIdentifierValid(idValid);
+      setPasswordValid(pwValid);
+      setShowResetLink(idValid || pwValid);
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
