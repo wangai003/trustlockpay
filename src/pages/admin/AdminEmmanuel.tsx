@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import EmmanuelChat from "@/components/admin/EmmanuelChat";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,9 @@ const AdminEmmanuel = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Emmanuel Chat */}
+        <EmmanuelChat />
       </div>
     </div>
   );
