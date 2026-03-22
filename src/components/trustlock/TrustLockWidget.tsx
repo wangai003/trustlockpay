@@ -72,7 +72,7 @@ const TrustLockWidget = () => {
                 <div className="border-2 border-primary/20 rounded-xl bg-green-light/50 p-6 relative">
                   <div className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                     <Shield className="w-3 h-3" />
-                    TrustLock Protected
+                    TrustLock Pay Protected
                   </div>
 
                   <div className="mt-2 space-y-4">
