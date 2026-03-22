@@ -24,15 +24,9 @@ const AdminLogin = () => {
   // For mainnet: show reset password link only when a valid admin username is entered
   useEffect(() => {
     if (!isTestnet) {
-      const isValid = isValidAdminUsername(username);
-      // Also check if account is set up (has email) before showing reset
-      if (isValid) {
-        const { account } = verifyAdminCredentials(username, "");
-        // Show reset only if account is set up
-        setShowResetLink(account?.isSetup === true);
-      } else {
-        setShowResetLink(false);
-      }
+      const account = lookupAdmin(username);
+      // Show reset only if account exists and is set up (has email)
+      setShowResetLink(account?.isSetup === true);
     }
   }, [username, isTestnet]);
 

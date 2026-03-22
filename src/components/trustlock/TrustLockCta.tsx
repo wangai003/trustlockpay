@@ -39,6 +39,8 @@ const TrustLockCta = forwardRef<HTMLElement>((_, ref) => {
       </div>
     </section>
   );
-};
+});
+
+TrustLockCta.displayName = "TrustLockCta";
 
 export default TrustLockCta;
