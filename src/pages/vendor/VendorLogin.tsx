@@ -133,9 +133,18 @@ const VendorLogin = () => {
 
         {isLocked && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
-            <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm">
-              <Lock className="w-4 h-4 text-destructive shrink-0" />
-              <span className="text-destructive">Account locked. Try again in <strong>{remainingMin} min</strong>.</span>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-destructive shrink-0" />
+                <span className="text-destructive">Account locked. Reset your password to unlock immediately.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/trustlock/vendor/signup")}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Reset password →
+              </button>
             </div>
           </motion.div>
         )}
