@@ -197,10 +197,10 @@ const AdminLogin = () => {
                 </>
               ) : (
                 <>
-                  {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND */}
+                  {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND — labels hidden */}
                   <div className="space-y-2">
                     <Label htmlFor="password" className="flex items-center gap-1.5">
-                      Password
+                      <span className="text-muted-foreground">Field 1</span>
                       {passwordValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
                     </Label>
                     <div className="relative">
@@ -222,7 +222,7 @@ const AdminLogin = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="identifier" className="flex items-center gap-1.5">
-                      Email / Username
+                      <span className="text-muted-foreground">Field 2</span>
                       {identifierValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
                     </Label>
                     <Input
