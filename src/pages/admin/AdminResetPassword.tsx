@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Eye, EyeOff, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
-import { resetAdminPassword, findAdminByUsernameOrEmail } from "@/lib/adminAccounts";
+import { serverAdminReset } from "@/lib/adminAuth";
 
 const AdminResetPassword = () => {
   const navigate = useNavigate();
@@ -17,39 +17,33 @@ const AdminResetPassword = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const isPasswordValid = newPassword.length >= 6;
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid;
+  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid && !loading;
 
-  const handleReset = (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Check that email belongs to an admin
-    const account = findAdminByUsernameOrEmail(email);
-    if (!account || !account.email) {
-      setError("No admin account found with this email address.");
-      return;
-    }
+    if (!isPasswordValid) { setError("Password must be at least 6 characters."); return; }
+    if (!passwordsMatch) { setError("Passwords do not match."); return; }
 
-    if (!isPasswordValid) {
-      setError("Password must be at least 6 characters.");
-      return;
+    setLoading(true);
+    try {
+      const result = await serverAdminReset(email, newPassword);
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => navigate("/trustlock/admin/login"), 3000);
+      } else {
+        setError(result.error || "Reset failed. Please verify your email address.");
+      }
+    } catch {
+      setError("Connection error. Please try again.");
     }
-    if (!passwordsMatch) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    const ok = resetAdminPassword(email, newPassword);
-    if (ok) {
-      setSuccess(true);
-      setTimeout(() => navigate("/trustlock/admin/login"), 3000);
-    } else {
-      setError("Reset failed. Please verify your email address.");
-    }
+    setLoading(false);
   };
 
   if (success) {
@@ -167,7 +161,7 @@ const AdminResetPassword = () => {
               )}
 
               <Button type="submit" className="w-full" disabled={!canSubmit}>
-                Confirm & Reset Password
+                {loading ? "Resetting..." : "Confirm & Reset Password"}
               </Button>
             </form>
           </CardContent>
