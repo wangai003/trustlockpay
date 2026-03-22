@@ -170,7 +170,7 @@ const EmmanuelChat = () => {
               archivedCases.map((c, i) => (
                 <button key={i} onClick={() => loadFromArchive(i)}
                   className="w-full text-left bg-background rounded p-2 hover:bg-accent/10 transition-colors">
-                  <div className="text-xs font-semibold">{c.info.txId || "Unknown TX"} — {c.info.buyerName || "?"} vs {c.info.vendorName || "?"}</div>
+                  <div className="text-xs font-semibold">{c.info.caseRef || "Unknown"}</div>
                   <div className="text-[10px] text-muted-foreground">{c.date} · {c.messages.length} messages</div>
                 </button>
               ))
