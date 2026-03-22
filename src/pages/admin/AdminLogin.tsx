@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { isValidAdminUsername, verifyAdminCredentials } from "@/lib/adminAccounts";
+import { isValidAdminUsername, verifyAdminCredentials, lookupAdmin } from "@/lib/adminAccounts";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
