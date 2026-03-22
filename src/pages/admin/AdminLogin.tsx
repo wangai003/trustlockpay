@@ -18,6 +18,8 @@ const AdminLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
+  const [identifierValid, setIdentifierValid] = useState(false);
 
   // Debounced reset-link check: show only when correct password OR correct identifier is entered
   useEffect(() => {
