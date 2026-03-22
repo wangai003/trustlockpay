@@ -15,7 +15,7 @@ const AdminLogin = () => {
   const { signIn } = useAuth();
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState(isTestnet ? "admin@trustlock.test" : "");
+  const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
