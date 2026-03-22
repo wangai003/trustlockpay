@@ -13,7 +13,7 @@ const VendorLayout = () => {
     <VendorProvider>
       <div className="flex min-h-screen bg-background">
         <VendorSidebar />
-        <main className="flex-1 ml-64">
+        <main className="flex-1 lg:ml-64">
           <Outlet />
         </main>
       </div>

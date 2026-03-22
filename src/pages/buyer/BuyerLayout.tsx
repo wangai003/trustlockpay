@@ -10,7 +10,7 @@ const BuyerLayout = () => {
     <BuyerProvider>
       <div className="flex min-h-screen bg-background">
         <BuyerSidebar />
-        <main className="flex-1 ml-64"><Outlet /></main>
+        <main className="flex-1 lg:ml-64"><Outlet /></main>
       </div>
     </BuyerProvider>
   );
