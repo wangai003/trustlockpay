@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Store, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
+import { supabase } from "@/integrations/supabase/client";
+
+const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
 const VendorSignup = () => {
   const navigate = useNavigate();
@@ -18,11 +21,14 @@ const VendorSignup = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setResendMessage("");
 
     if (!isPasswordStrong(password)) {
       setError("Password does not meet all strength requirements");
@@ -34,10 +40,42 @@ const VendorSignup = () => {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      if (error.message.toLowerCase().includes("already") && error.message.toLowerCase().includes("registered")) {
+        setError("This email is already registered. Sign in and resend verification email if needed.");
+      } else {
+        setError(error.message);
+      }
     } else {
       setSuccess(true);
     }
+  };
+
+  const handleResendVerification = async () => {
+    setError("");
+    setResendMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isLikelyEmail(normalizedEmail)) {
+      setError("Enter a valid email to resend verification.");
+      return;
+    }
+
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/trustlock/vendor/login`,
+      },
+    });
+    setResendLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setResendMessage("Verification email sent. Check inbox and spam.");
   };
 
   if (success) {
@@ -49,7 +87,13 @@ const VendorSignup = () => {
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">Check Your Email</h2>
           <p className="text-muted-foreground mb-6">We've sent a verification link to <strong>{email}</strong>. Click it to activate your vendor account.</p>
-          <Button onClick={() => navigate("/trustlock/vendor/login")} variant="outline">Back to Login</Button>
+          {resendMessage && <p className="text-sm text-primary mb-4">{resendMessage}</p>}
+          <div className="space-y-2">
+            <Button onClick={handleResendVerification} variant="outline" className="w-full" disabled={resendLoading}>
+              {resendLoading ? "Sending..." : "Resend verification email"}
+            </Button>
+            <Button onClick={() => navigate("/trustlock/vendor/login")} variant="outline" className="w-full">Back to Login</Button>
+          </div>
         </motion.div>
       </div>
     );
