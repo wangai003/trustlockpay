@@ -14,10 +14,10 @@ const TrustLockWidget = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Embeddable Checkout Widget
+            TrustLock Pay — Checkout Widget
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            This is how TrustLock appears on a vendor's website — a trusted escrow checkout overlay.
+            This is how TrustLock Pay appears on a vendor's website — a trusted escrow checkout overlay.
           </p>
         </motion.div>
 
