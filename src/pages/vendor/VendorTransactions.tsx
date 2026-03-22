@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
-import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER } from "@/hooks/useVendorPlan";
+import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -55,14 +55,14 @@ const VendorTransactions = () => {
   const [upgradeDialog, setUpgradeDialog] = useState(false);
 
   const planState = getVendorPlanState();
-  const orderLimit = planState.orderLimit;
-  const isUnlimited = orderLimit === -1;
+  const orderMax = planState.orderMax;
+  const isUnlimited = orderMax === -1;
 
   const filtered = mockTx
     .filter((t) => filter === "all" || t.status === filter)
     .filter((t) => t.id.toLowerCase().includes(search.toLowerCase()) || t.buyer.toLowerCase().includes(search.toLowerCase()));
 
-  const isGrayedOut = (orderNum: number) => !isUnlimited && orderNum > orderLimit;
+  const isGrayedOut = (orderNum: number) => !isUnlimited && orderNum > orderMax;
   const grayedCount = filtered.filter(t => isGrayedOut(t.order)).length;
   const requiredPlan = grayedCount > 0 ? getRequiredPlanForOrders(mockTx.length) : null;
 
@@ -78,23 +78,20 @@ const VendorTransactions = () => {
     <div>
       <VendorHeader title="Transactions" />
       <div className="p-6 space-y-4">
-        {/* Plan limit banner */}
         {grayedCount > 0 && (
           <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <Lock className="w-4 h-4 text-accent shrink-0 mt-0.5 sm:mt-0" />
             <div className="flex-1">
               <p className="text-xs font-semibold">
-                {grayedCount} order{grayedCount !== 1 ? "s" : ""} exceed your {PLANS[planState.currentPlan].name} plan limit ({isUnlimited ? "∞" : orderLimit} orders/mo)
+                {grayedCount} order{grayedCount !== 1 ? "s" : ""} exceed your {PLANS[planState.currentPlan].name} plan range ({getOrderRangeLabel(PLANS[planState.currentPlan])} orders/mo)
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Upgrade to <strong>{requiredPlan ? PLANS[requiredPlan].name : "a higher plan"}</strong> to process them, or reject orders you don't want.
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => setUpgradeDialog(true)}>
-                <ArrowUpCircle className="w-3 h-3 mr-1" /> Upgrade
-              </Button>
-            </div>
+            <Button size="sm" variant="outline" className="text-xs" onClick={() => setUpgradeDialog(true)}>
+              <ArrowUpCircle className="w-3 h-3 mr-1" /> Upgrade
+            </Button>
           </div>
         )}
 
@@ -156,10 +153,7 @@ const VendorTransactions = () => {
                         }`}
                       >
                         <td className="p-4">
-                          <Checkbox
-                            checked={selected.includes(tx.id)}
-                            onCheckedChange={() => toggleSelect(tx.id)}
-                          />
+                          <Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} />
                         </td>
                         <td className="p-4 font-mono text-xs">{tx.id}</td>
                         <td className="p-4">{tx.buyer}</td>
@@ -171,9 +165,7 @@ const VendorTransactions = () => {
                             <cfg.icon className="w-3 h-3" /> {cfg.label}
                           </span>
                           {grayed && (
-                            <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">
-                              Over Limit
-                            </Badge>
+                            <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
                           )}
                         </td>
                         <td className="p-4 text-center">
@@ -199,24 +191,22 @@ const VendorTransactions = () => {
           </CardContent>
         </Card>
 
-        {/* Order limit info */}
         <div className="text-center text-[10px] text-muted-foreground">
-          Showing {filtered.length} orders · Plan limit: {isUnlimited ? "Unlimited" : `${orderLimit}/month`} ·{" "}
+          Showing {filtered.length} orders · Plan range: {isUnlimited ? "Unlimited" : `${PLANS[planState.currentPlan].orderMin}–${orderMax}/month`} ·{" "}
           {grayedCount > 0 ? (
             <span className="text-accent font-medium">{grayedCount} grayed out (upgrade required)</span>
           ) : (
-            <span className="text-primary">All orders within limit</span>
+            <span className="text-primary">All orders within range</span>
           )}
         </div>
       </div>
 
-      {/* Reject Confirmation Dialog */}
       <Dialog open={rejectDialog} onOpenChange={setRejectDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject {selected.length} Order(s)?</DialogTitle>
             <DialogDescription>
-              Rejected orders will be canceled and each buyer will receive an automatic notification that the vendor has stopped/rejected their payment. This action cannot be undone.
+              Rejected orders will be canceled and each buyer will receive an automatic notification. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -226,27 +216,26 @@ const VendorTransactions = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Upgrade Dialog */}
       <Dialog open={upgradeDialog} onOpenChange={setUpgradeDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Upgrade Required</DialogTitle>
             <DialogDescription>
-              You have {grayedCount} order{grayedCount !== 1 ? "s" : ""} exceeding your {PLANS[planState.currentPlan].name} plan limit of {orderLimit} orders/month.
+              You have {grayedCount} order{grayedCount !== 1 ? "s" : ""} exceeding your {PLANS[planState.currentPlan].name} plan range ({getOrderRangeLabel(PLANS[planState.currentPlan])} orders/month).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <p className="text-xs text-muted-foreground">To process these orders, upgrade to a plan with a higher limit:</p>
+            <p className="text-xs text-muted-foreground">To process these orders, upgrade to a plan with a higher range:</p>
             {PLAN_ORDER.filter(id => {
               const p = PLANS[id];
-              return p.isPaid && (p.orderLimit === -1 || p.orderLimit > orderLimit);
+              return p.isPaid && (p.orderMax === -1 || p.orderMax > orderMax);
             }).map(id => {
               const p = PLANS[id];
               return (
                 <div key={id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-primary/30 transition-colors">
                   <div>
                     <p className="text-sm font-semibold">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.orderLimit === -1 ? "Unlimited" : `${p.orderLimit} orders/mo`}</p>
+                    <p className="text-xs text-muted-foreground">{getOrderRangeLabel(p)} orders/mo</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => { setUpgradeDialog(false); navigate(`/trustlock/vendor/checkout?plan=${id}&billing=yearly`); }}>
                     ${p.yearly}/yr
