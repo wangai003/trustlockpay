@@ -8,7 +8,6 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src={azixLogo} alt="Azix logo" className="w-8 h-8 rounded-md object-contain" />
-            <span className="font-heading font-bold text-background">Azix</span>
           </div>
           <p className="text-sm text-background/50">
             © {new Date().getFullYear()} Azix. All rights reserved.
