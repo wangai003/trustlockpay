@@ -21,14 +21,13 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
 
-  // For mainnet: show reset password link only when a valid admin username is entered
+  // For mainnet post-setup: show reset link when a valid set-up account identifier is entered in the identity field
   useEffect(() => {
     if (!isTestnet) {
-      const account = lookupAdmin(username);
-      // Show reset only if account exists and is set up (has email)
+      const account = lookupAdmin(identifier);
       setShowResetLink(account?.isSetup === true);
     }
-  }, [username, isTestnet]);
+  }, [identifier, isTestnet]);
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
