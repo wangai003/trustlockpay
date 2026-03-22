@@ -47,6 +47,9 @@ import VendorSites from "./pages/vendor/VendorSites.tsx";
 import VendorKYC from "./pages/vendor/VendorKYC.tsx";
 import VendorDocuments from "./pages/vendor/VendorDocuments.tsx";
 import VendorSettings from "./pages/vendor/VendorSettings.tsx";
+import VendorAssistant from "./pages/vendor/VendorAssistant.tsx";
+import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
+import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 
 const queryClient = new QueryClient();
 
