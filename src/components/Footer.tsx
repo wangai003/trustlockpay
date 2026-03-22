@@ -1,6 +1,7 @@
+import { forwardRef } from "react";
 import azixLogo from "@/assets/azix-logo.png";
 
-const Footer = () => {
+const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
     <footer className="py-10 bg-foreground">
       <div className="container mx-auto px-4 lg:px-8">
