@@ -135,6 +135,7 @@ const App = () => (
               <Route path="documents" element={<BuyerDocuments />} />
               <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="analytics" element={<BuyerAnalytics />} />
+              <Route path="os-pay" element={<BuyerOSPay />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 

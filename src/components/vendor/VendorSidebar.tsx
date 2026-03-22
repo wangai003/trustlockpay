@@ -18,6 +18,7 @@ const navItems = [
   { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents" },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help" },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing" },
+  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings" },
 ];
 
