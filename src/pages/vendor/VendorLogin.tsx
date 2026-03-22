@@ -26,7 +26,7 @@ const VendorLogin = () => {
     } else {
       setEmail("");
     }
-    setPassword("");
+    setPassword(!checked ? "123" : "");
     setError("");
   };
 
