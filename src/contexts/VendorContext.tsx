@@ -4,6 +4,7 @@ type NetworkMode = "testnet" | "mainnet";
 type VendorType = "product" | "service" | null;
 
 interface VendorProfile {
+  id: string;
   name: string;
   email: string;
   type: VendorType;
