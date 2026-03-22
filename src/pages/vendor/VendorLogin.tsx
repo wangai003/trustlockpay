@@ -14,11 +14,25 @@ const LOCKOUT_MS = 15 * 60 * 1000;
 
 const VendorLogin = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
-  const [isTestnet, setIsTestnet] = useState(true);
+  const { signIn, user, loading: authLoading } = useAuth();
+
+  // Auto-redirect if already authenticated (e.g. after email verification)
+  useEffect(() => {
+    if (!authLoading && user) {
+      localStorage.setItem("tl_vendor_network", "mainnet");
+      navigate("/trustlock/vendor", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
+  // Detect if coming from email verification (hash contains access_token or type=recovery)
+  const comingFromVerification = window.location.hash.includes("access_token") || 
+    window.location.search.includes("verified") ||
+    document.referrer.includes("/verify");
+
+  const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(isTestnet ? "vendor@kentetest.com" : "");
-  const [password, setPassword] = useState(isTestnet ? "123" : "");
+  const [email, setEmail] = useState(comingFromVerification ? "" : "vendor@kentetest.com");
+  const [password, setPassword] = useState(comingFromVerification ? "" : "123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
