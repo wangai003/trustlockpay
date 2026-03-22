@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const codeSnippet = `<!-- Add TrustLock to your checkout page -->
-<script src="https://cdn.azix.world/trustlock.js"></script>
-<div id="trustlock-widget"></div>
+const codeSnippet = `<!-- Add TrustLock Pay to your checkout page -->
+<script src="https://cdn.azix.world/trustlock-pay.js"></script>
+<div id="trustlock-pay-widget"></div>
 
 <script>
-  TrustLock.init({
+  TrustLockPay.init({
     vendorId: "your-vendor-id",
-    apiKey: "tlk_live_...",
+    apiKey: "tlp_live_...",
     currency: "USD",
     theme: "light",
     onSuccess: (tx) => {
