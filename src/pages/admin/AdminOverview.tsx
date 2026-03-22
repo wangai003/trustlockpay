@@ -82,7 +82,7 @@ const AdminOverview = () => {
         </div>
 
         {/* Charts Row */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Transaction Volume Chart */}
           <Card className="lg:col-span-2">
             <CardHeader>
