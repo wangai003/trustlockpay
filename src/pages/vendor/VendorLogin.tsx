@@ -108,11 +108,6 @@ const VendorLogin = () => {
     setLoading(false);
 
     if (error) {
-      const normalizedError = error.message.toLowerCase();
-      if (normalizedError.includes("email not confirmed") || normalizedError.includes("email not verified")) {
-        setError("Your email is not verified yet. Check inbox/spam or resend verification below.");
-        return;
-      }
       handleFailedAttempt();
       return;
     }
@@ -259,17 +254,7 @@ const VendorLogin = () => {
               </Button>
               {!isTestnet && (
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-between gap-3 text-xs">
-                    <button type="button" className="text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
-                    <button
-                      type="button"
-                      onClick={handleResendVerification}
-                      disabled={resendLoading || loading || isLocked}
-                      className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {resendLoading ? "Sending..." : "Resend verification email"}
-                    </button>
-                  </div>
+                  <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
                   <div>
                     <Link to="/trustlock/vendor/signup" className="text-xs text-primary hover:underline">New vendor? Create an account →</Link>
                   </div>

@@ -41,12 +41,15 @@ const VendorSignup = () => {
 
     if (error) {
       if (error.message.toLowerCase().includes("already") && error.message.toLowerCase().includes("registered")) {
-        setError("This email is already registered. Sign in and resend verification email if needed.");
+        setError("This email is already registered. Please sign in instead.");
       } else {
         setError(error.message);
       }
     } else {
-      setSuccess(true);
+      // Auto-confirm is enabled, so redirect straight to dashboard
+      localStorage.setItem("tl_vendor_auth", "true");
+      localStorage.setItem("tl_vendor_network", "mainnet");
+      navigate("/trustlock/vendor");
     }
   };
 
