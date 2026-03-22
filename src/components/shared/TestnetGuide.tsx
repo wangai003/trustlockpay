@@ -62,11 +62,11 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
     try { return JSON.parse(localStorage.getItem(storageKey(role)) || "[]"); } catch { return []; }
   });
 
-  const isTestnet = localStorage.getItem(
-    role === "admin" ? "tl_network" : role === "vendor" ? "tl_vendor_network" : "tl_buyer_network"
-  ) === "testnet" || localStorage.getItem(
-    role === "admin" ? "tl_admin_auth" : role === "vendor" ? "tl_vendor_auth" : "tl_buyer_auth"
-  ) === "true";
+  const networkKey = role === "admin" ? "tl_network" : role === "vendor" ? "tl_vendor_network" : "tl_buyer_network";
+  const authKey = role === "admin" ? "tl_admin_auth" : role === "vendor" ? "tl_vendor_auth" : "tl_buyer_auth";
+  const storedNetwork = localStorage.getItem(networkKey);
+  const hasLegacyTestnetAuth = storedNetwork === null && localStorage.getItem(authKey) === "true";
+  const isTestnet = storedNetwork === "testnet" || hasLegacyTestnetAuth;
 
   const steps = stepsMap[role];
   const completedCount = completed.length;
