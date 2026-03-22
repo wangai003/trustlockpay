@@ -29,15 +29,15 @@ const VendorOverview = () => {
   return (
     <div>
       <VendorHeader title="Dashboard" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Welcome */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
-            <CardContent className="p-6">
-              <h2 className="font-heading text-xl font-bold">Welcome back, {vendor.name}</h2>
-              <p className="text-sm text-muted-foreground mt-1">Here's your escrow activity summary</p>
-              <div className="flex items-center gap-3 mt-3">
-                <Badge variant="secondary" className="capitalize">{vendor.type} vendor</Badge>
+            <CardContent className="p-4 sm:p-6">
+              <h2 className="font-heading text-base sm:text-xl font-bold">Welcome back, {vendor.name}</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Here's your escrow activity summary</p>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <Badge variant="secondary" className="capitalize text-[10px] sm:text-xs">{vendor.type} vendor</Badge>
                 <Badge className="bg-primary/15 text-primary text-[10px]">KYC Tier {vendor.kycTier}</Badge>
                 <Badge variant="outline" className="text-[10px]">{vendor.sites.length} site{vendor.sites.length > 1 ? "s" : ""} connected</Badge>
               </div>
@@ -46,7 +46,7 @@ const VendorOverview = () => {
         </motion.div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Active Escrows", value: "8", icon: Clock, change: "+3 this week" },
             { label: "Total Released", value: "$14,200", icon: DollarSign, change: "+$2,400 this month" },
