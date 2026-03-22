@@ -3,6 +3,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 type NetworkMode = "testnet" | "mainnet";
 
 interface BuyerProfile {
+  id: string;
   name: string;
   email: string;
   location: string;
