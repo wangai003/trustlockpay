@@ -34,9 +34,10 @@ const buyerSteps: GuideStep[] = [
   { id: "b1", title: "Review Dashboard", description: "Check your active orders, funds in escrow, and action items.", route: "/trustlock/buyer", action: "Review the overview" },
   { id: "b2", title: "View Orders", description: "Go to My Orders to see order statuses. Try confirming delivery on a delivered order.", route: "/trustlock/buyer/orders", action: "Interact with an order" },
   { id: "b3", title: "File a Test Dispute", description: "Navigate to Disputes and review how the dispute filing process works.", route: "/trustlock/buyer/disputes", action: "Review dispute flow" },
-  { id: "b4", title: "Use Support Assistant", description: "Open the Support Assistant AI and ask about buyer protections.", route: "/trustlock/buyer/assistant", action: "Send a message" },
-  { id: "b5", title: "Download a Statement", description: "Navigate to Analytics to download a purchase history statement.", route: "/trustlock/buyer/analytics", action: "Download a report" },
-  { id: "b6", title: "Check Documents", description: "Review the reference library for buyer protection policies.", route: "/trustlock/buyer/documents", action: "Browse documents" },
+  { id: "b4", title: "Pay for Analytics Report", description: "Go to TrustLock OS Pay and purchase an analytics report download.", route: "/trustlock/buyer/os-pay", action: "Complete a payment" },
+  { id: "b5", title: "Use Support Assistant", description: "Open the Support Assistant AI and ask about buyer protections.", route: "/trustlock/buyer/assistant", action: "Send a message" },
+  { id: "b6", title: "Download a Statement", description: "Navigate to Analytics to download a purchase history statement.", route: "/trustlock/buyer/analytics", action: "Download a report" },
+  { id: "b7", title: "Check Documents", description: "Review the reference library for buyer protection policies.", route: "/trustlock/buyer/documents", action: "Browse documents" },
 ];
 
 const adminSteps: GuideStep[] = [
