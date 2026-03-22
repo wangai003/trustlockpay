@@ -41,7 +41,7 @@ const mockCaseWorkflow = {
   status: "ai_reviewing",
   confidence: 92,
   opinion: "Evidence strongly supports buyer. Vendor has repeated non-delivery history and failed to respond. I recommend a full refund to buyer.",
-  recommendation: "Full refund to buyer",
+  recommendation: "Refund",
   timeline: [
     { time: "Mar 17, 10:32 AM", event: "Dispute filed by buyer", type: "system" as const },
     { time: "Mar 17, 10:32 AM", event: "Emmanuel AI assigned to case", type: "ai" as const },
