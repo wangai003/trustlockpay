@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield, Store, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import TrustLockHero from "@/components/trustlock/TrustLockHero";
 import TrustLockFeatures from "@/components/trustlock/TrustLockFeatures";
@@ -37,7 +37,23 @@ const TrustLock = () => {
             <a href="#dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
             <a href="#integrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Integrate</a>
           </div>
-          <Button variant="hero" size="sm">Get API Keys</Button>
+          <div className="flex items-center gap-2">
+            <Link to="/trustlock/admin/login">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Shield className="w-3.5 h-3.5" /> Admin
+              </Button>
+            </Link>
+            <Link to="/trustlock/vendor/login">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Store className="w-3.5 h-3.5" /> Vendor
+              </Button>
+            </Link>
+            <Link to="/trustlock/buyer/login">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <ShoppingBag className="w-3.5 h-3.5" /> Buyer
+              </Button>
+            </Link>
+          </div>
         </div>
       </nav>
 
