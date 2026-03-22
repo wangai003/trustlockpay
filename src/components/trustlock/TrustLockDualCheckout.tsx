@@ -20,7 +20,7 @@ const TrustLockDualCheckout = () => {
             Two Modes, One Widget
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            TrustLock auto-detects the buyer's location and shows the right experience — crypto-savvy diaspora or familiar local checkout.
+            TrustLock Pay auto-detects the buyer's location and shows the right experience — crypto-savvy diaspora or familiar local checkout.
           </p>
         </motion.div>
 
@@ -62,7 +62,7 @@ const TrustLockDualCheckout = () => {
             <div className="bg-primary px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary-foreground" />
-                <span className="text-sm font-bold text-primary-foreground">TrustLock</span>
+                <span className="text-sm font-bold text-primary-foreground">TrustLock Pay</span>
               </div>
               <span className="text-xs text-primary-foreground/70">
                 {mode === "diaspora" ? "Escrow Protected" : "Protected Payment"}
@@ -126,7 +126,7 @@ const TrustLockDualCheckout = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">TrustLock Fee (1.5%)</span>
+                  <span className="text-muted-foreground">TrustLock Pay Fee (1.5%)</span>
                   <span className="text-muted-foreground">
                     {mode === "diaspora" ? "$4.39" : "₦6,750"}
                   </span>
@@ -140,7 +140,7 @@ const TrustLockDualCheckout = () => {
               </div>
 
               <Button variant="hero" className="w-full gap-2">
-                {mode === "diaspora" ? "Pay with TrustLock" : "Pay Securely"}
+                {mode === "diaspora" ? "Pay with TrustLock Pay" : "Pay Securely"}
                 <ChevronRight className="w-4 h-4" />
               </Button>
 

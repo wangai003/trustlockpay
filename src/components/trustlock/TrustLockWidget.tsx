@@ -14,10 +14,10 @@ const TrustLockWidget = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Embeddable Checkout Widget
+            TrustLock Pay — Checkout Widget
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            This is how TrustLock appears on a vendor's website — a trusted escrow checkout overlay.
+            This is how TrustLock Pay appears on a vendor's website — a trusted escrow checkout overlay.
           </p>
         </motion.div>
 
@@ -72,7 +72,7 @@ const TrustLockWidget = () => {
                 <div className="border-2 border-primary/20 rounded-xl bg-green-light/50 p-6 relative">
                   <div className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                     <Shield className="w-3 h-3" />
-                    TrustLock Protected
+                    TrustLock Pay Protected
                   </div>
 
                   <div className="mt-2 space-y-4">
@@ -98,14 +98,14 @@ const TrustLockWidget = () => {
                           <span className="font-bold text-primary">$200.00</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">TrustLock Fee (1.5%)</span>
+                          <span className="text-xs text-muted-foreground">TrustLock Pay Fee (1.5%)</span>
                           <span className="text-xs text-muted-foreground">$3.00</span>
                         </div>
                       </div>
                     </div>
 
                     <Button variant="hero" className="w-full gap-2">
-                      Pay with TrustLock
+                      Pay with TrustLock Pay
                       <ChevronRight className="w-4 h-4" />
                     </Button>
 

@@ -9,7 +9,7 @@ const steps = [
     id: 1,
     icon: CreditCard,
     title: "Buyer Initiates Payment",
-    desc: "The buyer selects TrustLock at checkout and pays $200 for goods from a verified African vendor.",
+    desc: "The buyer selects TrustLock Pay at checkout and pays $200 for goods from a verified African vendor.",
     detail: "Payment processed via Coinbase/Stripe/Transak. Buyer can use card, mobile wallet, or crypto.",
     status: "Payment Submitted",
     amount: "$200.00",
@@ -66,7 +66,7 @@ const TrustLockBuyerFlow = () => {
             Interactive Demo
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            See TrustLock in Action
+            See TrustLock Pay in Action
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
             Walk through a real escrow payment flow step by step.

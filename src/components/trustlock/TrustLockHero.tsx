@@ -19,12 +19,13 @@ const TrustLockHero = () => {
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
             TrustLock
-            <span className="block text-primary mt-2">Payment Gateway</span>
+            <span className="block text-primary mt-2">OS v1.0</span>
           </h1>
 
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            The first blockchain-secured escrow payment gateway built for African commerce.
-            Embed trust directly into any vendor website — powered by Azix's smart contract infrastructure.
+            The first blockchain-secured escrow operating system built for African commerce.
+            Embed trust directly into any vendor website — powered by Azix's smart contract infrastructure
+            and the TrustLock Pay checkout experience.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
