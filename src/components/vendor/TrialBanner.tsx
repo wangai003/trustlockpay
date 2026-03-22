@@ -62,7 +62,7 @@ const TrialBanner = () => {
             {state.isExpired ? "Your plan has expired" : "Free trial expired"} — Basic mode active
           </p>
           <p className="text-[10px] text-muted-foreground">
-            Limited to {PLANS.basic.orderLimit} orders/month. Orders above this limit are grayed out. Upgrade to process them.
+            Limited to {PLANS.basic.orderMax} orders/month. Orders above this limit are grayed out. Upgrade to process them.
           </p>
         </div>
         <Button size="sm" className="text-xs shrink-0" onClick={() => navigate("/trustlock/vendor/pricing")}>
@@ -84,7 +84,7 @@ const TrialBanner = () => {
           <p className="text-xs font-semibold">
             {state.daysUntilExpiry} day{state.daysUntilExpiry !== 1 ? "s" : ""} until {PLANS[state.currentPlan].name} renewal
           </p>
-          <p className="text-[10px] text-muted-foreground">Renew before expiry to avoid falling back to Basic ({PLANS.basic.orderLimit} orders/mo).</p>
+          <p className="text-[10px] text-muted-foreground">Renew before expiry to avoid falling back to Basic ({PLANS.basic.orderMax} orders/mo).</p>
         </div>
         <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => navigate("/trustlock/vendor/pricing")}>
           Renew

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
-import { PLANS, PLAN_ORDER, getVendorPlanState, type PlanId, type BillingCycle } from "@/hooks/useVendorPlan";
+import { PLANS, PLAN_ORDER, getVendorPlanState, getOrderRangeLabel, type PlanId, type BillingCycle } from "@/hooks/useVendorPlan";
 
 const planIcons: Record<PlanId, typeof Gift> = {
   basic: Shield,
@@ -28,7 +28,7 @@ const VendorPricing = () => {
   const trialUsed = localStorage.getItem("tl_vendor_trial_start") !== null;
 
   const handleSelect = (planId: PlanId) => {
-    if (planId === "basic") return; // Basic is free fallback, no action
+    if (planId === "basic") return;
     navigate(`/trustlock/vendor/checkout?plan=${planId}&billing=${billing}`);
   };
 
@@ -45,20 +45,18 @@ const VendorPricing = () => {
       <div className="p-3 sm:p-6 space-y-6">
         <div>
           <h2 className="font-heading text-lg font-bold">TrustLock OS License Plans</h2>
-          <p className="text-sm text-muted-foreground">Choose a plan that fits your business. Pay securely via TrustLock Pay.</p>
+          <p className="text-sm text-muted-foreground">Choose a plan that fits your order volume range. Pay securely via TrustLock Pay.</p>
         </div>
 
-        {/* Expired notice */}
         {planState.isExpired && (
           <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5">
             <p className="text-xs font-semibold text-destructive">Your plan has expired — you're on the Basic fallback.</p>
             <p className="text-[10px] text-muted-foreground mt-1">
-              Your dashboard is limited to {PLANS.basic.orderLimit} orders/month. Orders above this limit are grayed out. Upgrade to regain full access.
+              Limited to {PLANS.basic.orderMin}–{PLANS.basic.orderMax} orders/month. Orders above this range are grayed out.
             </p>
           </div>
         )}
 
-        {/* Free trial CTA */}
         {!trialUsed && planState.currentPlan === "basic" && !planState.isExpired && (
           <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-3">
             <Gift className="w-5 h-5 text-primary shrink-0" />
@@ -70,7 +68,6 @@ const VendorPricing = () => {
           </div>
         )}
 
-        {/* Billing toggle */}
         <div className="flex items-center justify-center gap-1 p-1 bg-muted rounded-lg w-fit mx-auto">
           <button
             onClick={() => setBilling("monthly")}
@@ -89,7 +86,6 @@ const VendorPricing = () => {
           </button>
         </div>
 
-        {/* Plan cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {PLAN_ORDER.map((planId) => {
             const plan = PLANS[planId];
@@ -97,15 +93,20 @@ const VendorPricing = () => {
             const price = plan.isPaid ? (billing === "monthly" ? plan.monthly : plan.yearly) : 0;
             const periodLabel = plan.isPaid ? (billing === "monthly" ? "/mo" : "/yr") : "forever";
             const isCurrentPlan = planState.currentPlan === planId && !planState.isExpired;
-            const isHighlighted = planId === "growth";
+            const isHighlighted = planId === "starter";
             const isBasicFallback = planId === "basic" && planState.isExpired;
 
             return (
               <Card key={planId} className={`relative flex flex-col ${isHighlighted ? "border-primary ring-1 ring-primary/20" : ""}`}>
                 {isHighlighted && (
-                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px]">
-                    Most Popular
-                  </Badge>
+                  <>
+                    <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px]">
+                      Recommended
+                    </Badge>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/50">
+                      <span className="text-white text-[8px] font-bold">👆</span>
+                    </div>
+                  </>
                 )}
                 <CardHeader className="pb-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
@@ -113,7 +114,7 @@ const VendorPricing = () => {
                   </div>
                   <CardTitle className="text-base">{plan.name}</CardTitle>
                   <CardDescription className="text-xs">
-                    {plan.orderLimit === -1 ? "Unlimited orders" : `Up to ${plan.orderLimit.toLocaleString()} orders/mo`}
+                    {getOrderRangeLabel(plan)} orders/mo
                   </CardDescription>
                   <div className="pt-2">
                     <span className="text-2xl font-bold">${price}</span>
@@ -144,44 +145,40 @@ const VendorPricing = () => {
           })}
         </div>
 
-        {/* How it works */}
         <Card>
           <CardContent className="p-4 space-y-3">
-            <h3 className="font-semibold text-sm">How Plan Limits Work</h3>
+            <h3 className="font-semibold text-sm">How Plan Ranges Work</h3>
             <div className="space-y-2 text-xs text-muted-foreground">
-              <p>• <strong className="text-foreground">Order limits</strong> are counted per calendar month. Orders above your plan limit appear <strong className="text-foreground">grayed out</strong> in your dashboard.</p>
-              <p>• <strong className="text-foreground">Grayed-out orders</strong> are real payments waiting to be processed. You must upgrade to the appropriate plan to accept and fulfill them.</p>
+              <p>• <strong className="text-foreground">Order ranges</strong> define how many orders your plan supports per month. If you receive 18 orders, you only need Starter ($5/mo), not Growth.</p>
+              <p>• <strong className="text-foreground">Grayed-out orders</strong> appear when you exceed your plan's upper range. Upgrade to the appropriate plan to process them.</p>
               <p>• If you choose not to upgrade, you can <strong className="text-foreground">reject individual orders</strong> via checkbox — the buyer is notified automatically.</p>
-              <p>• <strong className="text-foreground">No auto-renewal.</strong> When your plan expires, you fall back to Basic ({PLANS.basic.orderLimit} orders/mo). Your data is preserved.</p>
+              <p>• <strong className="text-foreground">No auto-renewal.</strong> When your plan expires, you fall back to Basic ({PLANS.basic.orderMin}–{PLANS.basic.orderMax} orders/mo). Your data is preserved.</p>
               <p>• You can <strong className="text-foreground">upgrade, downgrade, or switch billing</strong> (monthly ↔ yearly) at any time.</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Billing info */}
         {billing === "monthly" && (
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">
                 <strong className="text-foreground">Monthly billing:</strong> No auto-renewal. You pay manually each month.
                 If payment is not received by your renewal date, you fall back to the Basic plan until the next payment is made.
-                A new billing cycle starts from the date of your next payment.
               </p>
             </CardContent>
           </Card>
         )}
 
-        {/* FAQ */}
         <Card>
           <CardContent className="p-4 space-y-3">
             <h3 className="font-semibold text-sm">Frequently Asked Questions</h3>
             {[
-              { q: "What is the Basic plan?", a: "Basic is the free fallback plan. If your trial or paid plan expires, you keep access with a limit of 15 orders/month. Orders beyond this are grayed out until you upgrade." },
+              { q: "What is the Basic plan?", a: `Basic is the free fallback plan. If your trial or paid plan expires, you keep access with a limit of ${PLANS.basic.orderMax} orders/month. Orders beyond this are grayed out until you upgrade.` },
               { q: "What happens to grayed-out orders?", a: "Grayed-out orders are real pending payments. You can either upgrade to process them, or reject them individually — buyers are notified immediately." },
               { q: "Can I switch plans at any time?", a: "Yes! Upgrade or downgrade freely. If upgrading, you pay the difference. If downgrading, the change takes effect at next renewal." },
-              { q: "What if I want to stop using TrustLock Pay?", a: "Go to Settings and toggle off 'TrustLock Pay Widget'. Your widget will be disabled on your store immediately. You can re-enable it anytime." },
+              { q: "What if I want to stop using TrustLock Pay?", a: "Go to Settings and toggle off 'TrustLock Pay Widget'. Your widget will be disabled on your store immediately." },
               { q: "Are there transaction fees on top?", a: "TrustLock Pay charges 2.5% (products) or 3% (services) per transaction. This is separate from the OS license." },
-              { q: "When does the free trial start?", a: "Only when you click 'Activate Free Trial'. Browse the platform freely before committing. The trial gives Growth-level access for 30 days." },
+              { q: "When does the free trial start?", a: "Only when you click 'Activate Free Trial'. Browse the platform freely before committing." },
             ].map(({ q, a }) => (
               <div key={q}>
                 <p className="text-xs font-medium">{q}</p>
@@ -192,13 +189,12 @@ const VendorPricing = () => {
         </Card>
       </div>
 
-      {/* Trial Confirmation Dialog */}
       <Dialog open={activatingTrial} onOpenChange={setActivatingTrial}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Activate Free Trial</DialogTitle>
             <DialogDescription>
-              Your 30-day countdown starts now. You'll get full Growth-level access including advanced analytics, AI assistant, and up to 300 orders/month. No payment required.
+              Your 30-day countdown starts now. You'll get full Growth-level access including advanced analytics, AI assistant, and up to 300 orders/month.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

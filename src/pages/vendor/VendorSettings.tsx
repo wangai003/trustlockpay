@@ -123,7 +123,7 @@ const VendorSettings = () => {
               <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
                 <p className="text-xs text-muted-foreground">
                   <strong className="text-foreground">Active:</strong> TrustLock Pay is live on {vendor.sites.length} connected site{vendor.sites.length !== 1 ? "s" : ""}.
-                  Current plan: <strong className="text-foreground">{PLANS[planState.currentPlan].name}</strong> ({planState.orderLimit === -1 ? "unlimited" : `${planState.orderLimit} orders/mo`}).
+                  Current plan: <strong className="text-foreground">{PLANS[planState.currentPlan].name}</strong> ({planState.orderMax === -1 ? "unlimited" : `${planState.orderMin}–${planState.orderMax} orders/mo`}).
                 </p>
               </div>
             )}

@@ -9,7 +9,7 @@ import {
   ArrowLeftRight, DollarSign, Clock, TrendingUp, CheckCircle,
   AlertTriangle, Eye, Lock, ArrowUpCircle, Shield
 } from "lucide-react";
-import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
+import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 
 const recentTx = [
   { id: "TL-2026-0891", buyer: "James O.", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", order: 1 },
@@ -29,13 +29,13 @@ const VendorOverview = () => {
   const { vendor } = useVendor();
   const navigate = useNavigate();
   const planState = getVendorPlanState();
-  const isUnlimited = planState.orderLimit === -1;
+  const isUnlimited = planState.orderMax === -1;
+  const planConfig = PLANS[planState.currentPlan];
 
   return (
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Welcome */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
             <CardContent className="p-4 sm:p-6">
@@ -47,7 +47,7 @@ const VendorOverview = () => {
                 <Badge variant="outline" className="text-[10px]">{vendor.sites.length} site{vendor.sites.length > 1 ? "s" : ""} connected</Badge>
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <Shield className="w-2.5 h-2.5" />
-                  {PLANS[planState.currentPlan].name} · {isUnlimited ? "∞" : `${planState.orderLimit}`} orders/mo
+                  {planConfig.name} · {getOrderRangeLabel(planConfig)} orders/mo
                 </Badge>
                 {!planState.trustlockPayEnabled && (
                   <Badge variant="destructive" className="text-[10px]">Widget Off</Badge>
@@ -57,13 +57,12 @@ const VendorOverview = () => {
           </Card>
         </motion.div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Active Escrows", value: "8", icon: Clock, change: "+3 this week" },
             { label: "Total Released", value: "$14,200", icon: DollarSign, change: "+$2,400 this month" },
             { label: "Pending Payout", value: "$5,050", icon: TrendingUp, change: "Next payout in 2d" },
-            { label: "Plan Usage", value: isUnlimited ? "∞" : `18/${planState.orderLimit}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((18 / planState.orderLimit) * 100)}% of limit used` },
+            { label: "Plan Usage", value: isUnlimited ? "∞" : `18/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((18 / planState.orderMax) * 100)}% of limit used` },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
@@ -80,7 +79,6 @@ const VendorOverview = () => {
           ))}
         </div>
 
-        {/* Recent Transactions */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Transactions</CardTitle>
@@ -101,7 +99,7 @@ const VendorOverview = () => {
                 </thead>
                 <tbody>
                   {recentTx.map((tx) => {
-                    const grayed = !isUnlimited && tx.order > planState.orderLimit;
+                    const grayed = !isUnlimited && tx.order > planState.orderMax;
                     return (
                       <tr key={tx.id} className={`border-b border-border last:border-0 transition-colors ${grayed ? "opacity-40 bg-muted/10" : "hover:bg-muted/20"}`}>
                         <td className="p-4 font-mono text-xs">{tx.id}</td>

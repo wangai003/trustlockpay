@@ -7,7 +7,8 @@ export interface PlanConfig {
   name: string;
   monthly: number;
   yearly: number;
-  orderLimit: number; // per month, -1 = unlimited
+  orderMin: number;
+  orderMax: number; // -1 = unlimited
   features: string[];
   isPaid: boolean;
 }
@@ -18,9 +19,10 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     name: "Basic",
     monthly: 0,
     yearly: 0,
-    orderLimit: 15,
+    orderMin: 1,
+    orderMax: 15,
     features: [
-      "Up to 15 orders/month",
+      "1–15 orders/month",
       "Basic dashboard (read-only analytics)",
       "Email support",
       "10MB document storage",
@@ -33,9 +35,10 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     name: "Starter",
     monthly: 5,
     yearly: 50,
-    orderLimit: 75,
+    orderMin: 16,
+    orderMax: 75,
     features: [
-      "Up to 75 orders/month",
+      "16–75 orders/month",
       "Full dashboard access",
       "Basic analytics & reports",
       "20 free AI queries/month",
@@ -50,9 +53,10 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     name: "Growth",
     monthly: 15,
     yearly: 150,
-    orderLimit: 300,
+    orderMin: 76,
+    orderMax: 300,
     features: [
-      "Up to 300 orders/month",
+      "76–300 orders/month",
       "Advanced analytics & reports",
       "TrustLock Assist AI (unlimited)",
       "Priority email support",
@@ -68,9 +72,10 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     name: "Professional",
     monthly: 35,
     yearly: 350,
-    orderLimit: 1000,
+    orderMin: 301,
+    orderMax: 1000,
     features: [
-      "Up to 1,000 orders/month",
+      "301–1,000 orders/month",
       "Everything in Growth",
       "API access & webhooks",
       "Custom analytics dashboards",
@@ -85,9 +90,10 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     name: "Enterprise",
     monthly: 75,
     yearly: 750,
-    orderLimit: -1,
+    orderMin: 1001,
+    orderMax: -1,
     features: [
-      "Unlimited orders",
+      "Unlimited orders (1,001+)",
       "Everything in Professional",
       "White-label branding",
       "Dedicated account manager",
@@ -110,7 +116,8 @@ export interface VendorPlanState {
   isExpired: boolean;
   expiresAt: Date | null;
   daysUntilExpiry: number | null;
-  orderLimit: number;
+  orderMin: number;
+  orderMax: number;
   trustlockPayEnabled: boolean;
 }
 
@@ -132,14 +139,15 @@ export function getVendorPlanState(): VendorPlanState {
     const expired = remaining === 0;
 
     return {
-      currentPlan: expired ? "basic" : "growth", // trial gives Growth-level access
+      currentPlan: expired ? "basic" : "growth",
       billing: null,
       isTrialActive: !expired,
       trialDaysLeft: remaining,
       isExpired: false,
       expiresAt: null,
       daysUntilExpiry: remaining > 0 ? remaining : null,
-      orderLimit: expired ? PLANS.basic.orderLimit : PLANS.growth.orderLimit,
+      orderMin: expired ? PLANS.basic.orderMin : PLANS.growth.orderMin,
+      orderMax: expired ? PLANS.basic.orderMax : PLANS.growth.orderMax,
       trustlockPayEnabled: payEnabled,
     };
   }
@@ -148,7 +156,7 @@ export function getVendorPlanState(): VendorPlanState {
   if (plan && plan !== "free" && PLANS[plan as PlanId]) {
     const planId = plan as PlanId;
     const config = PLANS[planId];
-    
+
     if (planExpires) {
       const expires = new Date(planExpires);
       const now = new Date();
@@ -156,7 +164,6 @@ export function getVendorPlanState(): VendorPlanState {
       const daysLeft = expired ? 0 : Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
       if (expired) {
-        // Plan expired → fallback to Basic
         return {
           currentPlan: "basic",
           billing,
@@ -165,7 +172,8 @@ export function getVendorPlanState(): VendorPlanState {
           isExpired: true,
           expiresAt: expires,
           daysUntilExpiry: 0,
-          orderLimit: PLANS.basic.orderLimit,
+          orderMin: PLANS.basic.orderMin,
+          orderMax: PLANS.basic.orderMax,
           trustlockPayEnabled: payEnabled,
         };
       }
@@ -178,7 +186,8 @@ export function getVendorPlanState(): VendorPlanState {
         isExpired: false,
         expiresAt: expires,
         daysUntilExpiry: daysLeft,
-        orderLimit: config.orderLimit,
+        orderMin: config.orderMin,
+        orderMax: config.orderMax,
         trustlockPayEnabled: payEnabled,
       };
     }
@@ -191,7 +200,8 @@ export function getVendorPlanState(): VendorPlanState {
       isExpired: false,
       expiresAt: null,
       daysUntilExpiry: null,
-      orderLimit: config.orderLimit,
+      orderMin: config.orderMin,
+      orderMax: config.orderMax,
       trustlockPayEnabled: payEnabled,
     };
   }
@@ -205,15 +215,21 @@ export function getVendorPlanState(): VendorPlanState {
     isExpired: false,
     expiresAt: null,
     daysUntilExpiry: null,
-    orderLimit: PLANS.basic.orderLimit,
+    orderMin: PLANS.basic.orderMin,
+    orderMax: PLANS.basic.orderMax,
     trustlockPayEnabled: payEnabled,
   };
+}
+
+export function getOrderRangeLabel(plan: PlanConfig): string {
+  if (plan.orderMax === -1) return `${plan.orderMin.toLocaleString()}+ (Unlimited)`;
+  return `${plan.orderMin}–${plan.orderMax.toLocaleString()}`;
 }
 
 export function getRequiredPlanForOrders(orderCount: number): PlanId {
   for (const id of PLAN_ORDER) {
     const p = PLANS[id];
-    if (p.orderLimit === -1 || orderCount <= p.orderLimit) return id;
+    if (p.orderMax === -1 || orderCount <= p.orderMax) return id;
   }
   return "enterprise";
 }

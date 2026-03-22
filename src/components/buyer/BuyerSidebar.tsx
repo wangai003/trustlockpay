@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Menu, X, Home, Bot, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Menu, X, Home, Bot, HelpCircle, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +9,7 @@ const navItems = [
   { label: "My Orders", icon: Package, to: "/trustlock/buyer/orders" },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/buyer/disputes" },
   { label: "Support Assistant", icon: Bot, to: "/trustlock/buyer/assistant" },
+  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/buyer/analytics" },
   { label: "Documents", icon: FileText, to: "/trustlock/buyer/documents" },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/buyer/help" },
   { label: "Settings", icon: Settings, to: "/trustlock/buyer/settings" },

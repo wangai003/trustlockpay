@@ -70,7 +70,7 @@ const VendorCheckout = () => {
               <div>
                 <p className="text-sm font-medium">TrustLock OS — {plan.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {billing === "monthly" ? "Monthly" : "Annual"} license · {plan.orderLimit === -1 ? "Unlimited" : `${plan.orderLimit} orders/mo`}
+                  {billing === "monthly" ? "Monthly" : "Annual"} license · {plan.orderMax === -1 ? "Unlimited" : `${plan.orderMin}–${plan.orderMax} orders/mo`}
                 </p>
               </div>
               <div className="text-right">
