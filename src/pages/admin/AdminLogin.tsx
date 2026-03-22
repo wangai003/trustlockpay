@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,12 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { isValidAdminUsername, verifyAdminCredentials, lookupAdmin, isValidAdminPassword } from "@/lib/adminAccounts";
+import { serverAdminLogin, serverAdminLookup, serverCheckPassword } from "@/lib/adminAuth";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
@@ -21,15 +19,32 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
 
-  // Show reset link only when EITHER the correct password OR the correct identifier matches a set-up account
+  // Debounced reset-link check: show only when correct password OR correct identifier is entered
   useEffect(() => {
-    if (!isTestnet) {
-      const identifierMatch = lookupAdmin(identifier)?.isSetup === true;
-      const passwordMatch = isValidAdminPassword(password);
-      setShowResetLink(identifierMatch || passwordMatch);
-    } else {
+    if (isTestnet) {
       setShowResetLink(false);
+      return;
     }
+
+    const timer = setTimeout(async () => {
+      let shouldShow = false;
+
+      // Check identifier (email/username) field
+      if (identifier.trim().length > 2) {
+        const lookup = await serverAdminLookup(identifier);
+        if (lookup.exists && lookup.isSetup) shouldShow = true;
+      }
+
+      // Check password field against set-up accounts
+      if (!shouldShow && password.length >= 6) {
+        const check = await serverCheckPassword(password);
+        if (check.valid) shouldShow = true;
+      }
+
+      setShowResetLink(shouldShow);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
   }, [identifier, password, isTestnet]);
 
   const handleToggle = (checked: boolean) => {
@@ -57,40 +72,45 @@ const AdminLogin = () => {
       } else {
         setError("Invalid credentials. Contact admin for testnet access.");
       }
-    } else {
-      setLoading(true);
+      return;
+    }
 
-      const result = verifyAdminCredentials(identifier, password);
+    setLoading(true);
+
+    try {
+      const result = await serverAdminLogin(identifier, password);
 
       if (result.locked) {
-        setLoading(false);
         setError("Account locked after 5 failed attempts. Please reset your password.");
         setShowResetLink(true);
+        setLoading(false);
         return;
       }
 
       if (result.success && result.needsSetup) {
         setLoading(false);
-        navigate(`/trustlock/admin/setup?username=${encodeURIComponent(identifier.toLowerCase().trim())}`);
+        navigate(`/trustlock/admin/setup?username=${encodeURIComponent(result.username || identifier.toLowerCase().trim())}`);
         return;
       }
 
       if (result.success && !result.needsSetup) {
         localStorage.setItem("tl_admin_auth", "true");
         localStorage.setItem("tl_network", "mainnet");
-        localStorage.setItem("tl_admin_name", result.account?.name || "Admin");
+        localStorage.setItem("tl_admin_name", result.name || "Admin");
         setLoading(false);
         navigate("/trustlock/admin");
         return;
       }
 
       setLoading(false);
-      const remaining = result.account ? 5 - result.account.failedAttempts : 0;
-      if (remaining > 0 && remaining <= 3) {
-        setError(`Invalid credentials. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before account lock.`);
+      if (result.remaining !== undefined && result.remaining > 0 && result.remaining <= 3) {
+        setError(`Invalid credentials. ${result.remaining} attempt${result.remaining !== 1 ? "s" : ""} remaining.`);
       } else {
-        setError("Invalid credentials. Please check your credentials.");
+        setError(result.error || "Invalid credentials.");
       }
+    } catch {
+      setLoading(false);
+      setError("Connection error. Please try again.");
     }
   };
 
@@ -216,7 +236,6 @@ const AdminLogin = () => {
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
 
-              {/* Reset password — only visible for set-up mainnet admins after entering valid identifier */}
               {!isTestnet && showResetLink && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
                   <div className="text-center">

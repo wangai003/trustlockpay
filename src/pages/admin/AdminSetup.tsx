@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Eye, EyeOff, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
-import { setupAdminAccount, getAdminAccounts } from "@/lib/adminAccounts";
+import { serverAdminSetup } from "@/lib/adminAuth";
 
 const AdminSetup = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const username = params.get("username") || "";
-
-  const account = getAdminAccounts().find(a => a.username === username);
 
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -22,44 +20,41 @@ const AdminSetup = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const isPasswordValid = newPassword.length >= 6;
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid;
+  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid && !loading;
 
-  const handleSetup = (e: React.FormEvent) => {
+  const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!isEmailValid) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (!isPasswordValid) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (!passwordsMatch) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!isEmailValid) { setError("Please enter a valid email address."); return; }
+    if (!isPasswordValid) { setError("Password must be at least 6 characters."); return; }
+    if (!passwordsMatch) { setError("Passwords do not match."); return; }
 
-    const ok = setupAdminAccount(username, email, newPassword);
-    if (ok) {
-      setSuccess(true);
-      setTimeout(() => {
-        localStorage.setItem("tl_admin_auth", "true");
-        localStorage.setItem("tl_network", "mainnet");
-        localStorage.setItem("tl_admin_name", account?.name || "Admin");
-        navigate("/trustlock/admin");
-      }, 2000);
-    } else {
-      setError("Account setup failed. Please try again.");
+    setLoading(true);
+    try {
+      const result = await serverAdminSetup(username, email, newPassword);
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          localStorage.setItem("tl_admin_auth", "true");
+          localStorage.setItem("tl_network", "mainnet");
+          navigate("/trustlock/admin");
+        }, 2000);
+      } else {
+        setError(result.error || "Account setup failed. Please try again.");
+      }
+    } catch {
+      setError("Connection error. Please try again.");
     }
+    setLoading(false);
   };
 
-  if (!account) {
+  if (!username) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -83,7 +78,7 @@ const AdminSetup = () => {
               <CheckCircle className="w-16 h-16 text-primary mx-auto" />
               <h2 className="text-xl font-bold text-foreground">Account Setup Complete!</h2>
               <p className="text-sm text-muted-foreground">
-                Welcome, {account.name}. Your admin account is ready. Redirecting to dashboard...
+                Your admin account is ready. Redirecting to dashboard...
               </p>
             </CardContent>
           </Card>
@@ -110,7 +105,7 @@ const AdminSetup = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Welcome, {account.name}</CardTitle>
+            <CardTitle className="text-lg">Account Setup</CardTitle>
             <CardDescription>
               Set up your admin account by creating a new password and providing your email address.
               Your username <strong className="text-foreground">{username}</strong> will remain active for future logins.
@@ -191,7 +186,7 @@ const AdminSetup = () => {
               )}
 
               <Button type="submit" className="w-full" disabled={!canSubmit}>
-                Complete Setup & Enter Dashboard
+                {loading ? "Setting up..." : "Complete Setup & Enter Dashboard"}
               </Button>
             </form>
           </CardContent>
