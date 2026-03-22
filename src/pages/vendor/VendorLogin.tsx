@@ -108,11 +108,6 @@ const VendorLogin = () => {
     setLoading(false);
 
     if (error) {
-      const normalizedError = error.message.toLowerCase();
-      if (normalizedError.includes("email not confirmed") || normalizedError.includes("email not verified")) {
-        setError("Your email is not verified yet. Check inbox/spam or resend verification below.");
-        return;
-      }
       handleFailedAttempt();
       return;
     }
