@@ -141,8 +141,7 @@ const BuyerDisputes = () => {
         {/* Disclosure */}
         <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
-          <p><strong>Auto-Release:</strong> If you do not confirm or dispute within 48 hours of delivery, funds will automatically release to the vendor.</p>
-          <p><strong>AI Review:</strong> Emmanuel AI will analyze your case and provide a recommendation. Final resolution is approved by a human admin.</p>
+          <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
         </div>
       </div>
     </div>

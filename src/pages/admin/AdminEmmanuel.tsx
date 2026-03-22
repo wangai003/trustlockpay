@@ -179,12 +179,21 @@ const AdminEmmanuel = () => {
               <div><span className="text-xs text-muted-foreground">Amount</span><div className="font-bold">{c.amount}</div></div>
               <div><span className="text-xs text-muted-foreground">Reason</span><div className="text-sm">{c.reason}</div></div>
               <div><span className="text-xs text-muted-foreground">Confidence</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-primary">{c.confidence}%</span>
-                  <div className="flex-1 bg-muted rounded-full h-2"><div className="h-2 rounded-full bg-primary" style={{ width: `${c.confidence}%` }} /></div>
-                </div>
+                <div className="font-bold text-primary">{c.confidence}%</div>
               </div>
-              <div><span className="text-xs text-muted-foreground">Recommendation</span><div className="text-sm font-semibold text-primary">{c.recommendation}</div></div>
+              <div><span className="text-xs text-muted-foreground">Recommendation</span>
+                <Badge className={`${c.recommendation === "Refund" ? "bg-destructive/15 text-destructive" : c.recommendation === "Release" ? "bg-primary/15 text-primary" : "bg-accent/15 text-accent-foreground"}`}>
+                  {c.recommendation}
+                </Badge>
+              </div>
+            </div>
+            {/* Emmanuel's Opinion */}
+            <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex gap-3">
+              <Bot className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-foreground">Emmanuel's Opinion</p>
+                <p className="text-xs text-muted-foreground mt-1">{c.opinion}</p>
+              </div>
             </div>
 
             {showWorkflow && (
