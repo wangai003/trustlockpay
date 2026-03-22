@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, Wallet
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, Wallet, GitBranch
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin" },
   { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/admin/transactions" },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes" },
+  { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow" },
   { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel" },
   { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors" },
   { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers" },

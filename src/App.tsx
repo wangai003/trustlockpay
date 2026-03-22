@@ -26,6 +26,7 @@ import AdminReports from "./pages/admin/AdminReports.tsx";
 import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
+import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="documents" element={<AdminDocuments />} />
+              <Route path="workflow" element={<AdminWorkflow />} />
               <Route path="os-pay" element={<AdminOSPay />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
