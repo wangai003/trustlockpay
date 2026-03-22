@@ -116,6 +116,7 @@ const App = () => (
               <Route path="pricing" element={<VendorPricing />} />
               <Route path="checkout" element={<VendorCheckout />} />
               <Route path="analytics" element={<VendorAnalytics />} />
+              <Route path="os-pay" element={<VendorOSPay />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
