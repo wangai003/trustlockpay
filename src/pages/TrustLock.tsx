@@ -36,18 +36,18 @@ const TrustLock = () => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <Link to="/trustlock/admin/login">
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
-                <Shield className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Admin</span>
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+                <Shield className="w-3.5 h-3.5 shrink-0" /> Admin
               </Button>
             </Link>
             <Link to="/trustlock/vendor/login">
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
-                <Store className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Vendor</span>
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+                <Store className="w-3.5 h-3.5 shrink-0" /> Vendor
               </Button>
             </Link>
             <Link to="/trustlock/buyer/login">
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3">
-                <ShoppingBag className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Buyer</span>
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+                <ShoppingBag className="w-3.5 h-3.5 shrink-0" /> Buyer
               </Button>
             </Link>
           </div>
