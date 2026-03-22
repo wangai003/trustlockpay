@@ -22,8 +22,16 @@ import AdminReports from "./pages/admin/AdminReports.tsx";
 import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 
-// Vendor
-import VendorLogin from "./pages/vendor/VendorLogin.tsx";
+// Buyer
+import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
+import BuyerLayout from "./pages/buyer/BuyerLayout.tsx";
+import BuyerOverview from "./pages/buyer/BuyerOverview.tsx";
+import BuyerOrders from "./pages/buyer/BuyerOrders.tsx";
+import BuyerDisputes from "./pages/buyer/BuyerDisputes.tsx";
+import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
+import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
+import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
+
 import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
 import VendorLayout from "./pages/vendor/VendorLayout.tsx";
 import VendorOverview from "./pages/vendor/VendorOverview.tsx";
