@@ -2,6 +2,7 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, ExternalLink, Clock } from "lucide-react";
+import DocumentUpload from "@/components/shared/DocumentUpload";
 
 const docs = [
   { title: "Buyer Protection Policy", desc: "How TrustLock escrow protects your funds. Auto-release rules, dispute rights, and refund procedures.", updated: "Mar 2026" },
@@ -15,7 +16,11 @@ const BuyerDocuments = () => {
   return (
     <div>
       <BuyerHeader title="Documents" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-6">
+        {/* Upload Section */}
+        <DocumentUpload label="Upload Documents (Receipts, Photos, Evidence)" />
+
+        {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Buyer Reference Library</h2>
           <p className="text-sm text-muted-foreground">Policies, guides, and disclosures about your buyer protections</p>

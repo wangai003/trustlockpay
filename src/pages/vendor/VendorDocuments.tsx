@@ -1,8 +1,8 @@
 import VendorHeader from "@/components/vendor/VendorHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { FileText, Download, ExternalLink, Clock } from "lucide-react";
+import DocumentUpload from "@/components/shared/DocumentUpload";
 
 const docs = [
   { title: "Vendor Terms of Service", desc: "Your agreement with TrustLock — escrow rules, fee schedule, dispute procedures.", updated: "Mar 2026" },
@@ -17,7 +17,11 @@ const VendorDocuments = () => {
   return (
     <div>
       <VendorHeader title="Documents" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-6">
+        {/* Upload Section */}
+        <DocumentUpload label="Upload Documents (Receipts, Proof of Shipment, etc.)" />
+
+        {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Vendor Reference Library</h2>
           <p className="text-sm text-muted-foreground">Policies, guides, and integration documentation</p>

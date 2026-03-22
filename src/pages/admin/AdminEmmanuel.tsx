@@ -255,6 +255,9 @@ const AdminEmmanuel = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Emmanuel Chat */}
+        <EmmanuelChat />
       </div>
     </div>
   );
