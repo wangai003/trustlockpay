@@ -59,6 +59,7 @@ import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
 import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
 import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
+import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
 
 const queryClient = new QueryClient();
 
