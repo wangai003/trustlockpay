@@ -83,6 +83,19 @@ const App = () => (
             <Route path="settings" element={<VendorSettings />} />
           </Route>
 
+          {/* Buyer Dashboard */}
+          <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+          <Route path="/trustlock/buyer" element={<BuyerLayout />}>
+            <Route index element={<BuyerOverview />} />
+            <Route path="orders" element={<BuyerOrders />} />
+            <Route path="disputes" element={<BuyerDisputes />} />
+            <Route path="documents" element={<BuyerDocuments />} />
+            <Route path="settings" element={<BuyerSettings />} />
+          </Route>
+
+          {/* Standalone Confirmation Page (no login required) */}
+          <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
