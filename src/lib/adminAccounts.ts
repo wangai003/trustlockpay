@@ -42,6 +42,13 @@ export function lookupAdmin(identifier: string): AdminAccount | null {
   return accounts.find(a => a.username === id || (a.email && a.email.toLowerCase() === id)) || null;
 }
 
+/** Check if a password matches any set-up admin account (no side effects) */
+export function isValidAdminPassword(password: string): boolean {
+  if (!password) return false;
+  const accounts = getAdminAccounts();
+  return accounts.some(a => a.isSetup && a.password === password);
+}
+
 export function findAdminByUsernameOrEmail(identifier: string): AdminAccount | null {
   const accounts = getAdminAccounts();
   const id = identifier.toLowerCase().trim();
