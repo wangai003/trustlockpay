@@ -58,16 +58,11 @@ const DocumentUpload = ({ label = "Upload Documents" }: { label?: string }) => {
       <h3 className="text-sm font-semibold">{label}</h3>
       <p className="text-xs text-muted-foreground">Accepted formats: PDF, JPEG, PNG (max 10MB each)</p>
 
-      {/* Drop zone */}
-      <div
-        className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/40 transition-colors"
-        onClick={() => fileRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={e => { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files); }}
-      >
-        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground">Drop PDF or image files here</p>
-        <Button variant="outline" size="sm" className="mt-2">Browse Files</Button>
+      {/* Upload button */}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+          <Upload className="w-4 h-4 mr-2" /> Upload Files
+        </Button>
         <input ref={fileRef} type="file" accept={ACCEPTED} multiple className="hidden"
           onChange={e => handleFiles(e.target.files)} />
       </div>
