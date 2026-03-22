@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bot, Send, User, Search, Archive, X } from "lucide-react";
+import { Send, User, Search, Archive, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import aiEmmanuel from "@/assets/ai-emmanuel.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-type CaseInfo = {
-  caseRef: string;
-};
+type CaseInfo = { caseRef: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/emmanuel-chat`;
 
@@ -28,7 +27,6 @@ const EmmanuelChat = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Load archive from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("emmanuel_archive");
     if (saved) setArchivedCases(JSON.parse(saved));
@@ -143,8 +141,11 @@ const EmmanuelChat = () => {
     <Card className="flex flex-col h-[600px] lg:h-[700px]">
       <CardHeader className="pb-3 flex flex-row items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-primary" />
-          <CardTitle className="text-base">Chat with Emmanuel</CardTitle>
+          <img src={aiEmmanuel} alt="Emmanuel" className="w-8 h-8 rounded-full object-cover border-2 border-primary/20" />
+          <div>
+            <CardTitle className="text-base">Emmanuel</CardTitle>
+            <p className="text-[10px] text-muted-foreground">Dispute Resolution Analyst</p>
+          </div>
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" onClick={() => setShowArchive(!showArchive)} className="gap-1 text-xs">
@@ -157,7 +158,6 @@ const EmmanuelChat = () => {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden p-3 pt-0">
-        {/* Archive Panel */}
         {showArchive && (
           <div className="bg-muted/50 rounded-lg p-3 mb-3 space-y-2 max-h-48 overflow-y-auto">
             <div className="flex items-center justify-between">
@@ -178,7 +178,6 @@ const EmmanuelChat = () => {
           </div>
         )}
 
-        {/* Client Lookup */}
         {showLookup && (
           <div className="bg-primary/5 border border-primary/15 rounded-lg p-3 mb-3 space-y-3">
             <div className="flex items-center gap-2">
@@ -197,30 +196,25 @@ const EmmanuelChat = () => {
               <p className="text-[10px] text-muted-foreground mt-1">Emmanuel will pull up all linked details automatically.</p>
             </div>
             <Button size="sm" onClick={startCase} disabled={!caseInfo.caseRef.trim()} className="w-full gap-1 text-xs">
-              <Bot className="w-3 h-3" /> Pull Up Case
+              <img src={aiEmmanuel} alt="" className="w-4 h-4 rounded-full" /> Pull Up Case
             </Button>
           </div>
         )}
 
-        {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-3">
           {messages.length === 0 && !showLookup && (
             <div className="text-center py-8">
-              <Bot className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Enter client details above or type a message to begin.</p>
+              <img src={aiEmmanuel} alt="Emmanuel" className="w-16 h-16 mx-auto rounded-full object-cover border-2 border-primary/20 mb-3" />
+              <p className="text-sm text-muted-foreground">Enter case details above or type a message to begin.</p>
             </div>
           )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                  <Bot className="w-3 h-3 text-primary" />
-                </div>
+                <img src={aiEmmanuel} alt="Emmanuel" className="w-6 h-6 rounded-full object-cover shrink-0 mt-1 border border-primary/20" />
               )}
               <div className={`max-w-[85%] rounded-lg p-3 text-xs ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50"
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50"
               }`}>
                 {msg.role === "assistant" ? (
                   <div className="prose prose-xs max-w-none [&_p]:mb-1 [&_li]:mb-0.5 [&_strong]:text-foreground [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs">
@@ -239,15 +233,12 @@ const EmmanuelChat = () => {
           ))}
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Bot className="w-3 h-3 text-primary animate-pulse" />
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">Thinking...</div>
+              <img src={aiEmmanuel} alt="Emmanuel" className="w-6 h-6 rounded-full object-cover shrink-0 border border-primary/20" />
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">Analyzing...</div>
             </div>
           )}
         </div>
 
-        {/* Input */}
         <div className="flex gap-2 shrink-0">
           <Input
             placeholder="Ask Emmanuel about the case..."
