@@ -9,10 +9,7 @@ import ReactMarkdown from "react-markdown";
 type Msg = { role: "user" | "assistant"; content: string };
 
 type CaseInfo = {
-  txId: string;
-  buyerName: string;
-  vendorName: string;
-  amount: string;
+  caseRef: string;
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/emmanuel-chat`;
@@ -22,7 +19,7 @@ const EmmanuelChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showLookup, setShowLookup] = useState(true);
-  const [caseInfo, setCaseInfo] = useState<CaseInfo>({ txId: "", buyerName: "", vendorName: "", amount: "" });
+  const [caseInfo, setCaseInfo] = useState<CaseInfo>({ caseRef: "" });
   const [archivedCases, setArchivedCases] = useState<{ info: CaseInfo; messages: Msg[]; date: string }[]>([]);
   const [showArchive, setShowArchive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -54,7 +51,8 @@ const EmmanuelChat = () => {
   };
 
   const startCase = () => {
-    const intro = `I'd like you to investigate a case:\n- **Transaction ID:** ${caseInfo.txId || "N/A"}\n- **Buyer:** ${caseInfo.buyerName || "N/A"}\n- **Vendor:** ${caseInfo.vendorName || "N/A"}\n- **Amount:** ${caseInfo.amount || "N/A"}`;
+    if (!caseInfo.caseRef.trim()) return;
+    const intro = `Pull up case **${caseInfo.caseRef.trim()}** — give me the full breakdown (buyer, vendor, amount, reason, evidence, and your recommendation).`;
     setShowLookup(false);
     sendMessage(intro);
   };
@@ -62,7 +60,7 @@ const EmmanuelChat = () => {
   const newCase = () => {
     saveToArchive();
     setMessages([]);
-    setCaseInfo({ txId: "", buyerName: "", vendorName: "", amount: "" });
+    setCaseInfo({ caseRef: "" });
     setShowLookup(true);
   };
 
@@ -172,7 +170,7 @@ const EmmanuelChat = () => {
               archivedCases.map((c, i) => (
                 <button key={i} onClick={() => loadFromArchive(i)}
                   className="w-full text-left bg-background rounded p-2 hover:bg-accent/10 transition-colors">
-                  <div className="text-xs font-semibold">{c.info.txId || "Unknown TX"} — {c.info.buyerName || "?"} vs {c.info.vendorName || "?"}</div>
+                  <div className="text-xs font-semibold">{c.info.caseRef || "Unknown"}</div>
                   <div className="text-[10px] text-muted-foreground">{c.date} · {c.messages.length} messages</div>
                 </button>
               ))
@@ -180,37 +178,26 @@ const EmmanuelChat = () => {
           </div>
         )}
 
-        {/* Client Lookup Fields */}
+        {/* Client Lookup */}
         {showLookup && (
           <div className="bg-primary/5 border border-primary/15 rounded-lg p-3 mb-3 space-y-3">
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold">Client Lookup</span>
+              <span className="text-xs font-semibold">Case Lookup</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-[10px]">Transaction ID</Label>
-                <Input placeholder="TL-2026-XXXX" value={caseInfo.txId}
-                  onChange={e => setCaseInfo(p => ({ ...p, txId: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Amount</Label>
-                <Input placeholder="$0.00" value={caseInfo.amount}
-                  onChange={e => setCaseInfo(p => ({ ...p, amount: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Buyer Name</Label>
-                <Input placeholder="Buyer name" value={caseInfo.buyerName}
-                  onChange={e => setCaseInfo(p => ({ ...p, buyerName: e.target.value }))} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Vendor Name</Label>
-                <Input placeholder="Vendor name" value={caseInfo.vendorName}
-                  onChange={e => setCaseInfo(p => ({ ...p, vendorName: e.target.value }))} className="h-8 text-xs" />
-              </div>
+            <div>
+              <Label className="text-[10px]">Transaction ID or Dispute #</Label>
+              <Input
+                placeholder="e.g. TL-2026-0894 or DSP-001"
+                value={caseInfo.caseRef}
+                onChange={e => setCaseInfo({ caseRef: e.target.value })}
+                onKeyDown={e => e.key === "Enter" && startCase()}
+                className="h-9 text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Emmanuel will pull up all linked details automatically.</p>
             </div>
-            <Button size="sm" onClick={startCase} className="w-full gap-1 text-xs">
-              <Bot className="w-3 h-3" /> Start Investigation
+            <Button size="sm" onClick={startCase} disabled={!caseInfo.caseRef.trim()} className="w-full gap-1 text-xs">
+              <Bot className="w-3 h-3" /> Pull Up Case
             </Button>
           </div>
         )}
