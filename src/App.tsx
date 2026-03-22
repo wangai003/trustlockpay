@@ -11,6 +11,8 @@ import NotFound from "./pages/NotFound.tsx";
 
 // Admin
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
+import AdminSetup from "./pages/admin/AdminSetup.tsx";
+import AdminResetPassword from "./pages/admin/AdminResetPassword.tsx";
 import AdminLayout from "./pages/admin/AdminLayout.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminTransactions from "./pages/admin/AdminTransactions.tsx";
