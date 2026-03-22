@@ -14,7 +14,7 @@ const AdminLogin = () => {
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(isTestnet ? "123" : "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
@@ -56,7 +56,7 @@ const AdminLogin = () => {
     setIsTestnet(!checked);
     if (!checked) {
       setIdentifier("admin@trustlock.test");
-      setPassword("");
+      setPassword("123");
     } else {
       setIdentifier("");
       setPassword("");
