@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
 
 const VendorLogin = () => {
   const navigate = useNavigate();
@@ -18,14 +21,37 @@ const VendorLogin = () => {
   const [password, setPassword] = useState(isTestnet ? "123" : "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tl_vendor_lockout");
+    if (stored) {
+      const until = parseInt(stored);
+      if (Date.now() < until) { setLockedUntil(until); setFailedAttempts(MAX_ATTEMPTS); }
+      else { localStorage.removeItem("tl_vendor_lockout"); localStorage.removeItem("tl_vendor_failed"); }
+    }
+    const storedAttempts = localStorage.getItem("tl_vendor_failed");
+    if (storedAttempts) setFailedAttempts(parseInt(storedAttempts));
+  }, []);
+
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      if (Date.now() >= lockedUntil) {
+        setLockedUntil(null); setFailedAttempts(0);
+        localStorage.removeItem("tl_vendor_lockout"); localStorage.removeItem("tl_vendor_failed");
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
+  const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
-    if (!checked) {
-      setEmail("vendor@kentetest.com");
-    } else {
-      setEmail("");
-    }
+    setEmail(!checked ? "vendor@kentetest.com" : "");
     setPassword(!checked ? "123" : "");
     setError("");
   };
@@ -33,26 +59,44 @@ const VendorLogin = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (isLocked) { setError(`Account locked. Try again in ${remainingMin} minutes.`); return; }
 
     if (isTestnet) {
       if (password === "123") {
         localStorage.setItem("tl_vendor_auth", "true");
         localStorage.setItem("tl_vendor_network", "testnet");
         localStorage.setItem("tl_vendor_onboarded", "true");
+        localStorage.removeItem("tl_vendor_failed");
         navigate("/trustlock/vendor");
       } else {
-        setError("Invalid credentials. Contact admin for testnet access.");
+        handleFailedAttempt();
       }
     } else {
       setLoading(true);
       const { error } = await signIn(email, password);
       setLoading(false);
       if (error) {
-        setError(error.message);
+        handleFailedAttempt();
       } else {
         localStorage.setItem("tl_vendor_network", "mainnet");
+        localStorage.removeItem("tl_vendor_failed");
+        localStorage.removeItem("tl_vendor_lockout");
         navigate("/trustlock/vendor");
       }
+    }
+  };
+
+  const handleFailedAttempt = () => {
+    const newCount = failedAttempts + 1;
+    setFailedAttempts(newCount);
+    localStorage.setItem("tl_vendor_failed", newCount.toString());
+    if (newCount >= MAX_ATTEMPTS) {
+      const until = Date.now() + LOCKOUT_MS;
+      setLockedUntil(until);
+      localStorage.setItem("tl_vendor_lockout", until.toString());
+      setError("Too many failed attempts. Account locked for 15 minutes.");
+    } else {
+      setError(`Invalid credentials. ${MAX_ATTEMPTS - newCount} attempts remaining.`);
     }
   };
 
@@ -87,6 +131,15 @@ const VendorLogin = () => {
           </motion.div>
         )}
 
+        {isLocked && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+            <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm">
+              <Lock className="w-4 h-4 text-destructive shrink-0" />
+              <span className="text-destructive">Account locked. Try again in <strong>{remainingMin} min</strong>.</span>
+            </div>
+          </motion.div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Vendor Sign In</CardTitle>
@@ -96,23 +149,24 @@ const VendorLogin = () => {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email / Vendor ID</Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={isTestnet} className={isTestnet ? "bg-muted/50" : ""} />
+                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={isTestnet} className={isTestnet ? "bg-muted/50" : ""} disabled={isLocked} />
                 {isTestnet && <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={isLocked} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {isTestnet && (
-                  <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>
-                )}
+                {isTestnet && <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>}
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
+              {!isLocked && failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (
+                <p className="text-xs text-accent-foreground">{MAX_ATTEMPTS - failedAttempts} attempts remaining before lockout</p>
+              )}
+              <Button type="submit" className="w-full" disabled={loading || isLocked}>
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
               {!isTestnet && (

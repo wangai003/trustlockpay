@@ -3,13 +3,10 @@ import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
 import TrialBanner from "@/components/vendor/TrialBanner";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
-const VendorLayout = () => {
-  const isAuth = localStorage.getItem("tl_vendor_auth") === "true";
-
-  if (!isAuth) {
-    return <Navigate to="/trustlock/vendor/login" replace />;
-  }
+const VendorLayoutInner = () => {
+  useSessionTimeout("/trustlock/vendor/login");
 
   return (
     <VendorProvider>
@@ -23,6 +20,12 @@ const VendorLayout = () => {
       </div>
     </VendorProvider>
   );
+};
+
+const VendorLayout = () => {
+  const isAuth = localStorage.getItem("tl_vendor_auth") === "true";
+  if (!isAuth) return <Navigate to="/trustlock/vendor/login" replace />;
+  return <VendorLayoutInner />;
 };
 
 export default VendorLayout;

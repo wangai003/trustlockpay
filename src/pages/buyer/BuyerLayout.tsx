@@ -2,10 +2,10 @@ import { Outlet, Navigate } from "react-router-dom";
 import BuyerSidebar from "@/components/buyer/BuyerSidebar";
 import { BuyerProvider } from "@/contexts/BuyerContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
-const BuyerLayout = () => {
-  const isAuth = localStorage.getItem("tl_buyer_auth") === "true";
-  if (!isAuth) return <Navigate to="/trustlock/buyer/login" replace />;
+const BuyerLayoutInner = () => {
+  useSessionTimeout("/trustlock/buyer/login");
 
   return (
     <BuyerProvider>
@@ -18,6 +18,12 @@ const BuyerLayout = () => {
       </div>
     </BuyerProvider>
   );
+};
+
+const BuyerLayout = () => {
+  const isAuth = localStorage.getItem("tl_buyer_auth") === "true";
+  if (!isAuth) return <Navigate to="/trustlock/buyer/login" replace />;
+  return <BuyerLayoutInner />;
 };
 
 export default BuyerLayout;
