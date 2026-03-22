@@ -17,7 +17,7 @@ const TrustLockCta = () => {
             Ready to Earn Your Customers' Trust?
           </h2>
           <p className="mt-4 text-primary-foreground/70 text-lg">
-            Join hundreds of African vendors using TrustLock to secure international payments and grow their business.
+            Join hundreds of African vendors using TrustLock OS and TrustLock Pay to secure international payments and grow their business.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button variant="gold" size="lg" className="text-base px-8 gap-2">

@@ -44,7 +44,7 @@ const TrustLockIntegration = () => {
             Integrate in Minutes
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Drop a single script tag into your checkout page and TrustLock handles the rest.
+            Drop a single script tag into your checkout page and TrustLock Pay handles the rest.
           </p>
         </motion.div>
 

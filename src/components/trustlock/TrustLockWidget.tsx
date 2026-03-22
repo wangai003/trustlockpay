@@ -105,7 +105,7 @@ const TrustLockWidget = () => {
                     </div>
 
                     <Button variant="hero" className="w-full gap-2">
-                      Pay with TrustLock
+                      Pay with TrustLock Pay
                       <ChevronRight className="w-4 h-4" />
                     </Button>
 

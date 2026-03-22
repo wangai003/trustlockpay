@@ -140,7 +140,7 @@ const TrustLockDualCheckout = () => {
               </div>
 
               <Button variant="hero" className="w-full gap-2">
-                {mode === "diaspora" ? "Pay with TrustLock" : "Pay Securely"}
+                {mode === "diaspora" ? "Pay with TrustLock Pay" : "Pay Securely"}
                 <ChevronRight className="w-4 h-4" />
               </Button>
 

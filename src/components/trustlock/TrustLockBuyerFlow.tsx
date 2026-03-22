@@ -66,7 +66,7 @@ const TrustLockBuyerFlow = () => {
             Interactive Demo
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            See TrustLock in Action
+            See TrustLock Pay in Action
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
             Walk through a real escrow payment flow step by step.

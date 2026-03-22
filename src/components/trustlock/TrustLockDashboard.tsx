@@ -39,7 +39,7 @@ const TrustLockDashboard = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Escrow Management Dashboard
+            TrustLock OS — Escrow Management
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
             Full visibility into every escrow transaction, dispute, and release.
