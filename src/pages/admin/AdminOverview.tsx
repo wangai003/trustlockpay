@@ -65,12 +65,12 @@ const AdminOverview = () => {
               transition={{ delay: i * 0.05 }}
             >
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <stat.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+                    <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-foreground">{stat.value}</div>
                   <div className={`flex items-center gap-1 text-xs mt-1 ${stat.up ? "text-primary" : "text-destructive"}`}>
                     {stat.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {stat.change} from last month
