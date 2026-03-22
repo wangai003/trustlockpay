@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
+import TrialBanner from "@/components/vendor/TrialBanner";
 
 const VendorLayout = () => {
   const isAuth = localStorage.getItem("tl_vendor_auth") === "true";
@@ -14,6 +15,7 @@ const VendorLayout = () => {
       <div className="flex min-h-screen bg-background">
         <VendorSidebar />
         <main className="flex-1 lg:ml-64">
+          <TrialBanner />
           <Outlet />
         </main>
       </div>

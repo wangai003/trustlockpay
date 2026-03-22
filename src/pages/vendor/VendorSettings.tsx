@@ -1,3 +1,4 @@
+import { useState } from "react";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,10 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save } from "lucide-react";
+import { Bell, CreditCard, User, Save, Truck } from "lucide-react";
+import { toast } from "sonner";
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const [autoDelivery, setAutoDelivery] = useState(() => {
+    return localStorage.getItem("tl_vendor_auto_delivery") === "true";
+  });
+
+  const handleAutoDeliveryToggle = (checked: boolean) => {
+    setAutoDelivery(checked);
+    localStorage.setItem("tl_vendor_auto_delivery", String(checked));
+    toast.success(checked ? "Auto-delivery enabled" : "Auto-delivery disabled");
+  };
 
   return (
     <div>
@@ -42,6 +53,37 @@ const VendorSettings = () => {
                 <Input defaultValue={vendor.type || ""} readOnly className="bg-muted/50 capitalize" />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Fulfillment Automation */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Truck className="w-5 h-5 text-primary" />
+              <div>
+                <CardTitle className="text-base">Fulfillment Automation</CardTitle>
+                <CardDescription>Automate delivery confirmation for faster processing</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Auto-Delivery Confirmation</p>
+                <p className="text-xs text-muted-foreground">
+                  Automatically mark orders as shipped when payment is received. Best for digital goods or high-volume sellers.
+                </p>
+              </div>
+              <Switch checked={autoDelivery} onCheckedChange={handleAutoDeliveryToggle} />
+            </div>
+            {autoDelivery && (
+              <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Active:</strong> Orders will auto-confirm shipment upon payment. The 48-hour buyer confirmation countdown begins immediately.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -34,6 +34,8 @@ import BuyerDisputes from "./pages/buyer/BuyerDisputes.tsx";
 import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
 import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
 import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
+import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
+import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
