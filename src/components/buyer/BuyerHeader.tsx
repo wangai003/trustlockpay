@@ -2,8 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useBuyer } from "@/contexts/BuyerContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationCenter from "@/components/shared/NotificationCenter";
 
 const BuyerHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, buyer } = useBuyer();
@@ -34,10 +35,7 @@ const BuyerHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
-          <Button variant="ghost" size="icon" className="relative w-8 h-8">
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-destructive rounded-full text-[9px] text-destructive-foreground flex items-center justify-center">1</span>
-          </Button>
+          <NotificationCenter role="buyer" />
 
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-[10px] sm:text-xs font-bold text-primary">{buyer.name.substring(0, 2).toUpperCase()}</span>

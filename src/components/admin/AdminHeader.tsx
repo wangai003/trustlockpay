@@ -1,8 +1,9 @@
 import { useAdmin } from "@/contexts/AdminContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationCenter from "@/components/shared/NotificationCenter";
 
 const AdminHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet } = useAdmin();
@@ -13,7 +14,6 @@ const AdminHeader = ({ title }: { title: string }) => {
         <h1 className="font-heading font-bold text-sm sm:text-lg text-foreground pl-10 lg:pl-0 truncate">{title}</h1>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Network toggle */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] sm:text-xs font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>
               Test
@@ -31,12 +31,7 @@ const AdminHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
-          <Button variant="ghost" size="icon" className="relative w-8 h-8">
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-destructive rounded-full text-[9px] text-destructive-foreground flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <NotificationCenter role="admin" />
 
           <Button variant="ghost" size="icon" className="relative w-8 h-8 hidden sm:flex">
             <MessageSquare className="w-4 h-4" />

@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { AdminProvider } from "@/contexts/AdminContext";
+import TestnetGuide from "@/components/shared/TestnetGuide";
 
 const AdminLayout = () => {
   const isAuth = localStorage.getItem("tl_admin_auth") === "true";
@@ -14,6 +15,7 @@ const AdminLayout = () => {
       <div className="flex min-h-screen bg-background">
         <AdminSidebar />
         <main className="flex-1 lg:ml-64">
+          <TestnetGuide role="admin" />
           <Outlet />
         </main>
       </div>
