@@ -117,7 +117,7 @@ export interface VendorPlanState {
 const TRIAL_DAYS = 30;
 
 export function getVendorPlanState(): VendorPlanState {
-  const plan = localStorage.getItem("tl_vendor_plan") as PlanId | null;
+  const plan = localStorage.getItem("tl_vendor_plan");
   const trialStart = localStorage.getItem("tl_vendor_trial_start");
   const planExpires = localStorage.getItem("tl_vendor_plan_expires");
   const billing = localStorage.getItem("tl_vendor_billing") as BillingCycle | null;
