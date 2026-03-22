@@ -184,9 +184,21 @@ const BuyerLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email / Buyer ID</Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={isTestnet} className={isTestnet ? "bg-muted/50" : ""} disabled={isLocked} />
-                {isTestnet && <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>}
+                <Label htmlFor="email">{isTestnet ? "Email / Buyer ID" : "Email address"}</Label>
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isTestnet ? "james@trustlocktest.com" : "you@example.com"}
+                  readOnly={isTestnet}
+                  className={isTestnet ? "bg-muted/50" : ""}
+                  disabled={isLocked}
+                />
+                {isTestnet ? (
+                  <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Use the same email you registered with.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
