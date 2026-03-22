@@ -1,8 +1,9 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Shield, ArrowRight } from "lucide-react";
 
-const TrustLockCta = () => {
+const TrustLockCta = forwardRef<HTMLElement>((_, ref) => {
   return (
     <section className="py-20 lg:py-28 bg-primary">
       <div className="container mx-auto px-4 lg:px-8">
