@@ -19,6 +19,7 @@ const VendorLogin = () => {
   // Auto-redirect if already authenticated (e.g. after email verification)
   useEffect(() => {
     if (!authLoading && user) {
+      localStorage.setItem("tl_vendor_auth", "true");
       localStorage.setItem("tl_vendor_network", "mainnet");
       navigate("/trustlock/vendor", { replace: true });
     }
