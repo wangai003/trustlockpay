@@ -1,40 +1,53 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ShoppingBag, Lock, Eye, EyeOff, AlertTriangle, ArrowLeft } from "lucide-react";
+import { ShoppingBag, Eye, EyeOff, AlertTriangle, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const BuyerLogin = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(isTestnet ? "james@trustlocktest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     setEmail(!checked ? "james@trustlocktest.com" : "");
     setPassword("");
+    setError("");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (isTestnet) {
       if (password === "123") {
         localStorage.setItem("tl_buyer_auth", "true");
         localStorage.setItem("tl_buyer_network", "testnet");
         navigate("/trustlock/buyer");
       } else {
-        setError("Invalid password. Hint: Enter 123 for testnet access.");
+        setError("Invalid credentials. Contact admin for testnet access.");
       }
     } else {
-      setError("Mainnet login requires live authentication. Connect your backend.");
+      setLoading(true);
+      const { error } = await signIn(email, password);
+      setLoading(false);
+      if (error) {
+        setError(error.message);
+      } else {
+        localStorage.setItem("tl_buyer_network", "mainnet");
+        navigate("/trustlock/buyer");
+      }
     }
   };
 
@@ -90,13 +103,18 @@ const BuyerLogin = () => {
                   </button>
                 </div>
                 {isTestnet && (
-                  <p className="text-xs text-muted-foreground">
-                    Contact admin for testnet credentials
-                  </p>
+                  <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>
                 )}
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full">{isTestnet ? "Enter Testnet Dashboard" : "Sign In"}</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
+              </Button>
+              {!isTestnet && (
+                <div className="text-center">
+                  <Link to="/trustlock/buyer/signup" className="text-xs text-primary hover:underline">New buyer? Create an account →</Link>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
