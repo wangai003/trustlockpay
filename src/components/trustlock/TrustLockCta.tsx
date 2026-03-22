@@ -5,7 +5,7 @@ import { Shield, ArrowRight } from "lucide-react";
 
 const TrustLockCta = forwardRef<HTMLElement>((_, ref) => {
   return (
-    <section className="py-20 lg:py-28 bg-primary">
+    <section ref={ref} className="py-20 lg:py-28 bg-primary">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
