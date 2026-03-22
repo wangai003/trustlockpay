@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/buyer" },
@@ -19,7 +20,7 @@ const navItems = [
 const BuyerSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-
+  const { switchRole, switching, targetLabel } = useRoleSwitcher("buyer");
   const handleLogout = () => {
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");
@@ -84,6 +85,10 @@ const BuyerSidebar = () => {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-1">
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
+            <Store className="w-4 h-4" />
+            {switching ? "Switching..." : "Switch to Vendor"}
+          </Button>
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
             <Home className="w-4 h-4" />
             Back to Home
