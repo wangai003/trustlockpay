@@ -53,8 +53,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/trustlock" element={<TrustLock />} />
+          <Route path="/" element={<TrustLock />} />
 
           {/* Admin Dashboard */}
           <Route path="/trustlock/admin/login" element={<AdminLogin />} />
