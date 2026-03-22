@@ -62,7 +62,7 @@ const TrialBanner = () => {
             {state.isExpired ? "Your plan has expired" : "Free trial expired"} — Basic mode active
           </p>
           <p className="text-[10px] text-muted-foreground">
-            Limited to {PLANS.basic.orderLimit} orders/month. Orders above this limit are grayed out. Upgrade to process them.
+            Limited to {PLANS.basic.orderMax} orders/month. Orders above this limit are grayed out. Upgrade to process them.
           </p>
         </div>
         <Button size="sm" className="text-xs shrink-0" onClick={() => navigate("/trustlock/vendor/pricing")}>
