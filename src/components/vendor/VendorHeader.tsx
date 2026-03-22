@@ -1,11 +1,19 @@
+import { useNavigate } from "react-router-dom";
 import { useVendor } from "@/contexts/VendorContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const VendorHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, vendor } = useVendor();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("tl_vendor_auth");
+    localStorage.removeItem("tl_vendor_network");
+    navigate("/trustlock/vendor/login");
+  };
 
   return (
     <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30 px-4 sm:px-6">
@@ -34,6 +42,10 @@ const VendorHeader = ({ title }: { title: string }) => {
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-[10px] sm:text-xs font-bold text-primary">{vendor.name.substring(0, 2).toUpperCase()}</span>
           </div>
+
+          <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleLogout} title="Sign Out">
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </header>
