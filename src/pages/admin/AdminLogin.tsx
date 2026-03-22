@@ -15,28 +15,28 @@ const AdminLogin = () => {
   const { signIn } = useAuth();
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState(isTestnet ? "admin@trustlock.test" : "");
+  const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
 
-  // For mainnet: show reset password link only when a valid admin username is entered
+  // For mainnet: show reset link when a valid set-up account identifier is entered
+  // In post-setup mode, identifier is in the SECOND field
   useEffect(() => {
     if (!isTestnet) {
-      const account = lookupAdmin(username);
-      // Show reset only if account exists and is set up (has email)
+      const account = lookupAdmin(identifier);
       setShowResetLink(account?.isSetup === true);
     }
-  }, [username, isTestnet]);
+  }, [identifier, isTestnet]);
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     if (!checked) {
-      setUsername("admin@trustlock.test");
+      setIdentifier("admin@trustlock.test");
       setPassword("");
     } else {
-      setUsername("");
+      setIdentifier("");
       setPassword("");
     }
     setError("");
@@ -58,7 +58,7 @@ const AdminLogin = () => {
     } else {
       setLoading(true);
 
-      const result = verifyAdminCredentials(username, password);
+      const result = verifyAdminCredentials(identifier, password);
 
       if (result.locked) {
         setLoading(false);
@@ -69,8 +69,7 @@ const AdminLogin = () => {
 
       if (result.success && result.needsSetup) {
         setLoading(false);
-        // First-time login — redirect to setup page
-        navigate(`/trustlock/admin/setup?username=${encodeURIComponent(username.toLowerCase().trim())}`);
+        navigate(`/trustlock/admin/setup?username=${encodeURIComponent(identifier.toLowerCase().trim())}`);
         return;
       }
 
@@ -88,7 +87,7 @@ const AdminLogin = () => {
       if (remaining > 0 && remaining <= 3) {
         setError(`Invalid credentials. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining before account lock.`);
       } else {
-        setError("Invalid credentials. Please check your username/email and password.");
+        setError("Invalid credentials. Please check your credentials.");
       }
     }
   };
@@ -133,41 +132,76 @@ const AdminLogin = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">{isTestnet ? "Email / User ID" : "Username"}</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder={isTestnet ? "" : ""}
-                  readOnly={isTestnet}
-                  className={isTestnet ? "bg-muted/50" : ""}
-                />
-                {isTestnet && <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {isTestnet && (
-                  <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>
-                )}
-              </div>
+              {isTestnet ? (
+                <>
+                  {/* TESTNET: Normal order — Email first, Password second */}
+                  <div className="space-y-2">
+                    <Label htmlFor="identifier">Email / User ID</Label>
+                    <Input
+                      id="identifier"
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      readOnly
+                      className="bg-muted/50"
+                    />
+                    <p className="text-xs text-muted-foreground">Auto-populated in testnet mode</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND */}
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="identifier">Email / Username</Label>
+                    <Input
+                      id="identifier"
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder=""
+                    />
+                  </div>
+                </>
+              )}
 
               {error && (
                 <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-3">
@@ -180,7 +214,7 @@ const AdminLogin = () => {
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
 
-              {/* Reset password — only visible for set-up mainnet admins after entering valid username */}
+              {/* Reset password — only visible for set-up mainnet admins after entering valid identifier */}
               {!isTestnet && showResetLink && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
                   <div className="text-center">
