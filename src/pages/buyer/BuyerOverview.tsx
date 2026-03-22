@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck } from "lucide-react";
 
 const recentOrders = [
-  { id: "TL-2026-0891", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", delivery: "Awaiting shipment" },
-  { id: "TL-2026-0896", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21", item: "Traditional Beads", delivery: "In transit — ETA Mar 28" },
-  { id: "TL-2026-0892", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20", item: "Bulk Textiles", delivery: "Confirm delivery to release funds" },
-  { id: "TL-2026-0889", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", delivery: "Completed" },
-  { id: "TL-2026-0894", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", delivery: "Under review" },
+  { id: "TL-2026-0891", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", delivery: "Awaiting shipment" },
+  { id: "TL-2026-0896", vendorId: "VND-2026-0055", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21", item: "Traditional Beads", delivery: "In transit — ETA Mar 28" },
+  { id: "TL-2026-0892", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20", item: "Bulk Textiles", delivery: "Confirm delivery to release funds" },
+  { id: "TL-2026-0889", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", delivery: "Completed" },
+  { id: "TL-2026-0894", vendorId: "VND-2026-0078", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", delivery: "Under review" },
 ];
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {

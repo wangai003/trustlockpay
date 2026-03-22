@@ -28,11 +28,11 @@ const disputeData = [
 ];
 
 const recentTx = [
-  { id: "TL-2026-0891", buyer: "James O.", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" },
-  { id: "TL-2026-0892", buyer: "Adaeze N.", vendor: "Apex Builders", amount: "$4,500.00", status: "released" },
-  { id: "TL-2026-0893", buyer: "Kofi M.", vendor: "Safari Dreams", amount: "$1,200.00", status: "disputed" },
-  { id: "TL-2026-0894", buyer: "Fatima B.", vendor: "Lagos Realty", amount: "$12,000.00", status: "locked" },
-  { id: "TL-2026-0895", buyer: "Emmanuel K.", vendor: "Mombasa Textiles", amount: "$350.00", status: "released" },
+  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", buyer: "James O.", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" },
+  { id: "TL-2026-0892", buyerId: "BYR-2026-0108", vendorId: "VND-2026-0047", buyer: "Adaeze N.", vendor: "Apex Builders", amount: "$4,500.00", status: "released" },
+  { id: "TL-2026-0893", buyerId: "BYR-2026-0145", vendorId: "VND-2026-0052", buyer: "Kofi M.", vendor: "Safari Dreams", amount: "$1,200.00", status: "disputed" },
+  { id: "TL-2026-0894", buyerId: "BYR-2026-0142", vendorId: "VND-2026-0060", buyer: "Fatima B.", vendor: "Lagos Realty", amount: "$12,000.00", status: "locked" },
+  { id: "TL-2026-0895", buyerId: "BYR-2026-0115", vendorId: "VND-2026-0055", buyer: "Emmanuel K.", vendor: "Mombasa Textiles", amount: "$350.00", status: "released" },
 ];
 
 const statusColors: Record<string, string> = {

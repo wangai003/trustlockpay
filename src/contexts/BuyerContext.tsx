@@ -3,6 +3,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 type NetworkMode = "testnet" | "mainnet";
 
 interface BuyerProfile {
+  id: string;
   name: string;
   email: string;
   location: string;
@@ -16,6 +17,7 @@ interface BuyerContextType {
 }
 
 const defaultTestnetBuyer: BuyerProfile = {
+  id: "BYR-2026-0102",
   name: "James O.",
   email: "james@trustlocktest.com",
   location: "Chicago, USA",

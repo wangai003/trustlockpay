@@ -11,6 +11,8 @@ import NotFound from "./pages/NotFound.tsx";
 
 // Admin
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
+import AdminSetup from "./pages/admin/AdminSetup.tsx";
+import AdminResetPassword from "./pages/admin/AdminResetPassword.tsx";
 import AdminLayout from "./pages/admin/AdminLayout.tsx";
 import AdminOverview from "./pages/admin/AdminOverview.tsx";
 import AdminTransactions from "./pages/admin/AdminTransactions.tsx";
@@ -70,6 +72,8 @@ const App = () => (
 
             {/* Admin Dashboard */}
             <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+            <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
+            <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/trustlock/admin" element={
               <ProtectedRoute loginPath="/trustlock/admin/login" allowTestnet testnetKey="tl_admin_auth">
                 <AdminLayout />

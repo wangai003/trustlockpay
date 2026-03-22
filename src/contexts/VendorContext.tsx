@@ -4,6 +4,7 @@ type NetworkMode = "testnet" | "mainnet";
 type VendorType = "product" | "service" | null;
 
 interface VendorProfile {
+  id: string;
   name: string;
   email: string;
   type: VendorType;
@@ -24,6 +25,7 @@ interface VendorContextType {
 }
 
 const defaultTestnetVendor: VendorProfile = {
+  id: "VND-2026-0041",
   name: "Kente Craft Ltd",
   email: "vendor@kentetest.com",
   type: "product",
