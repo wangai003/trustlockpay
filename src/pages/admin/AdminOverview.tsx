@@ -56,7 +56,7 @@ const AdminOverview = () => {
       <AdminHeader title="Dashboard Overview" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
