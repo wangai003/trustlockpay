@@ -21,7 +21,7 @@ interface TestnetGuideProps {
 const vendorSteps: GuideStep[] = [
   { id: "v1", title: "View Plans & Pricing", description: "Browse available subscription plans to find one that fits your order volume.", route: "/trustlock/vendor/pricing", action: "Navigate to Plans & Pricing" },
   { id: "v2", title: "Select a Plan", description: "Choose the Starter plan (highlighted in blue) and tap 'Get Starter' to proceed to checkout.", route: "/trustlock/vendor/pricing", action: "Click the highlighted plan" },
-  { id: "v3", title: "Complete Payment", description: "On the TrustLock Pay checkout page, select a payment mode (Diaspora or Local), enter any amount, and tap Pay.", route: "/trustlock/vendor/checkout", action: "Complete the payment flow" },
+  { id: "v3", title: "Pay via TrustLock OS Pay", description: "On the TrustLock OS Pay page, select a payment method, enter any amount, and tap Pay.", route: "/trustlock/vendor/os-pay", action: "Complete the payment flow" },
   { id: "v4", title: "Review Dashboard", description: "After payment, you'll return to the dashboard. Check your plan status and order usage in the overview.", route: "/trustlock/vendor", action: "Review your dashboard stats" },
   { id: "v5", title: "View Transactions", description: "Go to Transactions to see your orders queue. Try adding tracking to a locked order.", route: "/trustlock/vendor/transactions", action: "Explore transaction actions" },
   { id: "v6", title: "Download a Report", description: "Navigate to Analytics & Reports to download a revenue statement with TrustLock Pay branding.", route: "/trustlock/vendor/analytics", action: "Download a report" },
