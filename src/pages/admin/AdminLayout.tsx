@@ -2,13 +2,10 @@ import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { AdminProvider } from "@/contexts/AdminContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
-const AdminLayout = () => {
-  const isAuth = localStorage.getItem("tl_admin_auth") === "true";
-
-  if (!isAuth) {
-    return <Navigate to="/trustlock/admin/login" replace />;
-  }
+const AdminLayoutInner = () => {
+  useSessionTimeout("/trustlock/admin/login");
 
   return (
     <AdminProvider>
@@ -21,6 +18,12 @@ const AdminLayout = () => {
       </div>
     </AdminProvider>
   );
+};
+
+const AdminLayout = () => {
+  const isAuth = localStorage.getItem("tl_admin_auth") === "true";
+  if (!isAuth) return <Navigate to="/trustlock/admin/login" replace />;
+  return <AdminLayoutInner />;
 };
 
 export default AdminLayout;

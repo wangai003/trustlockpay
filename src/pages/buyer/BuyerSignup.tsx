@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShoppingBag, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 
 const BuyerSignup = () => {
   const navigate = useNavigate();
@@ -22,14 +23,13 @@ const BuyerSignup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setLoading(false);
+    if (!isPasswordStrong(password)) {
+      setError("Password does not meet all strength requirements");
       return;
     }
 
+    setLoading(true);
     const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
     setLoading(false);
 
@@ -89,14 +89,15 @@ const BuyerSignup = () => {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" required />
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a strong password" required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <PasswordStrengthMeter password={password} />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password)}>
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
