@@ -28,21 +28,21 @@ const BuyerOverview = () => {
   return (
     <div>
       <BuyerHeader title="Dashboard" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
-            <CardContent className="p-6">
-              <h2 className="font-heading text-xl font-bold">Welcome, {buyer.name}</h2>
-              <p className="text-sm text-muted-foreground mt-1">Your purchases are protected by TrustLock escrow</p>
+            <CardContent className="p-4 sm:p-6">
+              <h2 className="font-heading text-base sm:text-xl font-bold">Welcome, {buyer.name}</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Your purchases are protected by TrustLock escrow</p>
               <div className="flex items-center gap-2 mt-3">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs text-primary font-medium">All funds held securely until you confirm delivery</span>
+                <span className="text-[10px] sm:text-xs text-primary font-medium">All funds held securely until you confirm delivery</span>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Active Orders", value: "3", icon: Package },
             { label: "Funds in Escrow", value: "$5,050", icon: Clock },

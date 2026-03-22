@@ -54,9 +54,9 @@ const AdminOverview = () => {
   return (
     <div>
       <AdminHeader title="Dashboard Overview" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -65,12 +65,12 @@ const AdminOverview = () => {
               transition={{ delay: i * 0.05 }}
             >
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <stat.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+                    <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-foreground">{stat.value}</div>
                   <div className={`flex items-center gap-1 text-xs mt-1 ${stat.up ? "text-primary" : "text-destructive"}`}>
                     {stat.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {stat.change} from last month
@@ -82,14 +82,14 @@ const AdminOverview = () => {
         </div>
 
         {/* Charts Row */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Transaction Volume Chart */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Transaction Volume</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={volumeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(45, 10%, 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
