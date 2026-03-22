@@ -25,6 +25,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics.tsx";
 import AdminReports from "./pages/admin/AdminReports.tsx";
 import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
+import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
@@ -39,6 +40,7 @@ import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
 import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
 import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
 import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
+import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
@@ -57,6 +59,7 @@ import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
 import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
 import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
+import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +92,7 @@ const App = () => (
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="documents" element={<AdminDocuments />} />
+              <Route path="os-pay" element={<AdminOSPay />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
@@ -112,6 +116,7 @@ const App = () => (
               <Route path="pricing" element={<VendorPricing />} />
               <Route path="checkout" element={<VendorCheckout />} />
               <Route path="analytics" element={<VendorAnalytics />} />
+              <Route path="os-pay" element={<VendorOSPay />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
@@ -130,6 +135,7 @@ const App = () => (
               <Route path="documents" element={<BuyerDocuments />} />
               <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="analytics" element={<BuyerAnalytics />} />
+              <Route path="os-pay" element={<BuyerOSPay />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 

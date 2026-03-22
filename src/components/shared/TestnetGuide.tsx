@@ -21,7 +21,7 @@ interface TestnetGuideProps {
 const vendorSteps: GuideStep[] = [
   { id: "v1", title: "View Plans & Pricing", description: "Browse available subscription plans to find one that fits your order volume.", route: "/trustlock/vendor/pricing", action: "Navigate to Plans & Pricing" },
   { id: "v2", title: "Select a Plan", description: "Choose the Starter plan (highlighted in blue) and tap 'Get Starter' to proceed to checkout.", route: "/trustlock/vendor/pricing", action: "Click the highlighted plan" },
-  { id: "v3", title: "Complete Payment", description: "On the TrustLock Pay checkout page, select a payment mode (Diaspora or Local), enter any amount, and tap Pay.", route: "/trustlock/vendor/checkout", action: "Complete the payment flow" },
+  { id: "v3", title: "Pay via TrustLock OS Pay", description: "On the TrustLock OS Pay page, select a payment method, enter any amount, and tap Pay.", route: "/trustlock/vendor/os-pay", action: "Complete the payment flow" },
   { id: "v4", title: "Review Dashboard", description: "After payment, you'll return to the dashboard. Check your plan status and order usage in the overview.", route: "/trustlock/vendor", action: "Review your dashboard stats" },
   { id: "v5", title: "View Transactions", description: "Go to Transactions to see your orders queue. Try adding tracking to a locked order.", route: "/trustlock/vendor/transactions", action: "Explore transaction actions" },
   { id: "v6", title: "Download a Report", description: "Navigate to Analytics & Reports to download a revenue statement with TrustLock Pay branding.", route: "/trustlock/vendor/analytics", action: "Download a report" },
@@ -34,18 +34,21 @@ const buyerSteps: GuideStep[] = [
   { id: "b1", title: "Review Dashboard", description: "Check your active orders, funds in escrow, and action items.", route: "/trustlock/buyer", action: "Review the overview" },
   { id: "b2", title: "View Orders", description: "Go to My Orders to see order statuses. Try confirming delivery on a delivered order.", route: "/trustlock/buyer/orders", action: "Interact with an order" },
   { id: "b3", title: "File a Test Dispute", description: "Navigate to Disputes and review how the dispute filing process works.", route: "/trustlock/buyer/disputes", action: "Review dispute flow" },
-  { id: "b4", title: "Use Support Assistant", description: "Open the Support Assistant AI and ask about buyer protections.", route: "/trustlock/buyer/assistant", action: "Send a message" },
-  { id: "b5", title: "Download a Statement", description: "Navigate to Analytics to download a purchase history statement.", route: "/trustlock/buyer/analytics", action: "Download a report" },
-  { id: "b6", title: "Check Documents", description: "Review the reference library for buyer protection policies.", route: "/trustlock/buyer/documents", action: "Browse documents" },
+  { id: "b4", title: "Pay for Analytics Report", description: "Go to TrustLock OS Pay and purchase an analytics report download.", route: "/trustlock/buyer/os-pay", action: "Complete a payment" },
+  { id: "b5", title: "Use Support Assistant", description: "Open the Support Assistant AI and ask about buyer protections.", route: "/trustlock/buyer/assistant", action: "Send a message" },
+  { id: "b6", title: "Download a Statement", description: "Navigate to Analytics to download a purchase history statement.", route: "/trustlock/buyer/analytics", action: "Download a report" },
+  { id: "b7", title: "Check Documents", description: "Review the reference library for buyer protection policies.", route: "/trustlock/buyer/documents", action: "Browse documents" },
 ];
 
 const adminSteps: GuideStep[] = [
   { id: "a1", title: "Review Platform Overview", description: "Check transaction volume, dispute stats, and Emmanuel AI status.", route: "/trustlock/admin", action: "Review dashboard metrics" },
   { id: "a2", title: "Monitor Transactions", description: "View all platform transactions across vendors and buyers.", route: "/trustlock/admin/transactions", action: "Browse transactions" },
   { id: "a3", title: "Review Disputes", description: "Check active disputes and Emmanuel AI recommendations.", route: "/trustlock/admin/disputes", action: "Review a dispute case" },
-  { id: "a4", title: "Vendor Management", description: "View vendor list, plan statuses, and KYC compliance.", route: "/trustlock/admin/vendors", action: "Check vendor details" },
-  { id: "a5", title: "Platform Analytics", description: "Deep-dive into analytics charts and download platform reports.", route: "/trustlock/admin/analytics", action: "Download a report" },
-  { id: "a6", title: "Browse Archives", description: "Open archives to view historical reports by date range.", route: "/trustlock/admin/analytics", action: "Select archive date range" },
+  { id: "a4", title: "Process a Refund", description: "Go to TrustLock OS Pay, select Refund, enter recipient details and process.", route: "/trustlock/admin/os-pay", action: "Execute a test refund" },
+  { id: "a5", title: "Process a Split Payment", description: "Use TrustLock OS Pay Split Pay feature to divide funds between parties.", route: "/trustlock/admin/os-pay", action: "Execute a split payment" },
+  { id: "a6", title: "Vendor Management", description: "View vendor list, plan statuses, and KYC compliance.", route: "/trustlock/admin/vendors", action: "Check vendor details" },
+  { id: "a7", title: "Platform Analytics", description: "Deep-dive into analytics charts and download platform reports.", route: "/trustlock/admin/analytics", action: "Download a report" },
+  { id: "a8", title: "Browse Archives", description: "Open archives to view historical reports by date range.", route: "/trustlock/admin/analytics", action: "Select archive date range" },
 ];
 
 const stepsMap = { vendor: vendorSteps, buyer: buyerSteps, admin: adminSteps };
