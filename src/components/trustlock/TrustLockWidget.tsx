@@ -98,7 +98,7 @@ const TrustLockWidget = () => {
                           <span className="font-bold text-primary">$200.00</span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">TrustLock Fee (1.5%)</span>
+                          <span className="text-xs text-muted-foreground">TrustLock Pay Fee (1.5%)</span>
                           <span className="text-xs text-muted-foreground">$3.00</span>
                         </div>
                       </div>
