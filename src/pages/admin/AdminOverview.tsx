@@ -89,7 +89,7 @@ const AdminOverview = () => {
               <CardTitle className="text-base">Transaction Volume</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={volumeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(45, 10%, 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
