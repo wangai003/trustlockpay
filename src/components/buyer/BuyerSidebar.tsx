@@ -85,6 +85,10 @@ const BuyerSidebar = () => {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-1">
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
+            <Store className="w-4 h-4" />
+            {switching ? "Switching..." : "Switch to Vendor"}
+          </Button>
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
             <Home className="w-4 h-4" />
             Back to Home
