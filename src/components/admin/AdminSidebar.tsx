@@ -1,0 +1,78 @@
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+const navItems = [
+  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin" },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/admin/transactions" },
+  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes" },
+  { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel" },
+  { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors" },
+  { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers" },
+  { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance" },
+  { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics" },
+  { label: "Reports", icon: FileText, to: "/trustlock/admin/reports" },
+  { label: "Documents", icon: FileText, to: "/trustlock/admin/documents" },
+  { label: "Settings", icon: Settings, to: "/trustlock/admin/settings" },
+];
+
+const AdminSidebar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("tl_admin_auth");
+    localStorage.removeItem("tl_network");
+    navigate("/trustlock/admin/login");
+  };
+
+  return (
+    <aside className="w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col fixed left-0 top-0 z-40">
+      {/* Logo */}
+      <div className="h-16 flex items-center gap-3 px-5 border-b border-sidebar-border">
+        <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+          <Shield className="w-4 h-4 text-sidebar-primary-foreground" />
+        </div>
+        <div>
+          <span className="font-heading font-bold text-sm text-sidebar-foreground">TrustLock</span>
+          <p className="text-[10px] text-muted-foreground leading-none">Admin Panel</p>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/trustlock/admin"}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )
+            }
+          >
+            <item.icon className="w-4 h-4 shrink-0" />
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Logout */}
+      <div className="p-3 border-t border-sidebar-border">
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </Button>
+      </div>
+    </aside>
+  );
+};
+
+export default AdminSidebar;

@@ -1,0 +1,134 @@
+import AdminHeader from "@/components/admin/AdminHeader";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Shield, Bell, Globe, Lock, Save } from "lucide-react";
+
+const AdminSettings = () => {
+  return (
+    <div>
+      <AdminHeader title="Settings" />
+      <div className="p-6 space-y-6 max-w-4xl">
+        {/* 2FA */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-primary" />
+              <div>
+                <CardTitle className="text-base">Two-Factor Authentication</CardTitle>
+                <CardDescription>Required for all financial actions</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">TOTP Authentication</p>
+                <p className="text-xs text-muted-foreground">Google Authenticator / Authy</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-primary/15 text-primary text-[10px]">ENABLED</Badge>
+                <Switch checked disabled />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Require 2FA for Escrow Release</p>
+                <p className="text-xs text-muted-foreground">Mandatory confirmation before releasing funds</p>
+              </div>
+              <Switch checked />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Require 2FA for Refunds</p>
+                <p className="text-xs text-muted-foreground">Mandatory confirmation before processing refunds</p>
+              </div>
+              <Switch checked />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Lockout After Failed Attempts</p>
+                <p className="text-xs text-muted-foreground">15-minute lockout after 3 failed 2FA attempts</p>
+              </div>
+              <Switch checked />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-accent" />
+              <CardTitle className="text-base">Notification Preferences</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              { label: "New dispute filed", email: true, inApp: true },
+              { label: "KYC review needed", email: true, inApp: true },
+              { label: "Large transaction (>$5,000)", email: true, inApp: true },
+              { label: "Flagged activity alert", email: true, inApp: true },
+              { label: "Emmanuel AI escalation", email: true, inApp: true },
+            ].map((n) => (
+              <div key={n.label} className="flex items-center justify-between">
+                <span className="text-sm">{n.label}</span>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch checked={n.email} /> Email
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch checked={n.inApp} /> In-App
+                  </label>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Platform */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Globe className="w-5 h-5 text-primary" />
+              <CardTitle className="text-base">Platform Configuration</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Auto-Release Countdown</Label>
+                <div className="flex items-center gap-2">
+                  <Input type="number" defaultValue={48} className="w-24" />
+                  <span className="text-sm text-muted-foreground">hours</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Dispute Window</Label>
+                <div className="flex items-center gap-2">
+                  <Input type="number" defaultValue={14} className="w-24" />
+                  <span className="text-sm text-muted-foreground">days</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Product Fee (%)</Label>
+                <Input type="number" defaultValue={2.5} step={0.1} className="w-24" />
+              </div>
+              <div className="space-y-2">
+                <Label>Service Fee (%)</Label>
+                <Input type="number" defaultValue={3.0} step={0.1} className="w-24" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
+      </div>
+    </div>
+  );
+};
+
+export default AdminSettings;
