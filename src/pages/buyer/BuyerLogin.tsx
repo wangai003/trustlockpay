@@ -15,7 +15,7 @@ const BuyerLogin = () => {
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(isTestnet ? "james@trustlocktest.com" : "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(isTestnet ? "123" : "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
