@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import TrustLock from "./pages/TrustLock.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -24,6 +26,7 @@ import AdminSettings from "./pages/admin/AdminSettings.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
+import BuyerSignup from "./pages/buyer/BuyerSignup.tsx";
 import BuyerLayout from "./pages/buyer/BuyerLayout.tsx";
 import BuyerOverview from "./pages/buyer/BuyerOverview.tsx";
 import BuyerOrders from "./pages/buyer/BuyerOrders.tsx";
@@ -34,6 +37,7 @@ import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
+import VendorSignup from "./pages/vendor/VendorSignup.tsx";
 import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
 import VendorLayout from "./pages/vendor/VendorLayout.tsx";
 import VendorOverview from "./pages/vendor/VendorOverview.tsx";
@@ -48,60 +52,76 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<TrustLock />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<TrustLock />} />
 
-          {/* Admin Dashboard */}
-          <Route path="/trustlock/admin/login" element={<AdminLogin />} />
-          <Route path="/trustlock/admin" element={<AdminLayout />}>
-            <Route index element={<AdminOverview />} />
-            <Route path="transactions" element={<AdminTransactions />} />
-            <Route path="disputes" element={<AdminDisputes />} />
-            <Route path="emmanuel" element={<AdminEmmanuel />} />
-            <Route path="vendors" element={<AdminVendors />} />
-            <Route path="buyers" element={<AdminBuyers />} />
-            <Route path="compliance" element={<AdminCompliance />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="documents" element={<AdminDocuments />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
+            {/* Admin Dashboard */}
+            <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+            <Route path="/trustlock/admin" element={
+              <ProtectedRoute loginPath="/trustlock/admin/login" allowTestnet testnetKey="tl_admin_auth">
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminOverview />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="disputes" element={<AdminDisputes />} />
+              <Route path="emmanuel" element={<AdminEmmanuel />} />
+              <Route path="vendors" element={<AdminVendors />} />
+              <Route path="buyers" element={<AdminBuyers />} />
+              <Route path="compliance" element={<AdminCompliance />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="documents" element={<AdminDocuments />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
 
-          {/* Vendor Dashboard */}
-          <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
-          <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
-          <Route path="/trustlock/vendor" element={<VendorLayout />}>
-            <Route index element={<VendorOverview />} />
-            <Route path="transactions" element={<VendorTransactions />} />
-            <Route path="payouts" element={<VendorPayouts />} />
-            <Route path="sites" element={<VendorSites />} />
-            <Route path="kyc" element={<VendorKYC />} />
-            <Route path="documents" element={<VendorDocuments />} />
-            <Route path="settings" element={<VendorSettings />} />
-          </Route>
+            {/* Vendor Dashboard */}
+            <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
+            <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
+            <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
+            <Route path="/trustlock/vendor" element={
+              <ProtectedRoute loginPath="/trustlock/vendor/login" allowTestnet testnetKey="tl_vendor_auth">
+                <VendorLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<VendorOverview />} />
+              <Route path="transactions" element={<VendorTransactions />} />
+              <Route path="payouts" element={<VendorPayouts />} />
+              <Route path="sites" element={<VendorSites />} />
+              <Route path="kyc" element={<VendorKYC />} />
+              <Route path="documents" element={<VendorDocuments />} />
+              <Route path="settings" element={<VendorSettings />} />
+            </Route>
 
-          {/* Buyer Dashboard */}
-          <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
-          <Route path="/trustlock/buyer" element={<BuyerLayout />}>
-            <Route index element={<BuyerOverview />} />
-            <Route path="orders" element={<BuyerOrders />} />
-            <Route path="disputes" element={<BuyerDisputes />} />
-            <Route path="documents" element={<BuyerDocuments />} />
-            <Route path="settings" element={<BuyerSettings />} />
-          </Route>
+            {/* Buyer Dashboard */}
+            <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+            <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
+            <Route path="/trustlock/buyer" element={
+              <ProtectedRoute loginPath="/trustlock/buyer/login" allowTestnet testnetKey="tl_buyer_auth">
+                <BuyerLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<BuyerOverview />} />
+              <Route path="orders" element={<BuyerOrders />} />
+              <Route path="disputes" element={<BuyerDisputes />} />
+              <Route path="documents" element={<BuyerDocuments />} />
+              <Route path="settings" element={<BuyerSettings />} />
+            </Route>
 
-          {/* Standalone Confirmation Page (no login required) */}
-          <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+            {/* Standalone Confirmation Page (no login required) */}
+            <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

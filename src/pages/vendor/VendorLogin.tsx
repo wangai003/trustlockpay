@@ -6,29 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Store, Lock, Eye, EyeOff, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const VendorLogin = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(isTestnet ? "vendor@kentetest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     if (!checked) {
       setEmail("vendor@kentetest.com");
-      setPassword("");
     } else {
       setEmail("");
-      setPassword("");
     }
+    setPassword("");
+    setError("");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (isTestnet) {
       if (password === "123") {
         localStorage.setItem("tl_vendor_auth", "true");
@@ -36,10 +41,18 @@ const VendorLogin = () => {
         localStorage.setItem("tl_vendor_onboarded", "true");
         navigate("/trustlock/vendor");
       } else {
-        setError("Invalid password. Hint: Enter 123 for testnet access.");
+        setError("Invalid credentials. Contact admin for testnet access.");
       }
     } else {
-      setError("Mainnet login requires live authentication. Connect your backend.");
+      setLoading(true);
+      const { error } = await signIn(email, password);
+      setLoading(false);
+      if (error) {
+        setError(error.message);
+      } else {
+        localStorage.setItem("tl_vendor_network", "mainnet");
+        navigate("/trustlock/vendor");
+      }
     }
   };
 
@@ -95,17 +108,19 @@ const VendorLogin = () => {
                   </button>
                 </div>
                 {isTestnet && (
-                  <p className="text-xs text-muted-foreground">
-                    Contact admin for testnet credentials
-                  </p>
+                  <p className="text-xs text-muted-foreground">Contact admin for testnet credentials</p>
                 )}
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full">{isTestnet ? "Enter Testnet Dashboard" : "Sign In"}</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
+              </Button>
               {!isTestnet && (
                 <div className="text-center space-y-2">
                   <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
-                  <div><button type="button" onClick={() => navigate("/trustlock/vendor/onboarding")} className="text-xs text-primary hover:underline">New vendor? Start onboarding →</button></div>
+                  <div>
+                    <Link to="/trustlock/vendor/signup" className="text-xs text-primary hover:underline">New vendor? Create an account →</Link>
+                  </div>
                 </div>
               )}
             </form>
