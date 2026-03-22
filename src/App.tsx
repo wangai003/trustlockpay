@@ -36,6 +36,7 @@ import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
 import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
 import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
 import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
+import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
@@ -53,6 +54,7 @@ import VendorAssistant from "./pages/vendor/VendorAssistant.tsx";
 import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
 import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
+import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +107,7 @@ const App = () => (
               <Route path="help" element={<VendorHelpCenter />} />
               <Route path="pricing" element={<VendorPricing />} />
               <Route path="checkout" element={<VendorCheckout />} />
+              <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
@@ -122,6 +125,7 @@ const App = () => (
               <Route path="assistant" element={<BuyerAssistant />} />
               <Route path="documents" element={<BuyerDocuments />} />
               <Route path="help" element={<BuyerHelpCenter />} />
+              <Route path="analytics" element={<BuyerAnalytics />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 

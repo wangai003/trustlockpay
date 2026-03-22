@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ const navItems = [
   { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites" },
   { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc" },
   { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant" },
+  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics" },
   { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents" },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help" },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing" },
