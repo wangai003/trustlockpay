@@ -117,7 +117,9 @@ const App = () => (
               <Route index element={<BuyerOverview />} />
               <Route path="orders" element={<BuyerOrders />} />
               <Route path="disputes" element={<BuyerDisputes />} />
+              <Route path="assistant" element={<BuyerAssistant />} />
               <Route path="documents" element={<BuyerDocuments />} />
+              <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 
