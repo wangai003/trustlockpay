@@ -60,7 +60,7 @@ const EmmanuelChat = () => {
   const newCase = () => {
     saveToArchive();
     setMessages([]);
-    setCaseInfo({ txId: "", buyerName: "", vendorName: "", amount: "" });
+    setCaseInfo({ caseRef: "" });
     setShowLookup(true);
   };
 
