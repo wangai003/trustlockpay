@@ -35,6 +35,13 @@ export function isValidAdminUsername(username: string): boolean {
   return accounts.some(a => a.username === username.toLowerCase().trim());
 }
 
+/** Lookup admin account without incrementing failed attempts */
+export function lookupAdmin(identifier: string): AdminAccount | null {
+  const accounts = getAdminAccounts();
+  const id = identifier.toLowerCase().trim();
+  return accounts.find(a => a.username === id || (a.email && a.email.toLowerCase() === id)) || null;
+}
+
 export function findAdminByUsernameOrEmail(identifier: string): AdminAccount | null {
   const accounts = getAdminAccounts();
   const id = identifier.toLowerCase().trim();
