@@ -19,7 +19,7 @@ const EmmanuelChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showLookup, setShowLookup] = useState(true);
-  const [caseInfo, setCaseInfo] = useState<CaseInfo>({ txId: "", buyerName: "", vendorName: "", amount: "" });
+  const [caseInfo, setCaseInfo] = useState<CaseInfo>({ caseRef: "" });
   const [archivedCases, setArchivedCases] = useState<{ info: CaseInfo; messages: Msg[]; date: string }[]>([]);
   const [showArchive, setShowArchive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
