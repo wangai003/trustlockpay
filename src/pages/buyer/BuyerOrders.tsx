@@ -9,12 +9,12 @@ import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
 const mockOrders = [
-  { id: "TL-2026-0891", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18, 2026", item: "Kente Cloth Set", tracking: null },
-  { id: "TL-2026-0896", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21, 2026", item: "Traditional Beads", tracking: "GH2026XYZ" },
-  { id: "TL-2026-0892", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20, 2026", item: "Bulk Textiles", tracking: "NG2026ABC" },
-  { id: "TL-2026-0889", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17, 2026", item: "Handwoven Basket", tracking: "GH2026QRS" },
-  { id: "TL-2026-0894", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15, 2026", item: "Custom Fabric", tracking: "GH2026DEF" },
-  { id: "TL-2026-0887", vendor: "Lagos Fashion Hub", amount: "$95.00", status: "released" as const, date: "Mar 12, 2026", item: "Ankara Dress", tracking: "NG2026GHI" },
+  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18, 2026", item: "Kente Cloth Set", tracking: null },
+  { id: "TL-2026-0896", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0055", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21, 2026", item: "Traditional Beads", tracking: "GH2026XYZ" },
+  { id: "TL-2026-0892", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20, 2026", item: "Bulk Textiles", tracking: "NG2026ABC" },
+  { id: "TL-2026-0889", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17, 2026", item: "Handwoven Basket", tracking: "GH2026QRS" },
+  { id: "TL-2026-0894", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0078", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15, 2026", item: "Custom Fabric", tracking: "GH2026DEF" },
+  { id: "TL-2026-0887", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0063", vendor: "Lagos Fashion Hub", amount: "$95.00", status: "released" as const, date: "Mar 12, 2026", item: "Ankara Dress", tracking: "NG2026GHI" },
 ];
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {

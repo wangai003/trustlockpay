@@ -12,11 +12,11 @@ import {
 import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 
 const recentTx = [
-  { id: "TL-2026-0891", buyer: "James O.", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", order: 1 },
-  { id: "TL-2026-0896", buyer: "Emmanuel K.", amount: "$350.00", status: "locked" as const, date: "Mar 21", item: "Traditional Beads Collection", order: 2 },
-  { id: "TL-2026-0892", buyer: "Adaeze N.", amount: "$4,500.00", status: "released" as const, date: "Mar 20", item: "Bulk Order - Textiles", order: 3 },
-  { id: "TL-2026-0889", buyer: "Grace A.", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", order: 4 },
-  { id: "TL-2026-0894", buyer: "Amara D.", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", order: 5 },
+  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", buyer: "James O.", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", order: 1 },
+  { id: "TL-2026-0896", buyerId: "BYR-2026-0115", buyer: "Emmanuel K.", amount: "$350.00", status: "locked" as const, date: "Mar 21", item: "Traditional Beads Collection", order: 2 },
+  { id: "TL-2026-0892", buyerId: "BYR-2026-0108", buyer: "Adaeze N.", amount: "$4,500.00", status: "released" as const, date: "Mar 20", item: "Bulk Order - Textiles", order: 3 },
+  { id: "TL-2026-0889", buyerId: "BYR-2026-0121", buyer: "Grace A.", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", order: 4 },
+  { id: "TL-2026-0894", buyerId: "BYR-2026-0134", buyer: "Amara D.", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", order: 5 },
 ];
 
 const statusColors: Record<string, string> = {

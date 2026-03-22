@@ -10,14 +10,14 @@ import { Search, Filter, Download, Eye, Clock, CheckCircle, AlertTriangle, XCirc
 type TxStatus = "all" | "locked" | "released" | "disputed" | "cancelled";
 
 const mockTransactions = [
-  { id: "TL-2026-0891", buyer: "James O. (Chicago)", vendor: "Kente Craft Ltd (Accra)", amount: 200, status: "locked" as const, date: "Mar 18, 2026", type: "product", industry: "Retail" },
-  { id: "TL-2026-0892", buyer: "Adaeze N. (London)", vendor: "Apex Builders (Lagos)", amount: 4500, status: "released" as const, date: "Mar 20, 2026", type: "service", industry: "Construction" },
-  { id: "TL-2026-0893", buyer: "Kofi M. (Toronto)", vendor: "Safari Dreams (Nairobi)", amount: 1200, status: "locked" as const, date: "Mar 21, 2026", type: "service", industry: "Tourism" },
-  { id: "TL-2026-0894", buyer: "Amara D. (Houston)", vendor: "GreenFarm Co (Kumasi)", amount: 680, status: "disputed" as const, date: "Mar 15, 2026", type: "product", industry: "Agriculture" },
-  { id: "TL-2026-0895", buyer: "Fatima B. (Paris)", vendor: "Lagos Realty (Lagos)", amount: 12000, status: "released" as const, date: "Mar 16, 2026", type: "service", industry: "Real Estate" },
-  { id: "TL-2026-0896", buyer: "Emmanuel K. (NYC)", vendor: "Mombasa Textiles (Mombasa)", amount: 350, status: "locked" as const, date: "Mar 21, 2026", type: "product", industry: "Retail" },
-  { id: "TL-2026-0897", buyer: "Grace A. (Atlanta)", vendor: "TechSkills Academy (Lagos)", amount: 890, status: "released" as const, date: "Mar 19, 2026", type: "service", industry: "Education" },
-  { id: "TL-2026-0898", buyer: "David M. (Berlin)", vendor: "Safari Lodge Kenya", amount: 2400, status: "cancelled" as const, date: "Mar 14, 2026", type: "service", industry: "Hospitality" },
+  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", buyer: "James O. (Chicago)", vendor: "Kente Craft Ltd (Accra)", amount: 200, status: "locked" as const, date: "Mar 18, 2026", type: "product", industry: "Retail" },
+  { id: "TL-2026-0892", buyerId: "BYR-2026-0108", vendorId: "VND-2026-0047", buyer: "Adaeze N. (London)", vendor: "Apex Builders (Lagos)", amount: 4500, status: "released" as const, date: "Mar 20, 2026", type: "service", industry: "Construction" },
+  { id: "TL-2026-0893", buyerId: "BYR-2026-0145", vendorId: "VND-2026-0052", buyer: "Kofi M. (Toronto)", vendor: "Safari Dreams (Nairobi)", amount: 1200, status: "locked" as const, date: "Mar 21, 2026", type: "service", industry: "Tourism" },
+  { id: "TL-2026-0894", buyerId: "BYR-2026-0134", vendorId: "VND-2026-0078", buyer: "Amara D. (Houston)", vendor: "GreenFarm Co (Kumasi)", amount: 680, status: "disputed" as const, date: "Mar 15, 2026", type: "product", industry: "Agriculture" },
+  { id: "TL-2026-0895", buyerId: "BYR-2026-0142", vendorId: "VND-2026-0060", buyer: "Fatima B. (Paris)", vendor: "Lagos Realty (Lagos)", amount: 12000, status: "released" as const, date: "Mar 16, 2026", type: "service", industry: "Real Estate" },
+  { id: "TL-2026-0896", buyerId: "BYR-2026-0115", vendorId: "VND-2026-0055", buyer: "Emmanuel K. (NYC)", vendor: "Mombasa Textiles (Mombasa)", amount: 350, status: "locked" as const, date: "Mar 21, 2026", type: "product", industry: "Retail" },
+  { id: "TL-2026-0897", buyerId: "BYR-2026-0121", vendorId: "VND-2026-0083", buyer: "Grace A. (Atlanta)", vendor: "TechSkills Academy (Lagos)", amount: 890, status: "released" as const, date: "Mar 19, 2026", type: "service", industry: "Education" },
+  { id: "TL-2026-0898", buyerId: "BYR-2026-0190", vendorId: "VND-2026-0052", buyer: "David M. (Berlin)", vendor: "Safari Lodge Kenya", amount: 2400, status: "cancelled" as const, date: "Mar 14, 2026", type: "service", industry: "Hospitality" },
 ];
 
 const statusConfig = {
