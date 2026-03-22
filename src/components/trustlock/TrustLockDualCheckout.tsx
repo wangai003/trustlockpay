@@ -62,7 +62,7 @@ const TrustLockDualCheckout = () => {
             <div className="bg-primary px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary-foreground" />
-                <span className="text-sm font-bold text-primary-foreground">TrustLock</span>
+                <span className="text-sm font-bold text-primary-foreground">TrustLock Pay</span>
               </div>
               <span className="text-xs text-primary-foreground/70">
                 {mode === "diaspora" ? "Escrow Protected" : "Protected Payment"}
