@@ -487,16 +487,3 @@ export function useActivateCarbonCopy() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
-  return useQuery({
-    queryKey: ["archived_reports", role],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("archived_reports")
-        .select("*")
-        .eq("owner_role", role)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-}
