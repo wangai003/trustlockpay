@@ -6,28 +6,41 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
+import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 
-const mockDisputes = [
-  {
-    id: "DSP-001",
-    txId: "TL-2026-0894",
-    vendor: "GreenFarm Co",
-    amount: "$680.00",
-    reason: "Item not as described — received wrong color",
-    status: "under_review" as const,
-    filed: "Mar 15, 2026",
-    lastUpdate: "Emmanuel AI is analyzing evidence",
-  },
-];
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+  pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
   under_review: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
+  resolved: { label: "Resolved", color: "bg-primary/15 text-primary", icon: CheckCircle },
   resolved_buyer: { label: "Resolved — Your Favor", color: "bg-primary/15 text-primary", icon: CheckCircle },
   resolved_vendor: { label: "Resolved — Vendor Favor", color: "bg-muted text-muted-foreground", icon: CheckCircle },
 };
 
 const BuyerDisputes = () => {
   const [showNewDispute, setShowNewDispute] = useState(false);
+  const [txIdInput, setTxIdInput] = useState("");
+  const [reasonInput, setReasonInput] = useState("Item not as described");
+  const [descInput, setDescInput] = useState("");
+  const { data: rawDisputes = [] } = useDisputes();
+  const fileDispute = useFileDispute();
+
+  const disputes = rawDisputes.map(d => ({
+    id: d.dispute_id,
+    txId: d.tx_id || "—",
+    vendor: d.vendor_name || "Unknown",
+    amount: d.amount ? `$${Number(d.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+    reason: d.reason || "—",
+    status: d.status,
+    filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    lastUpdate: d.ai_recommendation || "Emmanuel AI is analyzing evidence",
+  }));
+
+  const handleSubmitDispute = async () => {
+    if (!txIdInput) return;
+    await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
+    setShowNewDispute(false);
+    setTxIdInput(""); setDescInput("");
+  };
 
   return (
     <div>
@@ -43,7 +56,6 @@ const BuyerDisputes = () => {
           </Button>
         </div>
 
-        {/* New Dispute Form */}
         {showNewDispute && (
           <Card className="border-destructive/20">
             <CardHeader>
@@ -52,11 +64,11 @@ const BuyerDisputes = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Transaction ID</Label>
-                <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" />
+                <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Reason</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={reasonInput} onChange={e => setReasonInput(e.target.value)}>
                   <option>Item not as described</option>
                   <option>Non-delivery</option>
                   <option>Wrong item received</option>
@@ -67,7 +79,7 @@ const BuyerDisputes = () => {
               </div>
               <div className="space-y-2">
                 <Label>Describe the issue</Label>
-                <Textarea placeholder="Provide details about what went wrong..." rows={4} />
+                <Textarea placeholder="Provide details about what went wrong..." rows={4} value={descInput} onChange={e => setDescInput(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Evidence (optional)</Label>
@@ -78,16 +90,15 @@ const BuyerDisputes = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button className="gap-2"><AlertTriangle className="w-4 h-4" /> Submit Dispute</Button>
+                <Button className="gap-2" onClick={handleSubmitDispute}><AlertTriangle className="w-4 h-4" /> Submit Dispute</Button>
                 <Button variant="outline" onClick={() => setShowNewDispute(false)}>Cancel</Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Existing Disputes */}
-        {mockDisputes.map((dispute) => {
-          const cfg = statusConfig[dispute.status];
+        {disputes.map((dispute) => {
+          const cfg = statusConfig[dispute.status] || statusConfig.pending;
           return (
             <Card key={dispute.id}>
               <CardContent className="p-5">
@@ -128,7 +139,7 @@ const BuyerDisputes = () => {
           );
         })}
 
-        {mockDisputes.length === 0 && !showNewDispute && (
+        {disputes.length === 0 && !showNewDispute && (
           <Card>
             <CardContent className="p-8 text-center">
               <CheckCircle className="w-12 h-12 mx-auto text-primary mb-3" />
@@ -138,7 +149,6 @@ const BuyerDisputes = () => {
           </Card>
         )}
 
-        {/* Disclosure */}
         <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { PLANS, type PlanId, type BillingCycle } from "@/hooks/useVendorPlan";
 import { toast } from "sonner";
+import { useActivatePlan } from "@/hooks/useSupabaseData";
 
 const VendorCheckout = () => {
   const navigate = useNavigate();
@@ -13,8 +14,9 @@ const VendorCheckout = () => {
   const billing = (params.get("billing") as BillingCycle) || "yearly";
   const plan = PLANS[planId] || PLANS.starter;
   const amount = billing === "monthly" ? plan.monthly : plan.yearly;
+  const activatePlan = useActivatePlan();
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const now = new Date();
     const expiresAt = new Date(now);
     if (billing === "monthly") {
@@ -22,6 +24,17 @@ const VendorCheckout = () => {
     } else {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
+
+    // Persist to Supabase
+    try {
+      await activatePlan.mutateAsync({
+        planId,
+        billingCycle: billing,
+        expiresAt: expiresAt.toISOString(),
+      });
+    } catch { /* handled by hook */ }
+
+    // Also keep localStorage for plan state helper
     localStorage.setItem("tl_vendor_plan", planId);
     localStorage.setItem("tl_vendor_billing", billing);
     localStorage.setItem("tl_vendor_plan_start", now.toISOString());

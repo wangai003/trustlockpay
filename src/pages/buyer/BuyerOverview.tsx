@@ -5,14 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck } from "lucide-react";
-
-const recentOrders = [
-  { id: "TL-2026-0891", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", delivery: "Awaiting shipment" },
-  { id: "TL-2026-0896", vendorId: "VND-2026-0055", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21", item: "Traditional Beads", delivery: "In transit — ETA Mar 28" },
-  { id: "TL-2026-0892", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20", item: "Bulk Textiles", delivery: "Confirm delivery to release funds" },
-  { id: "TL-2026-0889", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", delivery: "Completed" },
-  { id: "TL-2026-0894", vendorId: "VND-2026-0078", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", delivery: "Under review" },
-];
+import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -24,6 +17,22 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 const BuyerOverview = () => {
   const { buyer } = useBuyer();
+  const { data: transactions = [] } = useTransactions();
+  const confirmDelivery = useConfirmDelivery();
+
+  const recentOrders = transactions.slice(0, 5).map(tx => ({
+    id: tx.tx_id,
+    vendor: tx.vendor_name || "Unknown",
+    amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    status: tx.status,
+    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    item: tx.item || "—",
+  }));
+
+  const activeOrders = transactions.filter(t => ["locked", "shipped", "delivered"].includes(t.status)).length;
+  const fundsInEscrow = transactions.filter(t => t.status === "locked").reduce((s, t) => s + Number(t.amount), 0);
+  const completed = transactions.filter(t => t.status === "released").length;
+  const openDisputes = transactions.filter(t => t.status === "disputed").length;
 
   return (
     <div>
@@ -44,10 +53,10 @@ const BuyerOverview = () => {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
-            { label: "Active Orders", value: "3", icon: Package },
-            { label: "Funds in Escrow", value: "$5,050", icon: Clock },
-            { label: "Completed", value: "8", icon: CheckCircle },
-            { label: "Open Disputes", value: "1", icon: AlertTriangle },
+            { label: "Active Orders", value: String(activeOrders), icon: Package },
+            { label: "Funds in Escrow", value: `$${fundsInEscrow.toLocaleString()}`, icon: Clock },
+            { label: "Completed", value: String(completed), icon: CheckCircle },
+            { label: "Open Disputes", value: String(openDisputes), icon: AlertTriangle },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
@@ -63,7 +72,6 @@ const BuyerOverview = () => {
           ))}
         </div>
 
-        {/* Action Required */}
         {recentOrders.some((o) => o.status === "delivered") && (
           <Card className="border-accent/30 bg-accent/5">
             <CardContent className="p-4 flex items-center gap-4">
@@ -99,7 +107,7 @@ const BuyerOverview = () => {
                 </thead>
                 <tbody>
                   {recentOrders.map((order) => {
-                    const cfg = statusConfig[order.status];
+                    const cfg = statusConfig[order.status] || statusConfig.locked;
                     return (
                       <tr key={order.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="p-4 font-mono text-xs">{order.id}</td>
@@ -113,7 +121,7 @@ const BuyerOverview = () => {
                         </td>
                         <td className="p-4 text-center hidden sm:table-cell">
                           <div className="flex items-center justify-center gap-1">
-                            {order.status === "delivered" && <Button size="sm" className="text-xs">Confirm</Button>}
+                            {order.status === "delivered" && <Button size="sm" className="text-xs" onClick={() => confirmDelivery.mutate(order.id)}>Confirm</Button>}
                             {order.status === "shipped" && <Button variant="outline" size="sm" className="text-xs">Track</Button>}
                             <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                           </div>

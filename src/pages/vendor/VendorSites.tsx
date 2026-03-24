@@ -7,10 +7,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Globe, Plus, ExternalLink, Copy, Trash2, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
 
 const VendorSites = () => {
   const { vendor } = useVendor();
   const [showAdd, setShowAdd] = useState(false);
+  const [siteName, setSiteName] = useState("");
+  const [sitePlatform, setSitePlatform] = useState("");
+  const [siteUrl, setSiteUrl] = useState("");
+
+  const { data: dbSites = [] } = useVendorSites();
+  const addSite = useAddSite();
+  const deleteSite = useDeleteSite();
+
+  // Merge context sites with DB sites for display
+  const allSites = dbSites.length > 0
+    ? dbSites.map(s => ({ id: s.id, name: s.name, platform: s.platform || "Custom", url: s.url || "" }))
+    : vendor.sites;
+
+  const handleAddSite = async () => {
+    if (!siteName) return;
+    await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
+    setSiteName(""); setSitePlatform(""); setSiteUrl("");
+    setShowAdd(false);
+  };
+
+  const handleDeleteSite = async (siteId: string) => {
+    await deleteSite.mutateAsync(siteId);
+  };
 
   return (
     <div>
@@ -35,19 +59,19 @@ const VendorSites = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Site Name</Label>
-                  <Input placeholder="e.g., My Etsy Store" />
+                  <Input placeholder="e.g., My Etsy Store" value={siteName} onChange={e => setSiteName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Platform</Label>
-                  <Input placeholder="e.g., Shopify, WooCommerce, Custom" />
+                  <Input placeholder="e.g., Shopify, WooCommerce, Custom" value={sitePlatform} onChange={e => setSitePlatform(e.target.value)} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Website URL</Label>
-                  <Input placeholder="e.g., mystore.myshopify.com" />
+                  <Input placeholder="e.g., mystore.myshopify.com" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} />
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm">Connect Site</Button>
+                <Button size="sm" onClick={handleAddSite}>Connect Site</Button>
                 <Button variant="outline" size="sm" onClick={() => setShowAdd(false)}>Cancel</Button>
               </div>
             </CardContent>
@@ -56,7 +80,7 @@ const VendorSites = () => {
 
         {/* Connected Sites */}
         <div className="grid gap-4">
-          {vendor.sites.map((site) => (
+          {allSites.map((site) => (
             <Card key={site.id}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
@@ -82,7 +106,9 @@ const VendorSites = () => {
                       <Button variant="ghost" size="sm" className="mt-2 text-xs gap-1"><Copy className="w-3 h-3" /> Copy</Button>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-destructive shrink-0"><Trash2 className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
