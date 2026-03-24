@@ -1,33 +1,47 @@
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { DollarSign, Clock, CheckCircle, TrendingUp, Download, ArrowRight } from "lucide-react";
+import { usePayouts } from "@/hooks/useSupabaseData";
 
-const payouts = [
-  { id: "PAY-101", amount: "$4,500.00", txId: "TL-2026-0892", method: "Bank Transfer", status: "completed" as const, date: "Mar 20, 2026", eta: null },
-  { id: "PAY-102", amount: "$120.00", txId: "TL-2026-0889", method: "Mobile Money", status: "completed" as const, date: "Mar 18, 2026", eta: null },
-  { id: "PAY-103", amount: "$200.00", txId: "TL-2026-0891", method: "Bank Transfer", status: "pending" as const, date: "—", eta: "Mar 24, 2026" },
-  { id: "PAY-104", amount: "$350.00", txId: "TL-2026-0896", method: "Crypto (USDC)", status: "processing" as const, date: "—", eta: "Mar 23, 2026" },
-];
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   completed: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
   pending: { label: "Pending", color: "bg-accent/15 text-accent-foreground", icon: Clock },
   processing: { label: "Processing", color: "bg-accent/15 text-accent-foreground", icon: ArrowRight },
 };
 
 const VendorPayouts = () => {
+  const { data: rawPayouts = [] } = usePayouts();
+
+  const payouts = rawPayouts.map(p => ({
+    id: p.payout_id,
+    amount: `$${Number(p.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    txId: p.tx_id || "—",
+    method: p.method || "Bank Transfer",
+    status: (p.status || "pending") as "completed" | "pending" | "processing",
+    date: p.completed_at ? new Date(p.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+    eta: p.eta || null,
+  }));
+
+  const totalEarned = rawPayouts.filter(p => p.status === "completed").reduce((s, p) => s + Number(p.amount), 0);
+  const pendingAmount = rawPayouts.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0);
+  const processingAmount = rawPayouts.filter(p => p.status === "processing").reduce((s, p) => s + Number(p.amount), 0);
+  const thisMonth = rawPayouts.filter(p => {
+    const d = new Date(p.created_at);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, p) => s + Number(p.amount), 0);
+
   return (
     <div>
       <VendorHeader title="Payouts" />
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total Earned", value: "$14,200", icon: DollarSign },
-            { label: "Pending Payout", value: "$550", icon: Clock },
-            { label: "In Processing", value: "$350", icon: TrendingUp },
-            { label: "This Month", value: "$5,170", icon: CheckCircle },
+            { label: "Total Earned", value: `$${totalEarned.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign },
+            { label: "Pending Payout", value: `$${pendingAmount.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: Clock },
+            { label: "In Processing", value: `$${processingAmount.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp },
+            { label: "This Month", value: `$${thisMonth.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: CheckCircle },
           ].map((s) => (
             <Card key={s.label}>
               <CardContent className="p-4">
@@ -61,7 +75,7 @@ const VendorPayouts = () => {
                 </thead>
                 <tbody>
                   {payouts.map((p) => {
-                    const cfg = statusConfig[p.status];
+                    const cfg = statusConfig[p.status] || statusConfig.pending;
                     return (
                       <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                         <td className="p-4 font-mono text-xs">{p.id}</td>

@@ -13,41 +13,15 @@ import {
 import { toast } from "sonner";
 import { useVendor } from "@/contexts/VendorContext";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
+import { useTransactions, useArchivedReports } from "@/hooks/useSupabaseData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from "recharts";
 
-const revenueData = [
-  { month: "Oct", revenue: 3200, orders: 12 },
-  { month: "Nov", revenue: 4800, orders: 18 },
-  { month: "Dec", revenue: 6100, orders: 22 },
-  { month: "Jan", revenue: 5400, orders: 19 },
-  { month: "Feb", revenue: 7200, orders: 26 },
-  { month: "Mar", revenue: 8950, orders: 31 },
-];
-
-const escrowData = [
-  { month: "Oct", locked: 1200, released: 2000 },
-  { month: "Nov", locked: 1800, released: 3000 },
-  { month: "Dec", locked: 2400, released: 3700 },
-  { month: "Jan", locked: 2100, released: 3300 },
-  { month: "Feb", locked: 2800, released: 4400 },
-  { month: "Mar", locked: 3500, released: 5450 },
-];
-
 const chartStyle = {
   background: "hsl(0,0%,100%)", border: "1px solid hsl(45,10%,90%)", borderRadius: "8px", fontSize: "12px",
 };
-
-const archivedReports = [
-  { id: "r1", name: "Revenue Statement", date: "Mar 15, 2026", type: "PDF", size: "124 KB" },
-  { id: "r2", name: "Transaction Summary", date: "Feb 28, 2026", type: "PDF", size: "98 KB" },
-  { id: "r3", name: "Order History Export", date: "Feb 15, 2026", type: "CSV", size: "45 KB" },
-  { id: "r4", name: "Revenue Statement", date: "Jan 31, 2026", type: "PDF", size: "112 KB" },
-  { id: "r5", name: "Payout Report", date: "Jan 15, 2026", type: "PDF", size: "67 KB" },
-  { id: "r6", name: "Transaction Summary", date: "Dec 31, 2025", type: "PDF", size: "88 KB" },
-];
 
 const VendorAnalytics = () => {
   const { vendor } = useVendor();
@@ -56,6 +30,46 @@ const VendorAnalytics = () => {
   const [archiveSearch, setArchiveSearch] = useState("");
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [pendingReport, setPendingReport] = useState<string | null>(null);
+
+  const { data: transactions = [] } = useTransactions();
+  const { data: rawArchives = [] } = useArchivedReports("vendor");
+
+  // Compute revenue data from transactions
+  const revenueData = (() => {
+    const months: Record<string, { revenue: number; orders: number }> = {};
+    transactions.forEach(tx => {
+      const d = new Date(tx.created_at);
+      const key = d.toLocaleDateString("en-US", { month: "short" });
+      if (!months[key]) months[key] = { revenue: 0, orders: 0 };
+      months[key].revenue += Number(tx.amount);
+      months[key].orders += 1;
+    });
+    return Object.entries(months).map(([month, data]) => ({ month, ...data }));
+  })();
+
+  const escrowData = (() => {
+    const months: Record<string, { locked: number; released: number }> = {};
+    transactions.forEach(tx => {
+      const d = new Date(tx.created_at);
+      const key = d.toLocaleDateString("en-US", { month: "short" });
+      if (!months[key]) months[key] = { locked: 0, released: 0 };
+      if (tx.status === "locked") months[key].locked += Number(tx.amount);
+      if (tx.status === "released") months[key].released += Number(tx.amount);
+    });
+    return Object.entries(months).map(([month, data]) => ({ month, ...data }));
+  })();
+
+  const totalRevenue = transactions.reduce((s, t) => s + Number(t.amount), 0);
+  const totalOrders = transactions.length;
+  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+
+  const archivedReports = rawArchives.map(r => ({
+    id: r.id,
+    name: r.name,
+    date: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    type: r.file_type || "PDF",
+    size: r.file_size || "—",
+  }));
 
   const handleDownloadClick = (reportName: string) => {
     setPendingReport(reportName);
@@ -98,9 +112,9 @@ const VendorAnalytics = () => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: "Total Revenue", value: "$35,650", icon: DollarSign },
-                { label: "Total Orders", value: "128", icon: Package },
-                { label: "Avg Order Value", value: "$278", icon: TrendingUp },
+                { label: "Total Revenue", value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign },
+                { label: "Total Orders", value: String(totalOrders), icon: Package },
+                { label: "Avg Order Value", value: `$${avgOrderValue}`, icon: TrendingUp },
                 { label: "Avg Escrow Duration", value: "2.3 days", icon: Clock },
               ].map(s => (
                 <Card key={s.label}>

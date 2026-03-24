@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, Upload, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { useKycDocuments, useUploadKyc } from "@/hooks/useSupabaseData";
 
 const tiers = [
   { tier: 0, label: "Unverified", limit: "Cannot transact", status: "completed" as const },
@@ -12,15 +13,7 @@ const tiers = [
   { tier: 3, label: "Enterprise", limit: "Unlimited", status: "locked" as const },
 ];
 
-const documents = [
-  { name: "Government ID", status: "approved" as const, date: "Feb 28, 2026" },
-  { name: "Selfie Verification", status: "approved" as const, date: "Feb 28, 2026" },
-  { name: "Business Registration", status: "approved" as const, date: "Mar 5, 2026" },
-  { name: "Address Proof", status: "approved" as const, date: "Mar 5, 2026" },
-  { name: "Bank Verification", status: "pending" as const, date: "—" },
-];
-
-const docStatusConfig = {
+const docStatusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   approved: { label: "Approved", color: "bg-primary/15 text-primary", icon: CheckCircle },
   pending: { label: "Pending", color: "bg-accent/15 text-accent-foreground", icon: Clock },
   rejected: { label: "Rejected", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
@@ -28,6 +21,21 @@ const docStatusConfig = {
 
 const VendorKYC = () => {
   const { vendor } = useVendor();
+  const { data: rawDocs = [] } = useKycDocuments();
+  const uploadKyc = useUploadKyc();
+
+  const documents = rawDocs.map(d => ({
+    name: d.name,
+    status: (d.status || "pending") as "approved" | "pending" | "rejected",
+    date: d.reviewed_at ? new Date(d.reviewed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+  }));
+
+  const handleUpload = async () => {
+    const name = prompt("Document name (e.g., Bank Verification):");
+    if (name) {
+      await uploadKyc.mutateAsync({ documentName: name });
+    }
+  };
 
   return (
     <div>
@@ -71,13 +79,13 @@ const VendorKYC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Submitted Documents</CardTitle>
-              <Button variant="outline" size="sm" className="gap-1"><Upload className="w-3 h-3" /> Upload New</Button>
+              <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload}><Upload className="w-3 h-3" /> Upload New</Button>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {documents.map((doc) => {
-                const cfg = docStatusConfig[doc.status];
+                const cfg = docStatusConfig[doc.status] || docStatusConfig.pending;
                 return (
                   <div key={doc.name} className="flex items-center gap-4 p-3 rounded-lg border border-border">
                     <cfg.icon className="w-5 h-5 text-muted-foreground shrink-0" />

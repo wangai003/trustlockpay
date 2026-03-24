@@ -15,29 +15,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
+import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
-
-const mockTx = [
-  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", buyer: "James O.", amount: 200, status: "locked" as const, date: "Mar 18, 2026", item: "Kente Cloth Set", tracking: null, order: 1 },
-  { id: "TL-2026-0896", buyerId: "BYR-2026-0115", buyer: "Emmanuel K.", amount: 350, status: "shipped" as const, date: "Mar 21, 2026", item: "Traditional Beads", tracking: "GH2026XYZ", order: 2 },
-  { id: "TL-2026-0892", buyerId: "BYR-2026-0108", buyer: "Adaeze N.", amount: 4500, status: "released" as const, date: "Mar 20, 2026", item: "Bulk Textiles", tracking: "NG2026ABC", order: 3 },
-  { id: "TL-2026-0889", buyerId: "BYR-2026-0121", buyer: "Grace A.", amount: 120, status: "released" as const, date: "Mar 17, 2026", item: "Handwoven Basket", tracking: "GH2026QRS", order: 4 },
-  { id: "TL-2026-0894", buyerId: "BYR-2026-0134", buyer: "Amara D.", amount: 680, status: "disputed" as const, date: "Mar 15, 2026", item: "Custom Fabric", tracking: "GH2026DEF", order: 5 },
-  { id: "TL-2026-0900", buyerId: "BYR-2026-0140", buyer: "Kwame B.", amount: 90, status: "locked" as const, date: "Mar 22, 2026", item: "Beaded Necklace", tracking: null, order: 6 },
-  { id: "TL-2026-0901", buyerId: "BYR-2026-0142", buyer: "Fatima S.", amount: 250, status: "locked" as const, date: "Mar 22, 2026", item: "Ankara Dress", tracking: null, order: 7 },
-  { id: "TL-2026-0902", buyerId: "BYR-2026-0145", buyer: "Kofi M.", amount: 175, status: "locked" as const, date: "Mar 22, 2026", item: "Wooden Sculpture", tracking: null, order: 8 },
-  { id: "TL-2026-0903", buyerId: "BYR-2026-0148", buyer: "Ama T.", amount: 420, status: "locked" as const, date: "Mar 22, 2026", item: "Kente Stole", tracking: null, order: 9 },
-  { id: "TL-2026-0904", buyerId: "BYR-2026-0150", buyer: "Yaw P.", amount: 310, status: "locked" as const, date: "Mar 22, 2026", item: "Batik Set", tracking: null, order: 10 },
-  { id: "TL-2026-0905", buyerId: "BYR-2026-0153", buyer: "Esi K.", amount: 540, status: "locked" as const, date: "Mar 22, 2026", item: "Custom Weaving", tracking: null, order: 11 },
-  { id: "TL-2026-0906", buyerId: "BYR-2026-0156", buyer: "Nana A.", amount: 95, status: "locked" as const, date: "Mar 22, 2026", item: "Shea Butter Set", tracking: null, order: 12 },
-  { id: "TL-2026-0907", buyerId: "BYR-2026-0159", buyer: "Adjoa W.", amount: 780, status: "locked" as const, date: "Mar 22, 2026", item: "Premium Textile Bundle", tracking: null, order: 13 },
-  { id: "TL-2026-0908", buyerId: "BYR-2026-0162", buyer: "Mensah R.", amount: 160, status: "locked" as const, date: "Mar 22, 2026", item: "Leather Sandals", tracking: null, order: 14 },
-  { id: "TL-2026-0909", buyerId: "BYR-2026-0165", buyer: "Akosua F.", amount: 230, status: "locked" as const, date: "Mar 22, 2026", item: "Hand Fan Set", tracking: null, order: 15 },
-  { id: "TL-2026-0910", buyerId: "BYR-2026-0168", buyer: "Bright O.", amount: 410, status: "locked" as const, date: "Mar 22, 2026", item: "Smock Dress", tracking: null, order: 16 },
-  { id: "TL-2026-0911", buyerId: "BYR-2026-0171", buyer: "Serwaa L.", amount: 285, status: "locked" as const, date: "Mar 22, 2026", item: "Brass Jewelry", tracking: null, order: 17 },
-  { id: "TL-2026-0912", buyerId: "BYR-2026-0174", buyer: "Daniel Q.", amount: 600, status: "locked" as const, date: "Mar 22, 2026", item: "Custom Upholstery", tracking: null, order: 18 },
-];
 
 const statusConfig = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -54,24 +34,48 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
 
+  const { data: rawTransactions = [] } = useTransactions();
+  const rejectOrders = useRejectOrders();
+  const addTracking = useAddTracking();
+
   const planState = getVendorPlanState();
   const orderMax = planState.orderMax;
   const isUnlimited = orderMax === -1;
 
-  const filtered = mockTx
+  const allTx = rawTransactions.map((tx, i) => ({
+    id: tx.tx_id,
+    buyer: tx.buyer_name || "Unknown",
+    amount: Number(tx.amount),
+    status: tx.status as "locked" | "shipped" | "released" | "disputed",
+    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    item: tx.item || "—",
+    tracking: tx.tracking || null,
+    order: tx.order_number ?? (i + 1),
+  }));
+
+  const filtered = allTx
     .filter((t) => filter === "all" || t.status === filter)
     .filter((t) => t.id.toLowerCase().includes(search.toLowerCase()) || t.buyer.toLowerCase().includes(search.toLowerCase()));
 
   const isGrayedOut = (orderNum: number) => !isUnlimited && orderNum > orderMax;
   const grayedCount = filtered.filter(t => isGrayedOut(t.order)).length;
-  const requiredPlan = grayedCount > 0 ? getRequiredPlanForOrders(mockTx.length) : null;
+  const requiredPlan = grayedCount > 0 ? getRequiredPlanForOrders(allTx.length) : null;
 
   const toggleSelect = (id: string) => setSelected((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]);
 
-  const handleRejectSelected = () => {
-    toast.success(`${selected.length} order(s) rejected. Buyers have been notified.`);
+  const handleRejectSelected = async () => {
+    try {
+      await rejectOrders.mutateAsync(selected);
+    } catch { /* handled by hook */ }
     setSelected([]);
     setRejectDialog(false);
+  };
+
+  const handleAddTracking = async (txId: string) => {
+    const tracking = prompt("Enter tracking number:");
+    if (tracking) {
+      await addTracking.mutateAsync({ txId, tracking });
+    }
   };
 
   return (
@@ -142,7 +146,7 @@ const VendorTransactions = () => {
                 </thead>
                 <tbody>
                   {filtered.map((tx) => {
-                    const cfg = statusConfig[tx.status];
+                    const cfg = statusConfig[tx.status] || statusConfig.locked;
                     const grayed = isGrayedOut(tx.order);
 
                     return (
@@ -176,7 +180,7 @@ const VendorTransactions = () => {
                               </Button>
                             ) : (
                               <>
-                                {tx.status === "locked" && <Button variant="outline" size="sm" className="text-xs">Add Tracking</Button>}
+                                {tx.status === "locked" && <Button variant="outline" size="sm" className="text-xs" onClick={() => handleAddTracking(tx.id)}>Add Tracking</Button>}
                                 <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                               </>
                             )}

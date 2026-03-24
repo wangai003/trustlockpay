@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,10 +13,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
+import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
   const planState = getVendorPlanState();
+  const { data: settings } = useVendorSettings();
+  const saveSettings = useSaveVendorSettings();
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
@@ -28,10 +31,18 @@ const VendorSettings = () => {
 
   const [disableConfirm, setDisableConfirm] = useState(false);
 
-  const handleAutoDeliveryToggle = (checked: boolean) => {
+  // Sync from DB when settings load
+  useEffect(() => {
+    if (settings) {
+      if (settings.auto_delivery !== null) setAutoDelivery(settings.auto_delivery);
+      if (settings.pay_enabled !== null) setPayEnabled(settings.pay_enabled);
+    }
+  }, [settings]);
+
+  const handleAutoDeliveryToggle = async (checked: boolean) => {
     setAutoDelivery(checked);
     localStorage.setItem("tl_vendor_auto_delivery", String(checked));
-    toast.success(checked ? "Auto-delivery enabled" : "Auto-delivery disabled");
+    await saveSettings.mutateAsync({ autoDelivery: checked });
   };
 
   const handlePayToggle = (checked: boolean) => {
@@ -41,14 +52,20 @@ const VendorSettings = () => {
     }
     setPayEnabled(true);
     localStorage.setItem("tl_vendor_pay_enabled", "true");
+    saveSettings.mutateAsync({ payEnabled: true });
     toast.success("TrustLock Pay widget re-enabled on your store.");
   };
 
-  const confirmDisablePay = () => {
+  const confirmDisablePay = async () => {
     setPayEnabled(false);
     localStorage.setItem("tl_vendor_pay_enabled", "false");
     setDisableConfirm(false);
+    await saveSettings.mutateAsync({ payEnabled: false });
     toast.success("TrustLock Pay widget disabled. Buyers can no longer pay via TrustLock on your store.");
+  };
+
+  const handleSave = async () => {
+    await saveSettings.mutateAsync({ autoDelivery, payEnabled });
   };
 
   return (
@@ -219,7 +236,7 @@ const VendorSettings = () => {
           </CardContent>
         </Card>
 
-        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
+        <Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
 
       {/* Disable TrustLock Pay Confirmation */}

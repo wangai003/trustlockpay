@@ -10,14 +10,7 @@ import {
   AlertTriangle, Eye, Lock, ArrowUpCircle, Shield
 } from "lucide-react";
 import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
-
-const recentTx = [
-  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", buyer: "James O.", amount: "$200.00", status: "locked" as const, date: "Mar 18", item: "Kente Cloth Set", order: 1 },
-  { id: "TL-2026-0896", buyerId: "BYR-2026-0115", buyer: "Emmanuel K.", amount: "$350.00", status: "locked" as const, date: "Mar 21", item: "Traditional Beads Collection", order: 2 },
-  { id: "TL-2026-0892", buyerId: "BYR-2026-0108", buyer: "Adaeze N.", amount: "$4,500.00", status: "released" as const, date: "Mar 20", item: "Bulk Order - Textiles", order: 3 },
-  { id: "TL-2026-0889", buyerId: "BYR-2026-0121", buyer: "Grace A.", amount: "$120.00", status: "released" as const, date: "Mar 17", item: "Handwoven Basket", order: 4 },
-  { id: "TL-2026-0894", buyerId: "BYR-2026-0134", buyer: "Amara D.", amount: "$680.00", status: "disputed" as const, date: "Mar 15", item: "Custom Fabric Order", order: 5 },
-];
+import { useTransactions } from "@/hooks/useSupabaseData";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
@@ -31,6 +24,22 @@ const VendorOverview = () => {
   const planState = getVendorPlanState();
   const isUnlimited = planState.orderMax === -1;
   const planConfig = PLANS[planState.currentPlan];
+  const { data: transactions = [] } = useTransactions();
+
+  const recentTx = transactions.slice(0, 5).map((tx, i) => ({
+    id: tx.tx_id,
+    buyer: tx.buyer_name || "Unknown",
+    amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    status: tx.status as "locked" | "released" | "disputed",
+    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    item: tx.item || "—",
+    order: (tx.order_number ?? i + 1),
+  }));
+
+  const activeEscrows = transactions.filter(t => t.status === "locked").length;
+  const totalReleased = transactions.filter(t => t.status === "released").reduce((s, t) => s + Number(t.amount), 0);
+  const pendingPayout = transactions.filter(t => t.status === "locked").reduce((s, t) => s + Number(t.amount), 0);
+  const orderCount = transactions.length;
 
   return (
     <div>
@@ -59,10 +68,10 @@ const VendorOverview = () => {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
-            { label: "Active Escrows", value: "8", icon: Clock, change: "+3 this week" },
-            { label: "Total Released", value: "$14,200", icon: DollarSign, change: "+$2,400 this month" },
-            { label: "Pending Payout", value: "$5,050", icon: TrendingUp, change: "Next payout in 2d" },
-            { label: "Plan Usage", value: isUnlimited ? "∞" : `18/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((18 / planState.orderMax) * 100)}% of limit used` },
+            { label: "Active Escrows", value: String(activeEscrows), icon: Clock, change: "+3 this week" },
+            { label: "Total Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
+            { label: "Pending Payout", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
+            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((orderCount / planState.orderMax) * 100)}% of limit used` },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
@@ -107,7 +116,7 @@ const VendorOverview = () => {
                         <td className="p-4 hidden md:table-cell text-muted-foreground">{tx.item}</td>
                         <td className="p-4 text-right font-semibold">{tx.amount}</td>
                         <td className="p-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[tx.status]}`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[tx.status] || ""}`}>
                             {tx.status === "locked" && <Clock className="w-3 h-3" />}
                             {tx.status === "released" && <CheckCircle className="w-3 h-3" />}
                             {tx.status === "disputed" && <AlertTriangle className="w-3 h-3" />}
