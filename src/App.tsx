@@ -143,6 +143,7 @@ const App = () => (
               <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="analytics" element={<BuyerAnalytics />} />
               <Route path="os-pay" element={<BuyerOSPay />} />
+              <Route path="payout" element={<BuyerPayout />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 
