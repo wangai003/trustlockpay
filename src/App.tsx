@@ -27,6 +27,7 @@ import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
 import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
+import AdminPayout from "./pages/admin/AdminPayout.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
