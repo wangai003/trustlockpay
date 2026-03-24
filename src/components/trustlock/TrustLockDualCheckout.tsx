@@ -1,11 +1,34 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
+import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, Lock, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, FEE_DISCLOSURE, getFeeRange } from "@/lib/paymentProviders";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const TrustLockDualCheckout = () => {
   const [mode, setMode] = useState<"diaspora" | "local">("diaspora");
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+  const [providerFields, setProviderFields] = useState<Record<string, string>>({});
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showFees, setShowFees] = useState(false);
+
+  const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
+  const isCrypto = selectedProvider?.category === "crypto_wallet";
+  const feeType = isCrypto ? "crypto_to_crypto" : "fiat_to_crypto";
+  const fees = calculateFees(sampleAmount, feeType);
+
+  const handleModeSwitch = (newMode: "diaspora" | "local") => {
+    setMode(newMode);
+    setSelectedProvider(null);
+    setProviderFields({});
+  };
+
+  const handleFieldChange = (key: string, value: string) => {
+    setProviderFields((prev) => ({ ...prev, [key]: value }));
+  };
 
   return (
     <section id="demo" className="py-20 lg:py-28 bg-muted/30">
@@ -27,7 +50,7 @@ const TrustLockDualCheckout = () => {
         {/* Mode Toggle */}
         <div className="flex items-center justify-center mt-10 gap-4">
           <button
-            onClick={() => setMode("diaspora")}
+            onClick={() => handleModeSwitch("diaspora")}
             className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
               mode === "diaspora"
                 ? "bg-primary text-primary-foreground shadow-lg"
@@ -38,7 +61,7 @@ const TrustLockDualCheckout = () => {
             Diaspora Mode
           </button>
           <button
-            onClick={() => setMode("local")}
+            onClick={() => handleModeSwitch("local")}
             className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
               mode === "local"
                 ? "bg-primary text-primary-foreground shadow-lg"
@@ -93,25 +116,46 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
-              {/* Payment methods */}
+              {/* Payment method selection with search */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {mode === "diaspora" ? "Pay with" : "Choose payment method"}
+                  {selectedProvider ? "Selected payment method" : "Choose payment method"}
                 </p>
 
-                {mode === "diaspora" ? (
-                  <>
-                    <PaymentOption icon={<CreditCard className="w-4 h-4" />} label="Credit / Debit Card" detail="Visa, Mastercard" selected />
-                    <PaymentOption icon={<Smartphone className="w-4 h-4" />} label="Apple Pay / Google Pay" detail="Instant" />
-                    <PaymentOption icon={<Shield className="w-4 h-4" />} label="Azix Wallet" detail="Pay with USDC balance" />
-                  </>
-                ) : (
-                  <>
-                    <PaymentOption icon={<CreditCard className="w-4 h-4" />} label="Bank Card" detail="Debit / Credit card" selected />
-                    <PaymentOption icon={<Building2 className="w-4 h-4" />} label="Bank Transfer" detail="Direct from your bank" />
-                    <PaymentOption icon={<Smartphone className="w-4 h-4" />} label="Mobile Money" detail="M-Pesa, MTN MoMo, Airtel Money" />
-                    <PaymentOption icon={<span className="text-xs font-bold">*</span>} label="USSD" detail="Dial to pay — no internet needed" />
-                  </>
+                <ProviderSearch
+                  mode={mode}
+                  onSelect={setSelectedProvider}
+                  selected={selectedProvider}
+                />
+
+                {/* Provider-specific fields */}
+                {selectedProvider && selectedProvider.fields.length > 0 && (
+                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                    {selectedProvider.fields.map((field) => (
+                      <div key={field.key}>
+                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                        {field.type === "select" ? (
+                          <select
+                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          >
+                            <option value="">{field.placeholder}</option>
+                            {field.options?.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            placeholder={field.placeholder}
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                            className="mt-1 text-sm"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -126,26 +170,45 @@ const TrustLockDualCheckout = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">TrustLock Pay Fee (1.5%)</span>
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    TrustLock Pay Fee ({getFeeRange()})
+                    <button onClick={() => setShowFees(!showFees)}>
+                      <Info className="w-3 h-3" />
+                    </button>
+                  </span>
                   <span className="text-muted-foreground">
-                    {mode === "diaspora" ? "$4.39" : "₦6,750"}
+                    {mode === "diaspora" ? `$${fees.total.toFixed(2)}` : `₦${(fees.total * 1538).toFixed(0)}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs font-bold pt-1 border-t border-border">
                   <span className="text-foreground">Total</span>
                   <span className="text-primary">
-                    {mode === "diaspora" ? "$296.89" : "₦456,750"}
+                    {mode === "diaspora" ? `$${(sampleAmount + fees.total).toFixed(2)}` : `₦${((sampleAmount + fees.total * 1538)).toFixed(0)}`}
                   </span>
                 </div>
+                {showFees && (
+                  <p className="text-[9px] text-muted-foreground mt-1 leading-relaxed border-t border-border pt-1">{FEE_DISCLOSURE}</p>
+                )}
               </div>
 
-              <Button variant="hero" className="w-full gap-2">
+              <Button variant="hero" className="w-full gap-2" disabled={!selectedProvider}>
                 {mode === "diaspora" ? "Pay with TrustLock Pay" : "Pay Securely"}
                 <ChevronRight className="w-4 h-4" />
               </Button>
 
+              {/* Privacy disclaimer */}
+              <div className="space-y-1">
+                <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>We do not save your payment details. {showPrivacy ? "" : "Tap for details."}</span>
+                </button>
+                {showPrivacy && (
+                  <p className="text-[9px] text-muted-foreground leading-relaxed text-center px-2">{PRIVACY_DISCLAIMER}</p>
+                )}
+              </div>
+
               <p className="text-center text-xs text-muted-foreground">
-                <Shield className="w-3 h-3 inline -mt-0.5 mr-1" />
+                <Lock className="w-3 h-3 inline -mt-0.5 mr-1" />
                 {mode === "diaspora"
                   ? "Secured by Azix Smart Contracts on Polygon"
                   : "Your money is safe until you confirm your order arrived"}
@@ -194,34 +257,5 @@ const TrustLockDualCheckout = () => {
     </section>
   );
 };
-
-const PaymentOption = ({
-  icon,
-  label,
-  detail,
-  selected = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  detail: string;
-  selected?: boolean;
-}) => (
-  <div
-    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all ${
-      selected
-        ? "border-primary bg-primary/5"
-        : "border-border hover:border-primary/40"
-    }`}
-  >
-    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-      {icon}
-    </div>
-    <div className="flex-1">
-      <p className="text-sm font-semibold text-foreground">{label}</p>
-      <p className="text-xs text-muted-foreground">{detail}</p>
-    </div>
-    {selected && <div className="w-2 h-2 rounded-full bg-primary" />}
-  </div>
-);
 
 export default TrustLockDualCheckout;
