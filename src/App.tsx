@@ -98,6 +98,7 @@ const App = () => (
               <Route path="documents" element={<AdminDocuments />} />
               <Route path="workflow" element={<AdminWorkflow />} />
               <Route path="os-pay" element={<AdminOSPay />} />
+              <Route path="payout" element={<AdminPayout />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
