@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock, Undo2, Split } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useProcessPayment } from "@/hooks/useSupabaseData";
 
 const TRUSTLOCK_WALLET = "0x7A3b...F92d";
 
