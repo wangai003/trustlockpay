@@ -20,6 +20,7 @@ const navItems = [
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help" },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings" },
 ];
 

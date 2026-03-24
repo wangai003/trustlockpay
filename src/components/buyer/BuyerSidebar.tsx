@@ -14,6 +14,7 @@ const navItems = [
   { label: "Documents", icon: FileText, to: "/trustlock/buyer/documents" },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/buyer/help" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/buyer/os-pay" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout" },
   { label: "Settings", icon: Settings, to: "/trustlock/buyer/settings" },
 ];
 
