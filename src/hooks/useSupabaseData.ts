@@ -1,0 +1,376 @@
+// Centralized Supabase data hooks for all dashboard pages
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function callEdgeFunction(functionName: string, body: Record<string, unknown>) {
+  const session = (await supabase.auth.getSession()).data.session;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    apikey: API_KEY,
+  };
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+  const res = await fetch(`${FUNCTIONS_URL}/${functionName}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+// ─── Transactions ───────────────────────────────────────────
+export function useTransactions(filters?: { status?: string; vendor?: string; buyer?: string }) {
+  return useQuery({
+    queryKey: ["transactions", filters],
+    queryFn: async () => {
+      let query = supabase.from("transactions").select("*").order("created_at", { ascending: false });
+      if (filters?.status && filters.status !== "all") {
+        query = query.eq("status", filters.status);
+      }
+      if (filters?.vendor) {
+        query = query.eq("vendor_name", filters.vendor);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useTransaction(txId: string) {
+  return useQuery({
+    queryKey: ["transaction", txId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("tx_id", txId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!txId,
+  });
+}
+
+export function useAddTracking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { txId: string; tracking: string }) =>
+      callEdgeFunction("manage-transaction", { action: "add_tracking", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Tracking added successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useConfirmDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (txId: string) =>
+      callEdgeFunction("manage-transaction", { action: "confirm_delivery", txId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Delivery confirmed — funds released to vendor");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRejectOrders() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (txIds: string[]) =>
+      callEdgeFunction("manage-transaction", { action: "reject_orders", txIds }),
+    onSuccess: (_data, txIds) => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success(`${txIds.length} order(s) rejected. Buyers have been notified.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useFlagForReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (txIds: string[]) =>
+      callEdgeFunction("manage-transaction", { action: "flag_review", txIds }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Flagged for review");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useOpenDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { txId: string; reason?: string }) =>
+      callEdgeFunction("manage-transaction", { action: "open_dispute", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute filed successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Disputes ───────────────────────────────────────────────
+export function useDisputes(filters?: { role?: string }) {
+  return useQuery({
+    queryKey: ["disputes", filters],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("disputes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useFileDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { txId: string; reason: string; description?: string }) =>
+      callEdgeFunction("manage-dispute", { action: "file_dispute", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute filed — Emmanuel AI will review your case");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useReviewDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (disputeId: string) =>
+      callEdgeFunction("manage-dispute", { action: "review_dispute", disputeId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute sent for AI review");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useResolveDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { disputeId: string; resolution?: string }) =>
+      callEdgeFunction("manage-dispute", { action: "resolve_dispute", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute resolved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Payouts ────────────────────────────────────────────────
+export function usePayouts() {
+  return useQuery({
+    queryKey: ["payouts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payouts")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Vendor Sites ───────────────────────────────────────────
+export function useVendorSites() {
+  return useQuery({
+    queryKey: ["vendor_sites"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendor_sites")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAddSite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { name: string; platform: string; url: string }) =>
+      callEdgeFunction("manage-vendor", { action: "add_site", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vendor_sites"] });
+      toast.success("Site connected successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteSite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (siteId: string) =>
+      callEdgeFunction("manage-vendor", { action: "delete_site", siteId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vendor_sites"] });
+      toast.success("Site removed");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── KYC Documents ──────────────────────────────────────────
+export function useKycDocuments() {
+  return useQuery({
+    queryKey: ["kyc_documents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kyc_documents")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUploadKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { documentName: string; fileUrl?: string }) =>
+      callEdgeFunction("manage-vendor", { action: "upload_kyc", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kyc_documents"] });
+      toast.success("Document uploaded for review");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── KYC Queue (Admin) ─────────────────────────────────────
+export function useKycQueue() {
+  return useQuery({
+    queryKey: ["kyc_queue"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kyc_queue")
+        .select("*")
+        .order("submitted_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Compliance Flags ───────────────────────────────────────
+export function useComplianceFlags() {
+  return useQuery({
+    queryKey: ["compliance_flags"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("compliance_flags")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── OS Payments ────────────────────────────────────────────
+export function useProcessPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      action?: string;
+      service: string;
+      amount: string;
+      fee: string;
+      total: string;
+      method: string;
+      role: string;
+      refundEmail?: string;
+      refundReason?: string;
+      splitRecipient?: string;
+      splitPercentage?: string;
+    }) => callEdgeFunction("process-payment", params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["os_payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Vendor Settings ────────────────────────────────────────
+export function useVendorSettings() {
+  return useQuery({
+    queryKey: ["vendor_settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendor_settings")
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSaveVendorSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { autoDelivery?: boolean; payEnabled?: boolean; payoutTier?: string; notifications?: Record<string, boolean> }) =>
+      callEdgeFunction("manage-vendor", { action: "save_settings", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vendor_settings"] });
+      toast.success("Settings saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Vendor Plans ───────────────────────────────────────────
+export function useActivatePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { planId: string; billingCycle: string; expiresAt: string }) =>
+      callEdgeFunction("manage-vendor", { action: "activate_plan", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vendor_plans"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Archived Reports ───────────────────────────────────────
+export function useArchivedReports(role: string) {
+  return useQuery({
+    queryKey: ["archived_reports", role],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("archived_reports")
+        .select("*")
+        .eq("owner_role", role)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}

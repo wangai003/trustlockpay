@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock, Undo2, Split } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useProcessPayment } from "@/hooks/useSupabaseData";
 
 const TRUSTLOCK_WALLET = "0x7A3b...F92d";
 
@@ -36,23 +37,40 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [splitRecipient, setSplitRecipient] = useState("");
   const [splitPercentage, setSplitPercentage] = useState("");
   const [processing, setProcessing] = useState(false);
+  const processPayment = useProcessPayment();
 
   const fee = amount ? (parseFloat(amount) * 0.015).toFixed(2) : "0.00";
   const total = amount ? (parseFloat(amount) + parseFloat(fee)).toFixed(2) : "0.00";
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
     if (isAdmin && adminAction === "refund" && !refundEmail) { toast.error("Enter recipient email for refund"); return; }
     if (isAdmin && adminAction === "split" && (!splitRecipient || !splitPercentage)) { toast.error("Fill split payment details"); return; }
 
     setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
+    try {
+      await processPayment.mutateAsync({
+        action: isAdmin && adminAction ? adminAction : "payment",
+        service,
+        amount,
+        fee,
+        total,
+        method: method!,
+        role,
+        refundEmail: refundEmail || undefined,
+        refundReason: refundReason || undefined,
+        splitRecipient: splitRecipient || undefined,
+        splitPercentage: splitPercentage || undefined,
+      });
       const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
       toast.success(`✅ ${label} of $${amount} processed successfully`);
       onComplete?.();
-    }, 2000);
+    } catch {
+      // error handled by hook
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const methods: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [

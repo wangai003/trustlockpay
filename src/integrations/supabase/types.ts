@@ -56,6 +56,351 @@ export type Database = {
         }
         Relationships: []
       }
+      archived_reports: {
+        Row: {
+          created_at: string
+          file_size: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          owner_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_size?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          owner_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_size?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          owner_role?: string | null
+        }
+        Relationships: []
+      }
+      compliance_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          flag_id: string
+          id: string
+          related_buyer_id: string | null
+          related_vendor_id: string | null
+          severity: string | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          flag_id: string
+          id?: string
+          related_buyer_id?: string | null
+          related_vendor_id?: string | null
+          severity?: string | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          flag_id?: string
+          id?: string
+          related_buyer_id?: string | null
+          related_vendor_id?: string | null
+          severity?: string | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      dispute_evidence: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          file_name: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_evidence_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disputes: {
+        Row: {
+          ai_confidence: number | null
+          ai_recommendation: string | null
+          amount: number | null
+          buyer_id: string | null
+          buyer_name: string | null
+          created_at: string
+          description: string | null
+          dispute_id: string
+          id: string
+          priority: string | null
+          reason: string | null
+          resolution: string | null
+          status: string
+          transaction_id: string | null
+          tx_id: string | null
+          updated_at: string
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_recommendation?: string | null
+          amount?: number | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          description?: string | null
+          dispute_id: string
+          id?: string
+          priority?: string | null
+          reason?: string | null
+          resolution?: string | null
+          status?: string
+          transaction_id?: string | null
+          tx_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_recommendation?: string | null
+          amount?: number | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          description?: string | null
+          dispute_id?: string
+          id?: string
+          priority?: string | null
+          reason?: string | null
+          resolution?: string | null
+          status?: string
+          transaction_id?: string | null
+          tx_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          file_url: string | null
+          id: string
+          name: string
+          reviewed_at: string | null
+          status: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name: string
+          reviewed_at?: string | null
+          status?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name?: string
+          reviewed_at?: string | null
+          status?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
+      kyc_queue: {
+        Row: {
+          documents: string | null
+          id: string
+          kyc_id: string
+          status: string | null
+          submitted_at: string
+          tier_change: string | null
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          documents?: string | null
+          id?: string
+          kyc_id: string
+          status?: string | null
+          submitted_at?: string
+          tier_change?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          documents?: string | null
+          id?: string
+          kyc_id?: string
+          status?: string | null
+          submitted_at?: string
+          tier_change?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: []
+      }
+      os_payments: {
+        Row: {
+          action: string | null
+          amount: number
+          created_at: string
+          fee: number | null
+          id: string
+          method: string | null
+          refund_email: string | null
+          refund_reason: string | null
+          role: string | null
+          service: string | null
+          split_percentage: number | null
+          split_recipient: string | null
+          status: string | null
+          total: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          amount: number
+          created_at?: string
+          fee?: number | null
+          id?: string
+          method?: string | null
+          refund_email?: string | null
+          refund_reason?: string | null
+          role?: string | null
+          service?: string | null
+          split_percentage?: number | null
+          split_recipient?: string | null
+          status?: string | null
+          total?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          amount?: number
+          created_at?: string
+          fee?: number | null
+          id?: string
+          method?: string | null
+          refund_email?: string | null
+          refund_reason?: string | null
+          role?: string | null
+          service?: string | null
+          split_percentage?: number | null
+          split_recipient?: string | null
+          status?: string | null
+          total?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      payouts: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          eta: string | null
+          id: string
+          method: string | null
+          payout_id: string
+          status: string
+          transaction_id: string | null
+          tx_id: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          eta?: string | null
+          id?: string
+          method?: string | null
+          payout_id: string
+          status?: string
+          transaction_id?: string | null
+          tx_id?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          eta?: string | null
+          id?: string
+          method?: string | null
+          payout_id?: string
+          status?: string
+          transaction_id?: string | null
+          tx_id?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -89,6 +434,81 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          auto_release_date: string | null
+          buyer_id: string | null
+          buyer_location: string | null
+          buyer_name: string | null
+          created_at: string
+          delivered_date: string | null
+          fee: number | null
+          id: string
+          industry: string | null
+          item: string | null
+          order_number: number | null
+          released_date: string | null
+          shipped_date: string | null
+          status: string
+          tracking: string | null
+          tx_id: string
+          type: string | null
+          updated_at: string
+          vendor_id: string | null
+          vendor_location: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          amount?: number
+          auto_release_date?: string | null
+          buyer_id?: string | null
+          buyer_location?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          delivered_date?: string | null
+          fee?: number | null
+          id?: string
+          industry?: string | null
+          item?: string | null
+          order_number?: number | null
+          released_date?: string | null
+          shipped_date?: string | null
+          status?: string
+          tracking?: string | null
+          tx_id: string
+          type?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_location?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          amount?: number
+          auto_release_date?: string | null
+          buyer_id?: string | null
+          buyer_location?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          delivered_date?: string | null
+          fee?: number | null
+          id?: string
+          industry?: string | null
+          item?: string | null
+          order_number?: number | null
+          released_date?: string | null
+          shipped_date?: string | null
+          status?: string
+          tracking?: string | null
+          tx_id?: string
+          type?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_location?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -104,6 +524,99 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vendor_plans: {
+        Row: {
+          billing_cycle: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_trial: boolean | null
+          plan_id: string
+          started_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          billing_cycle?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_trial?: boolean | null
+          plan_id?: string
+          started_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          billing_cycle?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_trial?: boolean | null
+          plan_id?: string
+          started_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
+      vendor_settings: {
+        Row: {
+          auto_delivery: boolean | null
+          id: string
+          notifications: Json | null
+          pay_enabled: boolean | null
+          payout_tier: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          auto_delivery?: boolean | null
+          id?: string
+          notifications?: Json | null
+          pay_enabled?: boolean | null
+          payout_tier?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          auto_delivery?: boolean | null
+          id?: string
+          notifications?: Json | null
+          pay_enabled?: boolean | null
+          payout_tier?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
+      vendor_sites: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          platform: string | null
+          url: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          platform?: string | null
+          url?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          platform?: string | null
+          url?: string | null
+          vendor_id?: string | null
         }
         Relationships: []
       }
