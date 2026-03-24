@@ -123,6 +123,7 @@ const App = () => (
               <Route path="checkout" element={<VendorCheckout />} />
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="os-pay" element={<VendorOSPay />} />
+              <Route path="payout" element={<VendorPayout />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
