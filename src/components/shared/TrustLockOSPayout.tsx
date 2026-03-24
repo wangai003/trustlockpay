@@ -1,0 +1,397 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
+  Check, Copy, Info, Ban,
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import {
+  type PaymentProvider,
+  calculateFees,
+  PRIVACY_DISCLAIMER,
+  FEE_DISCLOSURE,
+} from "@/lib/paymentProviders";
+import {
+  useGetOrCreateSeedToken,
+  useInitiatePayout,
+  useCancelPayout,
+} from "@/hooks/useSupabaseData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface TrustLockOSPayoutProps {
+  role: "admin" | "vendor" | "buyer";
+  prefillAmount?: string;
+  prefillOrderNumber?: string;
+  payoutType?: "release" | "refund" | "split";
+  transactionId?: string;
+  onComplete?: (confirmationCode: string) => void;
+}
+
+const TrustLockOSPayout = ({
+  role,
+  prefillAmount = "",
+  prefillOrderNumber = "",
+  payoutType = "release",
+  transactionId,
+  onComplete,
+}: TrustLockOSPayoutProps) => {
+  const [mode, setMode] = useState<"diaspora" | "local">("local");
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+  const [providerFields, setProviderFields] = useState<Record<string, string>>({});
+  const [amount] = useState(prefillAmount);
+  const [processing, setProcessing] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(false);
+  const [result, setResult] = useState<{ confirmationCode: string; status: string } | null>(null);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showFees, setShowFees] = useState(false);
+
+  const getSeedToken = useGetOrCreateSeedToken();
+  const initiatePayout = useInitiatePayout();
+  const cancelPayout = useCancelPayout();
+
+  // Get or create seed token on mount
+  const [seedToken, setSeedToken] = useState<string>("");
+  useEffect(() => {
+    getSeedToken.mutate(undefined, {
+      onSuccess: (data) => setSeedToken(data?.token?.token || "TL-DEMO-TOKEN-XXXX"),
+    });
+  }, []);
+
+  const amountNum = parseFloat(amount) || 0;
+  const isCrypto = selectedProvider?.category === "crypto_wallet";
+  const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
+  const fees = amountNum > 0 ? calculateFees(amountNum, feeType) : null;
+
+  const handleFieldChange = (key: string, value: string) => {
+    setProviderFields((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const isFormValid = () => {
+    if (!selectedProvider) return false;
+    if (amountNum <= 0) return false;
+    const required = selectedProvider.fields.filter((f) => f.required);
+    return required.every((f) => providerFields[f.key]?.trim());
+  };
+
+  const handleConfirmAndPay = async () => {
+    setConfirmDialog(false);
+    setProcessing(true);
+
+    try {
+      const res = await initiatePayout.mutateAsync({
+        seedToken,
+        role,
+        payoutType,
+        transactionId,
+        orderNumber: prefillOrderNumber,
+        amount: String(amountNum),
+        paymentCategory: selectedProvider!.category,
+        paymentProvider: selectedProvider!.name,
+        providerDetails: providerFields,
+        mode,
+      });
+
+      setResult({
+        confirmationCode: res.confirmationCode,
+        status: "completed",
+      });
+
+      toast.success("Funds are being transferred to your account");
+      onComplete?.(res.confirmationCode);
+    } catch {
+      // handled by hook
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // ─── Success Screen ──────────────────────────────────────
+  if (result) {
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <Card className="border-2 border-primary/30">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Check className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">Transaction Successful</h3>
+            <p className="text-sm text-muted-foreground">
+              Your funds are being transferred via {selectedProvider?.name}. You will receive a notification once the transfer is complete.
+            </p>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <p className="text-xs text-muted-foreground">Confirmation Code</p>
+              <div className="flex items-center justify-center gap-2">
+                <code className="text-lg font-bold font-mono text-primary">{result.confirmationCode}</code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(result.confirmationCode); toast.success("Copied!"); }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Save this code for your records. Use it for any disputes or inquiries.</p>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>Amount: <span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></p>
+              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.total.toFixed(2)}</span></p>}
+              {fees && <p>Net received: <span className="font-semibold text-primary">${fees.net.toFixed(2)}</span></p>}
+              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name}</span></p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="rounded-t-xl bg-primary p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary-foreground" />
+          <span className="font-heading font-bold text-sm text-primary-foreground">TrustLock OS Payout</span>
+        </div>
+        <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">
+          {payoutType === "refund" ? "Refund" : payoutType === "split" ? "Split Pay" : "Fund Release"}
+        </Badge>
+      </div>
+
+      {/* Seed Token Display */}
+      <Card className="rounded-t-none -mt-4 border-t-0">
+        <CardContent className="p-4 space-y-1">
+          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your Secure Seed Token</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              value={seedToken}
+              disabled
+              className="font-mono text-xs bg-muted flex-1"
+            />
+            <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+          </div>
+          <p className="text-[10px] text-muted-foreground">This token links securely to the Azix escrow wallet. It cannot be edited.</p>
+        </CardContent>
+      </Card>
+
+      {/* Dual Mode Toggle */}
+      <div className="flex items-center justify-center gap-3">
+        <button
+          onClick={() => { setMode("local"); setSelectedProvider(null); setProviderFields({}); }}
+          className={cn(
+            "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
+            mode === "local" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Smartphone className="w-4 h-4" />
+          Local (Africa)
+        </button>
+        <button
+          onClick={() => { setMode("diaspora"); setSelectedProvider(null); setProviderFields({}); }}
+          className={cn(
+            "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
+            mode === "diaspora" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Globe className="w-4 h-4" />
+          Diaspora
+        </button>
+      </div>
+
+      {/* Dual Mode Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Local Panel */}
+        <Card className={cn("border-2 transition-all", mode === "local" ? "border-primary/30 shadow-md" : "border-border opacity-50 pointer-events-none")}>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Local Payment (Africa)</h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Select your payment method to receive funds. Banks, mobile wallets, and crypto wallets from across Africa are supported.
+            </p>
+            {mode === "local" && (
+              <>
+                <ProviderSearch mode="local" onSelect={setSelectedProvider} selected={selectedProvider} />
+                {selectedProvider && selectedProvider.fields.length > 0 && (
+                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                    <p className="text-xs font-semibold text-foreground">{selectedProvider.name}</p>
+                    {selectedProvider.fields.map((field) => (
+                      <div key={field.key}>
+                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                        {field.type === "select" ? (
+                          <select
+                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          >
+                            <option value="">{field.placeholder}</option>
+                            {field.options?.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            placeholder={field.placeholder}
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                            className="mt-1 text-sm"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Diaspora Panel */}
+        <Card className={cn("border-2 transition-all", mode === "diaspora" ? "border-primary/30 shadow-md" : "border-border opacity-50 pointer-events-none")}>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Diaspora Payment</h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Receive funds via card, PayPal, Apple Pay, Google Pay, or direct crypto transfer.
+            </p>
+            {mode === "diaspora" && (
+              <>
+                <ProviderSearch mode="diaspora" onSelect={setSelectedProvider} selected={selectedProvider} />
+                {selectedProvider && selectedProvider.fields.length > 0 && (
+                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                    <p className="text-xs font-semibold text-foreground">{selectedProvider.name}</p>
+                    {selectedProvider.fields.map((field) => (
+                      <div key={field.key}>
+                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                        {field.type === "select" ? (
+                          <select
+                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          >
+                            <option value="">{field.placeholder}</option>
+                            {field.options?.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            placeholder={field.placeholder}
+                            value={providerFields[field.key] || ""}
+                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                            className="mt-1 text-sm"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Fee Summary */}
+      {fees && amountNum > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fee Breakdown</p>
+              <button onClick={() => setShowFees(!showFees)} className="text-muted-foreground hover:text-foreground">
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Payout Amount</span><span className="font-medium text-foreground">${amountNum.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="text-muted-foreground">-${fees.trustlock.toFixed(2)}</span></div>
+              {fees.processor > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Processor Fee</span><span className="text-muted-foreground">-${fees.processor.toFixed(2)}</span></div>
+              )}
+              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee</span><span className="text-muted-foreground">-${fees.escrow.toFixed(2)}</span></div>
+              {fees.gas > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gas.toFixed(4)}</span></div>
+              )}
+              <div className="flex justify-between border-t border-border pt-1 mt-1">
+                <span className="font-bold text-sm text-foreground">You Receive</span>
+                <span className="font-bold text-sm text-primary">${fees.net.toFixed(2)}</span>
+              </div>
+            </div>
+            {showFees && (
+              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed border-t border-border pt-2">{FEE_DISCLOSURE}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Privacy Disclaimer */}
+      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+        <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground">
+          <AlertTriangle className="w-3 h-3" />
+          <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
+        </button>
+        {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
+        {!showPrivacy && <p className="text-[10px] text-muted-foreground">We do not save your card, bank, or wallet details. Tap to read more.</p>}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <Button
+          className="flex-1 h-12 gap-2 font-semibold"
+          onClick={() => setConfirmDialog(true)}
+          disabled={processing || !isFormValid()}
+        >
+          {processing ? "Processing..." : (
+            <>
+              Confirm & Receive Funds
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
+        <Lock className="w-3 h-3" />
+        <span>Secured by Azix Smart Contracts on Polygon · Funds released via your seed token</span>
+      </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialog} onOpenChange={setConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via <strong>{selectedProvider?.name}</strong>?
+              {fees && <> After fees, you will receive <strong className="text-primary">${fees.net.toFixed(2)}</strong>.</>}
+              {" "}This action will instruct the Azix wallet to release funds to your selected payment method.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAndPay}>
+              Yes, Release Funds
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default TrustLockOSPayout;

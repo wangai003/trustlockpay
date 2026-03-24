@@ -374,3 +374,116 @@ export function useArchivedReports(role: string) {
     },
   });
 }
+
+// ─── Seed Tokens ────────────────────────────────────────────
+export function useGetOrCreateSeedToken() {
+  return useMutation({
+    mutationFn: () => callEdgeFunction("manage-seed-token", { action: "get_or_create_token" }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSeedToken() {
+  return useQuery({
+    queryKey: ["seed_token"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("seed_tokens")
+        .select("*")
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Payout Requests ────────────────────────────────────────
+export function useInitiatePayout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      seedToken: string;
+      role: string;
+      payoutType: string;
+      transactionId?: string;
+      orderNumber?: string;
+      amount: string;
+      paymentCategory: string;
+      paymentProvider: string;
+      providerDetails: Record<string, string>;
+      mode: string;
+    }) => callEdgeFunction("manage-seed-token", { action: "initiate_payout", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payout_requests"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCancelPayout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { payoutId: string; reason?: string }) =>
+      callEdgeFunction("manage-seed-token", { action: "cancel_payout", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payout_requests"] });
+      toast.success("Payout cancelled");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function usePayoutRequests() {
+  return useQuery({
+    queryKey: ["payout_requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payout_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Order Carbon Copies ────────────────────────────────────
+export function useOrderCarbonCopies() {
+  return useQuery({
+    queryKey: ["order_carbon_copies"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_carbon_copies")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateCarbonCopy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: Record<string, unknown>) =>
+      callEdgeFunction("manage-seed-token", { action: "create_carbon_copy", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order_carbon_copies"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useActivateCarbonCopy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (carbonCopyId: string) =>
+      callEdgeFunction("manage-seed-token", { action: "activate_carbon_copy", carbonCopyId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order_carbon_copies"] });
+      toast.success("Carbon copy activated — buyer notified");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

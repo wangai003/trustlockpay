@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, Wallet, GitBranch
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, Wallet, GitBranch, Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const navItems = [
   { label: "Reports", icon: FileText, to: "/trustlock/admin/reports" },
   { label: "Documents", icon: FileText, to: "/trustlock/admin/documents" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/admin/os-pay" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/admin/payout" },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings" },
 ];
 

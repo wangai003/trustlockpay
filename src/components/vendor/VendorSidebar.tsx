@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const navItems = [
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help" },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings" },
 ];
 

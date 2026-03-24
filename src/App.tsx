@@ -27,6 +27,7 @@ import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
 import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
+import AdminPayout from "./pages/admin/AdminPayout.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
@@ -42,6 +43,7 @@ import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
 import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
 import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
 import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
+import BuyerPayout from "./pages/buyer/BuyerPayout.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
@@ -61,6 +63,7 @@ import VendorPricing from "./pages/vendor/VendorPricing.tsx";
 import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
 import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
 import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
+import VendorPayout from "./pages/vendor/VendorPayout.tsx";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +98,7 @@ const App = () => (
               <Route path="documents" element={<AdminDocuments />} />
               <Route path="workflow" element={<AdminWorkflow />} />
               <Route path="os-pay" element={<AdminOSPay />} />
+              <Route path="payout" element={<AdminPayout />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
@@ -119,6 +123,7 @@ const App = () => (
               <Route path="checkout" element={<VendorCheckout />} />
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="os-pay" element={<VendorOSPay />} />
+              <Route path="payout" element={<VendorPayout />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 
@@ -138,6 +143,7 @@ const App = () => (
               <Route path="help" element={<BuyerHelpCenter />} />
               <Route path="analytics" element={<BuyerAnalytics />} />
               <Route path="os-pay" element={<BuyerOSPay />} />
+              <Route path="payout" element={<BuyerPayout />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>
 

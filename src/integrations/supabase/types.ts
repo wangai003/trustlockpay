@@ -297,6 +297,71 @@ export type Database = {
         }
         Relationships: []
       }
+      order_carbon_copies: {
+        Row: {
+          admin_activated: boolean | null
+          amount: number | null
+          buyer_id: string | null
+          buyer_name: string | null
+          checkout_details: Json | null
+          confirmation_code: string | null
+          created_at: string
+          fee: number | null
+          id: string
+          item: string | null
+          order_number: string | null
+          status: string | null
+          transaction_id: string | null
+          updated_at: string
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          admin_activated?: boolean | null
+          amount?: number | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          checkout_details?: Json | null
+          confirmation_code?: string | null
+          created_at?: string
+          fee?: number | null
+          id?: string
+          item?: string | null
+          order_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          admin_activated?: boolean | null
+          amount?: number | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          checkout_details?: Json | null
+          confirmation_code?: string | null
+          created_at?: string
+          fee?: number | null
+          id?: string
+          item?: string | null
+          order_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_carbon_copies_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       os_payments: {
         Row: {
           action: string | null
@@ -350,6 +415,83 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      payout_requests: {
+        Row: {
+          amount: number
+          cancellation_reason: string | null
+          completed_at: string | null
+          confirmation_code: string | null
+          created_at: string
+          fee: number | null
+          id: string
+          mode: string | null
+          net_amount: number | null
+          order_number: string | null
+          payment_category: string | null
+          payment_provider: string | null
+          payout_type: string | null
+          provider_details: Json | null
+          role: string | null
+          seed_token: string | null
+          status: string | null
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          confirmation_code?: string | null
+          created_at?: string
+          fee?: number | null
+          id?: string
+          mode?: string | null
+          net_amount?: number | null
+          order_number?: string | null
+          payment_category?: string | null
+          payment_provider?: string | null
+          payout_type?: string | null
+          provider_details?: Json | null
+          role?: string | null
+          seed_token?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          confirmation_code?: string | null
+          created_at?: string
+          fee?: number | null
+          id?: string
+          mode?: string | null
+          net_amount?: number | null
+          order_number?: string | null
+          payment_category?: string | null
+          payment_provider?: string | null
+          payout_type?: string | null
+          provider_details?: Json | null
+          role?: string | null
+          seed_token?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payouts: {
         Row: {
@@ -431,6 +573,36 @@ export type Database = {
           location?: string | null
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      seed_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          token: string
+          updated_at: string
+          user_id: string
+          wallet_public_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          token: string
+          updated_at?: string
+          user_id: string
+          wallet_public_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          token?: string
+          updated_at?: string
+          user_id?: string
+          wallet_public_key?: string | null
         }
         Relationships: []
       }
