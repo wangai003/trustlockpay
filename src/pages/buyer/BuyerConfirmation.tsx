@@ -2,52 +2,63 @@ import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Shield, CheckCircle, Package, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-
-const mockTxData: Record<string, any> = {
-  "TL-2026-0892": {
-    id: "TL-2026-0892",
-    vendor: "Kente Craft Ltd",
-    vendorLocation: "Accra, Ghana",
-    buyer: "Adaeze N.",
-    item: "Bulk Textiles — 50 yards Kente cloth",
-    amount: "$4,500.00",
-    status: "delivered",
-    tracking: "NG2026ABC",
-    paidDate: "Mar 18, 2026",
-    shippedDate: "Mar 19, 2026",
-    deliveredDate: "Mar 20, 2026",
-    autoReleaseDate: "Mar 22, 2026 at 10:00 AM UTC",
-  },
-};
-
-const fallbackTx = {
-  id: "TL-XXXX-XXXX",
-  vendor: "Sample Vendor",
-  vendorLocation: "Lagos, Nigeria",
-  buyer: "Sample Buyer",
-  item: "Sample Product",
-  amount: "$100.00",
-  status: "delivered",
-  tracking: "TRACK123",
-  paidDate: "Mar 1, 2026",
-  shippedDate: "Mar 2, 2026",
-  deliveredDate: "Mar 3, 2026",
-  autoReleaseDate: "Mar 5, 2026 at 10:00 AM UTC",
-};
+import { useTransaction, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 
 const BuyerConfirmation = () => {
   const { txId } = useParams();
-  const tx = mockTxData[txId || ""] || { ...fallbackTx, id: txId || fallbackTx.id };
+  const { data: rawTx } = useTransaction(txId || "");
+  const confirmDelivery = useConfirmDelivery();
+  const openDispute = useOpenDispute();
   const [confirmed, setConfirmed] = useState(false);
   const [disputed, setDisputed] = useState(false);
+
+  const tx = rawTx ? {
+    id: rawTx.tx_id,
+    vendor: rawTx.vendor_name || "Sample Vendor",
+    vendorLocation: rawTx.vendor_location || "—",
+    buyer: rawTx.buyer_name || "Sample Buyer",
+    item: rawTx.item || "Sample Product",
+    amount: `$${Number(rawTx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    status: rawTx.status,
+    tracking: rawTx.tracking || "—",
+    paidDate: new Date(rawTx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    shippedDate: rawTx.shipped_date ? new Date(rawTx.shipped_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+    deliveredDate: rawTx.delivered_date ? new Date(rawTx.delivered_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+    autoReleaseDate: rawTx.auto_release_date ? new Date(rawTx.auto_release_date).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }) : "48 hours after delivery",
+  } : {
+    id: txId || "TL-XXXX-XXXX",
+    vendor: "Loading...",
+    vendorLocation: "—",
+    buyer: "Loading...",
+    item: "Loading...",
+    amount: "$0.00",
+    status: "delivered",
+    tracking: "—",
+    paidDate: "—",
+    shippedDate: "—",
+    deliveredDate: "—",
+    autoReleaseDate: "—",
+  };
+
+  const handleConfirm = async () => {
+    if (rawTx) {
+      await confirmDelivery.mutateAsync(rawTx.tx_id);
+    }
+    setConfirmed(true);
+  };
+
+  const handleDispute = async () => {
+    if (rawTx) {
+      await openDispute.mutateAsync({ txId: rawTx.tx_id });
+    }
+    setDisputed(true);
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
-        {/* Header */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
             <Shield className="w-6 h-6 text-primary-foreground" />
@@ -89,41 +100,22 @@ const BuyerConfirmation = () => {
             <CardContent className="p-6 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="font-heading text-lg font-bold">Confirm Your Delivery</h2>
-                <p className="text-sm text-muted-foreground">
-                  Review the details below and confirm you received your order.
-                </p>
+                <p className="text-sm text-muted-foreground">Review the details below and confirm you received your order.</p>
               </div>
 
-              {/* Transaction Details */}
               <div className="space-y-3 bg-muted/30 rounded-xl p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Transaction</span>
-                  <span className="font-mono font-bold">{tx.id}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Vendor</span>
-                  <span className="font-medium">{tx.vendor}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Item</span>
-                  <span>{tx.item}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-bold text-lg">{tx.amount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tracking</span>
-                  <span className="font-mono text-xs">{tx.tracking}</span>
-                </div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Transaction</span><span className="font-mono font-bold">{tx.id}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Vendor</span><span className="font-medium">{tx.vendor}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Item</span><span>{tx.item}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-lg">{tx.amount}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tracking</span><span className="font-mono text-xs">{tx.tracking}</span></div>
               </div>
 
-              {/* Progress */}
               <div className="flex items-center gap-2">
                 {[
                   { label: "Paid", date: tx.paidDate, done: true },
-                  { label: "Shipped", date: tx.shippedDate, done: true },
-                  { label: "Delivered", date: tx.deliveredDate, done: true },
+                  { label: "Shipped", date: tx.shippedDate, done: tx.shippedDate !== "—" },
+                  { label: "Delivered", date: tx.deliveredDate, done: tx.deliveredDate !== "—" },
                   { label: "Release", date: "Awaiting", done: false },
                 ].map((step, i) => (
                   <div key={step.label} className="flex items-center gap-2 flex-1">
@@ -139,7 +131,6 @@ const BuyerConfirmation = () => {
                 ))}
               </div>
 
-              {/* Auto-release warning */}
               <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3 text-sm">
                 <Clock className="w-4 h-4 text-accent shrink-0" />
                 <span className="text-accent-foreground text-xs">
@@ -147,12 +138,11 @@ const BuyerConfirmation = () => {
                 </span>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
-                <Button className="flex-1 gap-2" onClick={() => setConfirmed(true)}>
+                <Button className="flex-1 gap-2" onClick={handleConfirm}>
                   <CheckCircle className="w-4 h-4" /> Confirm Delivery
                 </Button>
-                <Button variant="outline" className="flex-1 gap-2 text-destructive border-destructive/30" onClick={() => setDisputed(true)}>
+                <Button variant="outline" className="flex-1 gap-2 text-destructive border-destructive/30" onClick={handleDispute}>
                   <AlertTriangle className="w-4 h-4" /> Open Dispute
                 </Button>
               </div>

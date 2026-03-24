@@ -2,20 +2,11 @@ import { useState } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin } from "lucide-react";
+import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
-
-const mockOrders = [
-  { id: "TL-2026-0891", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$200.00", status: "locked" as const, date: "Mar 18, 2026", item: "Kente Cloth Set", tracking: null },
-  { id: "TL-2026-0896", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0055", vendor: "Mombasa Textiles", amount: "$350.00", status: "shipped" as const, date: "Mar 21, 2026", item: "Traditional Beads", tracking: "GH2026XYZ" },
-  { id: "TL-2026-0892", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$4,500.00", status: "delivered" as const, date: "Mar 20, 2026", item: "Bulk Textiles", tracking: "NG2026ABC" },
-  { id: "TL-2026-0889", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0041", vendor: "Kente Craft Ltd", amount: "$120.00", status: "released" as const, date: "Mar 17, 2026", item: "Handwoven Basket", tracking: "GH2026QRS" },
-  { id: "TL-2026-0894", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0078", vendor: "GreenFarm Co", amount: "$680.00", status: "disputed" as const, date: "Mar 15, 2026", item: "Custom Fabric", tracking: "GH2026DEF" },
-  { id: "TL-2026-0887", buyerId: "BYR-2026-0102", vendorId: "VND-2026-0063", vendor: "Lagos Fashion Hub", amount: "$95.00", status: "released" as const, date: "Mar 12, 2026", item: "Ankara Dress", tracking: "NG2026GHI" },
-];
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -28,8 +19,21 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 const BuyerOrders = () => {
   const [filter, setFilter] = useState<OrderStatus>("all");
   const [search, setSearch] = useState("");
+  const { data: rawTransactions = [] } = useTransactions();
+  const confirmDelivery = useConfirmDelivery();
+  const openDispute = useOpenDispute();
 
-  const filtered = mockOrders
+  const allOrders = rawTransactions.map(tx => ({
+    id: tx.tx_id,
+    vendor: tx.vendor_name || "Unknown",
+    amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    status: tx.status,
+    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    item: tx.item || "—",
+    tracking: tx.tracking || null,
+  }));
+
+  const filtered = allOrders
     .filter((o) => filter === "all" || o.status === filter)
     .filter((o) => o.id.toLowerCase().includes(search.toLowerCase()) || o.vendor.toLowerCase().includes(search.toLowerCase()) || o.item.toLowerCase().includes(search.toLowerCase()));
 
@@ -51,10 +55,9 @@ const BuyerOrders = () => {
           </div>
         </div>
 
-        {/* Order Cards */}
         <div className="space-y-4">
           {filtered.map((order) => {
-            const cfg = statusConfig[order.status];
+            const cfg = statusConfig[order.status] || statusConfig.locked;
             return (
               <Card key={order.id} className={order.status === "delivered" ? "border-accent/30" : ""}>
                 <CardContent className="p-5">
@@ -76,7 +79,6 @@ const BuyerOrders = () => {
                       </div>
                     </div>
 
-                    {/* Progress indicator */}
                     <div className="lg:w-64">
                       <div className="flex items-center gap-1">
                         {["Paid", "Shipped", "Delivered", "Released"].map((step, i) => {
@@ -100,12 +102,11 @@ const BuyerOrders = () => {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2 shrink-0">
-                      {order.status === "delivered" && <Button size="sm">Confirm Delivery</Button>}
+                      {order.status === "delivered" && <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>}
                       {order.status === "shipped" && <Button variant="outline" size="sm">Track</Button>}
                       {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
-                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30">Dispute</Button>
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => openDispute.mutate({ txId: order.id })}>Dispute</Button>
                       )}
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </div>
