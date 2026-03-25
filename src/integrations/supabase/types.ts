@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage: {
+        Row: {
+          assistant_name: string | null
+          created_at: string
+          id: string
+          query_count: number
+          role: string | null
+          tokens_used: number
+          user_id: string
+        }
+        Insert: {
+          assistant_name?: string | null
+          created_at?: string
+          id?: string
+          query_count?: number
+          role?: string | null
+          tokens_used?: number
+          user_id: string
+        }
+        Update: {
+          assistant_name?: string | null
+          created_at?: string
+          id?: string
+          query_count?: number
+          role?: string | null
+          tokens_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       archived_reports: {
         Row: {
           created_at: string
@@ -294,6 +324,42 @@ export type Database = {
           tier_change?: string | null
           vendor_id?: string | null
           vendor_name?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -789,6 +855,39 @@ export type Database = {
           platform?: string | null
           url?: string | null
           vendor_id?: string | null
+        }
+        Relationships: []
+      }
+      vendor_widget_fees: {
+        Row: {
+          created_at: string
+          id: string
+          install_fee_paid: boolean
+          pending_restoration_fee: boolean
+          total_install_fees_charged: number
+          updated_at: string
+          vendor_id: string
+          widget_state: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          install_fee_paid?: boolean
+          pending_restoration_fee?: boolean
+          total_install_fees_charged?: number
+          updated_at?: string
+          vendor_id: string
+          widget_state?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          install_fee_paid?: boolean
+          pending_restoration_fee?: boolean
+          total_install_fees_charged?: number
+          updated_at?: string
+          vendor_id?: string
+          widget_state?: string
         }
         Relationships: []
       }
