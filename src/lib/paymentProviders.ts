@@ -253,6 +253,28 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
       { key: "email", label: "Transak Email", placeholder: "your@email.com", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_onramp_local",
+    name: "Thirdweb On-Ramp",
+    category: "crypto_wallet",
+    mode: "local",
+    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
+    processor: "thirdweb",
+    fields: [
+      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
+    ],
+  },
+  {
+    id: "thirdweb_offramp_local",
+    name: "Thirdweb Off-Ramp",
+    category: "crypto_wallet",
+    mode: "local",
+    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
+    processor: "thirdweb",
+    fields: [
+      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
+    ],
+  },
 ];
 
 // ─── FULL REGISTRY ─────────────────────────────────────────
