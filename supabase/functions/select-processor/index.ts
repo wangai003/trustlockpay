@@ -51,6 +51,15 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: true,
   },
+  thirdweb: {
+    processorId: "thirdweb",
+    processorName: "Thirdweb",
+    feeRate: 1.0,
+    supportsFiat: true,
+    supportsCrypto: true,
+    onRamp: true,
+    offRamp: true,
+  },
   direct: {
     processorId: "direct",
     processorName: "Direct (On-chain)",

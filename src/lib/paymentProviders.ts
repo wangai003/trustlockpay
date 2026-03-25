@@ -137,6 +137,29 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_fiat",
+    name: "Buy with Card (Thirdweb)",
+    category: "card",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
+      { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
+      { key: "cvv", label: "CVV", placeholder: "123", type: "text", required: true },
+      { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
+    ],
+  },
+  {
+    id: "thirdweb_wallet",
+    name: "Thirdweb Wallet",
+    category: "crypto_wallet",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Wallet Address", placeholder: "0x...", type: "text", required: true },
+    ],
+  },
 ];
 
 // ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
@@ -230,6 +253,28 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
       { key: "email", label: "Transak Email", placeholder: "your@email.com", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_onramp_local",
+    name: "Thirdweb On-Ramp",
+    category: "crypto_wallet",
+    mode: "local",
+    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
+    processor: "thirdweb",
+    fields: [
+      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
+    ],
+  },
+  {
+    id: "thirdweb_offramp_local",
+    name: "Thirdweb Off-Ramp",
+    category: "crypto_wallet",
+    mode: "local",
+    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
+    processor: "thirdweb",
+    fields: [
+      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
+    ],
+  },
 ];
 
 // ─── FULL REGISTRY ─────────────────────────────────────────
@@ -294,6 +339,6 @@ export const SUPPORTED_COUNTRIES = [
   "Angola", "Cape Verde", "Djibouti", "Gabon", "Mauritius", "Namibia", "Tunisia",
 ];
 
-export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Yellow Card, Transak) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
+export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Yellow Card, Transak, Thirdweb) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
 
-export const FEE_DISCLOSURE = `TrustLock Pay fees range from 1.5% to 5% depending on payment method and processor. Crypto-to-crypto transfers (1.5%) are lowest as they bypass fiat conversion. Fiat payments (3–5%) include processor conversion fees from Stripe, Coinbase, Yellow Card, or Transak depending on region. Escrow service fees (0.5–1%) are collected by a separate Azix escrow wallet upon fund release to vendors — no escrow fees on refunds. Split payout escrow fees apply only to the vendor's fractional share. All fees are transparently displayed before you confirm any transaction.`;
+export const FEE_DISCLOSURE = `TrustLock Pay fees range from 1% to 5% depending on payment method and processor. Crypto-to-crypto transfers (1.5%) are lowest as they bypass fiat conversion. Fiat payments (3–5%) include processor conversion fees from Stripe, Coinbase, Yellow Card, Transak, or Thirdweb depending on region. Thirdweb on/off-ramp fees are typically 1%. Escrow service fees (0.5–1%) are collected by a separate Azix escrow wallet upon fund release to vendors — no escrow fees on refunds. Split payout escrow fees apply only to the vendor's fractional share. All fees are transparently displayed before you confirm any transaction.`;
