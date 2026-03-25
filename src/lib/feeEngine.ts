@@ -86,6 +86,18 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     onRamp: true,
     offRamp: true,
   },
+  thirdweb: {
+    name: "Thirdweb",
+    feeRate: 1.0,
+    supportsFiat: true,
+    supportsCrypto: true,
+    regions: [
+      "US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa",
+      "India", "Brazil", "Mexico", "Argentina", "Colombia", "global",
+    ],
+    onRamp: true,
+    offRamp: true,
+  },
   direct: {
     name: "Direct (On-chain)",
     feeRate: 0,
