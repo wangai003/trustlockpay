@@ -29,7 +29,7 @@ export type TransactionType =
   | "os_payment";          // Internal OS service payment (plans, reports, AI)
 
 // ─── Processor Configuration ──────────────────────────────
-export type ProcessorId = "stripe" | "coinbase" | "yellow_card" | "transak" | "direct";
+export type ProcessorId = "stripe" | "coinbase" | "yellow_card" | "transak" | "thirdweb" | "direct";
 
 export interface ProcessorConfig {
   name: string;
