@@ -16,6 +16,8 @@
  *   deleted → installed (fee: $5, charged next cycle)
  */
 
+import { supabase } from "@/integrations/supabase/client";
+
 export const WIDGET_INSTALL_FEE = 5.00;
 
 export type WidgetState = "never_installed" | "installed" | "disabled" | "deleted";
@@ -95,7 +97,7 @@ export function calculateWidgetTransitionFee(
 }
 
 /**
- * Process a widget state transition and update persisted state.
+ * Process a widget state transition and update persisted state (sync/localStorage — testnet fallback).
  */
 export function processWidgetTransition(
   action: "install" | "enable" | "disable" | "delete" | "restore"
@@ -112,4 +114,59 @@ export function processWidgetTransition(
 
   saveWidgetFeeState(updated);
   return { fee, chargeMode, state: updated };
+}
+
+/**
+ * Process a widget state transition via the manage-widget-fee edge function (mainnet).
+ * Falls back to localStorage sync version if not authenticated.
+ */
+export async function processWidgetTransitionAsync(
+  action: "install" | "enable" | "disable" | "delete" | "restore" | "get_state"
+): Promise<{ fee: number; chargeMode: "immediate" | "next_cycle" | "none"; state: WidgetFeeState }> {
+  // Check for active session
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    // Testnet fallback — use localStorage
+    if (action === "get_state") {
+      const s = getWidgetFeeState();
+      return { fee: 0, chargeMode: "none", state: s };
+    }
+    return processWidgetTransition(action);
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke("manage-widget-fee", {
+      body: { action },
+    });
+
+    if (error) throw error;
+
+    if (!data?.success) {
+      throw new Error(data?.error || "Edge function returned failure");
+    }
+
+    const state: WidgetFeeState = {
+      widgetState: data.state?.widget_state ?? data.state?.widgetState ?? "never_installed",
+      installFeePaid: data.state?.install_fee_paid ?? data.state?.installFeePaid ?? false,
+      pendingRestorationFee: data.state?.pending_restoration_fee ?? data.state?.pendingRestorationFee ?? false,
+      totalInstallFeesCharged: data.state?.total_install_fees_charged ?? data.state?.totalInstallFeesCharged ?? 0,
+    };
+
+    // Sync localStorage so testnet fallback stays current
+    saveWidgetFeeState(state);
+
+    return {
+      fee: data.fee ?? 0,
+      chargeMode: data.chargeMode ?? "none",
+      state,
+    };
+  } catch (err) {
+    console.error("manage-widget-fee call failed, falling back to localStorage:", err);
+    if (action === "get_state") {
+      const s = getWidgetFeeState();
+      return { fee: 0, chargeMode: "none", state: s };
+    }
+    return processWidgetTransition(action);
+  }
 }
