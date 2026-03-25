@@ -76,7 +76,7 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question...", assista
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages, role }),
+        body: JSON.stringify(assistantName ? { messages: allMessages } : { messages: allMessages, role }),
       });
 
       if (!resp.ok) {
