@@ -16,8 +16,14 @@ interface AssistantChatProps {
   assistantName?: "amani" | "zawadi";
 }
 
-const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: AssistantChatProps) => {
+const AssistantChat = ({ role, title, placeholder = "Ask a question...", assistantName }: AssistantChatProps) => {
   const aiName = role === "vendor" ? "Amani" : "Zawadi";
+  const aiAvatar = role === "vendor" ? aiTwinGrey : aiTwinBlack;
+
+  const edgeFn = assistantName
+    ? `${assistantName}-chat`
+    : "trustlock-assist";
+  const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFn}`;
   const aiAvatar = role === "vendor" ? aiTwinGrey : aiTwinBlack;
 
   const [messages, setMessages] = useState<Msg[]>([]);
