@@ -49,6 +49,11 @@ export function calculateFees(amount: number, type: string): { trustlock: number
   return { trustlock, processor, escrow, gas, total, net: amount - total };
 }
 
+// Legacy getFeeRange for backward compat
+export function getFeeRange(): string {
+  return "2% – 4%";
+}
+
 // ─── DIASPORA PROVIDERS ────────────────────────────────────
 const DIASPORA_PROVIDERS: PaymentProvider[] = [
   {

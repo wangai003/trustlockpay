@@ -17,6 +17,7 @@ import {
   PRIVACY_DISCLAIMER,
   FEE_DISCLOSURE,
 } from "@/lib/paymentProviders";
+import { AZIX_WALLETS } from "@/lib/feeEngine";
 import {
   useGetOrCreateSeedToken,
   useInitiatePayout,
