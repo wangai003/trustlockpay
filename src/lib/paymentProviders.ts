@@ -25,11 +25,12 @@ export interface PaymentProvider {
   icon?: string;
 }
 
-// Re-export fee functions from the new engine for backward compat
-export { calculateFeesV2 as calculateFees, getFeeRangeForType as getFeeRange } from "./feeEngine";
+// Re-export the V2 engine for new code
+export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE } from "./feeEngine";
+export type { FeeBreakdown, TransactionType } from "./feeEngine";
 
-// Legacy shim for existing calculateFees calls expecting the old signature
-export function calculateFeesLegacy(amount: number, type: string): { trustlock: number; processor: number; escrow: number; gas: number; total: number; net: number } {
+// Legacy calculateFees — keeps the old signature for existing consumers
+export function calculateFees(amount: number, type: string): { trustlock: number; processor: number; escrow: number; gas: number; total: number; net: number } {
   // Map old type strings to rough rates
   const rates: Record<string, { tl: number; proc: number; esc: number; gas: number }> = {
     crypto_to_crypto: { tl: 1.0, proc: 0, esc: 0.5, gas: 0.02 },
