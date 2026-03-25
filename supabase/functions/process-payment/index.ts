@@ -104,9 +104,9 @@ async function thirdwebOnRamp(params: {
     processor: "thirdweb",
     direction: "onramp",
     status: "payment_created",
-    paymentId: data?.id,
-    paymentLink: data?.paymentLink || data?.checkoutLink,
-    data: data,
+    paymentId: data?.result?.id,
+    paymentLink: data?.result?.link,
+    data: data?.result,
   };
 }
 
