@@ -5,16 +5,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Dual Azix Wallet Addresses ────────────────────────────
+const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d"; // Collects checkout/processing fees
+const AZIX_ESCROW_WALLET = "0x4E1c...A83b";       // Collects escrow service fees
+
+// ─── Processor Fee Rates ───────────────────────────────────
+const PROCESSOR_FEES: Record<string, number> = {
+  stripe: 0.029,        // 2.9%
+  coinbase: 0.015,      // 1.5%
+  yellow_card: 0.020,   // 2.0%
+  transak: 0.015,       // 1.5%
+  direct: 0,            // 0% (on-chain)
+};
+
 function generateSeedToken(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  const segments = 4;
-  const segLen = 6;
   const parts: string[] = [];
-  for (let s = 0; s < segments; s++) {
+  for (let s = 0; s < 4; s++) {
     let seg = "";
-    for (let i = 0; i < segLen; i++) {
-      seg += chars[Math.floor(Math.random() * chars.length)];
-    }
+    for (let i = 0; i < 6; i++) seg += chars[Math.floor(Math.random() * chars.length)];
     parts.push(seg);
   }
   return `TL-${parts.join("-")}`;
@@ -25,6 +34,85 @@ function generateConfirmationCode(): string {
   let code = "TLC-";
   for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
+}
+
+// ─── Fee Calculation with Dual Wallet Routing ──────────────
+interface FeeResult {
+  trustlockFee: number;
+  processorFee: number;
+  escrowFee: number;
+  gasFee: number;
+  totalFees: number;
+  netAmount: number;
+  transactionWalletReceives: number;
+  escrowWalletReceives: number;
+}
+
+function calculatePayoutFees(
+  amount: number,
+  payoutType: string,
+  paymentCategory: string,
+  processorId: string,
+  splitVendorShare?: number
+): FeeResult {
+  const isCrypto = paymentCategory === "crypto_wallet";
+  const processorRate = PROCESSOR_FEES[processorId] || 0;
+
+  let trustlockRate = 0;
+  let escrowRate = 0;
+  let gasEstimate = 0.02;
+  let applyEscrow = true;
+  let escrowVendorOnly = false;
+
+  switch (payoutType) {
+    case "release":
+      trustlockRate = 0;
+      escrowRate = 0.01; // 1%
+      applyEscrow = true;
+      break;
+    case "refund":
+      trustlockRate = 0;
+      escrowRate = 0;     // NO escrow fee on refunds
+      applyEscrow = false;
+      gasEstimate = isCrypto ? 0.05 : 0.02;
+      break;
+    case "split":
+      trustlockRate = 0;
+      escrowRate = 0.01;  // 1% but ONLY on vendor's share
+      applyEscrow = true;
+      escrowVendorOnly = true;
+      gasEstimate = 0.04; // 2x gas for dual disbursement
+      break;
+    default:
+      trustlockRate = isCrypto ? 0.01 : 0.015;
+      escrowRate = 0.005;
+      break;
+  }
+
+  const trustlockFee = amount * trustlockRate;
+  const processorFee = isCrypto ? 0 : amount * processorRate;
+
+  let escrowFee = 0;
+  if (applyEscrow) {
+    if (escrowVendorOnly && splitVendorShare !== undefined) {
+      escrowFee = (amount * splitVendorShare) * escrowRate;
+    } else {
+      escrowFee = amount * escrowRate;
+    }
+  }
+
+  const totalFees = trustlockFee + processorFee + escrowFee + gasEstimate;
+
+  return {
+    trustlockFee,
+    processorFee,
+    escrowFee,
+    gasFee: gasEstimate,
+    totalFees,
+    netAmount: amount - totalFees,
+    transactionWalletReceives: trustlockFee,  // → AZIX_TRANSACTION_WALLET
+    escrowWalletReceives: escrowFee,           // → AZIX_ESCROW_WALLET
+  };
 }
 
 Deno.serve(async (req) => {
@@ -40,7 +128,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get user from auth header
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
@@ -54,12 +141,11 @@ Deno.serve(async (req) => {
     }
 
     switch (action) {
-      // ─── Generate or retrieve seed token for user ───────────
+      // ─── Generate or retrieve seed token ─────────────────────
       case "get_or_create_token": {
         const targetUserId = params.userId || userId;
         if (!targetUserId) throw new Error("User ID required");
 
-        // Check for existing active token
         const { data: existing } = await supabase
           .from("seed_tokens")
           .select("*")
@@ -74,14 +160,13 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Generate new token
         const token = generateSeedToken();
         const { data: newToken, error } = await supabase
           .from("seed_tokens")
           .insert({
             user_id: targetUserId,
             token,
-            wallet_public_key: "0x7A3b...F92d", // Azix custodian wallet public key
+            wallet_public_key: AZIX_TRANSACTION_WALLET,
           })
           .select()
           .single();
@@ -94,30 +179,28 @@ Deno.serve(async (req) => {
         );
       }
 
-      // ─── Initiate payout request ────────────────────────────
+      // ─── Initiate payout with dual wallet fee routing ────────
       case "initiate_payout": {
         const {
           seedToken, role: payoutRole, payoutType, transactionId, orderNumber,
           amount, paymentCategory, paymentProvider, providerDetails, mode,
+          processorId, splitVendorShare,
         } = params;
 
         if (!amount || parseFloat(amount) <= 0) throw new Error("Valid amount required");
         if (!paymentProvider) throw new Error("Payment provider required");
 
-        // Calculate fees
         const amountNum = parseFloat(amount);
-        const isCrypto = paymentCategory === "crypto_wallet";
-        const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
+        const processor = processorId || (paymentCategory === "crypto_wallet" ? "direct" : "yellow_card");
 
-        let feeRate: number;
-        if (isCrypto) {
-          feeRate = 0.015; // 1.5%
-        } else {
-          feeRate = 0.035; // 3.5% average
-        }
+        const fees = calculatePayoutFees(
+          amountNum,
+          payoutType || "release",
+          paymentCategory,
+          processor,
+          splitVendorShare
+        );
 
-        const fee = amountNum * feeRate;
-        const netAmount = amountNum - fee;
         const confirmationCode = generateConfirmationCode();
 
         const { data: payout, error } = await supabase
@@ -130,11 +213,24 @@ Deno.serve(async (req) => {
             transaction_id: transactionId || null,
             order_number: orderNumber || null,
             amount: amountNum,
-            fee,
-            net_amount: netAmount,
+            fee: fees.totalFees,
+            net_amount: fees.netAmount,
             payment_category: paymentCategory,
             payment_provider: paymentProvider,
-            provider_details: providerDetails || {},
+            provider_details: {
+              ...providerDetails,
+              processor,
+              feeBreakdown: {
+                trustlockFee: fees.trustlockFee,
+                processorFee: fees.processorFee,
+                escrowFee: fees.escrowFee,
+                gasFee: fees.gasFee,
+                transactionWallet: AZIX_TRANSACTION_WALLET,
+                escrowWallet: AZIX_ESCROW_WALLET,
+                transactionWalletReceives: fees.transactionWalletReceives,
+                escrowWalletReceives: fees.escrowWalletReceives,
+              },
+            },
             mode: mode || "local",
             status: "processing",
             confirmation_code: confirmationCode,
@@ -144,8 +240,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        // Simulate processing (in production, this triggers Azix wallet API)
-        // Update status to completed after a brief delay
+        // Simulate async processing (production: triggers Azix wallet disbursement)
         setTimeout(async () => {
           await supabase
             .from("payout_requests")
@@ -154,12 +249,22 @@ Deno.serve(async (req) => {
         }, 3000);
 
         return new Response(
-          JSON.stringify({ success: true, payout, confirmationCode }),
+          JSON.stringify({
+            success: true,
+            payout,
+            confirmationCode,
+            walletRouting: {
+              transactionWallet: AZIX_TRANSACTION_WALLET,
+              transactionWalletReceives: fees.transactionWalletReceives,
+              escrowWallet: AZIX_ESCROW_WALLET,
+              escrowWalletReceives: fees.escrowWalletReceives,
+            },
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // ─── Cancel payout request ──────────────────────────────
+      // ─── Cancel payout ──────────────────────────────────────
       case "cancel_payout": {
         const { payoutId, reason } = params;
         if (!payoutId) throw new Error("Payout ID required");
@@ -266,6 +371,27 @@ Deno.serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // ─── Get wallet info ───────────────────────────────────
+      case "get_wallet_info": {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            wallets: {
+              transaction: {
+                address: AZIX_TRANSACTION_WALLET,
+                purpose: "Collects platform processing fees at checkout",
+              },
+              escrow: {
+                address: AZIX_ESCROW_WALLET,
+                purpose: "Collects escrow service fees upon fund release",
+              },
+            },
+            processors: ["stripe", "coinbase", "yellow_card", "transak", "direct"],
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
