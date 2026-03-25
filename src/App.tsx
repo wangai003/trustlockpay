@@ -139,6 +139,7 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route index element={<BuyerOverview />} />
+              <Route path="bill-payments" element={<BuyerBillPayments />} />
               <Route path="orders" element={<BuyerOrders />} />
               <Route path="disputes" element={<BuyerDisputes />} />
               <Route path="assistant" element={<BuyerAssistant />} />
