@@ -87,10 +87,10 @@ async function thirdwebOnRamp(params: {
       description: "Fiat on-ramp to USDC escrow via TrustLock Pay",
       recipient: params.receiverAddress,
       token: {
-        tokenAddress,
+        address: tokenAddress,
         chainId,
+        amount: params.amount.toString(),
       },
-      amount: params.amount.toString(),
     }),
   });
 
