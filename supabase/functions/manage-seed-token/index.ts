@@ -396,9 +396,190 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ─── Verify payout (seed token + order matching) ────────
+      case "verify_payout": {
+        const { orderId, seedToken, payoutType } = params;
+        if (!userId) throw new Error("Authentication required");
+        if (!orderId || !seedToken || !payoutType) throw new Error("orderId, seedToken, and payoutType are required");
+        if (!["release", "refund", "split"].includes(payoutType)) throw new Error("payoutType must be release, refund, or split");
+
+        // Verify seed token matches user's active token
+        const { data: tokenRecord } = await supabase
+          .from("seed_tokens")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .single();
+
+        if (!tokenRecord || tokenRecord.token !== seedToken) {
+          return new Response(
+            JSON.stringify({ success: false, verified: false, error: "Seed token mismatch" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verify order exists and belongs to user
+        const { data: order } = await supabase
+          .from("order_carbon_copies")
+          .select("*")
+          .eq("order_number", orderId)
+          .single();
+
+        if (!order) throw new Error("Order not found");
+
+        const isOwner = order.buyer_id === userId || order.vendor_id === userId;
+        if (!isOwner) {
+          return new Response(
+            JSON.stringify({ success: false, verified: false, error: "Order does not belong to user" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Determine role in this order
+        const userRole = order.buyer_id === userId ? "buyer" : "vendor";
+
+        // Create verified payout request
+        const confirmationCode = generateConfirmationCode();
+        const fees = calculatePayoutFees(
+          order.amount || 0,
+          payoutType,
+          "crypto_wallet",
+          "direct",
+          payoutType === "split" && userRole === "vendor" ? 1 : undefined
+        );
+
+        const { data: payoutReq, error: prErr } = await supabase
+          .from("payout_requests")
+          .insert({
+            user_id: userId,
+            seed_token: seedToken,
+            role: userRole,
+            payout_type: payoutType,
+            order_number: orderId,
+            amount: order.amount || 0,
+            fee: fees.totalFees,
+            net_amount: fees.netAmount,
+            status: "verified",
+            confirmation_code: confirmationCode,
+            provider_details: {
+              feeBreakdown: {
+                trustlockFee: fees.trustlockFee,
+                processorFee: fees.processorFee,
+                escrowFee: fees.escrowFee,
+                gasFee: fees.gasFee,
+                transactionWallet: AZIX_TRANSACTION_WALLET,
+                escrowWallet: AZIX_ESCROW_WALLET,
+                transactionWalletReceives: fees.transactionWalletReceives,
+                escrowWalletReceives: fees.escrowWalletReceives,
+              },
+            },
+          })
+          .select()
+          .single();
+
+        if (prErr) throw prErr;
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            verified: true,
+            payoutRequest: payoutReq,
+            walletRouting: {
+              transactionWallet: AZIX_TRANSACTION_WALLET,
+              escrowWallet: AZIX_ESCROW_WALLET,
+            },
+            confirmationCode,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // ─── Match split payout (dual-party verification) ───────
+      case "match_split_payout": {
+        const { orderId: splitOrderId } = params;
+        if (!splitOrderId) throw new Error("orderId is required");
+
+        // Find all verified payout requests for this order
+        const { data: requests, error: rErr } = await supabase
+          .from("payout_requests")
+          .select("*")
+          .eq("order_number", splitOrderId)
+          .eq("payout_type", "split")
+          .eq("status", "verified");
+
+        if (rErr) throw rErr;
+
+        const buyerReq = requests?.find((r) => r.role === "buyer");
+        const vendorReq = requests?.find((r) => r.role === "vendor");
+
+        if (!buyerReq && !vendorReq) {
+          return new Response(
+            JSON.stringify({ success: true, matched: false, waiting: "both" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!buyerReq) {
+          return new Response(
+            JSON.stringify({ success: true, matched: false, waiting: "buyer" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!vendorReq) {
+          return new Response(
+            JSON.stringify({ success: true, matched: false, waiting: "vendor" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Both matched — update statuses
+        const now = new Date().toISOString();
+        await supabase
+          .from("payout_requests")
+          .update({ status: "matched", updated_at: now })
+          .in("id", [buyerReq.id, vendorReq.id]);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            matched: true,
+            buyerPayout: { id: buyerReq.id, amount: buyerReq.net_amount, confirmationCode: buyerReq.confirmation_code },
+            vendorPayout: { id: vendorReq.id, amount: vendorReq.net_amount, confirmationCode: vendorReq.confirmation_code },
+            walletRouting: {
+              transactionWallet: AZIX_TRANSACTION_WALLET,
+              escrowWallet: AZIX_ESCROW_WALLET,
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // ─── Get wallet routing (public, no auth) ──────────────
+      case "get_wallet_routing": {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transactionWallet: {
+              address: AZIX_TRANSACTION_WALLET,
+              purpose: "Collects transactional fees from checkout payments",
+            },
+            escrowWallet: {
+              address: AZIX_ESCROW_WALLET,
+              purpose: "Collects escrow service fees upon fund release",
+            },
+            feeRules: {
+              release: "1% escrow fee on full amount",
+              refund: "0% escrow fee — gas only ($0.02–$0.05)",
+              split: "1% escrow fee on vendor share only, gas doubled ($0.04)",
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
-    }
   } catch (err) {
     return new Response(
       JSON.stringify({ success: false, error: err.message }),
