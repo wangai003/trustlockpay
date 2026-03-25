@@ -9,12 +9,11 @@ import aiTwinBlack from "@/assets/ai-twin-black.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trustlock-assist`;
-
 interface AssistantChatProps {
   role: "vendor" | "buyer";
   title: string;
   placeholder?: string;
+  assistantName?: "amani" | "zawadi";
 }
 
 const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: AssistantChatProps) => {
