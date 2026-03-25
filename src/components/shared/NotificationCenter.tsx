@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { Bell, CheckCircle, AlertTriangle, ArrowLeftRight, DollarSign, Shield, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useCallback } from "react";
+import { Bell, CheckCircle, AlertTriangle, ArrowLeftRight, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
@@ -13,6 +12,7 @@ interface Notification {
   read: boolean;
 }
 
+// --- Testnet mock data (unchanged) ---
 const vendorNotifications: Notification[] = [
   { id: "n1", title: "New Order Received", message: "James O. placed order TL-2026-0891 for $200.00 — Kente Cloth Set", type: "transaction", time: "2 min ago", read: false },
   { id: "n2", title: "Payment Released", message: "Funds for TL-2026-0892 ($4,500.00) have been released to your account", type: "success", time: "1 hour ago", read: false },
@@ -52,14 +52,125 @@ const typeColors = {
   transaction: "text-foreground",
 };
 
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
+
+function mapDbType(type: string): Notification["type"] {
+  if (type === "success" || type === "warning" || type === "info" || type === "transaction") return type;
+  if (type === "dispute" || type === "alert") return "warning";
+  if (type === "payment" || type === "order") return "transaction";
+  return "info";
+}
+
 const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) => {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(notifMap[role]);
+  const [notifications, setNotifications] = useState<Notification[]>(notifMap[role]);
+  const [isMainnet, setIsMainnet] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const fetchNotifications = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  const dismiss = (id: string) => setNotifications(prev => prev.filter(n => n.id !== id));
+    if (!error && data && data.length > 0) {
+      setNotifications(
+        data.map((n) => ({
+          id: n.id,
+          title: n.title,
+          message: n.message || "",
+          type: mapDbType(n.type),
+          time: formatTimeAgo(n.created_at),
+          read: n.is_read,
+        }))
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        // Testnet fallback — use mock data
+        setNotifications(notifMap[role]);
+        return;
+      }
+
+      setIsMainnet(true);
+      const userId = session.user.id;
+      await fetchNotifications(userId);
+
+      // Subscribe to realtime inserts
+      channel = supabase
+        .channel(`notifications-${role}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            const n = payload.new as any;
+            setNotifications((prev) => [
+              {
+                id: n.id,
+                title: n.title,
+                message: n.message || "",
+                type: mapDbType(n.type),
+                time: formatTimeAgo(n.created_at),
+                read: n.is_read,
+              },
+              ...prev,
+            ]);
+          }
+        )
+        .subscribe();
+    };
+
+    init();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [role, fetchNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markRead = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    if (isMainnet) {
+      await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    }
+  };
+
+  const markAllRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (isMainnet) {
+      const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+      if (unreadIds.length > 0) {
+        await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+      }
+    }
+  };
+
+  const dismiss = async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    // No DB delete — just UI dismiss
+  };
 
   return (
     <div className="relative">
@@ -88,17 +199,21 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
               {notifications.length === 0 ? (
                 <p className="p-6 text-center text-sm text-muted-foreground">No notifications</p>
               ) : (
-                notifications.map(n => {
+                notifications.map((n) => {
                   const Icon = typeIcons[n.type];
                   return (
-                    <div key={n.id} className={cn("p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors", !n.read && "bg-primary/5")}>
+                    <div
+                      key={n.id}
+                      onClick={() => markRead(n.id)}
+                      className={cn("p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer", !n.read && "bg-primary/5")}
+                    >
                       <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", typeColors[n.type])} />
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-xs", !n.read && "font-semibold")}>{n.title}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{n.message}</p>
                         <p className="text-[9px] text-muted-foreground mt-1">{n.time}</p>
                       </div>
-                      <button onClick={() => dismiss(n.id)} className="text-muted-foreground hover:text-foreground shrink-0">
+                      <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground shrink-0">
                         <X className="w-3 h-3" />
                       </button>
                     </div>
