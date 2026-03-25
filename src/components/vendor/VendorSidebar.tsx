@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor" },
+  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments" },
   { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions" },
   { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts" },
   { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites" },
