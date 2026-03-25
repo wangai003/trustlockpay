@@ -580,6 +580,7 @@ Deno.serve(async (req) => {
 
       default:
         throw new Error(`Unknown action: ${action}`);
+    }
   } catch (err) {
     return new Response(
       JSON.stringify({ success: false, error: err.message }),
