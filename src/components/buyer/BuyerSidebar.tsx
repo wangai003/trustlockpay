@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/buyer" },
+  { label: "Bill Payments", icon: Receipt, to: "/trustlock/buyer/bill-payments" },
   { label: "My Orders", icon: Package, to: "/trustlock/buyer/orders" },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/buyer/disputes" },
   { label: "Support Assistant", icon: Bot, to: "/trustlock/buyer/assistant" },
