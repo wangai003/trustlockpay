@@ -44,6 +44,7 @@ import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
 import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
 import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
 import BuyerPayout from "./pages/buyer/BuyerPayout.tsx";
+import BuyerBillPayments from "./pages/buyer/BuyerBillPayments.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
