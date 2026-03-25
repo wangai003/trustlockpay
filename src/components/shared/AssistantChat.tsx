@@ -24,7 +24,6 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question...", assista
     ? `${assistantName}-chat`
     : "trustlock-assist";
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFn}`;
-  const aiAvatar = role === "vendor" ? aiTwinGrey : aiTwinBlack;
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
