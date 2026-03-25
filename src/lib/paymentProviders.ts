@@ -137,6 +137,29 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_fiat",
+    name: "Buy with Card (Thirdweb)",
+    category: "card",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
+      { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
+      { key: "cvv", label: "CVV", placeholder: "123", type: "text", required: true },
+      { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
+    ],
+  },
+  {
+    id: "thirdweb_wallet",
+    name: "Thirdweb Wallet",
+    category: "crypto_wallet",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Wallet Address", placeholder: "0x...", type: "text", required: true },
+    ],
+  },
 ];
 
 // ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
