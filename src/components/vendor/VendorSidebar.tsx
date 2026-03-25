@@ -10,6 +10,7 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor" },
+  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments" },
   { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions" },
   { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts" },
   { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites" },

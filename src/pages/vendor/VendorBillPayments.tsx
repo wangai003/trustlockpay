@@ -11,7 +11,7 @@ import {
   Receipt, DollarSign, Calendar, Filter, Download, CheckCircle,
   Clock, AlertTriangle, CreditCard, Minus
 } from "lucide-react";
-import { useOsPayments } from "@/hooks/useSupabaseData";
+
 
 type BillStatus = "all" | "paid" | "pending" | "overdue";
 
