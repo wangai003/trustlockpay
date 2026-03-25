@@ -9,17 +9,21 @@ import aiTwinBlack from "@/assets/ai-twin-black.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trustlock-assist`;
-
 interface AssistantChatProps {
   role: "vendor" | "buyer";
   title: string;
   placeholder?: string;
+  assistantName?: "amani" | "zawadi";
 }
 
-const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: AssistantChatProps) => {
+const AssistantChat = ({ role, title, placeholder = "Ask a question...", assistantName }: AssistantChatProps) => {
   const aiName = role === "vendor" ? "Amani" : "Zawadi";
   const aiAvatar = role === "vendor" ? aiTwinGrey : aiTwinBlack;
+
+  const edgeFn = assistantName
+    ? `${assistantName}-chat`
+    : "trustlock-assist";
+  const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFn}`;
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -72,7 +76,7 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question..." }: Assis
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages, role }),
+        body: JSON.stringify(assistantName ? { messages: allMessages } : { messages: allMessages, role }),
       });
 
       if (!resp.ok) {
