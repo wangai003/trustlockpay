@@ -5,6 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function generateToken(len = 48): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  for (const b of arr) out += chars[b % chars.length];
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,6 +33,18 @@ Deno.serve(async (req) => {
     switch (action) {
       case "file_dispute": {
         const newDisputeId = `DSP-${String(Date.now()).slice(-3)}`;
+
+        // Check if transaction >= $10,000 for auto-arbitration suggestion
+        let amount = 0;
+        if (txId) {
+          const { data: txData } = await supabase
+            .from("transactions")
+            .select("amount")
+            .eq("tx_id", txId)
+            .single();
+          amount = txData?.amount || 0;
+        }
+
         const { data, error } = await supabase
           .from("disputes")
           .insert({
@@ -32,15 +53,41 @@ Deno.serve(async (req) => {
             reason,
             description,
             status: "under_review",
-            priority: "medium",
+            priority: amount >= 10000 ? "critical" : "medium",
+            arbitration_fee: amount >= 10000 ? Math.round(amount * 0.02 * 100) / 100 : 0,
           })
           .select()
           .single();
         if (error) throw error;
 
-        // Update transaction if exists
         if (txId) {
-          await supabase.from("transactions").update({ status: "disputed", updated_at: new Date().toISOString() }).eq("tx_id", txId);
+          await supabase
+            .from("transactions")
+            .update({ status: "disputed", updated_at: new Date().toISOString() })
+            .eq("tx_id", txId);
+        }
+
+        // If >= $10k, notify admin suggesting arbitration
+        if (amount >= 10000) {
+          try {
+            const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/notification-triage";
+            await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                action: "triage",
+                notification_type: "dispute_high_value",
+                severity: "critical",
+                transaction_id: txId,
+                user_id: "system",
+                message: `High-value dispute ${newDisputeId} opened for $${amount.toLocaleString()}. Arbitration recommended.`,
+                metadata: { dispute_id: newDisputeId, amount, arbitration_suggested: true },
+              }),
+            });
+          } catch (_) { /* best-effort */ }
         }
 
         result = data;
@@ -90,6 +137,283 @@ Deno.serve(async (req) => {
           .select()
           .single();
         if (error) throw error;
+        result = data;
+        break;
+      }
+
+      // ─── Arbitration Actions ─────────────────────────────────
+
+      case "escalate_to_arbitration": {
+        // Fetch dispute + transaction to validate $10k threshold
+        const { data: dispute, error: dErr } = await supabase
+          .from("disputes")
+          .select("*, transactions:transaction_id(*)")
+          .eq("dispute_id", disputeId)
+          .single();
+        if (dErr) throw dErr;
+
+        const txAmount = dispute.amount || dispute.transactions?.amount || 0;
+        if (txAmount < 10000) {
+          throw new Error("Arbitration is only available for disputes on transactions >= $10,000");
+        }
+
+        const arbFee = Math.round(txAmount * 0.02 * 100) / 100; // 2%
+
+        const { data, error } = await supabase
+          .from("disputes")
+          .update({
+            status: "arbitration_pending",
+            priority: "critical",
+            arbitration_fee: arbFee,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId)
+          .select()
+          .single();
+        if (error) throw error;
+
+        // Create placeholder observer for arbitrator
+        if (dispute.transaction_id) {
+          await supabase.from("transaction_observers").insert({
+            transaction_id: dispute.transaction_id,
+            observer_email: "arbitration@trustlock.io",
+            observer_name: "Pending Arbitrator",
+            observer_role: "arbitrator",
+            permissions: ["view", "sign", "comment"],
+            access_token: generateToken(),
+          });
+        }
+
+        // Notify admin
+        try {
+          const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/notification-triage";
+          await fetch(fnUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              action: "triage",
+              notification_type: "arbitration_requested",
+              severity: "critical",
+              transaction_id: dispute.tx_id,
+              user_id: "system",
+              message: `Arbitration requested for dispute ${disputeId}. Amount: $${txAmount.toLocaleString()}. Fee: $${arbFee}`,
+              metadata: { dispute_id: disputeId, arbitration_fee: arbFee },
+            }),
+          });
+        } catch (_) { /* best-effort */ }
+
+        result = data;
+        break;
+      }
+
+      case "assign_arbitrator": {
+        const { arbitratorName, arbitratorEmail } = body;
+        if (!arbitratorName || !arbitratorEmail) {
+          throw new Error("arbitratorName and arbitratorEmail are required");
+        }
+
+        const { data: dispute, error: dErr } = await supabase
+          .from("disputes")
+          .select("*")
+          .eq("dispute_id", disputeId)
+          .single();
+        if (dErr) throw dErr;
+
+        const accessToken = generateToken();
+
+        // Update or insert the observer record
+        if (dispute.transaction_id) {
+          // Remove placeholder
+          await supabase
+            .from("transaction_observers")
+            .delete()
+            .eq("transaction_id", dispute.transaction_id)
+            .eq("observer_role", "arbitrator")
+            .eq("observer_name", "Pending Arbitrator");
+
+          await supabase.from("transaction_observers").insert({
+            transaction_id: dispute.transaction_id,
+            observer_email: arbitratorEmail,
+            observer_name: arbitratorName,
+            observer_role: "arbitrator",
+            permissions: ["view", "sign", "upload", "comment"],
+            access_token: accessToken,
+            invite_accepted: false,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+          });
+        }
+
+        const { data, error } = await supabase
+          .from("disputes")
+          .update({
+            status: "arbitration_in_progress",
+            arbitrator_id: accessToken, // store reference
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId)
+          .select()
+          .single();
+        if (error) throw error;
+
+        // Notify both parties
+        try {
+          const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/notification-triage";
+          for (const userId of [dispute.buyer_id, dispute.vendor_id].filter(Boolean)) {
+            await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                action: "triage",
+                notification_type: "arbitrator_assigned",
+                severity: "high",
+                transaction_id: dispute.tx_id,
+                user_id: userId,
+                message: `Arbitrator ${arbitratorName} has been assigned to dispute ${disputeId}.`,
+                metadata: { dispute_id: disputeId, arbitrator_name: arbitratorName },
+              }),
+            });
+          }
+        } catch (_) { /* best-effort */ }
+
+        result = { ...data, access_link: `/audit?token=${accessToken}&role=arbitrator` };
+        break;
+      }
+
+      case "submit_ruling": {
+        const { ruling, splitPercentage } = body;
+        const validRulings = ["full_refund", "partial_refund", "vendor_release", "dismiss"];
+        if (!validRulings.includes(ruling)) {
+          throw new Error(`Invalid ruling. Must be one of: ${validRulings.join(", ")}`);
+        }
+
+        let resolutionText = "";
+        switch (ruling) {
+          case "full_refund":
+            resolutionText = "Arbitrator ruled: Full refund to buyer";
+            break;
+          case "partial_refund":
+            resolutionText = `Arbitrator ruled: Partial refund — ${splitPercentage || 50}% to buyer, ${100 - (splitPercentage || 50)}% to vendor`;
+            break;
+          case "vendor_release":
+            resolutionText = "Arbitrator ruled: Full release to vendor";
+            break;
+          case "dismiss":
+            resolutionText = "Arbitrator ruled: Dispute dismissed — funds held pending further review";
+            break;
+        }
+
+        const { data, error } = await supabase
+          .from("disputes")
+          .update({
+            status: "ruling_issued",
+            arbitration_ruling: ruling,
+            resolution: resolutionText,
+            ruling_accepted_buyer: false,
+            ruling_accepted_vendor: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId)
+          .select()
+          .single();
+        if (error) throw error;
+
+        // Generate acknowledgement form for the ruling
+        try {
+          if (data.transaction_id) {
+            const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/acknowledgement-form";
+            await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                action: "generate",
+                transaction_id: data.transaction_id,
+                form_type: "milestone_signoff",
+                title: `Arbitration Ruling — ${disputeId}`,
+              }),
+            });
+          }
+        } catch (_) { /* best-effort */ }
+
+        // Notify both parties
+        try {
+          const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/notification-triage";
+          for (const userId of [data.buyer_id, data.vendor_id].filter(Boolean)) {
+            await fetch(fnUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                action: "triage",
+                notification_type: "arbitration_ruling",
+                severity: "critical",
+                transaction_id: data.tx_id,
+                user_id: userId,
+                message: `Arbitration ruling issued for ${disputeId}: ${resolutionText}. You have 7 days to accept.`,
+                metadata: { dispute_id: disputeId, ruling, split_percentage: splitPercentage },
+              }),
+            });
+          }
+        } catch (_) { /* best-effort */ }
+
+        result = data;
+        break;
+      }
+
+      case "accept_ruling": {
+        const { party } = body; // "buyer" or "vendor"
+        if (!["buyer", "vendor"].includes(party)) {
+          throw new Error("party must be 'buyer' or 'vendor'");
+        }
+
+        const updateField = party === "buyer" ? "ruling_accepted_buyer" : "ruling_accepted_vendor";
+        const { data, error } = await supabase
+          .from("disputes")
+          .update({
+            [updateField]: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId)
+          .select()
+          .single();
+        if (error) throw error;
+
+        // If both accepted, resolve and trigger payout
+        if (data.ruling_accepted_buyer && data.ruling_accepted_vendor) {
+          await supabase
+            .from("disputes")
+            .update({ status: "resolved", updated_at: new Date().toISOString() })
+            .eq("dispute_id", disputeId);
+
+          // Trigger payout based on ruling
+          if (data.transaction_id && data.arbitration_ruling !== "dismiss") {
+            try {
+              const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/escrow-manager";
+              await fetch(fnUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                },
+                body: JSON.stringify({
+                  action: "release_funds",
+                  transaction_id: data.transaction_id,
+                }),
+              });
+            } catch (_) { /* best-effort */ }
+          }
+        }
+
         result = data;
         break;
       }

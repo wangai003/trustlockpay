@@ -180,6 +180,58 @@ export function useResolveDispute() {
   });
 }
 
+export function useEscalateToArbitration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (disputeId: string) =>
+      callEdgeFunction("manage-dispute", { action: "escalate_to_arbitration", disputeId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute escalated to arbitration");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useAssignArbitrator() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { disputeId: string; arbitratorName: string; arbitratorEmail: string }) =>
+      callEdgeFunction("manage-dispute", { action: "assign_arbitrator", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Arbitrator assigned successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSubmitRuling() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { disputeId: string; ruling: string; splitPercentage?: number }) =>
+      callEdgeFunction("manage-dispute", { action: "submit_ruling", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Arbitration ruling submitted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useAcceptRuling() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { disputeId: string; party: "buyer" | "vendor" }) =>
+      callEdgeFunction("manage-dispute", { action: "accept_ruling", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Ruling accepted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ─── Payouts ────────────────────────────────────────────────
 export function usePayouts() {
   return useQuery({
