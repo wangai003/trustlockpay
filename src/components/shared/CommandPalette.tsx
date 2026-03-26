@@ -223,6 +223,31 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
             to: role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`,
           });
         });
+
+        // Search documents via edge function
+        if (search.length >= 3) {
+          try {
+            const docRes = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-sharing`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+                body: JSON.stringify({ action: "search_documents", query: search, user_role: role }),
+              }
+            );
+            const docData = await docRes.json();
+            if (docData.success && docData.data?.documents) {
+              docData.data.documents.slice(0, 5).forEach((d: any) => {
+                results.push({
+                  type: "document",
+                  label: `📄 ${d.file_name}`,
+                  sub: `${d.source} · ${d.milestone_title} · ${d.transaction_id ? `TX: ${d.transaction_id}` : ""} · ${d.buyer_name || d.vendor_name || ""} · ${d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString() : ""}`.replace(/· ·/g, "·"),
+                  to: `${basePath}/documents`,
+                });
+              });
+            }
+          } catch (_) { /* silent */ }
+        }
       } catch {
         // silent
       }
