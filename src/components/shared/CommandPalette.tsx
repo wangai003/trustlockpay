@@ -41,6 +41,7 @@ const adminItems: CommandEntry[] = [
   { label: "OS Payout", to: "/trustlock/admin/payout", icon: Banknote, keywords: "withdraw disbursement funds", group: "Admin" },
   { label: "Audit Access", to: "/trustlock/admin/audit", icon: ShieldCheck, keywords: "regulators read-only session", group: "Admin" },
   { label: "Settings", to: "/trustlock/admin/settings", icon: Settings, keywords: "config preferences network", group: "Admin" },
+  { label: "Industry Playbook", to: "/trustlock/admin/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Admin" },
 ];
 
 const vendorItems: CommandEntry[] = [
@@ -59,6 +60,7 @@ const vendorItems: CommandEntry[] = [
   { label: "OS Pay", to: "/trustlock/vendor/os-pay", icon: Wallet, keywords: "internal payment service", group: "Vendor" },
   { label: "OS Payout", to: "/trustlock/vendor/payout", icon: Banknote, keywords: "withdraw funds local diaspora", group: "Vendor" },
   { label: "Settings", to: "/trustlock/vendor/settings", icon: Settings, keywords: "preferences notifications account", group: "Vendor" },
+  { label: "Industry Playbook", to: "/trustlock/vendor/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Vendor" },
 ];
 
 const buyerItems: CommandEntry[] = [
@@ -73,6 +75,7 @@ const buyerItems: CommandEntry[] = [
   { label: "OS Pay", to: "/trustlock/buyer/os-pay", icon: Wallet, keywords: "internal payment", group: "Buyer" },
   { label: "OS Payout", to: "/trustlock/buyer/payout", icon: Banknote, keywords: "withdraw refund funds", group: "Buyer" },
   { label: "Settings", to: "/trustlock/buyer/settings", icon: Settings, keywords: "preferences notifications", group: "Buyer" },
+  { label: "Industry Playbook", to: "/trustlock/buyer/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Buyer" },
 ];
 
 const knowledgeItems: CommandEntry[] = [
@@ -119,6 +122,7 @@ const searchSuggestions = [
   { text: "AML Screening", hint: "Sanctions & compliance checks" },
   { text: "Payout Request", hint: "Fund withdrawal & disbursement" },
   { text: "Contract Upload", hint: "B2B agreement documentation" },
+  { text: "Industry Playbook", hint: "Workflow capabilities by industry" },
 ];
 
 interface CommandPaletteProps {
