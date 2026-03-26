@@ -403,6 +403,116 @@ const TrustLockOSPayout = ({
         </Card>
       </div>
 
+      {/* Dynamic Payout Fields — Country-Specific */}
+      <Card className="border-2 border-primary/20">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">Payout Destination</h3>
+          </div>
+
+          {/* Country Selector */}
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Country</Label>
+            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Choose your country" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYOUT_COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Loading */}
+          {loadingFields && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-xs">Loading payout fields...</span>
+            </div>
+          )}
+
+          {/* Method Selector (if multiple methods available) */}
+          {payoutConfigs.length > 1 && (
+            <div>
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Method</Label>
+              <div className="flex gap-2 mt-1">
+                {[...new Set(payoutConfigs.map((c) => c.payout_method))].map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => { setSelectedMethod(method); setDynamicFields({}); }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
+                      selectedMethod === method
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Fields */}
+          {activeFields.length > 0 && (
+            <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-foreground">
+                  {activeConfig?.provider && (
+                    <Badge variant="outline" className="mr-2 text-[10px]">via {activeConfig.provider}</Badge>
+                  )}
+                  Required Information
+                </p>
+              </div>
+              {activeFields.map((field) => (
+                <div key={field.field_name}>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {field.label}{field.is_required && " *"}
+                  </Label>
+                  {field.type === "select" ? (
+                    <Select
+                      value={dynamicFields[field.field_name] || ""}
+                      onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder={field.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.validation_regex
+                          .replace(/^\^?\(?/, "")
+                          .replace(/\)?\$$/, "")
+                          .split("|")
+                          .filter(Boolean)
+                          .map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      type={field.type === "tel" ? "tel" : "text"}
+                      placeholder={field.placeholder}
+                      value={dynamicFields[field.field_name] || ""}
+                      onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
+                      className="mt-1 text-sm"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedCountry && !loadingFields && payoutConfigs.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No specific payout configuration found for this country. Please use the provider search above.
+            </p>
+          )}
+        </CardContent>
+      </Card>
       {/* Fee Summary */}
       {fees && amountNum > 0 && (
         <Card>
