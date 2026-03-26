@@ -1004,6 +1004,10 @@ export type Database = {
         Args: { _account_id: string; _password: string }
         Returns: boolean
       }
+      verify_audit_password: {
+        Args: { _password: string; _session_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "vendor" | "buyer"
