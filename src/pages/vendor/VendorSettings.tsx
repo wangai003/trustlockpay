@@ -35,6 +35,9 @@ const VendorSettings = () => {
   });
 
   const [disableConfirm, setDisableConfirm] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Sync from DB when settings load
   useEffect(() => {
