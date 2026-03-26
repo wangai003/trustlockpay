@@ -29,6 +29,7 @@ import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
 import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
 import AdminPayout from "./pages/admin/AdminPayout.tsx";
 import AdminAudit from "./pages/admin/AdminAudit.tsx";
+import AdminIndustryPlaybook from "./pages/admin/AdminIndustryPlaybook.tsx";
 import AuditPortal from "./pages/audit/AuditPortal.tsx";
 
 // Buyer
