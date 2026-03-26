@@ -1,8 +1,11 @@
+import { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 
 const pinnedDocs = [
   {
@@ -64,10 +67,67 @@ const documents = [
 ];
 
 const AdminDocuments = () => {
+  const [showAckPreview, setShowAckPreview] = useState(false);
+  const [previewIndustry, setPreviewIndustry] = useState("default");
+
   return (
     <div>
       <AdminHeader title="Document Library" />
       <div className="p-6 space-y-6">
+
+        {/* ── Acknowledgement Form Preview ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Escrow Acknowledgement Form</CardTitle>
+                  <CardDescription className="text-xs">Dynamic legal form — adapts by industry. Preview any variant below.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAckPreview(!showAckPreview)}>
+                <Eye className="w-3.5 h-3.5" />
+                {showAckPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showAckPreview && (
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Industry:</span>
+                <Select value={previewIndustry} onValueChange={setPreviewIndustry}>
+                  <SelectTrigger className="w-48 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">General Transaction</SelectItem>
+                    <SelectItem value="e-commerce">E-Commerce / Retail</SelectItem>
+                    <SelectItem value="real-estate">Real Estate & Property</SelectItem>
+                    <SelectItem value="professional-services">Professional Services</SelectItem>
+                    <SelectItem value="agriculture-cargo">Agriculture & Cargo</SelectItem>
+                    <SelectItem value="mining-minerals">Mining & Minerals</SelectItem>
+                    <SelectItem value="construction">Construction</SelectItem>
+                    <SelectItem value="logistics-freight">Logistics & Freight</SelectItem>
+                    <SelectItem value="hospitality">Hospitality & Travel</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Badge variant="secondary" className="text-[10px]">Read-Only Preview</Badge>
+              </div>
+              <AcknowledgementForm
+                industry={previewIndustry}
+                orderAmount={25000}
+                buyerName="Sample Buyer"
+                vendorName="Sample Vendor"
+                txId="TL-PREVIEW"
+                milestoneCount={4}
+                onAccept={() => {}}
+              />
+            </CardContent>
+          )}
+        </Card>
         <div>
           <h2 className="font-heading text-lg font-bold">Admin Reference Library</h2>
           <p className="text-sm text-muted-foreground">
