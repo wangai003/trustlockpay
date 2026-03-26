@@ -23,7 +23,7 @@ interface TrustLockOSPayProps {
   isTestnet?: boolean;
 }
 
-const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete }: TrustLockOSPayProps) => {
+const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
   const isAdmin = role === "admin";
 
   const [method, setMethod] = useState<PaymentMethod>(null);
