@@ -28,6 +28,7 @@ import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
 import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
 import AdminPayout from "./pages/admin/AdminPayout.tsx";
+import AuditPortal from "./pages/audit/AuditPortal.tsx";
 
 // Buyer
 import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
@@ -153,6 +154,9 @@ const App = () => (
 
             {/* Standalone Confirmation Page (no login required) */}
             <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+
+            {/* Read-Only Audit Portal (token-based access) */}
+            <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
