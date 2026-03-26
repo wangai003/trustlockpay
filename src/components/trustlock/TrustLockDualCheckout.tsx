@@ -15,6 +15,7 @@ const TrustLockDualCheckout = () => {
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
