@@ -155,6 +155,9 @@ const App = () => (
             {/* Standalone Confirmation Page (no login required) */}
             <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
 
+            {/* Read-Only Audit Portal (token-based access) */}
+            <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
