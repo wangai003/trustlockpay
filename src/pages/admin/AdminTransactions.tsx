@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useFlagForReview } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 
 type TxStatus = "all" | "locked" | "released" | "disputed" | "cancelled";
 
