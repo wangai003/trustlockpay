@@ -112,7 +112,7 @@ const VendorStandaloneLinks = () => {
               {/* Invoice preview */}
               <div className="border border-border rounded-lg p-4 bg-muted/30">
                 <p className="text-xs font-semibold text-muted-foreground mb-3">📄 Invoice Preview (buyer will see this)</p>
-                <StandaloneInvoice vendorName="Your Business" />
+                <StandaloneInvoice vendorName="Your Business" onProceed={() => {}} />
               </div>
 
               <div className="flex gap-2">
