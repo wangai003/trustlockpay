@@ -97,6 +97,7 @@ const AdminTransactions = () => {
                   {filtered.map((tx) => {
                     const cfg = statusConfig[tx.status] || statusConfig.locked;
                     return (
+                      <>
                       <tr key={tx.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="p-4"><Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} /></td>
                         <td className="p-4 font-mono text-xs">{tx.id}</td>
