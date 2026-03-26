@@ -218,6 +218,7 @@ interface AcknowledgementFormProps {
   milestoneCount?: number;
   onAccept: () => void;
   onDecline?: () => void;
+  requireTypedSignature?: boolean;
 }
 
 const AcknowledgementForm = ({
