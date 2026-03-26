@@ -126,8 +126,6 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Auditor Access */}
-        <AuditManager />
 
         <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
