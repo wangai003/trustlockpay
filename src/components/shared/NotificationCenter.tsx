@@ -70,10 +70,34 @@ function mapDbType(type: string): Notification["type"] {
   return "info";
 }
 
+// AI triage priority levels
+const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+
+function triagePriority(n: Notification): keyof typeof priorityOrder {
+  const text = `${n.title} ${n.message}`.toLowerCase();
+  // Critical: fraud, sanctions, arbitration, $10k+
+  if (text.includes("sanction") || text.includes("fraud") || text.includes("arbitrat") || text.includes("blocked")) return "critical";
+  if (/\$\d{2,3},\d{3}/.test(text) || /\$\d{5,}/.test(text.replace(/,/g, ""))) return "critical";
+  // High: disputes, observer failures, escalation
+  if (n.type === "warning" || text.includes("dispute") || text.includes("escalat") || text.includes("observer")) return "high";
+  // Medium: KYC, payouts, milestones
+  if (text.includes("kyc") || text.includes("payout") || text.includes("milestone") || text.includes("verification")) return "medium";
+  // Low: confirmations, routine
+  return "low";
+}
+
+const priorityLabels: Record<string, { label: string; color: string }> = {
+  critical: { label: "CRITICAL", color: "bg-destructive text-destructive-foreground" },
+  high: { label: "HIGH", color: "bg-accent/20 text-accent-foreground" },
+  medium: { label: "MED", color: "bg-muted text-muted-foreground" },
+  low: { label: "LOW", color: "bg-muted text-muted-foreground" },
+};
+
 const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(notifMap[role]);
   const [isMainnet, setIsMainnet] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async (userId: string) => {
     const { data, error } = await supabase
