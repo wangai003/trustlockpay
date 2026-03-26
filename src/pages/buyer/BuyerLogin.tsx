@@ -89,7 +89,7 @@ const BuyerLogin = () => {
     }
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_buyer_auth", "true");
         localStorage.setItem("tl_buyer_network", "testnet");
         localStorage.removeItem("tl_buyer_failed");

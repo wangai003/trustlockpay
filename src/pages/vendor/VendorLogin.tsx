@@ -85,7 +85,7 @@ const VendorLogin = () => {
     if (isLocked) { setError(`Account locked. Try again in ${remainingMin} minutes.`); return; }
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_vendor_auth", "true");
         localStorage.setItem("tl_vendor_network", "testnet");
         localStorage.setItem("tl_vendor_onboarded", "true");
