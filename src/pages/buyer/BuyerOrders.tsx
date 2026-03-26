@@ -3,8 +3,9 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
