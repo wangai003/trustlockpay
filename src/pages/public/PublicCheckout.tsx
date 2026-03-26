@@ -9,12 +9,13 @@ import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import SanctionsGate from "@/components/shared/SanctionsGate";
+import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"invoice" | "compliance" | "pay" | "done">("invoice");
+  const [step, setStep] = useState<"invoice" | "compliance" | "acknowledge" | "pay" | "done">("invoice");
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
     taxTotal: number;
