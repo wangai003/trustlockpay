@@ -14,7 +14,7 @@ const AdminLogin = () => {
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
-  const [password, setPassword] = useState(isTestnet ? "123" : "");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
@@ -56,7 +56,7 @@ const AdminLogin = () => {
     setIsTestnet(!checked);
     if (!checked) {
       setIdentifier("admin@trustlock.test");
-      setPassword("123");
+      setPassword("");
     } else {
       setIdentifier("");
       setPassword("");
@@ -70,7 +70,7 @@ const AdminLogin = () => {
     setError("");
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_admin_auth", "true");
         localStorage.setItem("tl_network", "testnet");
         navigate("/trustlock/admin");
