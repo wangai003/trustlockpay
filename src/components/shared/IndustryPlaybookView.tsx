@@ -74,6 +74,13 @@ const industries = [
     buyerCaps: ["Escrow-protected tuition payments", "Track course module progress", "Dispute if content not delivered", "Access certificates and transcripts", "Partial refund for incomplete programs", "Auto-release per module completion"],
     vendorCaps: ["Structured tuition collection", "Upload course materials per module", "Student progress tracking", "Certificate generation tools", "Multi-cohort management", "Subscription billing support"],
   },
+  {
+    id: "project-management", name: "Project Management", icon: ClipboardList, color: "text-cyan-600",
+    desc: "Multi-stakeholder escrow for PM-led projects with milestone tracking, observer sign-offs, and Gantt-style progress.",
+    stages: ["Project Charter & SOW Upload", "Kick-Off & Team Assignment", "Phase 1 Deliverables", "Mid-Project Review & Change Orders", "Phase 2 Deliverables", "UAT / Client Acceptance Testing", "Project Close-Out & Final Payout"],
+    buyerCaps: ["Track project milestones on a visual timeline", "Approve/reject deliverables per phase", "Request change orders with escrow adjustment", "Observer sign-off from QA or third-party auditors", "Dispute individual phases independently", "View PM credentials and team composition", "14-day auto-release with holdback option"],
+    vendorCaps: ["Structured milestone-based payments", "Upload deliverables and progress reports per phase", "Change order workflow with buyer co-sign", "Team role assignment (PM, Lead, Assistant)", "Gantt-style timeline dashboard view", "Auto-signature protocol for repeat engagements", "Risk register and issue log integration"],
+  },
 ];
 
 // ─── Map playbook industry IDs → MilestoneEditor template keys ───
