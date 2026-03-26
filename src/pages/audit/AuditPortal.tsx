@@ -248,6 +248,21 @@ const AuditPortal = () => {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm">{TABLE_LABELS[tableName] || tableName}</CardTitle>
                   <div className="flex items-center gap-2">
+                    {lastRefresh && (
+                      <span className="text-[10px] text-muted-foreground">
+                        Updated {lastRefresh.toLocaleTimeString()}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={handleManualRefresh}
+                      disabled={refreshing}
+                      title="Refresh data"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+                    </Button>
                     <span className="text-xs text-muted-foreground">
                       {tableData[tableName]?.length ?? 0} records
                     </span>
