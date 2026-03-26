@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
