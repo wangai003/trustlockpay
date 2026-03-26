@@ -60,6 +60,7 @@ const vendorItems: CommandEntry[] = [
   { label: "OS Pay", to: "/trustlock/vendor/os-pay", icon: Wallet, keywords: "internal payment service", group: "Vendor" },
   { label: "OS Payout", to: "/trustlock/vendor/payout", icon: Banknote, keywords: "withdraw funds local diaspora", group: "Vendor" },
   { label: "Settings", to: "/trustlock/vendor/settings", icon: Settings, keywords: "preferences notifications account", group: "Vendor" },
+  { label: "Industry Playbook", to: "/trustlock/vendor/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Vendor" },
 ];
 
 const buyerItems: CommandEntry[] = [
