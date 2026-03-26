@@ -128,6 +128,38 @@ function performScreening(fullName: string, country: string) {
   return { result, riskScore, matchedEntries };
 }
 
+// ─── Triage Helper ─────────────────────────────────────────
+async function triageNotify(
+  notificationType: string,
+  userId: string,
+  message: string,
+  transactionId?: string,
+  severity?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notification-triage`;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        action: "triage",
+        notification_type: notificationType,
+        user_id: userId,
+        message,
+        transaction_id: transactionId,
+        severity,
+        metadata,
+      }),
+    });
+  } catch (e) {
+    console.error("Triage notification error:", e);
+  }
+}
+
 // ─── Main ──────────────────────────────────────────────────
 function getSupabaseAdmin() {
   return createClient(
