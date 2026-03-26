@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
   CommandEmpty,
@@ -12,8 +12,10 @@ import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
   ShieldCheck, FileText, BarChart3, Bot, Settings, Wallet, GitBranch,
   Banknote, Package, HelpCircle, CreditCard, Globe, DollarSign, Receipt, Link2,
-  Search, BookOpen
+  BookOpen, Search, Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 type CommandEntry = {
   label: string;
@@ -94,10 +96,19 @@ interface CommandPaletteProps {
   role: "admin" | "vendor" | "buyer";
 }
 
+interface LiveResult {
+  type: "transaction" | "dispute" | "order";
+  label: string;
+  sub: string;
+  to: string;
+}
+
 const CommandPalette = ({ role }: CommandPaletteProps) => {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -110,6 +121,71 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
+  // Live DB search with debounce
+  useEffect(() => {
+    if (!open || search.length < 2) {
+      setLiveResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const results: LiveResult[] = [];
+      const basePath = `/trustlock/${role}`;
+      try {
+        // Search transactions
+        const { data: txs } = await supabase
+          .from("transactions")
+          .select("tx_id, item, amount, status, buyer_name, vendor_name")
+          .or(`tx_id.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .limit(5);
+        txs?.forEach((tx) => {
+          const txRoute = role === "admin" ? `${basePath}/transactions` : role === "vendor" ? `${basePath}/transactions` : `${basePath}/orders`;
+          results.push({
+            type: "transaction",
+            label: `${tx.tx_id} — ${tx.item || "Order"}`,
+            sub: `$${tx.amount} · ${tx.status} · ${tx.buyer_name || ""} → ${tx.vendor_name || ""}`,
+            to: txRoute,
+          });
+        });
+
+        // Search disputes
+        const { data: disputes } = await supabase
+          .from("disputes")
+          .select("dispute_id, reason, status, buyer_name, vendor_name, amount")
+          .or(`dispute_id.ilike.%${search}%,reason.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .limit(5);
+        disputes?.forEach((d) => {
+          results.push({
+            type: "dispute",
+            label: `${d.dispute_id} — ${d.reason || "Dispute"}`,
+            sub: `$${d.amount || 0} · ${d.status} · ${d.buyer_name || ""} vs ${d.vendor_name || ""}`,
+            to: role === "buyer" ? `${basePath}/disputes` : `${basePath}/disputes`,
+          });
+        });
+
+        // Search carbon copies / orders
+        const { data: orders } = await supabase
+          .from("order_carbon_copies")
+          .select("order_number, item, amount, status, buyer_name, vendor_name")
+          .or(`order_number.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .limit(5);
+        orders?.forEach((o) => {
+          results.push({
+            type: "order",
+            label: `Order ${o.order_number || ""} — ${o.item || "Item"}`,
+            sub: `$${o.amount || 0} · ${o.status} · ${o.buyer_name || ""}`,
+            to: role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`,
+          });
+        });
+      } catch {
+        // silent
+      }
+      setLiveResults(results);
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search, open, role]);
+
   const roleItems = useMemo(() => {
     switch (role) {
       case "admin": return adminItems;
@@ -118,24 +194,68 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     }
   }, [role]);
 
-  const handleSelect = (item: CommandEntry) => {
+  const handleSelect = (to: string) => {
     setOpen(false);
-    if (item.to) {
-      navigate(item.to);
+    setSearch("");
+    if (to) navigate(to);
+  };
+
+  const typeIcon = (type: LiveResult["type"]) => {
+    switch (type) {
+      case "transaction": return ArrowLeftRight;
+      case "dispute": return AlertTriangle;
+      case "order": return Package;
     }
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search pages, orders, help topics…" />
+    <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
+      <CommandInput
+        placeholder="Search pages, transactions, disputes, orders…"
+        value={search}
+        onValueChange={setSearch}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {searching ? (
+            <span className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Searching database…
+            </span>
+          ) : (
+            "No results found."
+          )}
+        </CommandEmpty>
+
+        {/* Live DB Results */}
+        {liveResults.length > 0 && (
+          <CommandGroup heading="Database Results">
+            {liveResults.map((r, i) => {
+              const Icon = typeIcon(r.type);
+              return (
+                <CommandItem
+                  key={`live-${i}`}
+                  value={`${r.label} ${r.sub}`}
+                  onSelect={() => handleSelect(r.to)}
+                  className="gap-3"
+                >
+                  <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{r.label}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-[9px] shrink-0 capitalize">{r.type}</Badge>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
         <CommandGroup heading="Pages">
           {roleItems.map((item) => (
             <CommandItem
               key={item.to}
               value={`${item.label} ${item.keywords}`}
-              onSelect={() => handleSelect(item)}
+              onSelect={() => handleSelect(item.to)}
               className="gap-3"
             >
               <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -148,7 +268,7 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
             <CommandItem
               key={i}
               value={`${item.label} ${item.keywords}`}
-              onSelect={() => handleSelect(item)}
+              onSelect={() => handleSelect(item.to)}
               className="gap-3"
             >
               <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, X, GripVertical, Upload, Check, AlertTriangle, ArrowRight,
-  FileText, Lock, Unlock, RotateCcw
+  FileText, Lock, Unlock, RotateCcw, Eye, UserPlus, Mail
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -16,48 +16,56 @@ import { cn } from "@/lib/utils";
 // ─── Industry Templates ───────────────────────────────────
 const INDUSTRY_TEMPLATES: Record<string, MilestoneTemplate[]> = {
   "e-commerce": [
-    { name: "Payment Confirmed", percentage: 100, documents: [], description: "Full payment locked in escrow" },
+    { name: "Payment Confirmed", percentage: 100, documents: [], description: "Full payment locked in escrow", requiresObserver: false },
   ],
   "real-estate": [
-    { name: "Due Diligence", percentage: 10, documents: ["Title Deed", "Property Survey"], description: "Legal review and property verification" },
-    { name: "Inspection", percentage: 15, documents: ["Inspection Report"], description: "Physical property inspection" },
-    { name: "Appraisal", percentage: 15, documents: ["Appraisal Report"], description: "Independent property valuation" },
-    { name: "Closing", percentage: 60, documents: ["Closing Documents", "Transfer Agreement"], description: "Final transfer and key handover" },
+    { name: "Due Diligence", percentage: 10, documents: ["Title Deed", "Property Survey"], description: "Legal review and property verification", requiresObserver: true },
+    { name: "Inspection", percentage: 15, documents: ["Inspection Report"], description: "Physical property inspection", requiresObserver: false },
+    { name: "Appraisal", percentage: 15, documents: ["Appraisal Report"], description: "Independent property valuation", requiresObserver: true },
+    { name: "Closing", percentage: 60, documents: ["Closing Documents", "Transfer Agreement"], description: "Final transfer and key handover", requiresObserver: true },
   ],
   "professional-services": [
-    { name: "Discovery & Scope", percentage: 20, documents: ["Scope Document"], description: "Requirements gathering and project scoping" },
-    { name: "Draft Delivery", percentage: 30, documents: ["Draft Deliverable"], description: "First draft or prototype delivered" },
-    { name: "Revision Round", percentage: 20, documents: [], description: "Client feedback and revisions" },
-    { name: "Final Delivery", percentage: 30, documents: ["Final Deliverable", "Sign-off Form"], description: "Approved final work product" },
+    { name: "Discovery & Scope", percentage: 20, documents: ["Scope Document"], description: "Requirements gathering and project scoping", requiresObserver: false },
+    { name: "Draft Delivery", percentage: 30, documents: ["Draft Deliverable"], description: "First draft or prototype delivered", requiresObserver: false },
+    { name: "Revision Round", percentage: 20, documents: [], description: "Client feedback and revisions", requiresObserver: false },
+    { name: "Final Delivery", percentage: 30, documents: ["Final Deliverable", "Sign-off Form"], description: "Approved final work product", requiresObserver: false },
   ],
   "agriculture-cargo": [
-    { name: "Contract Signed", percentage: 10, documents: ["Purchase Contract", "Export License"], description: "Trade agreement executed" },
-    { name: "Loading & Inspection", percentage: 20, documents: ["Inspection Certificate", "Phytosanitary Certificate"], description: "Goods loaded and inspected" },
-    { name: "Shipping", percentage: 30, documents: ["Bill of Lading", "Insurance Certificate"], description: "Goods in transit" },
-    { name: "Customs Clearance", percentage: 15, documents: ["Certificate of Origin", "Customs Declaration"], description: "Import clearance completed" },
-    { name: "Delivery & Acceptance", percentage: 25, documents: ["Delivery Receipt", "Quality Report"], description: "Goods received and accepted" },
+    { name: "Contract Signed", percentage: 10, documents: ["Purchase Contract", "Export License"], description: "Trade agreement executed", requiresObserver: true },
+    { name: "Loading & Inspection", percentage: 20, documents: ["Inspection Certificate", "Phytosanitary Certificate"], description: "Goods loaded and inspected", requiresObserver: true },
+    { name: "Shipping", percentage: 30, documents: ["Bill of Lading", "Insurance Certificate"], description: "Goods in transit", requiresObserver: true },
+    { name: "Customs Clearance", percentage: 15, documents: ["Certificate of Origin", "Customs Declaration"], description: "Import clearance completed", requiresObserver: true },
+    { name: "Delivery & Acceptance", percentage: 25, documents: ["Delivery Receipt", "Quality Report"], description: "Goods received and accepted", requiresObserver: false },
   ],
   "mining-minerals": [
-    { name: "Sample Approval", percentage: 15, documents: ["Assay Report"], description: "Mineral sample analysis approved" },
-    { name: "Extraction", percentage: 25, documents: ["Extraction Report", "Environmental Compliance"], description: "Mineral extraction completed" },
-    { name: "Processing", percentage: 25, documents: ["Processing Report", "Certificate of Origin"], description: "Mineral processing and grading" },
-    { name: "Shipment", percentage: 35, documents: ["Bill of Lading", "Export License"], description: "Final shipment dispatched" },
+    { name: "Sample Approval", percentage: 15, documents: ["Assay Report"], description: "Mineral sample analysis approved", requiresObserver: true },
+    { name: "Extraction", percentage: 25, documents: ["Extraction Report", "Environmental Compliance"], description: "Mineral extraction completed", requiresObserver: true },
+    { name: "Processing", percentage: 25, documents: ["Processing Report", "Certificate of Origin"], description: "Mineral processing and grading", requiresObserver: true },
+    { name: "Shipment", percentage: 35, documents: ["Bill of Lading", "Export License"], description: "Final shipment dispatched", requiresObserver: true },
   ],
   "digital-services": [
-    { name: "Setup & Access", percentage: 25, documents: [], description: "Account setup and access credentials shared" },
-    { name: "Development", percentage: 35, documents: ["Progress Report"], description: "Core development phase" },
-    { name: "Testing & QA", percentage: 15, documents: ["Test Results"], description: "Quality assurance and bug fixes" },
-    { name: "Launch & Handover", percentage: 25, documents: ["Launch Confirmation", "Access Credentials"], description: "Go-live and full handover" },
+    { name: "Setup & Access", percentage: 25, documents: [], description: "Account setup and access credentials shared", requiresObserver: false },
+    { name: "Development", percentage: 35, documents: ["Progress Report"], description: "Core development phase", requiresObserver: false },
+    { name: "Testing & QA", percentage: 15, documents: ["Test Results"], description: "Quality assurance and bug fixes", requiresObserver: false },
+    { name: "Launch & Handover", percentage: 25, documents: ["Launch Confirmation", "Access Credentials"], description: "Go-live and full handover", requiresObserver: false },
   ],
   "hospitality-travel": [
-    { name: "Booking Confirmed", percentage: 50, documents: ["Booking Confirmation"], description: "Reservation secured" },
-    { name: "Service Completed", percentage: 50, documents: ["Checkout Confirmation"], description: "Stay/service completed" },
+    { name: "Booking Confirmed", percentage: 50, documents: ["Booking Confirmation"], description: "Reservation secured", requiresObserver: false },
+    { name: "Service Completed", percentage: 50, documents: ["Checkout Confirmation"], description: "Stay/service completed", requiresObserver: false },
   ],
   "logistics-freight": [
-    { name: "Pickup", percentage: 15, documents: ["Pickup Receipt"], description: "Goods collected from origin" },
-    { name: "Transit", percentage: 30, documents: ["Tracking Update", "Insurance Certificate"], description: "Goods in transit" },
-    { name: "Customs", percentage: 25, documents: ["Customs Declaration", "Duty Receipt"], description: "Customs processing" },
-    { name: "Last Mile Delivery", percentage: 30, documents: ["Delivery Receipt", "POD"], description: "Final delivery to destination" },
+    { name: "Pickup", percentage: 15, documents: ["Pickup Receipt"], description: "Goods collected from origin", requiresObserver: false },
+    { name: "Transit", percentage: 30, documents: ["Tracking Update", "Insurance Certificate"], description: "Goods in transit", requiresObserver: true },
+    { name: "Customs", percentage: 25, documents: ["Customs Declaration", "Duty Receipt"], description: "Customs processing", requiresObserver: true },
+    { name: "Last Mile Delivery", percentage: 30, documents: ["Delivery Receipt", "POD"], description: "Final delivery to destination", requiresObserver: false },
+  ],
+  "letter-of-credit": [
+    { name: "LC Issuance", percentage: 5, documents: ["Letter of Credit", "LC Application"], description: "Issuing bank opens the LC", requiresObserver: true },
+    { name: "Advising", percentage: 5, documents: ["LC Advice"], description: "Advising bank notifies beneficiary", requiresObserver: true },
+    { name: "Goods Production", percentage: 20, documents: ["Production Report", "Quality Certificate"], description: "Manufacturing / sourcing of goods", requiresObserver: false },
+    { name: "Shipping & Documents", percentage: 30, documents: ["Bill of Lading", "Packing List", "Insurance Certificate", "Certificate of Origin"], description: "Goods shipped, docs presented to bank", requiresObserver: true },
+    { name: "Document Examination", percentage: 10, documents: ["Bank Verification"], description: "Issuing bank examines documents for compliance", requiresObserver: true },
+    { name: "Payment & Release", percentage: 30, documents: ["Bank Payment Confirmation", "Release Order"], description: "Bank pays beneficiary, releases docs to buyer", requiresObserver: true },
   ],
 };
 
@@ -66,11 +74,21 @@ interface MilestoneTemplate {
   percentage: number;
   documents: string[];
   description: string;
+  requiresObserver: boolean;
+}
+
+interface Observer {
+  id: string;
+  name: string;
+  email: string;
+  role: string; // e.g. "Bank", "Customs Broker", "Surveyor", "Arbitrator"
+  signedOff: boolean;
 }
 
 interface Milestone extends MilestoneTemplate {
   id: string;
   status: "pending" | "in_progress" | "fulfilled" | "released";
+  observers: Observer[];
 }
 
 interface ChangeRequest {
@@ -87,6 +105,8 @@ interface MilestoneEditorProps {
   onSave?: (milestones: Milestone[]) => void;
 }
 
+const OBSERVER_ROLES = ["Bank", "Customs Broker", "Surveyor", "Legal Counsel", "Arbitrator", "Insurance", "Quality Inspector", "Other"];
+
 const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: MilestoneEditorProps) => {
   const [industry, setIndustry] = useState(initialIndustry || "");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -94,6 +114,8 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
   const [changeRequest, setChangeRequest] = useState<ChangeRequest | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [changeReason, setChangeReason] = useState("");
+  const [addingObserverFor, setAddingObserverFor] = useState<string | null>(null);
+  const [newObserver, setNewObserver] = useState({ name: "", email: "", role: "Bank" });
 
   const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0);
   const isValid = totalPercentage === 100 && milestones.length > 0;
@@ -107,6 +129,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         ...t,
         id: `ms-${Date.now()}-${i}`,
         status: "pending",
+        observers: [],
       }))
     );
     setLocked(false);
@@ -122,43 +145,83 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         percentage: 0,
         documents: [],
         description: "",
+        requiresObserver: false,
         status: "pending",
+        observers: [],
       },
     ]);
   };
 
-  const removeMilestone = (id: string) => {
-    setMilestones((prev) => prev.filter((m) => m.id !== id));
-  };
+  const removeMilestone = (id: string) => setMilestones((prev) => prev.filter((m) => m.id !== id));
 
   const updateMilestone = (id: string, field: keyof Milestone, value: any) => {
-    setMilestones((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
-    );
+    setMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
 
   const addDocument = (id: string, doc: string) => {
     if (!doc.trim()) return;
     setMilestones((prev) =>
-      prev.map((m) =>
-        m.id === id ? { ...m, documents: [...m.documents, doc.trim()] } : m
-      )
+      prev.map((m) => m.id === id ? { ...m, documents: [...m.documents, doc.trim()] } : m)
     );
   };
 
   const removeDocument = (milestoneId: string, docIndex: number) => {
     setMilestones((prev) =>
+      prev.map((m) => m.id === milestoneId ? { ...m, documents: m.documents.filter((_, i) => i !== docIndex) } : m)
+    );
+  };
+
+  // ─── Observer Management ───────────────────────────
+  const addObserver = (milestoneId: string) => {
+    if (!newObserver.name.trim() || !newObserver.email.trim()) {
+      toast.error("Observer name and email required");
+      return;
+    }
+    const observer: Observer = {
+      id: `obs-${Date.now()}`,
+      name: newObserver.name.trim(),
+      email: newObserver.email.trim(),
+      role: newObserver.role,
+      signedOff: false,
+    };
+    setMilestones((prev) =>
+      prev.map((m) => m.id === milestoneId ? { ...m, observers: [...m.observers, observer] } : m)
+    );
+    setNewObserver({ name: "", email: "", role: "Bank" });
+    setAddingObserverFor(null);
+    toast.success(`Observer ${observer.name} (${observer.role}) added — they'll receive a sign-off request`);
+  };
+
+  const removeObserver = (milestoneId: string, observerId: string) => {
+    setMilestones((prev) =>
+      prev.map((m) => m.id === milestoneId ? { ...m, observers: m.observers.filter((o) => o.id !== observerId) } : m)
+    );
+  };
+
+  const toggleObserverSignOff = (milestoneId: string, observerId: string) => {
+    setMilestones((prev) =>
       prev.map((m) =>
         m.id === milestoneId
-          ? { ...m, documents: m.documents.filter((_, i) => i !== docIndex) }
+          ? { ...m, observers: m.observers.map((o) => o.id === observerId ? { ...o, signedOff: !o.signedOff } : o) }
           : m
       )
     );
   };
 
+  const canReleaseMilestone = (ms: Milestone) => {
+    if (!ms.requiresObserver || ms.observers.length === 0) return true;
+    return ms.observers.every((o) => o.signedOff);
+  };
+
   const handleLock = () => {
     if (!isValid) {
       toast.error("Milestones must sum to exactly 100%");
+      return;
+    }
+    // Check observer-gated milestones have at least one observer
+    const missingObservers = milestones.filter((m) => m.requiresObserver && m.observers.length === 0);
+    if (missingObservers.length > 0) {
+      toast.error(`${missingObservers.length} milestone(s) require at least one observer — add them before locking`);
       return;
     }
     setLocked(true);
@@ -235,19 +298,11 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Badge
-                  variant={isValid ? "default" : "destructive"}
-                  className="text-[10px]"
-                >
+                <Badge variant={isValid ? "default" : "destructive"} className="text-[10px]">
                   {totalPercentage}% / 100%
                 </Badge>
                 {locked && (role === "vendor" || role === "buyer") && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs gap-1"
-                    onClick={() => setShowDiff(!showDiff)}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
                     <RotateCcw className="w-3 h-3" /> Propose Change
                   </Button>
                 )}
@@ -299,6 +354,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                       disabled={locked}
                       className="text-xs h-7"
                     />
+
                     {/* Document Gates */}
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
@@ -330,14 +386,130 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                         )}
                       </div>
                     </div>
+
+                    {/* Observer Gate Toggle */}
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={ms.requiresObserver}
+                          onChange={(e) => updateMilestone(ms.id, "requiresObserver", e.target.checked)}
+                          disabled={locked}
+                          className="rounded border-border"
+                        />
+                        <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                          <Eye className="w-3 h-3" /> Requires Observer Sign-off
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Observer List */}
+                    {ms.requiresObserver && (
+                      <div className="pl-2 border-l-2 border-primary/20 space-y-1.5">
+                        {ms.observers.length === 0 && !locked && (
+                          <p className="text-[10px] text-destructive/70">⚠ Add at least one observer before locking</p>
+                        )}
+                        {ms.observers.map((obs) => (
+                          <div key={obs.id} className="flex items-center gap-2 text-[10px]">
+                            <button
+                              onClick={() => locked && (role === "admin") && toggleObserverSignOff(ms.id, obs.id)}
+                              className={cn(
+                                "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                obs.signedOff
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-muted-foreground/40"
+                              )}
+                            >
+                              {obs.signedOff && <Check className="w-2.5 h-2.5" />}
+                            </button>
+                            <Badge variant={obs.signedOff ? "default" : "outline"} className="text-[9px] gap-1">
+                              {obs.role}
+                            </Badge>
+                            <span className="font-medium text-foreground">{obs.name}</span>
+                            <span className="text-muted-foreground">{obs.email}</span>
+                            {obs.signedOff && <span className="text-primary font-bold">✓ Signed</span>}
+                            {!locked && (
+                              <button onClick={() => removeObserver(ms.id, obs.id)} className="text-muted-foreground hover:text-destructive ml-auto">
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* Add Observer Form */}
+                        {!locked && addingObserverFor === ms.id ? (
+                          <div className="space-y-1.5 p-2 rounded-md bg-muted/50">
+                            <div className="grid grid-cols-3 gap-1.5">
+                              <Input
+                                placeholder="Name"
+                                value={newObserver.name}
+                                onChange={(e) => setNewObserver((p) => ({ ...p, name: e.target.value }))}
+                                className="h-6 text-[10px]"
+                              />
+                              <Input
+                                placeholder="Email"
+                                value={newObserver.email}
+                                onChange={(e) => setNewObserver((p) => ({ ...p, email: e.target.value }))}
+                                className="h-6 text-[10px]"
+                              />
+                              <Select value={newObserver.role} onValueChange={(v) => setNewObserver((p) => ({ ...p, role: v }))}>
+                                <SelectTrigger className="h-6 text-[10px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {OBSERVER_ROLES.map((r) => (
+                                    <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button size="sm" className="h-6 text-[10px] gap-1" onClick={() => addObserver(ms.id)}>
+                                <Mail className="w-3 h-3" /> Invite Observer
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setAddingObserverFor(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : !locked && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[10px] gap-1"
+                            onClick={() => {
+                              setAddingObserverFor(ms.id);
+                              setNewObserver({ name: "", email: "", role: "Bank" });
+                            }}
+                          >
+                            <UserPlus className="w-3 h-3" /> Add Observer
+                          </Button>
+                        )}
+
+                        {/* Release blocked indicator */}
+                        {locked && !canReleaseMilestone(ms) && (
+                          <p className="text-[10px] text-destructive font-semibold flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Funds blocked — awaiting {ms.observers.filter((o) => !o.signedOff).length} observer sign-off(s)
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Status indicator */}
                     {locked && (
-                      <Badge
-                        variant={ms.status === "released" ? "default" : "secondary"}
-                        className="text-[10px]"
-                      >
-                        {ms.status === "released" ? "✓ Released" : ms.status === "fulfilled" ? "Awaiting Release" : "Pending"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={ms.status === "released" ? "default" : "secondary"}
+                          className="text-[10px]"
+                        >
+                          {ms.status === "released" ? "✓ Released" : ms.status === "fulfilled" ? "Awaiting Release" : "Pending"}
+                        </Badge>
+                        {ms.requiresObserver && ms.observers.length > 0 && (
+                          <Badge variant="outline" className="text-[9px] gap-1">
+                            <Eye className="w-2.5 h-2.5" />
+                            {ms.observers.filter((o) => o.signedOff).length}/{ms.observers.length} signed
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -413,11 +585,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
       {/* Lock / Save Actions */}
       {milestones.length > 0 && !locked && (
         <div className="flex gap-2">
-          <Button
-            className="flex-1 gap-2"
-            onClick={handleLock}
-            disabled={!isValid}
-          >
+          <Button className="flex-1 gap-2" onClick={handleLock} disabled={!isValid}>
             <Lock className="w-4 h-4" />
             Lock Milestones ({totalPercentage}%)
           </Button>
