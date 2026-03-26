@@ -65,8 +65,9 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("tl_vendor_network", mode);
   };
 
+  // Only auto-switch to mainnet on first login when no explicit network preference exists
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !localStorage.getItem("tl_vendor_network")) {
       setNetworkModeState("mainnet");
       localStorage.setItem("tl_vendor_network", "mainnet");
       localStorage.setItem("tl_vendor_auth", "true");
