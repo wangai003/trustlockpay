@@ -11,6 +11,7 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import { useTransactions, useDisputes } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
