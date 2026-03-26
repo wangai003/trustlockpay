@@ -966,6 +966,59 @@ export type Database = {
           },
         ]
       }
+      transaction_observers: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          invite_accepted: boolean | null
+          invited_by: string | null
+          milestone_ids: string[] | null
+          observer_email: string
+          observer_name: string
+          observer_role: string | null
+          permissions: string[] | null
+          transaction_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invite_accepted?: boolean | null
+          invited_by?: string | null
+          milestone_ids?: string[] | null
+          observer_email: string
+          observer_name: string
+          observer_role?: string | null
+          permissions?: string[] | null
+          transaction_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invite_accepted?: boolean | null
+          invited_by?: string | null
+          milestone_ids?: string[] | null
+          observer_email?: string
+          observer_name?: string
+          observer_role?: string | null
+          permissions?: string[] | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_observers_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
