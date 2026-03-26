@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,16 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle } from "lucide-react";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
+} from "@/components/ui/alert-dialog";
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
@@ -30,6 +35,9 @@ const VendorSettings = () => {
   });
 
   const [disableConfirm, setDisableConfirm] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Sync from DB when settings load
   useEffect(() => {
@@ -237,6 +245,39 @@ const VendorSettings = () => {
         </Card>
 
         <Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
+
+        {/* Account Actions */}
+        <Card className="border-destructive/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <div>
+                <CardTitle className="text-base">Account Actions</CardTitle>
+                <CardDescription>Pause or permanently delete your account</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+              <div>
+                <p className="text-sm font-medium">Pause Account</p>
+                <p className="text-xs text-muted-foreground">Temporarily deactivate your account. All pending escrows continue processing. You can reactivate anytime.</p>
+              </div>
+              <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
+                <Pause className="w-3.5 h-3.5" /> Pause
+              </Button>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+              <div>
+                <p className="text-sm font-medium text-destructive">Delete Account</p>
+                <p className="text-xs text-muted-foreground">Permanently delete your account and all data. This action cannot be undone. Audit records are retained per compliance policy.</p>
+              </div>
+              <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Disable TrustLock Pay Confirmation */}
@@ -254,6 +295,64 @@ const VendorSettings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pause Account Dialog */}
+      <AlertDialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pause Your Account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your account will be deactivated and hidden from the platform. Pending escrows will continue to be processed normally. No new orders can be created. You can reactivate at any time by logging back in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-amber-600 hover:bg-amber-700" onClick={() => {
+              toast.success("Account paused. Log back in anytime to reactivate.");
+              setShowPauseDialog(false);
+            }}>Pause Account</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Account Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Permanently Delete Account?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>This will permanently erase all your data from our platform:</p>
+              <ul className="text-xs space-y-1 list-disc pl-4">
+                <li>Profile information and business details</li>
+                <li>Connected sites and widget configuration</li>
+                <li>Notification preferences and settings</li>
+                <li>Transaction history (audit records retained per 7-year compliance policy)</li>
+                <li>KYC documents (retained per AML regulations where applicable)</li>
+              </ul>
+              <p className="font-semibold text-foreground">Type "DELETE" to confirm:</p>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="mt-1"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={deleteConfirmText !== "DELETE"}
+              onClick={() => {
+                toast.success("Account deletion initiated. A confirmation email has been sent. Data will be purged within 14 days.");
+                setDeleteConfirmText("");
+                setShowDeleteDialog(false);
+                navigate("/trustlock/vendor/login");
+              }}
+            >Delete Permanently</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

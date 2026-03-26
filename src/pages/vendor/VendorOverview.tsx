@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
@@ -45,6 +46,8 @@ const VendorOverview = () => {
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <OnboardingTaskCard role="vendor" />
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
             <CardContent className="p-4 sm:p-6">

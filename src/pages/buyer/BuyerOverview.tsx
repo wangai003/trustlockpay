@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck } from "lucide-react";
 import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -38,6 +39,8 @@ const BuyerOverview = () => {
     <div>
       <BuyerHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <OnboardingTaskCard role="buyer" />
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
             <CardContent className="p-4 sm:p-6">

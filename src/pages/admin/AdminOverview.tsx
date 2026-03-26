@@ -11,6 +11,7 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import { useTransactions, useDisputes } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
@@ -66,6 +67,8 @@ const AdminOverview = () => {
     <div>
       <AdminHeader title="Dashboard Overview" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <OnboardingTaskCard role="admin" />
+
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
           {stats.map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
