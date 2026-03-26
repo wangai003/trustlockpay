@@ -764,6 +764,80 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_milestones: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_payment_milestone: boolean | null
+          observer_id: string | null
+          observer_signed: boolean | null
+          observer_signed_at: string | null
+          payment_amount: number | null
+          payment_released: boolean | null
+          position: number
+          required_documents: string[] | null
+          status: string | null
+          title: string
+          transaction_id: string
+          updated_at: string
+          uploaded_documents: Json | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_payment_milestone?: boolean | null
+          observer_id?: string | null
+          observer_signed?: boolean | null
+          observer_signed_at?: string | null
+          payment_amount?: number | null
+          payment_released?: boolean | null
+          position?: number
+          required_documents?: string[] | null
+          status?: string | null
+          title: string
+          transaction_id: string
+          updated_at?: string
+          uploaded_documents?: Json | null
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_payment_milestone?: boolean | null
+          observer_id?: string | null
+          observer_signed?: boolean | null
+          observer_signed_at?: string | null
+          payment_amount?: number | null
+          payment_released?: boolean | null
+          position?: number
+          required_documents?: string[] | null
+          status?: string | null
+          title?: string
+          transaction_id?: string
+          updated_at?: string
+          uploaded_documents?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_milestones_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
