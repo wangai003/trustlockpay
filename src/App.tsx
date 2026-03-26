@@ -160,6 +160,9 @@ const App = () => (
             {/* Standalone Confirmation Page (no login required) */}
             <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
 
+            {/* P2P Public Checkout Page (no login required) */}
+            <Route path="/pay/:linkId" element={<PublicCheckout />} />
+
             {/* Read-Only Audit Portal (token-based access) */}
             <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
 
