@@ -41,6 +41,7 @@ const adminItems: CommandEntry[] = [
   { label: "OS Payout", to: "/trustlock/admin/payout", icon: Banknote, keywords: "withdraw disbursement funds", group: "Admin" },
   { label: "Audit Access", to: "/trustlock/admin/audit", icon: ShieldCheck, keywords: "regulators read-only session", group: "Admin" },
   { label: "Settings", to: "/trustlock/admin/settings", icon: Settings, keywords: "config preferences network", group: "Admin" },
+  { label: "Industry Playbook", to: "/trustlock/admin/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Admin" },
 ];
 
 const vendorItems: CommandEntry[] = [
