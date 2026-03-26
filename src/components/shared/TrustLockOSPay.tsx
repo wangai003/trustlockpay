@@ -38,10 +38,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [splitRecipient, setSplitRecipient] = useState("");
   const [splitPercentage, setSplitPercentage] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const processPayment = useProcessPayment();
 
-  const fee = amount ? (parseFloat(amount) * 0.015).toFixed(2) : "0.00";
-  const total = amount ? (parseFloat(amount) + parseFloat(fee)).toFixed(2) : "0.00";
+  const parsedAmount = amount ? parseFloat(amount) : 0;
+  const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
+  const fee = parsedAmount ? (parsedAmount * 0.015).toFixed(2) : "0.00";
+  const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
