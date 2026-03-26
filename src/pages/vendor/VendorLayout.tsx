@@ -3,6 +3,7 @@ import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
 import TrialBanner from "@/components/vendor/TrialBanner";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import CommandPalette from "@/components/shared/CommandPalette";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const VendorLayout = () => {
@@ -17,6 +18,7 @@ const VendorLayout = () => {
           <TestnetGuide role="vendor" />
           <Outlet />
         </main>
+        <CommandPalette role="vendor" />
       </div>
     </VendorProvider>
   );
