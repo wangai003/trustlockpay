@@ -321,7 +321,7 @@ const VendorTransactions = () => {
                           </td>
                         </tr>
                       )}
-                      </tbody>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
