@@ -88,18 +88,39 @@ const AuditPortal = () => {
     setLoading(false);
   };
 
+  const fetchTableData = useCallback(async (tableName: string) => {
+    if (!session) return;
+    setLoadingTable(true);
+    const result = await callAudit({ action: "fetch_data", token, table: tableName });
+    if (result.data) {
+      setTableData((prev) => ({ ...prev, [tableName]: result.data }));
+    }
+    setLoadingTable(false);
+    setLastRefresh(new Date());
+  }, [session, token]);
+
   // Fetch table data when tab changes
   useEffect(() => {
-    if (!session || !activeTab || tableData[activeTab]) return;
-    (async () => {
-      setLoadingTable(true);
-      const result = await callAudit({ action: "fetch_data", token, table: activeTab });
-      if (result.data) {
-        setTableData((prev) => ({ ...prev, [activeTab]: result.data }));
-      }
-      setLoadingTable(false);
-    })();
-  }, [activeTab, session]);
+    if (!session || !activeTab) return;
+    fetchTableData(activeTab);
+  }, [activeTab, session, fetchTableData]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    if (!session || !activeTab) return;
+    intervalRef.current = setInterval(() => {
+      fetchTableData(activeTab);
+    }, 5 * 60 * 1000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [session, activeTab, fetchTableData]);
+
+  const handleManualRefresh = async () => {
+    if (!activeTab) return;
+    setRefreshing(true);
+    await fetchTableData(activeTab);
+    setRefreshing(false);
+    toast.success("Data refreshed");
+  };
 
   const exportCSV = (tableName: string) => {
     const data = tableData[tableName];
