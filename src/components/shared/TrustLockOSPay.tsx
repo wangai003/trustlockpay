@@ -241,10 +241,23 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
+          {/* Tax Breakdown */}
+          {amount && parsedAmount > 0 && (
+            <TaxBreakdown
+              subtotal={parsedAmount}
+              taxItems={taxItems}
+              onTaxItemsChange={setTaxItems}
+              editable={role === "vendor" || role === "admin"}
+            />
+          )}
+
           {/* Summary */}
-          {amount && parseFloat(amount) > 0 && (
+          {amount && parsedAmount > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Amount</span><span className="font-medium">${parseFloat(amount).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
+              {taxTotal > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Pay Fee (1.5%)</span><span className="font-medium">${fee}</span></div>
               <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-bold text-sm">Total</span><span className="font-bold text-sm text-primary">${total}</span></div>
             </div>
