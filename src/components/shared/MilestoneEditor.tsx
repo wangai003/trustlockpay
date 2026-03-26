@@ -156,6 +156,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         name: "",
         percentage: 0,
         documents: [],
+        documentMode: "none" as DocumentMode,
         description: "",
         requiresObserver: false,
         status: "pending",
