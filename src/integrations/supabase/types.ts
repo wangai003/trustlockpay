@@ -425,6 +425,48 @@ export type Database = {
           },
         ]
       }
+      industry_templates: {
+        Row: {
+          compliance_requirements: string[] | null
+          created_at: string
+          default_milestones: Json
+          description: string | null
+          display_name: string
+          estimated_duration_days: number | null
+          id: string
+          industry_key: string
+          is_active: boolean | null
+          required_observer_roles: string[] | null
+          tax_rules: Json | null
+        }
+        Insert: {
+          compliance_requirements?: string[] | null
+          created_at?: string
+          default_milestones: Json
+          description?: string | null
+          display_name: string
+          estimated_duration_days?: number | null
+          id?: string
+          industry_key: string
+          is_active?: boolean | null
+          required_observer_roles?: string[] | null
+          tax_rules?: Json | null
+        }
+        Update: {
+          compliance_requirements?: string[] | null
+          created_at?: string
+          default_milestones?: Json
+          description?: string | null
+          display_name?: string
+          estimated_duration_days?: number | null
+          id?: string
+          industry_key?: string
+          is_active?: boolean | null
+          required_observer_roles?: string[] | null
+          tax_rules?: Json | null
+        }
+        Relationships: []
+      }
       kyc_documents: {
         Row: {
           created_at: string
