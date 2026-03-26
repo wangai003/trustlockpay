@@ -162,6 +162,16 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
+              {/* Tax breakdown */}
+              <TaxBreakdown
+                subtotal={sampleAmount}
+                taxItems={taxItems}
+                onTaxItemsChange={setTaxItems}
+                editable={false}
+                compact
+                currencySymbol={mode === "diaspora" ? "$" : "₦"}
+              />
+
               {/* Fee breakdown */}
               <div className="bg-muted/50 rounded-lg px-3 py-2.5 space-y-1">
                 <div className="flex justify-between text-xs">
@@ -172,6 +182,14 @@ const TrustLockDualCheckout = () => {
                     {mode === "diaspora" ? "$292.50" : "₦450,000"}
                   </span>
                 </div>
+                {taxTotal > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Taxes & Duties</span>
+                    <span className="text-muted-foreground">
+                      {mode === "diaspora" ? `$${taxTotal.toFixed(2)}` : `₦${taxTotal.toFixed(0)}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground flex items-center gap-1">
                     TrustLock Pay Fee ({getFeeRange()})
@@ -186,7 +204,7 @@ const TrustLockDualCheckout = () => {
                 <div className="flex justify-between text-xs font-bold pt-1 border-t border-border">
                   <span className="text-foreground">Total</span>
                   <span className="text-primary">
-                    {mode === "diaspora" ? `$${(sampleAmount + fees.total).toFixed(2)}` : `₦${((sampleAmount + fees.total * 1538)).toFixed(0)}`}
+                    {mode === "diaspora" ? `$${(sampleAmount + taxTotal + fees.total).toFixed(2)}` : `₦${((sampleAmount + taxTotal + fees.total * 1538)).toFixed(0)}`}
                   </span>
                 </div>
                 {showFees && (
