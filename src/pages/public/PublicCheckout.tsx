@@ -132,22 +132,23 @@ const PublicCheckout = () => {
 
       <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
         {/* Steps indicator */}
-        <div className="flex items-center gap-3 justify-center">
+        <div className="flex items-center gap-2 justify-center flex-wrap">
           {[
-            { key: "invoice", label: "Review Invoice", num: 1 },
+            { key: "invoice", label: "Invoice", num: 1 },
             { key: "compliance", label: "Compliance", num: 2 },
-            { key: "pay", label: "Pay", num: 3 },
+            { key: "acknowledge", label: "Acknowledge", num: 3 },
+            { key: "pay", label: "Pay", num: 4 },
           ].map((s, i) => (
-            <div key={s.key} className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
+            <div key={s.key} className="flex items-center gap-1.5">
+              <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
                   step === s.key ? "bg-primary text-primary-foreground" :
-                  (s.key === "invoice" && step !== "invoice") ? "bg-primary text-primary-foreground" :
+                  ["invoice","compliance","acknowledge","pay"].indexOf(s.key) < ["invoice","compliance","acknowledge","pay"].indexOf(step) ? "bg-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>{s.num}</span>
-                {s.label}
+                <span className="hidden sm:inline">{s.label}</span>
               </div>
-              {i < 2 && <div className="w-8 h-px bg-border" />}
+              {i < 3 && <div className="w-4 sm:w-8 h-px bg-border" />}
             </div>
           ))}
         </div>
