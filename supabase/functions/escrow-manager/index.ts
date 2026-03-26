@@ -136,24 +136,66 @@ async function getTransactionParty(
   return { tx, role: null };
 }
 
+async function triageNotification(
+  notificationType: string,
+  userId: string,
+  message: string,
+  metadata?: Record<string, unknown>,
+  transactionId?: string,
+  severity?: string
+) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notification-triage`;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        action: "triage",
+        notification_type: notificationType,
+        user_id: userId,
+        message,
+        transaction_id: transactionId,
+        severity,
+        metadata,
+      }),
+    });
+  } catch (e) {
+    console.error("Triage notification error:", e);
+  }
+}
+
 async function logAuditAction(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  _supabase: ReturnType<typeof getSupabaseAdmin>,
   userId: string | undefined,
   action: string,
   details: Record<string, unknown>
 ) {
-  try {
-    await supabase.from("notifications").insert({
-      user_id: userId ?? "00000000-0000-0000-0000-000000000000",
-      title: `Escrow Action: ${action}`,
-      message: JSON.stringify(details),
-      type: "audit",
-      related_entity_type: "escrow",
-      related_entity_id: details.transaction_id as string ?? null,
-    });
-  } catch (e) {
-    console.error("Audit log error:", e);
-  }
+  // Map escrow actions to notification types for triage
+  const actionTypeMap: Record<string, string> = {
+    lock_funds: "escrow_locked",
+    release_funds: "escrow_released",
+    refund_buyer: "escrow_released",
+    split_payout: "escrow_released",
+    create_milestones: "milestone_completed",
+    update_milestone: "milestone_completed",
+    release_milestone_payment: "milestone_payment_release",
+    delete_milestone: "milestone_completed",
+    add_observer: "observer_added",
+  };
+
+  const notifType = actionTypeMap[action] ?? "escrow_locked";
+  const uid = userId ?? "00000000-0000-0000-0000-000000000000";
+
+  await triageNotification(
+    notifType,
+    uid,
+    `Escrow Action: ${action} — ${JSON.stringify(details)}`,
+    details,
+    details.transaction_id as string,
+  );
 }
 
 // ─── Original Action Handlers ──────────────────────────────
