@@ -119,6 +119,98 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_access_logs: {
+        Row: {
+          action: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          page_viewed: string | null
+          session_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page_viewed?: string | null
+          session_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          page_viewed?: string | null
+          session_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_access_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_sessions: {
+        Row: {
+          access_count: number
+          access_log: Json
+          access_token: string
+          allowed_tables: string[]
+          auditor_email: string | null
+          auditor_name: string
+          auditor_password_hash: string | null
+          can_export: boolean
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_accessed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number
+          access_log?: Json
+          access_token?: string
+          allowed_tables?: string[]
+          auditor_email?: string | null
+          auditor_name: string
+          auditor_password_hash?: string | null
+          can_export?: boolean
+          created_at?: string
+          created_by?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number
+          access_log?: Json
+          access_token?: string
+          allowed_tables?: string[]
+          auditor_email?: string | null
+          auditor_name?: string
+          auditor_password_hash?: string | null
+          can_export?: boolean
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       compliance_flags: {
         Row: {
           created_at: string
