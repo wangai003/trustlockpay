@@ -194,7 +194,7 @@ const IndustryPlaybookView = () => {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">Industry Capabilities Playbook</h2>
-          <p className="text-sm text-muted-foreground">Dynamic escrow workflows across 9 emerging market industries</p>
+          <p className="text-sm text-muted-foreground">Dynamic escrow workflows across 10 emerging market industries</p>
         </div>
         <a
           href="/__l5e/documents/TrustLock_Industry_Capabilities_Playbook_v1.pdf"
