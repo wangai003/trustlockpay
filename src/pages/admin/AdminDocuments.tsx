@@ -19,6 +19,24 @@ const pinnedDocs = [
   },
 ];
 
+const protectionDocuments = [
+  { title: "Vendor Automated Consent Form", desc: "Signed by every vendor — authorizes TrustLock auto-signature protocol and automated order processing.", type: "Legal", retention: "7 years" },
+  { title: "Pre-Order Signatory Contract", desc: "Per-transaction binding contract with dual typed signatures (buyer + vendor). Industry-specific addendums.", type: "Contract", retention: "7 years" },
+  { title: "Escrow Acknowledgement Form", desc: "Dynamic acknowledgement adapting by industry — absolves TrustLock of force majeure and third-party failures.", type: "Legal", retention: "7 years" },
+  { title: "AML/KYC Screening Certificate", desc: "Auto-generated after OFAC/EU/UN sanctions check. Records screening result, timestamp, and risk score.", type: "Compliance", retention: "7 years" },
+  { title: "Dispute Evidence Package", desc: "All documents uploaded during dispute lifecycle — photos, receipts, communications, inspection reports.", type: "Evidence", retention: "7 years" },
+  { title: "Milestone Completion Certificate", desc: "Signed observer/inspector verification per milestone stage. Includes timestamps and document hashes.", type: "Certificate", retention: "7 years" },
+  { title: "Auto-Release Waiver Notice", desc: "Sent to buyer 48h before auto-release. Records delivery of notice and buyer acknowledgement (or inaction).", type: "Notice", retention: "5 years" },
+  { title: "Payout Reconciliation Receipt", desc: "Generated after each payout — records amount, fee, net, method, confirmation code, and recipient details.", type: "Financial", retention: "7 years" },
+  { title: "Tax Withholding Certificate (W-9/W-8BEN)", desc: "Collected from vendors for US tax reporting. Required when cumulative payouts exceed $600.", type: "Tax", retention: "7 years" },
+  { title: "Data Deletion Confirmation", desc: "Generated when a user exercises right to delete. Records what was purged, what was retained (legal hold), and timestamp.", type: "Compliance", retention: "Permanent" },
+  { title: "Account Pause/Suspension Record", desc: "Logs reason, timestamp, and admin/user action when an account is paused or suspended.", type: "Audit", retention: "5 years" },
+  { title: "Letter of Credit / Bank Observer Report", desc: "Third-party bank verification for high-value transactions. Includes observer sign-off and fund confirmation.", type: "Financial", retention: "7 years" },
+  { title: "Cross-Border Customs Declaration", desc: "Buyer-uploaded proof of customs clearance for international shipments before fund release.", type: "Trade", retention: "7 years" },
+  { title: "Arbitration Filing Record", desc: "Generated when disputes exceed $10k and enter binding arbitration. Records all parties, evidence, and timeline.", type: "Legal", retention: "Permanent" },
+  { title: "Platform Terms of Service Acceptance", desc: "Timestamped record of user acceptance of TOS, privacy policy, and cookie consent.", type: "Legal", retention: "Duration of account + 2 years" },
+];
+
 const documents = [
   {
     category: "📌 Pinned — System Playbook",
