@@ -53,6 +53,10 @@ const PublicCheckout = () => {
   }, []);
 
   const handleAcknowledgementAccept = useCallback(() => {
+    setStep("contract");
+  }, []);
+
+  const handleContractSigned = useCallback(() => {
     setStep("pay");
   }, []);
 
