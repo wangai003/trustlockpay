@@ -83,6 +83,63 @@ const VendorDocuments = () => {
           )}
         </Card>
 
+        {/* ── Vendor Consent Form ─── */}
+        <Card className="border-amber-500/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PenLine className="w-5 h-5 text-amber-600" />
+                <div>
+                  <CardTitle className="text-sm">Vendor Automated Consent Form</CardTitle>
+                  <CardDescription className="text-[10px]">One-time consent to enable auto-signature protocol for your orders.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowConsentPreview(!showConsentPreview)}>
+                <Eye className="w-3 h-3" />
+                {showConsentPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showConsentPreview && (
+            <CardContent>
+              <VendorConsentForm vendorName="Your Business" vendorPlan="starter" onConsent={() => {}} previewMode />
+            </CardContent>
+          )}
+        </Card>
+
+        {/* ── Pre-Order Signatory Contract ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Handshake className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm">Pre-Order Signatory Contract</CardTitle>
+                  <CardDescription className="text-[10px]">The per-transaction contract both parties sign at checkout.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowContractPreview(!showContractPreview)}>
+                <Eye className="w-3 h-3" />
+                {showContractPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showContractPreview && (
+            <CardContent>
+              <PreOrderSignatoryContract
+                industry="default"
+                orderAmount={5000}
+                buyerName="Sample Buyer"
+                vendorName="Your Business"
+                txId="TL-PREVIEW"
+                isAutoSigned
+                onBothSigned={() => {}}
+                previewMode
+              />
+            </CardContent>
+          )}
+        </Card>
+
         {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Vendor Reference Library</h2>

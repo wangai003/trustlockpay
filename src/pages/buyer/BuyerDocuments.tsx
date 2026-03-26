@@ -80,6 +80,39 @@ const BuyerDocuments = () => {
           )}
         </Card>
 
+        {/* ── Pre-Order Signatory Contract ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Handshake className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm">Pre-Order Signatory Contract</CardTitle>
+                  <CardDescription className="text-[10px]">The contract you sign before each purchase — view a sample.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowContractPreview(!showContractPreview)}>
+                <Eye className="w-3 h-3" />
+                {showContractPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showContractPreview && (
+            <CardContent>
+              <PreOrderSignatoryContract
+                industry="default"
+                orderAmount={5000}
+                buyerName="You"
+                vendorName="Sample Vendor"
+                txId="TL-PREVIEW"
+                isAutoSigned
+                onBothSigned={() => {}}
+                previewMode
+              />
+            </CardContent>
+          )}
+        </Card>
+
         {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Buyer Reference Library</h2>

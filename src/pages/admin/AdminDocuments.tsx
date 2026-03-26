@@ -132,6 +132,88 @@ const AdminDocuments = () => {
             </CardContent>
           )}
         </Card>
+
+        {/* ── Vendor Consent Form Preview ─── */}
+        <Card className="border-amber-500/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <PenLine className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Vendor Automated Consent Form</CardTitle>
+                  <CardDescription className="text-xs">One-time consent enabling auto-signature protocol for vendors.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowConsentPreview(!showConsentPreview)}>
+                <Eye className="w-3.5 h-3.5" />
+                {showConsentPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showConsentPreview && (
+            <CardContent>
+              <VendorConsentForm vendorName="Sample Vendor" vendorPlan="growth" onConsent={() => {}} previewMode />
+            </CardContent>
+          )}
+        </Card>
+
+        {/* ── Pre-Order Signatory Contract Preview ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Handshake className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Pre-Order Signatory Contract</CardTitle>
+                  <CardDescription className="text-xs">Per-transaction binding contract signed by both parties at checkout.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowContractPreview(!showContractPreview)}>
+                <Eye className="w-3.5 h-3.5" />
+                {showContractPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showContractPreview && (
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Industry:</span>
+                <Select value={previewIndustry} onValueChange={setPreviewIndustry}>
+                  <SelectTrigger className="w-48 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">General Transaction</SelectItem>
+                    <SelectItem value="e-commerce">E-Commerce / Retail</SelectItem>
+                    <SelectItem value="real-estate">Real Estate & Property</SelectItem>
+                    <SelectItem value="professional-services">Professional Services</SelectItem>
+                    <SelectItem value="agriculture-cargo">Agriculture & Cargo</SelectItem>
+                    <SelectItem value="mining-minerals">Mining & Minerals</SelectItem>
+                    <SelectItem value="construction">Construction</SelectItem>
+                    <SelectItem value="logistics-freight">Logistics & Freight</SelectItem>
+                    <SelectItem value="hospitality">Hospitality & Travel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <PreOrderSignatoryContract
+                industry={previewIndustry}
+                orderAmount={25000}
+                buyerName="Sample Buyer"
+                vendorName="Sample Vendor"
+                txId="TL-PREVIEW"
+                milestoneCount={4}
+                isAutoSigned
+                onBothSigned={() => {}}
+                previewMode
+              />
+            </CardContent>
+          )}
+        </Card>
+
         <div>
           <h2 className="font-heading text-lg font-bold">Admin Reference Library</h2>
           <p className="text-sm text-muted-foreground">
