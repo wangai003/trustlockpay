@@ -56,7 +56,7 @@ const AdminLogin = () => {
     setIsTestnet(!checked);
     if (!checked) {
       setIdentifier("admin@trustlock.test");
-      setPassword("123");
+      setPassword("");
     } else {
       setIdentifier("");
       setPassword("");
