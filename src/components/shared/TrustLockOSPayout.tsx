@@ -164,9 +164,21 @@ const TrustLockOSPayout = ({
     setProviderFields((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleDynamicFieldChange = (fieldName: string, value: string) => {
+    setDynamicFields((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
   const isFormValid = () => {
-    if (!selectedProvider) return false;
     if (amountNum <= 0) return false;
+
+    // If dynamic fields are active, validate those
+    if (selectedCountry && activeFields.length > 0) {
+      const requiredDynamic = activeFields.filter((f) => f.is_required);
+      return requiredDynamic.every((f) => dynamicFields[f.field_name]?.trim());
+    }
+
+    // Otherwise fall back to provider-based validation
+    if (!selectedProvider) return false;
     const required = selectedProvider.fields.filter((f) => f.required);
     return required.every((f) => providerFields[f.key]?.trim());
   };
