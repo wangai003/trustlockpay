@@ -21,6 +21,7 @@ import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseDat
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
