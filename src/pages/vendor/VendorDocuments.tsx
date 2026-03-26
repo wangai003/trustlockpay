@@ -21,6 +21,8 @@ const docs = [
 
 const VendorDocuments = () => {
   const [showAckPreview, setShowAckPreview] = useState(false);
+  const [showConsentPreview, setShowConsentPreview] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
 
   return (
