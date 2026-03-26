@@ -17,6 +17,7 @@ import {
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
