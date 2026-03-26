@@ -22,6 +22,7 @@ const AdminTransactions = () => {
   const [filter, setFilter] = useState<TxStatus>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const { data: rawTransactions = [] } = useTransactions();
   const flagForReview = useFlagForReview();
 
