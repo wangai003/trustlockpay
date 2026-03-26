@@ -48,6 +48,10 @@ const PublicCheckout = () => {
   };
 
   const handleComplianceClear = useCallback(() => {
+    setStep("acknowledge");
+  }, []);
+
+  const handleAcknowledgementAccept = useCallback(() => {
     setStep("pay");
   }, []);
 
