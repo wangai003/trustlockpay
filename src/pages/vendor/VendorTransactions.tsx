@@ -52,7 +52,10 @@ const VendorTransactions = () => {
     item: tx.item || "—",
     tracking: tx.tracking || null,
     order: tx.order_number ?? (i + 1),
+    industry: tx.industry || null,
   }));
+
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const filtered = allTx
     .filter((t) => filter === "all" || t.status === filter)
