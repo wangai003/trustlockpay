@@ -232,23 +232,15 @@ Deno.serve(async (req) => {
         related_buyer_id: user_role === "buyer" ? String(user_id) : null,
       });
 
-      // Notify admins
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((a: { user_id: string }) => ({
-          user_id: a.user_id,
-          title: "🚨 Sanctions Block",
-          message: `${full_name} (${country}) was BLOCKED by sanctions screening. Flag: ${flagId}`,
-          type: "alert",
-          related_entity_type: "compliance",
-          related_entity_id: flagId,
-        }));
-        await supabase.from("notifications").insert(notifications);
-      }
+      // Notify via triage
+      await triageNotify(
+        "sanctions_block",
+        String(user_id),
+        `${full_name} (${country}) was BLOCKED by sanctions screening. Flag: ${flagId}`,
+        transaction_id ? String(transaction_id) : undefined,
+        "critical",
+        { full_name, country, flagId, matchCount: matchedEntries.length }
+      );
 
       // If transaction_id provided, mark it
       if (transaction_id) {
