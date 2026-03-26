@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck } from "lucide-react";
 import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
