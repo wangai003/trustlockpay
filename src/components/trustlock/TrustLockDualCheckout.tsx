@@ -7,6 +7,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, FEE_DISCLOSURE, getFeeRange } from "@/lib/paymentProviders";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 const TrustLockDualCheckout = () => {
   const [mode, setMode] = useState<"diaspora" | "local">("diaspora");
@@ -14,10 +15,12 @@ const TrustLockDualCheckout = () => {
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
   const feeType = isCrypto ? "crypto_to_crypto" : "fiat_to_crypto";
+  const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? sampleAmount * (t.value / 100) : t.value), 0);
   const fees = calculateFees(sampleAmount, feeType);
 
   const handleModeSwitch = (newMode: "diaspora" | "local") => {
@@ -159,6 +162,16 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
+              {/* Tax breakdown */}
+              <TaxBreakdown
+                subtotal={sampleAmount}
+                taxItems={taxItems}
+                onTaxItemsChange={setTaxItems}
+                editable={false}
+                compact
+                currencySymbol={mode === "diaspora" ? "$" : "₦"}
+              />
+
               {/* Fee breakdown */}
               <div className="bg-muted/50 rounded-lg px-3 py-2.5 space-y-1">
                 <div className="flex justify-between text-xs">
@@ -169,6 +182,14 @@ const TrustLockDualCheckout = () => {
                     {mode === "diaspora" ? "$292.50" : "₦450,000"}
                   </span>
                 </div>
+                {taxTotal > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Taxes & Duties</span>
+                    <span className="text-muted-foreground">
+                      {mode === "diaspora" ? `$${taxTotal.toFixed(2)}` : `₦${taxTotal.toFixed(0)}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground flex items-center gap-1">
                     TrustLock Pay Fee ({getFeeRange()})
@@ -183,7 +204,7 @@ const TrustLockDualCheckout = () => {
                 <div className="flex justify-between text-xs font-bold pt-1 border-t border-border">
                   <span className="text-foreground">Total</span>
                   <span className="text-primary">
-                    {mode === "diaspora" ? `$${(sampleAmount + fees.total).toFixed(2)}` : `₦${((sampleAmount + fees.total * 1538)).toFixed(0)}`}
+                    {mode === "diaspora" ? `$${(sampleAmount + taxTotal + fees.total).toFixed(2)}` : `₦${((sampleAmount + taxTotal + fees.total * 1538)).toFixed(0)}`}
                   </span>
                 </div>
                 {showFees && (
