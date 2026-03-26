@@ -7,6 +7,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, FEE_DISCLOSURE, getFeeRange } from "@/lib/paymentProviders";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 const TrustLockDualCheckout = () => {
   const [mode, setMode] = useState<"diaspora" | "local">("diaspora");
