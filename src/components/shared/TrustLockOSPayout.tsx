@@ -89,6 +89,7 @@ const TrustLockOSPayout = ({
   payoutType = "release",
   transactionId,
   onComplete,
+  isTestnet = true,
 }: TrustLockOSPayoutProps) => {
   const [mode, setMode] = useState<"diaspora" | "local">("local");
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
