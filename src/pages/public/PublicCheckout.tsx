@@ -186,6 +186,28 @@ const PublicCheckout = () => {
           </div>
         )}
 
+        {/* Acknowledgement Step */}
+        {step === "acknowledge" && invoiceData && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setStep("compliance")}
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Compliance
+            </Button>
+            <AcknowledgementForm
+              orderAmount={invoiceData.grandTotal}
+              vendorName={mockLink.vendorName}
+              buyerName="You"
+              txId={mockLink.id}
+              onAccept={handleAcknowledgementAccept}
+              onDecline={() => setStep("invoice")}
+            />
+          </div>
+        )}
+
         {/* Pay Step */}
         {step === "pay" && invoiceData && (
           <div className="space-y-4">
