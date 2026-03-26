@@ -41,6 +41,15 @@ function generatePayoutId(): string {
   return `PO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 }
 
+function generateAccessToken(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < 64; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
 function calculateFees(
   amount: number,
   type: keyof typeof FEE_RULES,
@@ -96,7 +105,58 @@ function getSupabaseAdmin() {
   );
 }
 
-// ─── Action Handlers ───────────────────────────────────────
+// ─── Authorization Helpers ─────────────────────────────────
+async function getTransactionParty(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  transactionId: string,
+  userId?: string
+): Promise<{ tx: Record<string, unknown> | null; role: string | null }> {
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("id", transactionId)
+    .single();
+
+  if (!tx) return { tx: null, role: null };
+
+  if (userId === tx.buyer_id) return { tx, role: "buyer" };
+  if (userId === tx.vendor_id) return { tx, role: "vendor" };
+
+  // Check admin role
+  if (userId) {
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminRole) return { tx, role: "admin" };
+  }
+
+  return { tx, role: null };
+}
+
+async function logAuditAction(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  userId: string | undefined,
+  action: string,
+  details: Record<string, unknown>
+) {
+  try {
+    await supabase.from("notifications").insert({
+      user_id: userId ?? "00000000-0000-0000-0000-000000000000",
+      title: `Escrow Action: ${action}`,
+      message: JSON.stringify(details),
+      type: "audit",
+      related_entity_type: "escrow",
+      related_entity_id: details.transaction_id as string ?? null,
+    });
+  } catch (e) {
+    console.error("Audit log error:", e);
+  }
+}
+
+// ─── Original Action Handlers ──────────────────────────────
 
 async function lockFunds(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
@@ -118,7 +178,6 @@ async function lockFunds(body: Record<string, unknown>) {
   const autoRelease = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
   const wallets = getWalletAddresses();
 
-  // Insert transaction
   const { data: transaction, error: txErr } = await supabase
     .from("transactions")
     .insert({
@@ -142,7 +201,6 @@ async function lockFunds(body: Record<string, unknown>) {
 
   if (txErr) return errorResponse(txErr.message, 500);
 
-  // Insert carbon copy
   const { error: ccErr } = await supabase.from("order_carbon_copies").insert({
     transaction_id: transaction.id,
     order_number: txId,
@@ -158,6 +216,12 @@ async function lockFunds(body: Record<string, unknown>) {
   });
 
   if (ccErr) console.error("Carbon copy insert error:", ccErr.message);
+
+  await logAuditAction(supabase, String(buyer_id), "lock_funds", {
+    transaction_id: transaction.id,
+    tx_id: txId,
+    amount: numAmount,
+  });
 
   return jsonResponse({
     success: true,
@@ -176,10 +240,9 @@ async function lockFunds(body: Record<string, unknown>) {
 
 async function releaseFunds(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
-  const { txId } = body;
+  const { txId, user_id } = body;
   if (!txId) return errorResponse("txId is required", 400);
 
-  // Fetch transaction
   const { data: tx, error: fetchErr } = await supabase
     .from("transactions")
     .select("*")
@@ -193,7 +256,6 @@ async function releaseFunds(body: Record<string, unknown>) {
   const wallets = getWalletAddresses();
   const now = new Date().toISOString();
 
-  // Update transaction
   const { error: upErr } = await supabase
     .from("transactions")
     .update({ status: "released", released_date: now, updated_at: now })
@@ -201,7 +263,6 @@ async function releaseFunds(body: Record<string, unknown>) {
 
   if (upErr) return errorResponse(upErr.message, 500);
 
-  // Create payout
   const payoutId = generatePayoutId();
   const { data: payout, error: poErr } = await supabase
     .from("payouts")
@@ -220,6 +281,12 @@ async function releaseFunds(body: Record<string, unknown>) {
 
   if (poErr) return errorResponse(poErr.message, 500);
 
+  await logAuditAction(supabase, String(user_id), "release_funds", {
+    transaction_id: tx.id,
+    tx_id: tx.tx_id,
+    amount: fees.netAmount,
+  });
+
   return jsonResponse({
     success: true,
     payout,
@@ -235,7 +302,7 @@ async function releaseFunds(body: Record<string, unknown>) {
 
 async function refundBuyer(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
-  const { txId, refundReason } = body;
+  const { txId, refundReason, user_id } = body;
   if (!txId) return errorResponse("txId is required", 400);
 
   const { data: tx, error: fetchErr } = await supabase
@@ -246,7 +313,6 @@ async function refundBuyer(body: Record<string, unknown>) {
 
   if (fetchErr || !tx) return errorResponse("Transaction not found", 404);
 
-  // CRITICAL: escrow fee = 0 for refunds, gas only
   const fees = calculateFees(tx.amount, "refund");
   const now = new Date().toISOString();
 
@@ -262,7 +328,7 @@ async function refundBuyer(body: Record<string, unknown>) {
     .from("payouts")
     .insert({
       payout_id: payoutId,
-      vendor_id: tx.buyer_id, // refund goes to buyer
+      vendor_id: tx.buyer_id,
       transaction_id: tx.id,
       amount: fees.netAmount,
       tx_id: tx.tx_id,
@@ -274,6 +340,12 @@ async function refundBuyer(body: Record<string, unknown>) {
     .single();
 
   if (poErr) return errorResponse(poErr.message, 500);
+
+  await logAuditAction(supabase, String(user_id), "refund_buyer", {
+    transaction_id: tx.id,
+    tx_id: tx.tx_id,
+    refundReason,
+  });
 
   return jsonResponse({
     success: true,
@@ -288,7 +360,7 @@ async function refundBuyer(body: Record<string, unknown>) {
 
 async function splitPayout(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
-  const { txId, vendorSharePercent, buyerSharePercent } = body;
+  const { txId, vendorSharePercent, buyerSharePercent, user_id } = body;
 
   if (!txId || vendorSharePercent == null || buyerSharePercent == null) {
     return errorResponse("txId, vendorSharePercent, and buyerSharePercent are required", 400);
@@ -311,12 +383,10 @@ async function splitPayout(body: Record<string, unknown>) {
   const vendorAmount = round(tx.amount * (vPct / 100));
   const buyerAmount = round(tx.amount * (bPct / 100));
 
-  // Escrow fee (1%) applies ONLY to vendor's share; gas doubled
   const fees = calculateFees(tx.amount, "split", "direct", vPct / 100);
   const wallets = getWalletAddresses();
   const now = new Date().toISOString();
 
-  // Update transaction
   const { error: upErr } = await supabase
     .from("transactions")
     .update({
@@ -328,7 +398,6 @@ async function splitPayout(body: Record<string, unknown>) {
 
   if (upErr) return errorResponse(upErr.message, 500);
 
-  // Vendor payout (minus escrow fee on their share)
   const vendorNet = round(vendorAmount - fees.escrowWalletReceives - fees.gasFee / 2);
   const { data: vendorPayout, error: vpErr } = await supabase
     .from("payouts")
@@ -347,7 +416,6 @@ async function splitPayout(body: Record<string, unknown>) {
 
   if (vpErr) return errorResponse(vpErr.message, 500);
 
-  // Buyer payout (no escrow fee, half gas)
   const buyerNet = round(buyerAmount - fees.gasFee / 2);
   const { data: buyerPayout, error: bpErr } = await supabase
     .from("payouts")
@@ -366,6 +434,13 @@ async function splitPayout(body: Record<string, unknown>) {
 
   if (bpErr) return errorResponse(bpErr.message, 500);
 
+  await logAuditAction(supabase, String(user_id), "split_payout", {
+    transaction_id: tx.id,
+    tx_id: tx.tx_id,
+    vendorPercent: vPct,
+    buyerPercent: bPct,
+  });
+
   return jsonResponse({
     success: true,
     vendorPayout,
@@ -382,10 +457,363 @@ async function splitPayout(body: Record<string, unknown>) {
   });
 }
 
+// ─── New Action Handlers ───────────────────────────────────
+
+async function createMilestones(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { transaction_id, industry_key, custom_milestones, user_id } = body;
+
+  if (!transaction_id) return errorResponse("transaction_id is required", 400);
+
+  // Auth check
+  const { tx, role } = await getTransactionParty(supabase, String(transaction_id), String(user_id));
+  if (!tx) return errorResponse("Transaction not found", 404);
+  if (!role) return errorResponse("Unauthorized: not a participant in this transaction", 403);
+
+  // Check for existing milestones
+  const { data: existing } = await supabase
+    .from("transaction_milestones")
+    .select("id")
+    .eq("transaction_id", String(transaction_id))
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    return errorResponse("Milestones already exist for this transaction. Use update_milestone or reorder_milestones.", 400);
+  }
+
+  let milestoneData: Array<Record<string, unknown>> = [];
+
+  if (custom_milestones && Array.isArray(custom_milestones) && custom_milestones.length > 0) {
+    // Use custom milestones provided by caller
+    milestoneData = custom_milestones;
+  } else if (industry_key) {
+    // Fetch from industry template
+    const { data: template, error: tplErr } = await supabase
+      .from("industry_templates")
+      .select("default_milestones, required_observer_roles")
+      .eq("industry_key", String(industry_key))
+      .eq("is_active", true)
+      .single();
+
+    if (tplErr || !template) {
+      return errorResponse(`Industry template '${industry_key}' not found`, 404);
+    }
+
+    milestoneData = template.default_milestones as Array<Record<string, unknown>>;
+  } else {
+    return errorResponse("Either industry_key or custom_milestones is required", 400);
+  }
+
+  // Calculate payment amounts from percentages if transaction amount is known
+  const txAmount = Number(tx.amount);
+
+  const rows = milestoneData.map((m: Record<string, unknown>, idx: number) => {
+    let paymentAmount: number | null = null;
+    if (m.is_payment_milestone && m.payment_percentage && txAmount > 0) {
+      paymentAmount = round(txAmount * (Number(m.payment_percentage) / 100));
+    } else if (m.payment_amount) {
+      paymentAmount = Number(m.payment_amount);
+    }
+
+    return {
+      transaction_id: String(transaction_id),
+      title: String(m.title ?? `Milestone ${idx + 1}`),
+      description: m.description ? String(m.description) : null,
+      position: idx,
+      status: "pending",
+      required_documents: Array.isArray(m.required_documents) ? m.required_documents : [],
+      assigned_to: m.assigned_to ? String(m.assigned_to) : null,
+      is_payment_milestone: Boolean(m.is_payment_milestone),
+      payment_amount: paymentAmount,
+    };
+  });
+
+  const { data: milestones, error: insErr } = await supabase
+    .from("transaction_milestones")
+    .insert(rows)
+    .select();
+
+  if (insErr) return errorResponse(insErr.message, 500);
+
+  await logAuditAction(supabase, String(user_id), "create_milestones", {
+    transaction_id: String(transaction_id),
+    industry_key: industry_key ?? "custom",
+    count: milestones.length,
+  });
+
+  return jsonResponse({ success: true, milestones, count: milestones.length });
+}
+
+async function updateMilestone(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { milestone_id, user_id, status, uploaded_documents, description } = body;
+
+  if (!milestone_id) return errorResponse("milestone_id is required", 400);
+
+  // Fetch milestone + parent transaction
+  const { data: milestone, error: mErr } = await supabase
+    .from("transaction_milestones")
+    .select("*, transactions!inner(buyer_id, vendor_id, id)")
+    .eq("id", String(milestone_id))
+    .single();
+
+  if (mErr || !milestone) return errorResponse("Milestone not found", 404);
+
+  // Auth check
+  const txData = milestone.transactions as Record<string, unknown>;
+  const { role } = await getTransactionParty(supabase, String(txData.id), String(user_id));
+  if (!role) return errorResponse("Unauthorized", 403);
+
+  // Build update payload
+  const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (status) {
+    updatePayload.status = String(status);
+    if (status === "completed") {
+      updatePayload.completed_at = new Date().toISOString();
+      updatePayload.completed_by = user_id;
+    }
+  }
+
+  if (uploaded_documents) {
+    // Merge new documents with existing
+    const existingDocs = Array.isArray(milestone.uploaded_documents) ? milestone.uploaded_documents : [];
+    const newDocs = Array.isArray(uploaded_documents) ? uploaded_documents : [uploaded_documents];
+    updatePayload.uploaded_documents = [...existingDocs, ...newDocs];
+  }
+
+  if (description !== undefined) {
+    updatePayload.description = description;
+  }
+
+  const { data: updated, error: upErr } = await supabase
+    .from("transaction_milestones")
+    .update(updatePayload)
+    .eq("id", String(milestone_id))
+    .select()
+    .single();
+
+  if (upErr) return errorResponse(upErr.message, 500);
+
+  await logAuditAction(supabase, String(user_id), "update_milestone", {
+    transaction_id: txData.id,
+    milestone_id: String(milestone_id),
+    changes: Object.keys(updatePayload),
+  });
+
+  return jsonResponse({ success: true, milestone: updated });
+}
+
+async function reorderMilestones(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { transaction_id, milestone_ids, user_id } = body;
+
+  if (!transaction_id || !milestone_ids || !Array.isArray(milestone_ids)) {
+    return errorResponse("transaction_id and milestone_ids array are required", 400);
+  }
+
+  const { tx, role } = await getTransactionParty(supabase, String(transaction_id), String(user_id));
+  if (!tx) return errorResponse("Transaction not found", 404);
+  if (!role) return errorResponse("Unauthorized", 403);
+
+  // Update positions sequentially
+  const updates = [];
+  for (let i = 0; i < milestone_ids.length; i++) {
+    updates.push(
+      supabase
+        .from("transaction_milestones")
+        .update({ position: i, updated_at: new Date().toISOString() })
+        .eq("id", String(milestone_ids[i]))
+        .eq("transaction_id", String(transaction_id))
+    );
+  }
+
+  await Promise.all(updates);
+
+  await logAuditAction(supabase, String(user_id), "reorder_milestones", {
+    transaction_id: String(transaction_id),
+    new_order: milestone_ids,
+  });
+
+  return jsonResponse({ success: true, message: "Milestones reordered", count: milestone_ids.length });
+}
+
+async function deleteMilestone(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { milestone_id, user_id } = body;
+
+  if (!milestone_id) return errorResponse("milestone_id is required", 400);
+
+  // Fetch milestone
+  const { data: milestone, error: mErr } = await supabase
+    .from("transaction_milestones")
+    .select("*, transactions!inner(buyer_id, vendor_id, id)")
+    .eq("id", String(milestone_id))
+    .single();
+
+  if (mErr || !milestone) return errorResponse("Milestone not found", 404);
+
+  // Only pending milestones can be deleted
+  if (milestone.status !== "pending") {
+    return errorResponse("Only pending milestones can be deleted", 400);
+  }
+
+  // Check for acknowledgement forms
+  const { data: forms } = await supabase
+    .from("acknowledgement_forms")
+    .select("id, signed_by_buyer, signed_by_vendor")
+    .eq("milestone_id", String(milestone_id));
+
+  if (forms && forms.some((f: Record<string, unknown>) => f.signed_by_buyer || f.signed_by_vendor)) {
+    return errorResponse("Cannot delete milestone with signed acknowledgement forms", 400);
+  }
+
+  const txData = milestone.transactions as Record<string, unknown>;
+  const { role } = await getTransactionParty(supabase, String(txData.id), String(user_id));
+  if (!role) return errorResponse("Unauthorized", 403);
+
+  // Delete the milestone
+  const { error: delErr } = await supabase
+    .from("transaction_milestones")
+    .delete()
+    .eq("id", String(milestone_id));
+
+  if (delErr) return errorResponse(delErr.message, 500);
+
+  await logAuditAction(supabase, String(user_id), "delete_milestone", {
+    transaction_id: txData.id,
+    milestone_id: String(milestone_id),
+    title: milestone.title,
+  });
+
+  return jsonResponse({ success: true, message: "Milestone deleted" });
+}
+
+async function releaseMilestonePayment(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { milestone_id, user_id } = body;
+
+  if (!milestone_id) return errorResponse("milestone_id is required", 400);
+
+  // Fetch milestone with transaction
+  const { data: milestone, error: mErr } = await supabase
+    .from("transaction_milestones")
+    .select("*, transactions!inner(*)")
+    .eq("id", String(milestone_id))
+    .single();
+
+  if (mErr || !milestone) return errorResponse("Milestone not found", 404);
+
+  if (!milestone.is_payment_milestone) {
+    return errorResponse("This is not a payment milestone", 400);
+  }
+  if (milestone.payment_released) {
+    return errorResponse("Payment already released for this milestone", 400);
+  }
+  if (milestone.status !== "completed") {
+    return errorResponse("Milestone must be completed before payment can be released", 400);
+  }
+
+  const txData = milestone.transactions as Record<string, unknown>;
+  const { role } = await getTransactionParty(supabase, String(txData.id), String(user_id));
+  if (!role) return errorResponse("Unauthorized", 403);
+
+  // Check both parties have signed acknowledgement form (if one exists)
+  const { data: forms } = await supabase
+    .from("acknowledgement_forms")
+    .select("signed_by_buyer, signed_by_vendor")
+    .eq("milestone_id", String(milestone_id));
+
+  if (forms && forms.length > 0) {
+    const allSigned = forms.every(
+      (f: Record<string, unknown>) => f.signed_by_buyer && f.signed_by_vendor
+    );
+    if (!allSigned) {
+      return errorResponse("Both buyer and vendor must sign the acknowledgement form before releasing payment", 400);
+    }
+  }
+
+  const paymentAmount = Number(milestone.payment_amount ?? 0);
+  if (paymentAmount <= 0) {
+    return errorResponse("No payment amount set for this milestone", 400);
+  }
+
+  const fees = calculateFees(paymentAmount, "release");
+  const wallets = getWalletAddresses();
+  const now = new Date().toISOString();
+
+  // Mark milestone payment as released
+  const { error: msUpErr } = await supabase
+    .from("transaction_milestones")
+    .update({ payment_released: true, updated_at: now })
+    .eq("id", String(milestone_id));
+
+  if (msUpErr) return errorResponse(msUpErr.message, 500);
+
+  // Create payout record
+  const payoutId = generatePayoutId();
+  const { data: payout, error: poErr } = await supabase
+    .from("payouts")
+    .insert({
+      payout_id: payoutId,
+      vendor_id: txData.vendor_id,
+      transaction_id: txData.id,
+      amount: fees.netAmount,
+      tx_id: txData.tx_id,
+      method: "milestone_release",
+      status: "completed",
+      completed_at: now,
+    })
+    .select()
+    .single();
+
+  if (poErr) return errorResponse(poErr.message, 500);
+
+  // Check if all payment milestones are released — if so, mark transaction as released
+  const { data: allMilestones } = await supabase
+    .from("transaction_milestones")
+    .select("is_payment_milestone, payment_released")
+    .eq("transaction_id", String(txData.id));
+
+  const allPaymentsDone = allMilestones
+    ?.filter((m: Record<string, unknown>) => m.is_payment_milestone)
+    .every((m: Record<string, unknown>) => m.payment_released);
+
+  if (allPaymentsDone) {
+    await supabase
+      .from("transactions")
+      .update({ status: "released", released_date: now, updated_at: now })
+      .eq("id", String(txData.id));
+  }
+
+  await logAuditAction(supabase, String(user_id), "release_milestone_payment", {
+    transaction_id: txData.id,
+    milestone_id: String(milestone_id),
+    paymentAmount,
+    netAmount: fees.netAmount,
+    allPaymentsDone,
+  });
+
+  return jsonResponse({
+    success: true,
+    payout,
+    milestoneTitle: milestone.title,
+    allPaymentMilestonesReleased: allPaymentsDone,
+    feeBreakdown: fees,
+    walletRouting: {
+      transactionWallet: wallets.transactionWallet,
+      transactionWalletReceives: fees.transactionWalletReceives,
+      escrowWallet: wallets.escrowWallet,
+      escrowWalletReceives: fees.escrowWalletReceives,
+    },
+  });
+}
+
 async function checkAutoRelease() {
   const supabase = getSupabaseAdmin();
   const now = new Date().toISOString();
 
+  // ── Atomic (non-milestone) transactions ──
   const { data: expired, error } = await supabase
     .from("transactions")
     .select("*")
@@ -393,39 +821,166 @@ async function checkAutoRelease() {
     .lte("auto_release_date", now);
 
   if (error) return errorResponse(error.message, 500);
-  if (!expired || expired.length === 0) {
-    return jsonResponse({ success: true, released: 0, message: "No transactions due for auto-release." });
-  }
 
   const results = [];
-  for (const tx of expired) {
-    const fees = calculateFees(tx.amount, "release");
-    const payoutId = generatePayoutId();
 
-    await supabase
-      .from("transactions")
-      .update({ status: "released", released_date: now, updated_at: now })
-      .eq("id", tx.id);
+  if (expired && expired.length > 0) {
+    for (const tx of expired) {
+      // Skip if transaction has milestones (handled separately)
+      const { data: hasMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id")
+        .eq("transaction_id", tx.id)
+        .limit(1);
 
-    const { data: payout } = await supabase
-      .from("payouts")
-      .insert({
-        payout_id: payoutId,
-        vendor_id: tx.vendor_id,
-        transaction_id: tx.id,
-        amount: fees.netAmount,
-        tx_id: tx.tx_id,
-        method: "auto_release",
-        status: "completed",
-        completed_at: now,
-      })
-      .select()
-      .single();
+      if (hasMilestones && hasMilestones.length > 0) continue;
 
-    results.push({ txId: tx.tx_id, payout, feeBreakdown: fees });
+      const fees = calculateFees(tx.amount, "release");
+      const payoutId = generatePayoutId();
+
+      await supabase
+        .from("transactions")
+        .update({ status: "released", released_date: now, updated_at: now })
+        .eq("id", tx.id);
+
+      const { data: payout } = await supabase
+        .from("payouts")
+        .insert({
+          payout_id: payoutId,
+          vendor_id: tx.vendor_id,
+          transaction_id: tx.id,
+          amount: fees.netAmount,
+          tx_id: tx.tx_id,
+          method: "auto_release",
+          status: "completed",
+          completed_at: now,
+        })
+        .select()
+        .single();
+
+      results.push({ txId: tx.tx_id, payout, feeBreakdown: fees, type: "atomic" });
+    }
   }
 
-  return jsonResponse({ success: true, released: results.length, results });
+  // ── Milestone-based: auto-release individual milestones 14 days after vendor marks fulfilled ──
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: overdueMilestones } = await supabase
+    .from("transaction_milestones")
+    .select("*, transactions!inner(*)")
+    .eq("status", "completed")
+    .eq("is_payment_milestone", true)
+    .eq("payment_released", false)
+    .lte("completed_at", fourteenDaysAgo);
+
+  if (overdueMilestones && overdueMilestones.length > 0) {
+    for (const ms of overdueMilestones) {
+      const txData = ms.transactions as Record<string, unknown>;
+      const paymentAmount = Number(ms.payment_amount ?? 0);
+      if (paymentAmount <= 0) continue;
+
+      const fees = calculateFees(paymentAmount, "release");
+      const payoutId = generatePayoutId();
+
+      await supabase
+        .from("transaction_milestones")
+        .update({ payment_released: true, updated_at: now })
+        .eq("id", ms.id);
+
+      const { data: payout } = await supabase
+        .from("payouts")
+        .insert({
+          payout_id: payoutId,
+          vendor_id: txData.vendor_id,
+          transaction_id: txData.id,
+          amount: fees.netAmount,
+          tx_id: txData.tx_id,
+          method: "milestone_auto_release",
+          status: "completed",
+          completed_at: now,
+        })
+        .select()
+        .single();
+
+      results.push({
+        txId: txData.tx_id,
+        milestoneId: ms.id,
+        milestoneTitle: ms.title,
+        payout,
+        feeBreakdown: fees,
+        type: "milestone",
+      });
+    }
+  }
+
+  return jsonResponse({
+    success: true,
+    released: results.length,
+    results,
+    message: results.length === 0 ? "No transactions or milestones due for auto-release." : undefined,
+  });
+}
+
+async function addObserver(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const {
+    transaction_id, observer_email, observer_name, observer_role,
+    permissions, milestone_ids, user_id, expires_at,
+  } = body;
+
+  if (!transaction_id || !observer_email || !observer_name) {
+    return errorResponse("transaction_id, observer_email, and observer_name are required", 400);
+  }
+
+  const { tx, role } = await getTransactionParty(supabase, String(transaction_id), String(user_id));
+  if (!tx) return errorResponse("Transaction not found", 404);
+  if (!role || role === "observer") {
+    return errorResponse("Only buyer, vendor, or admin can add observers", 403);
+  }
+
+  const accessToken = generateAccessToken();
+
+  const { data: observer, error: obsErr } = await supabase
+    .from("transaction_observers")
+    .insert({
+      transaction_id: String(transaction_id),
+      observer_email: String(observer_email),
+      observer_name: String(observer_name),
+      observer_role: observer_role ? String(observer_role) : null,
+      invited_by: user_id ? String(user_id) : null,
+      access_token: accessToken,
+      permissions: Array.isArray(permissions) ? permissions : ["view"],
+      milestone_ids: Array.isArray(milestone_ids) ? milestone_ids : [],
+      expires_at: expires_at ? String(expires_at) : null,
+    })
+    .select()
+    .single();
+
+  if (obsErr) return errorResponse(obsErr.message, 500);
+
+  // Link observer to milestones if specific milestone_ids provided
+  if (Array.isArray(milestone_ids) && milestone_ids.length > 0) {
+    for (const msId of milestone_ids) {
+      await supabase
+        .from("transaction_milestones")
+        .update({ observer_id: observer.id, updated_at: new Date().toISOString() })
+        .eq("id", String(msId))
+        .eq("transaction_id", String(transaction_id));
+    }
+  }
+
+  await logAuditAction(supabase, String(user_id), "add_observer", {
+    transaction_id: String(transaction_id),
+    observer_email: String(observer_email),
+    observer_role: observer_role ?? null,
+    milestone_count: Array.isArray(milestone_ids) ? milestone_ids.length : 0,
+  });
+
+  return jsonResponse({
+    success: true,
+    observer,
+    accessToken,
+    message: `Observer ${observer_name} added successfully`,
+  });
 }
 
 // ─── Response Helpers ──────────────────────────────────────
@@ -458,6 +1013,7 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     switch (action) {
+      // Original actions
       case "lock_funds":
         return await lockFunds(body);
       case "release_funds":
@@ -466,11 +1022,26 @@ Deno.serve(async (req) => {
         return await refundBuyer(body);
       case "split_payout":
         return await splitPayout(body);
+
+      // New milestone & observer actions
+      case "create_milestones":
+        return await createMilestones(body);
+      case "update_milestone":
+        return await updateMilestone(body);
+      case "reorder_milestones":
+        return await reorderMilestones(body);
+      case "delete_milestone":
+        return await deleteMilestone(body);
+      case "release_milestone_payment":
+        return await releaseMilestonePayment(body);
       case "check_auto_release":
         return await checkAutoRelease();
+      case "add_observer":
+        return await addObserver(body);
+
       default:
         return errorResponse(
-          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, check_auto_release`,
+          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, release_milestone_payment, check_auto_release, add_observer`,
           400
         );
     }
