@@ -113,8 +113,16 @@ const BuyerOrders = () => {
                         <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => openDispute.mutate({ txId: order.id })}>Dispute</Button>
                       )}
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                        {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </Button>
                     </div>
                   </div>
+                  {expandedOrder === order.id && (
+                    <div className="mt-3 border-t border-border pt-3">
+                      <MilestoneProgress industry={order.industry} status={order.status} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

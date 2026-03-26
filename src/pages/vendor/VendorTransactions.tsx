@@ -186,14 +186,25 @@ const VendorTransactions = () => {
                               <>
                                 {tx.status === "locked" && <Button variant="outline" size="sm" className="text-xs" onClick={() => handleAddTracking(tx.id)}>Add Tracking</Button>}
                                 <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="sm" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                                  {expandedRow === tx.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </Button>
                               </>
                             )}
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
+                      {expandedRow === tx.id && (
+                        <tr>
+                          <td colSpan={8} className="px-4 pb-4 bg-muted/10">
+                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
               </table>
             </div>
           </CardContent>

@@ -111,8 +111,22 @@ const AdminTransactions = () => {
                           </span>
                         </td>
                         <td className="p-4 hidden sm:table-cell text-muted-foreground text-xs">{tx.date}</td>
-                        <td className="p-4 text-center"><Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button></td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                              {expandedRow === tx.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
+                      {expandedRow === tx.id && (
+                        <tr>
+                          <td colSpan={10} className="px-4 pb-4 bg-muted/10">
+                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          </td>
+                        </tr>
+                      )}
                     );
                   })}
                 </tbody>
