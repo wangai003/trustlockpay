@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle } from "lucide-react";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
+} from "@/components/ui/alert-dialog";
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 
