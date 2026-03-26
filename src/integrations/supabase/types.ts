@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      acknowledgement_forms: {
+        Row: {
+          buyer_ip: string | null
+          buyer_signature_at: string | null
+          created_at: string
+          form_type: string
+          id: string
+          metadata: Json | null
+          milestone_id: string | null
+          pdf_url: string | null
+          signed_by_buyer: boolean | null
+          signed_by_vendor: boolean | null
+          terms_text: string | null
+          title: string
+          transaction_id: string
+          vendor_ip: string | null
+          vendor_signature_at: string | null
+        }
+        Insert: {
+          buyer_ip?: string | null
+          buyer_signature_at?: string | null
+          created_at?: string
+          form_type: string
+          id?: string
+          metadata?: Json | null
+          milestone_id?: string | null
+          pdf_url?: string | null
+          signed_by_buyer?: boolean | null
+          signed_by_vendor?: boolean | null
+          terms_text?: string | null
+          title: string
+          transaction_id: string
+          vendor_ip?: string | null
+          vendor_signature_at?: string | null
+        }
+        Update: {
+          buyer_ip?: string | null
+          buyer_signature_at?: string | null
+          created_at?: string
+          form_type?: string
+          id?: string
+          metadata?: Json | null
+          milestone_id?: string | null
+          pdf_url?: string | null
+          signed_by_buyer?: boolean | null
+          signed_by_vendor?: boolean | null
+          terms_text?: string | null
+          title?: string
+          transaction_id?: string
+          vendor_ip?: string | null
+          vendor_signature_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acknowledgement_forms_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acknowledgement_forms_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_accounts: {
         Row: {
           created_at: string
