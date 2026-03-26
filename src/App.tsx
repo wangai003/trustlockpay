@@ -68,6 +68,7 @@ import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
 import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
 import VendorPayout from "./pages/vendor/VendorPayout.tsx";
 import VendorBillPayments from "./pages/vendor/VendorBillPayments.tsx";
+import VendorStandaloneLinks from "./pages/vendor/VendorStandaloneLinks.tsx";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,7 @@ const App = () => (
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="os-pay" element={<VendorOSPay />} />
               <Route path="payout" element={<VendorPayout />} />
+              <Route path="standalone-links" element={<VendorStandaloneLinks />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
 

@@ -2,33 +2,35 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
-  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor" },
-  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments" },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions" },
-  { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts" },
-  { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites" },
-  { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc" },
-  { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant" },
-  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics" },
-  { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents" },
-  { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help" },
-  { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing" },
-  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay" },
-  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout" },
-  { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings" },
+  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity" },
+  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees" },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow transactions and order statuses" },
+  { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts", tip: "Track released funds and payout history" },
+  { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites with TrustLock widget installed" },
+  { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity documents and verify your account" },
+  { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries" },
+  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports" },
+  { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files" },
+  { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help", tip: "Guides, FAQs, and platform documentation" },
+  { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan" },
+  { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals" },
+  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails" },
+  { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings" },
 ];
 
 const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { switchRole, switching, targetLabel } = useRoleSwitcher("vendor");
+  const { switchRole, switching } = useRoleSwitcher("vendor");
   const handleLogout = () => {
     localStorage.removeItem("tl_vendor_auth");
     localStorage.removeItem("tl_vendor_network");
@@ -72,23 +74,34 @@ const VendorSidebar = () => {
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/trustlock/vendor"}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )
-              }
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {item.label}
-            </NavLink>
+            <div key={item.to} className="flex items-center gap-1">
+              <NavLink
+                to={item.to}
+                end={item.to === "/trustlock/vendor"}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )
+                }
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.label}
+              </NavLink>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
+                    <Info className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  {item.tip}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           ))}
         </nav>
 

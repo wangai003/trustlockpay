@@ -2,6 +2,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { AdminProvider } from "@/contexts/AdminContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import CommandPalette from "@/components/shared/CommandPalette";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const AdminLayoutInner = () => {
@@ -15,6 +16,7 @@ const AdminLayoutInner = () => {
           <TestnetGuide role="admin" />
           <Outlet />
         </main>
+        <CommandPalette role="admin" />
       </div>
     </AdminProvider>
   );

@@ -2,6 +2,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import BuyerSidebar from "@/components/buyer/BuyerSidebar";
 import { BuyerProvider } from "@/contexts/BuyerContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import CommandPalette from "@/components/shared/CommandPalette";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const BuyerLayoutInner = () => {
@@ -15,6 +16,7 @@ const BuyerLayoutInner = () => {
           <TestnetGuide role="buyer" />
           <Outlet />
         </main>
+        <CommandPalette role="buyer" />
       </div>
     </BuyerProvider>
   );
