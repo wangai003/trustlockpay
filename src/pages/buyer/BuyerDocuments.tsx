@@ -3,10 +3,11 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, ExternalLink, Clock, Eye, Shield } from "lucide-react";
+import { FileText, Download, ExternalLink, Clock, Eye, Shield, Handshake } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DocumentUpload from "@/components/shared/DocumentUpload";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
+import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 
 const docs = [
   { title: "Buyer Protection Policy", desc: "How TrustLock escrow protects your funds. Auto-release rules, dispute rights, and refund procedures.", updated: "Mar 2026" },
@@ -18,6 +19,7 @@ const docs = [
 
 const BuyerDocuments = () => {
   const [showAckPreview, setShowAckPreview] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
 
   return (
@@ -73,6 +75,39 @@ const BuyerDocuments = () => {
                 vendorName="Sample Vendor"
                 txId="TL-PREVIEW"
                 onAccept={() => {}}
+              />
+            </CardContent>
+          )}
+        </Card>
+
+        {/* ── Pre-Order Signatory Contract ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Handshake className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm">Pre-Order Signatory Contract</CardTitle>
+                  <CardDescription className="text-[10px]">The contract you sign before each purchase — view a sample.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowContractPreview(!showContractPreview)}>
+                <Eye className="w-3 h-3" />
+                {showContractPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showContractPreview && (
+            <CardContent>
+              <PreOrderSignatoryContract
+                industry="default"
+                orderAmount={5000}
+                buyerName="You"
+                vendorName="Sample Vendor"
+                txId="TL-PREVIEW"
+                isAutoSigned
+                onBothSigned={() => {}}
+                previewMode
               />
             </CardContent>
           )}

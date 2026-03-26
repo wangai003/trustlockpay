@@ -10,12 +10,13 @@ import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import SanctionsGate from "@/components/shared/SanctionsGate";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
+import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"invoice" | "compliance" | "acknowledge" | "pay" | "done">("invoice");
+  const [step, setStep] = useState<"invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done">("invoice");
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
     taxTotal: number;
@@ -52,6 +53,10 @@ const PublicCheckout = () => {
   }, []);
 
   const handleAcknowledgementAccept = useCallback(() => {
+    setStep("contract");
+  }, []);
+
+  const handleContractSigned = useCallback(() => {
     setStep("pay");
   }, []);
 
@@ -137,18 +142,19 @@ const PublicCheckout = () => {
             { key: "invoice", label: "Invoice", num: 1 },
             { key: "compliance", label: "Compliance", num: 2 },
             { key: "acknowledge", label: "Acknowledge", num: 3 },
-            { key: "pay", label: "Pay", num: 4 },
+            { key: "contract", label: "Sign Contract", num: 4 },
+            { key: "pay", label: "Pay", num: 5 },
           ].map((s, i) => (
             <div key={s.key} className="flex items-center gap-1.5">
               <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
                   step === s.key ? "bg-primary text-primary-foreground" :
-                  ["invoice","compliance","acknowledge","pay"].indexOf(s.key) < ["invoice","compliance","acknowledge","pay"].indexOf(step) ? "bg-primary text-primary-foreground" :
+                  ["invoice","compliance","acknowledge","contract","pay"].indexOf(s.key) < ["invoice","compliance","acknowledge","contract","pay"].indexOf(step) ? "bg-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>{s.num}</span>
                 <span className="hidden sm:inline">{s.label}</span>
               </div>
-              {i < 3 && <div className="w-4 sm:w-8 h-px bg-border" />}
+              {i < 4 && <div className="w-4 sm:w-8 h-px bg-border" />}
             </div>
           ))}
         </div>
@@ -204,6 +210,30 @@ const PublicCheckout = () => {
               txId={mockLink.id}
               onAccept={handleAcknowledgementAccept}
               onDecline={() => setStep("invoice")}
+            />
+          </div>
+        )}
+
+        {/* Contract Step */}
+        {step === "contract" && invoiceData && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setStep("acknowledge")}
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Acknowledgement
+            </Button>
+            <PreOrderSignatoryContract
+              orderAmount={invoiceData.grandTotal}
+              buyerName="You"
+              vendorName={mockLink.vendorName}
+              txId={mockLink.id}
+              isAutoSigned
+              onBothSigned={handleContractSigned}
+              onDecline={() => setStep("invoice")}
+              role="buyer"
             />
           </div>
         )}

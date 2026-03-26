@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -218,6 +220,7 @@ interface AcknowledgementFormProps {
   milestoneCount?: number;
   onAccept: () => void;
   onDecline?: () => void;
+  requireTypedSignature?: boolean;
 }
 
 const AcknowledgementForm = ({
@@ -229,8 +232,11 @@ const AcknowledgementForm = ({
   milestoneCount = 1,
   onAccept,
   onDecline,
+  requireTypedSignature = true,
 }: AcknowledgementFormProps) => {
   const [checkedClauses, setCheckedClauses] = useState<Record<string, boolean>>({});
+  const [typedName, setTypedName] = useState("");
+  const nameMatch = !requireTypedSignature || typedName.trim().toLowerCase() === buyerName.trim().toLowerCase();
 
   const clauses = useMemo(() => {
     const key = industry && INDUSTRY_CLAUSES[industry] ? industry : "default";
@@ -468,6 +474,33 @@ const AcknowledgementForm = ({
           </p>
         </div>
 
+        {/* ── Typed Signature (when required) ── */}
+        {requireTypedSignature && (
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+              <Fingerprint className="h-3.5 w-3.5" /> Type Your Full Legal Name to Sign
+            </Label>
+            <Input
+              placeholder={`Type "${buyerName}" to confirm acknowledgement`}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+              className={cn(
+                "text-sm",
+                typedName.length > 0 && nameMatch && "border-green-500 ring-1 ring-green-500/30",
+                typedName.length > 0 && !nameMatch && "border-red-500 ring-1 ring-red-500/30"
+              )}
+            />
+            {typedName.length > 0 && !nameMatch && (
+              <p className="text-[10px] text-red-500">Name must match: "{buyerName}"</p>
+            )}
+            {typedName.length > 0 && nameMatch && (
+              <p className="text-[10px] text-green-600 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Signature verified
+              </p>
+            )}
+          </div>
+        )}
+
         {/* ── Actions ──────────────────────── */}
         <div className="flex gap-2">
           {onDecline && (
@@ -477,11 +510,16 @@ const AcknowledgementForm = ({
           )}
           <Button
             onClick={onAccept}
-            disabled={!allChecked}
+            disabled={!allChecked || !nameMatch}
             className="flex-1 gap-2"
           >
             <CheckCircle2 className="h-4 w-4" />
-            {allChecked ? "Accept & Lock Funds" : `${allCheckboxIds.length - checkedCount} clauses remaining`}
+            {allChecked && nameMatch
+              ? "Accept & Lock Funds"
+              : !allChecked
+                ? `${allCheckboxIds.length - checkedCount} clauses remaining`
+                : "Type your name to sign"
+            }
           </Button>
         </div>
       </CardContent>
