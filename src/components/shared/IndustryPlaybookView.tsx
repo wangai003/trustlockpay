@@ -155,6 +155,15 @@ const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Assessment", percentage: 25, documents: ["Assessment Results"], documentMode: "optional", description: "Mid-program or final assessment completed", requiresObserver: false },
     { name: "Certification & Payout", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certificate issued, final payout released", requiresObserver: false },
   ],
+  "project-management": [
+    { name: "Project Charter & SOW", percentage: 10, documents: ["Project Charter", "Statement of Work"], documentMode: "required", description: "Project scope, objectives, and deliverables defined and signed", requiresObserver: false },
+    { name: "Kick-Off & Resource Plan", percentage: 5, documents: ["Resource Plan", "RACI Matrix"], documentMode: "optional", description: "Team assigned, kick-off meeting completed", requiresObserver: false },
+    { name: "Phase 1 Deliverables", percentage: 25, documents: ["Phase 1 Report", "Progress Photos"], documentMode: "required", description: "First major deliverable milestone completed", requiresObserver: true },
+    { name: "Mid-Project Review", percentage: 10, documents: ["Status Report", "Change Order Log"], documentMode: "required", description: "Formal review, budget check, and scope validation", requiresObserver: true },
+    { name: "Phase 2 Deliverables", percentage: 25, documents: ["Phase 2 Report", "Test Results"], documentMode: "required", description: "Second major deliverable milestone completed", requiresObserver: true },
+    { name: "UAT / Acceptance Testing", percentage: 15, documents: ["UAT Sign-Off", "Punch List"], documentMode: "required", description: "Client acceptance testing and sign-off", requiresObserver: false },
+    { name: "Project Close-Out", percentage: 10, documents: ["Close-Out Report", "Lessons Learned"], documentMode: "optional", description: "Final documentation, handover, and escrow release", requiresObserver: false },
+  ],
 };
 
 const platformTools = [
