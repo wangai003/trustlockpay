@@ -32,7 +32,7 @@ const BuyerLogin = () => {
   const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(comingFromVerification ? "" : "james@trustlocktest.com");
-  const [password, setPassword] = useState(comingFromVerification ? "" : "123");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
