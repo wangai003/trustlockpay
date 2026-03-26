@@ -128,6 +128,38 @@ function performScreening(fullName: string, country: string) {
   return { result, riskScore, matchedEntries };
 }
 
+// ─── Triage Helper ─────────────────────────────────────────
+async function triageNotify(
+  notificationType: string,
+  userId: string,
+  message: string,
+  transactionId?: string,
+  severity?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notification-triage`;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        action: "triage",
+        notification_type: notificationType,
+        user_id: userId,
+        message,
+        transaction_id: transactionId,
+        severity,
+        metadata,
+      }),
+    });
+  } catch (e) {
+    console.error("Triage notification error:", e);
+  }
+}
+
 // ─── Main ──────────────────────────────────────────────────
 function getSupabaseAdmin() {
   return createClient(
@@ -200,23 +232,15 @@ Deno.serve(async (req) => {
         related_buyer_id: user_role === "buyer" ? String(user_id) : null,
       });
 
-      // Notify admins
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((a: { user_id: string }) => ({
-          user_id: a.user_id,
-          title: "🚨 Sanctions Block",
-          message: `${full_name} (${country}) was BLOCKED by sanctions screening. Flag: ${flagId}`,
-          type: "alert",
-          related_entity_type: "compliance",
-          related_entity_id: flagId,
-        }));
-        await supabase.from("notifications").insert(notifications);
-      }
+      // Notify via triage
+      await triageNotify(
+        "sanctions_block",
+        String(user_id),
+        `${full_name} (${country}) was BLOCKED by sanctions screening. Flag: ${flagId}`,
+        transaction_id ? String(transaction_id) : undefined,
+        "critical",
+        { full_name, country, flagId, matchCount: matchedEntries.length }
+      );
 
       // If transaction_id provided, mark it
       if (transaction_id) {
@@ -240,22 +264,15 @@ Deno.serve(async (req) => {
         related_buyer_id: user_role === "buyer" ? String(user_id) : null,
       });
 
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((a: { user_id: string }) => ({
-          user_id: a.user_id,
-          title: "⚠️ Sanctions Flag — Review Required",
-          message: `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Flag: ${flagId}`,
-          type: "warning",
-          related_entity_type: "compliance",
-          related_entity_id: flagId,
-        }));
-        await supabase.from("notifications").insert(notifications);
-      }
+      // Notify via triage
+      await triageNotify(
+        "sanctions_flag",
+        String(user_id),
+        `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Flag: ${flagId}`,
+        transaction_id ? String(transaction_id) : undefined,
+        "high",
+        { full_name, country, flagId, riskScore }
+      );
     }
 
     return new Response(
