@@ -21,6 +21,7 @@ const navItems = [
   { label: "Documents", icon: FileText, to: "/trustlock/admin/documents" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/admin/os-pay" },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/admin/payout" },
+  { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit" },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings" },
 ];
 
