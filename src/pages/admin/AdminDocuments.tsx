@@ -1,8 +1,11 @@
+import { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 
 const pinnedDocs = [
   {
