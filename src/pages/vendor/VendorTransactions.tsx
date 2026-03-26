@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,9 +31,24 @@ const statusConfig = {
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
 };
 
+const industryLabels: Record<string, string> = {
+  ecommerce: "E-Commerce",
+  real_estate: "Real Estate",
+  mining: "Mining",
+  agriculture: "Agriculture",
+  freelance: "Freelance",
+  automotive: "Automotive",
+  construction: "Construction",
+  tourism: "Tourism",
+  logistics: "Logistics",
+  education: "Education",
+  project_management: "Project Mgmt",
+};
+
 const VendorTransactions = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<TxStatus>("all");
+  const [industryFilter, setIndustryFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [rejectDialog, setRejectDialog] = useState(false);
@@ -54,13 +72,20 @@ const VendorTransactions = () => {
     tracking: tx.tracking || null,
     order: tx.order_number ?? (i + 1),
     industry: tx.industry || null,
+    type: tx.type || "product",
+    buyerLocation: tx.buyer_location || "—",
+    vendorLocation: tx.vendor_location || "—",
   }));
 
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
+  // Get unique industries from data
+  const industries = [...new Set(allTx.map(t => t.industry).filter(Boolean))];
+
   const filtered = allTx
     .filter((t) => filter === "all" || t.status === filter)
-    .filter((t) => t.id.toLowerCase().includes(search.toLowerCase()) || t.buyer.toLowerCase().includes(search.toLowerCase()));
+    .filter((t) => industryFilter === "all" || t.industry === industryFilter)
+    .filter((t) => t.id.toLowerCase().includes(search.toLowerCase()) || t.buyer.toLowerCase().includes(search.toLowerCase()) || t.item.toLowerCase().includes(search.toLowerCase()));
 
   const isGrayedOut = (orderNum: number) => !isUnlimited && orderNum > orderMax;
   const grayedCount = filtered.filter(t => isGrayedOut(t.order)).length;
@@ -83,10 +108,18 @@ const VendorTransactions = () => {
     }
   };
 
+  const handleMarkShipped = (txId: string) => {
+    toast.success(`Order ${txId} marked as shipped`);
+  };
+
+  const handleUploadDoc = (txId: string) => {
+    toast.info(`Document upload for ${txId} — coming soon`);
+  };
+
   return (
     <div>
-      <VendorHeader title="Transactions" />
-      <div className="p-6 space-y-4">
+      <VendorHeader title="Work Order Log" />
+      <div className="p-3 sm:p-6 space-y-4">
         {grayedCount > 0 && (
           <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <Lock className="w-4 h-4 text-accent shrink-0 mt-0.5 sm:mt-0" />
@@ -104,14 +137,28 @@ const VendorTransactions = () => {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search transactions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        {/* Filters */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search by ID, buyer, or item..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All Industries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Industries</SelectItem>
+                {industries.map(ind => (
+                  <SelectItem key={ind!} value={ind!}>{industryLabels[ind!] || ind}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex gap-2 flex-wrap">
             {(["all", "locked", "shipped", "released", "disputed"] as TxStatus[]).map((s) => (
-              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize">
+              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize text-xs">
                 {s === "all" ? "All" : statusConfig[s].label}
               </Button>
             ))}
@@ -134,62 +181,108 @@ const VendorTransactions = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="p-4 w-10">
+                    <th className="p-3 sm:p-4 w-10">
                       <Checkbox
                         checked={selected.length === filtered.length && filtered.length > 0}
                         onCheckedChange={() => setSelected(selected.length === filtered.length ? [] : filtered.map((t) => t.id))}
                       />
                     </th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground">ID</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground">Buyer</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground hidden md:table-cell">Item</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground hidden lg:table-cell">Tracking</th>
-                    <th className="text-right p-4 font-semibold text-muted-foreground">Amount</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground">Status</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground">Action</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs">Order ID</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs">Buyer</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs hidden md:table-cell">Item</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs hidden lg:table-cell">Industry</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs hidden xl:table-cell">Type</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs hidden lg:table-cell">Tracking</th>
+                    <th className="text-left p-3 sm:p-4 font-semibold text-muted-foreground text-xs hidden xl:table-cell">Date</th>
+                    <th className="text-right p-3 sm:p-4 font-semibold text-muted-foreground text-xs">Amount</th>
+                    <th className="text-center p-3 sm:p-4 font-semibold text-muted-foreground text-xs">Status</th>
+                    <th className="text-center p-3 sm:p-4 font-semibold text-muted-foreground text-xs">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={11} className="p-8 text-center text-muted-foreground text-sm">
+                        No orders match your filters. Try adjusting the search or industry filter.
+                      </td>
+                    </tr>
+                  )}
                   {filtered.map((tx) => {
                     const cfg = statusConfig[tx.status] || statusConfig.locked;
                     const grayed = isGrayedOut(tx.order);
 
                     return (
-                      <>
+                      <tbody key={tx.id}>
                       <tr
-                        key={tx.id}
                         className={`border-b border-border last:border-0 transition-colors ${
                           grayed ? "opacity-40 bg-muted/10" : "hover:bg-muted/20"
                         }`}
                       >
-                        <td className="p-4">
+                        <td className="p-3 sm:p-4">
                           <Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} />
                         </td>
-                        <td className="p-4 font-mono text-xs">{tx.id}</td>
-                        <td className="p-4">{tx.buyer}</td>
-                        <td className="p-4 hidden md:table-cell text-muted-foreground">{tx.item}</td>
-                        <td className="p-4 hidden lg:table-cell font-mono text-xs text-muted-foreground">{tx.tracking || "—"}</td>
-                        <td className="p-4 text-right font-semibold">${tx.amount.toLocaleString()}</td>
-                        <td className="p-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                        <td className="p-3 sm:p-4 font-mono text-xs">{tx.id}</td>
+                        <td className="p-3 sm:p-4">
+                          <div>
+                            <p className="text-xs font-medium">{tx.buyer}</p>
+                            <p className="text-[10px] text-muted-foreground hidden sm:block">{tx.buyerLocation}</p>
+                          </div>
+                        </td>
+                        <td className="p-3 sm:p-4 hidden md:table-cell text-muted-foreground text-xs">{tx.item}</td>
+                        <td className="p-3 sm:p-4 hidden lg:table-cell">
+                          {tx.industry ? (
+                            <Badge variant="outline" className="text-[10px] capitalize">
+                              {industryLabels[tx.industry] || tx.industry}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 sm:p-4 hidden xl:table-cell">
+                          <Badge variant="secondary" className="text-[10px] capitalize">{tx.type}</Badge>
+                        </td>
+                        <td className="p-3 sm:p-4 hidden lg:table-cell font-mono text-xs text-muted-foreground">{tx.tracking || "—"}</td>
+                        <td className="p-3 sm:p-4 hidden xl:table-cell text-xs text-muted-foreground">{tx.date}</td>
+                        <td className="p-3 sm:p-4 text-right font-semibold text-xs">${tx.amount.toLocaleString()}</td>
+                        <td className="p-3 sm:p-4 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${cfg.color}`}>
                             <cfg.icon className="w-3 h-3" /> {cfg.label}
                           </span>
                           {grayed && (
                             <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
                           )}
                         </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                        <td className="p-3 sm:p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
                             {grayed ? (
                               <Button variant="outline" size="sm" className="text-xs text-accent" onClick={() => setUpgradeDialog(true)}>
                                 <ArrowUpCircle className="w-3 h-3 mr-1" /> Upgrade
                               </Button>
                             ) : (
                               <>
-                                {tx.status === "locked" && <Button variant="outline" size="sm" className="text-xs" onClick={() => handleAddTracking(tx.id)}>Add Tracking</Button>}
-                                <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="sm" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
-                                  {expandedRow === tx.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                {tx.status === "locked" && (
+                                  <>
+                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleAddTracking(tx.id)} title="Add tracking number">
+                                      <Truck className="w-3 h-3 mr-1" /> Track
+                                    </Button>
+                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkShipped(tx.id)} title="Mark as shipped">
+                                      <Send className="w-3 h-3 mr-1" /> Ship
+                                    </Button>
+                                  </>
+                                )}
+                                {tx.status === "shipped" && (
+                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleUploadDoc(tx.id)} title="Upload delivery docs">
+                                    <FileText className="w-3 h-3 mr-1" /> Docs
+                                  </Button>
+                                )}
+                                {(tx.status === "locked" || tx.status === "shipped") && (
+                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleUploadDoc(tx.id)} title="Upload milestone document">
+                                    <PackageCheck className="w-3 h-3" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                                  {expandedRow === tx.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 </Button>
                               </>
                             )}
@@ -198,19 +291,40 @@ const VendorTransactions = () => {
                       </tr>
                       {expandedRow === tx.id && (
                         <tr>
-                          <td colSpan={8} className="px-4 pb-4 bg-muted/10 space-y-2">
-                            <MilestoneTimeline industry={tx.industry} status={tx.status} />
-                            <details className="text-xs">
-                              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
-                              <MilestoneProgress industry={tx.industry} status={tx.status} />
-                            </details>
+                          <td colSpan={11} className="px-4 pb-4 bg-muted/10">
+                            <div className="space-y-3 pt-2">
+                              {/* Order details summary */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground">Industry</p>
+                                  <p className="font-medium capitalize">{industryLabels[tx.industry || ""] || tx.industry || "General"}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Type</p>
+                                  <p className="font-medium capitalize">{tx.type}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Buyer Location</p>
+                                  <p className="font-medium">{tx.buyerLocation}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Date</p>
+                                  <p className="font-medium">{tx.date}</p>
+                                </div>
+                              </div>
+                              <MilestoneTimeline industry={tx.industry} status={tx.status} />
+                              <details className="text-xs">
+                                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+                                <MilestoneProgress industry={tx.industry} status={tx.status} />
+                              </details>
+                            </div>
                           </td>
                         </tr>
                       )}
-                    </>
-                  );
-                })}
-              </tbody>
+                      </tbody>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
           </CardContent>
