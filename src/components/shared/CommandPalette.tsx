@@ -276,6 +276,7 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
       case "transaction": return ArrowLeftRight;
       case "dispute": return AlertTriangle;
       case "order": return Package;
+      case "document": return FileText;
     }
   };
 
