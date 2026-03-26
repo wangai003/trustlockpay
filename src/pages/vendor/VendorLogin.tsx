@@ -37,7 +37,7 @@ const VendorLogin = () => {
   const [isTestnet, setIsTestnet] = useState(!shouldPreferMainnet);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(shouldPreferMainnet ? "" : "vendor@kentetest.com");
-  const [password, setPassword] = useState(shouldPreferMainnet ? "" : "123");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
