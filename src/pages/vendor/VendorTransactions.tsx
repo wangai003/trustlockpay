@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
