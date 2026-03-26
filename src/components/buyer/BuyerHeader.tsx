@@ -35,6 +35,16 @@ const BuyerHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 text-muted-foreground hover:text-primary"
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            title="Search (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+
           <NotificationCenter role="buyer" />
 
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">

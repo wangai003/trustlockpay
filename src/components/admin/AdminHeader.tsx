@@ -31,6 +31,16 @@ const AdminHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 text-muted-foreground hover:text-primary"
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            title="Search (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+
           <NotificationCenter role="admin" />
 
           <Button variant="ghost" size="icon" className="relative w-8 h-8 hidden sm:flex">
