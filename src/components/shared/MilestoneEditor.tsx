@@ -368,36 +368,63 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                       className="text-xs h-7"
                     />
 
-                    {/* Document Gates */}
+                    {/* Document Gate Mode */}
                     <div className="space-y-1">
-                      <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                        <Upload className="w-3 h-3" /> Required Documents
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {ms.documents.map((doc, di) => (
-                          <Badge key={di} variant="secondary" className="text-[10px] gap-1">
-                            <FileText className="w-2.5 h-2.5" />
-                            {doc}
-                            {!locked && (
-                              <button onClick={() => removeDocument(ms.id, di)}>
-                                <X className="w-2.5 h-2.5" />
-                              </button>
-                            )}
-                          </Badge>
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                          <Upload className="w-3 h-3" /> Document Uploads
+                        </p>
                         {!locked && (
-                          <Input
-                            placeholder="+ Add document"
-                            className="h-6 text-[10px] w-32"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                addDocument(ms.id, (e.target as HTMLInputElement).value);
-                                (e.target as HTMLInputElement).value = "";
-                              }
-                            }}
-                          />
+                          <div className="flex gap-0.5 rounded-md border border-border overflow-hidden">
+                            {(["none", "optional", "required"] as DocumentMode[]).map((mode) => (
+                              <button
+                                key={mode}
+                                onClick={() => updateMilestone(ms.id, "documentMode", mode)}
+                                className={cn(
+                                  "px-2 py-0.5 text-[9px] font-semibold capitalize transition-colors",
+                                  ms.documentMode === mode
+                                    ? mode === "required" ? "bg-destructive text-destructive-foreground" : mode === "optional" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                                    : "text-muted-foreground hover:bg-muted/50"
+                                )}
+                              >
+                                {mode}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {locked && (
+                          <Badge variant={ms.documentMode === "required" ? "destructive" : ms.documentMode === "optional" ? "secondary" : "outline"} className="text-[9px]">
+                            {ms.documentMode === "required" ? "📋 Required" : ms.documentMode === "optional" ? "📎 Optional" : "— None"}
+                          </Badge>
                         )}
                       </div>
+                      {ms.documentMode !== "none" && (
+                        <div className="flex flex-wrap gap-1">
+                          {ms.documents.map((doc, di) => (
+                            <Badge key={di} variant={ms.documentMode === "required" ? "default" : "secondary"} className="text-[10px] gap-1">
+                              <FileText className="w-2.5 h-2.5" />
+                              {doc}
+                              {!locked && (
+                                <button onClick={() => removeDocument(ms.id, di)}>
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))}
+                          {!locked && (
+                            <Input
+                              placeholder="+ Add document"
+                              className="h-6 text-[10px] w-32"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  addDocument(ms.id, (e.target as HTMLInputElement).value);
+                                  (e.target as HTMLInputElement).value = "";
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Observer Gate Toggle */}
