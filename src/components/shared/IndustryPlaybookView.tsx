@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
-  Building2, Home, Sprout, Pickaxe, Plane, ShoppingBag, Briefcase, Ship, GraduationCap,
+  Building2, Home, Sprout, Pickaxe, Plane, ShoppingBag, Briefcase, Ship, GraduationCap, ClipboardList,
   Search, CheckSquare, Shield, Bot, FileText, Wallet, BarChart3, AlertTriangle, Globe,
   Download, BookOpen, Upload, Lock, Unlock, UserPlus, Eye
 } from "lucide-react";
@@ -73,6 +73,13 @@ const industries = [
     stages: ["Enrollment & Tuition Deposit", "Course Material Access", "Module 1 Completion", "Mid-Program Assessment", "Module 2+ Progression", "Final Assessment & Certification", "Certificate Issuance & Payout"],
     buyerCaps: ["Escrow-protected tuition payments", "Track course module progress", "Dispute if content not delivered", "Access certificates and transcripts", "Partial refund for incomplete programs", "Auto-release per module completion"],
     vendorCaps: ["Structured tuition collection", "Upload course materials per module", "Student progress tracking", "Certificate generation tools", "Multi-cohort management", "Subscription billing support"],
+  },
+  {
+    id: "project-management", name: "Project Management", icon: ClipboardList, color: "text-cyan-600",
+    desc: "Multi-stakeholder escrow for PM-led projects with milestone tracking, observer sign-offs, and Gantt-style progress.",
+    stages: ["Project Charter & SOW Upload", "Kick-Off & Team Assignment", "Phase 1 Deliverables", "Mid-Project Review & Change Orders", "Phase 2 Deliverables", "UAT / Client Acceptance Testing", "Project Close-Out & Final Payout"],
+    buyerCaps: ["Track project milestones on a visual timeline", "Approve/reject deliverables per phase", "Request change orders with escrow adjustment", "Observer sign-off from QA or third-party auditors", "Dispute individual phases independently", "View PM credentials and team composition", "14-day auto-release with holdback option"],
+    vendorCaps: ["Structured milestone-based payments", "Upload deliverables and progress reports per phase", "Change order workflow with buyer co-sign", "Team role assignment (PM, Lead, Assistant)", "Gantt-style timeline dashboard view", "Auto-signature protocol for repeat engagements", "Risk register and issue log integration"],
   },
 ];
 
@@ -148,6 +155,15 @@ const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Assessment", percentage: 25, documents: ["Assessment Results"], documentMode: "optional", description: "Mid-program or final assessment completed", requiresObserver: false },
     { name: "Certification & Payout", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certificate issued, final payout released", requiresObserver: false },
   ],
+  "project-management": [
+    { name: "Project Charter & SOW", percentage: 10, documents: ["Project Charter", "Statement of Work"], documentMode: "required", description: "Project scope, objectives, and deliverables defined and signed", requiresObserver: false },
+    { name: "Kick-Off & Resource Plan", percentage: 5, documents: ["Resource Plan", "RACI Matrix"], documentMode: "optional", description: "Team assigned, kick-off meeting completed", requiresObserver: false },
+    { name: "Phase 1 Deliverables", percentage: 25, documents: ["Phase 1 Report", "Progress Photos"], documentMode: "required", description: "First major deliverable milestone completed", requiresObserver: true },
+    { name: "Mid-Project Review", percentage: 10, documents: ["Status Report", "Change Order Log"], documentMode: "required", description: "Formal review, budget check, and scope validation", requiresObserver: true },
+    { name: "Phase 2 Deliverables", percentage: 25, documents: ["Phase 2 Report", "Test Results"], documentMode: "required", description: "Second major deliverable milestone completed", requiresObserver: true },
+    { name: "UAT / Acceptance Testing", percentage: 15, documents: ["UAT Sign-Off", "Punch List"], documentMode: "required", description: "Client acceptance testing and sign-off", requiresObserver: false },
+    { name: "Project Close-Out", percentage: 10, documents: ["Close-Out Report", "Lessons Learned"], documentMode: "optional", description: "Final documentation, handover, and escrow release", requiresObserver: false },
+  ],
 };
 
 const platformTools = [
@@ -178,7 +194,7 @@ const IndustryPlaybookView = () => {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">Industry Capabilities Playbook</h2>
-          <p className="text-sm text-muted-foreground">Dynamic escrow workflows across 9 emerging market industries</p>
+          <p className="text-sm text-muted-foreground">Dynamic escrow workflows across 10 emerging market industries</p>
         </div>
         <a
           href="/__l5e/documents/TrustLock_Industry_Capabilities_Playbook_v1.pdf"

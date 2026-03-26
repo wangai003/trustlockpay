@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -119,8 +120,12 @@ const BuyerOrders = () => {
                     </div>
                   </div>
                   {expandedOrder === order.id && (
-                    <div className="mt-3 border-t border-border pt-3">
-                      <MilestoneProgress industry={order.industry} status={order.status} />
+                    <div className="mt-3 border-t border-border pt-3 space-y-2">
+                      <MilestoneTimeline industry={order.industry} status={order.status} />
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+                        <MilestoneProgress industry={order.industry} status={order.status} />
+                      </details>
                     </div>
                   )}
                 </CardContent>

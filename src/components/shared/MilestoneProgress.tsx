@@ -74,6 +74,15 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
     { name: "Assessment", percentage: 25, documents: ["Results"], documentMode: "optional", description: "Assessed", requiresObserver: false },
     { name: "Certification", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certified", requiresObserver: false },
   ],
+  "projectmanagement": [
+    { name: "Charter & SOW", percentage: 10, documents: ["Project Charter"], documentMode: "required", description: "Scope defined", requiresObserver: false },
+    { name: "Kick-Off", percentage: 5, documents: ["Resource Plan"], documentMode: "optional", description: "Team assigned", requiresObserver: false },
+    { name: "Phase 1", percentage: 25, documents: ["Phase 1 Report"], documentMode: "required", description: "First deliverable", requiresObserver: true },
+    { name: "Mid-Review", percentage: 10, documents: ["Status Report"], documentMode: "required", description: "Scope check", requiresObserver: true },
+    { name: "Phase 2", percentage: 25, documents: ["Phase 2 Report"], documentMode: "required", description: "Second deliverable", requiresObserver: true },
+    { name: "UAT", percentage: 15, documents: ["UAT Sign-Off"], documentMode: "required", description: "Client testing", requiresObserver: false },
+    { name: "Close-Out", percentage: 10, documents: ["Close-Out Report"], documentMode: "optional", description: "Final release", requiresObserver: false },
+  ],
 };
 
 // Simulated: which milestone index is "current" based on order status

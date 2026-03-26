@@ -17,6 +17,7 @@ import {
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -197,8 +198,12 @@ const VendorTransactions = () => {
                       </tr>
                       {expandedRow === tx.id && (
                         <tr>
-                          <td colSpan={8} className="px-4 pb-4 bg-muted/10">
-                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          <td colSpan={8} className="px-4 pb-4 bg-muted/10 space-y-2">
+                            <MilestoneTimeline industry={tx.industry} status={tx.status} />
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+                              <MilestoneProgress industry={tx.industry} status={tx.status} />
+                            </details>
                           </td>
                         </tr>
                       )}
