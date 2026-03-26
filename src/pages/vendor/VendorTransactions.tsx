@@ -198,8 +198,12 @@ const VendorTransactions = () => {
                       </tr>
                       {expandedRow === tx.id && (
                         <tr>
-                          <td colSpan={8} className="px-4 pb-4 bg-muted/10">
-                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          <td colSpan={8} className="px-4 pb-4 bg-muted/10 space-y-2">
+                            <MilestoneTimeline industry={tx.industry} status={tx.status} />
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+                              <MilestoneProgress industry={tx.industry} status={tx.status} />
+                            </details>
                           </td>
                         </tr>
                       )}

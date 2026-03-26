@@ -120,8 +120,12 @@ const BuyerOrders = () => {
                     </div>
                   </div>
                   {expandedOrder === order.id && (
-                    <div className="mt-3 border-t border-border pt-3">
-                      <MilestoneProgress industry={order.industry} status={order.status} />
+                    <div className="mt-3 border-t border-border pt-3 space-y-2">
+                      <MilestoneTimeline industry={order.industry} status={order.status} />
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+                        <MilestoneProgress industry={order.industry} status={order.status} />
+                      </details>
                     </div>
                   )}
                 </CardContent>
