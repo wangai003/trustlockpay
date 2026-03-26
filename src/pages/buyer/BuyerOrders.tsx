@@ -3,8 +3,9 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -31,7 +32,10 @@ const BuyerOrders = () => {
     date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     item: tx.item || "—",
     tracking: tx.tracking || null,
+    industry: tx.industry || null,
   }));
+
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const filtered = allOrders
     .filter((o) => filter === "all" || o.status === filter)
@@ -109,8 +113,16 @@ const BuyerOrders = () => {
                         <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => openDispute.mutate({ txId: order.id })}>Dispute</Button>
                       )}
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                        {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </Button>
                     </div>
                   </div>
+                  {expandedOrder === order.id && (
+                    <div className="mt-3 border-t border-border pt-3">
+                      <MilestoneProgress industry={order.industry} status={order.status} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

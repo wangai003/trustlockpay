@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useFlagForReview } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type TxStatus = "all" | "locked" | "released" | "disputed" | "cancelled";
 
@@ -21,6 +22,7 @@ const AdminTransactions = () => {
   const [filter, setFilter] = useState<TxStatus>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const { data: rawTransactions = [] } = useTransactions();
   const flagForReview = useFlagForReview();
 
@@ -95,6 +97,7 @@ const AdminTransactions = () => {
                   {filtered.map((tx) => {
                     const cfg = statusConfig[tx.status] || statusConfig.locked;
                     return (
+                      <>
                       <tr key={tx.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="p-4"><Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} /></td>
                         <td className="p-4 font-mono text-xs">{tx.id}</td>
@@ -109,8 +112,23 @@ const AdminTransactions = () => {
                           </span>
                         </td>
                         <td className="p-4 hidden sm:table-cell text-muted-foreground text-xs">{tx.date}</td>
-                        <td className="p-4 text-center"><Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button></td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                              {expandedRow === tx.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
+                      {expandedRow === tx.id && (
+                        <tr>
+                          <td colSpan={10} className="px-4 pb-4 bg-muted/10">
+                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          </td>
+                        </tr>
+                      )}
+                      </>
                     );
                   })}
                 </tbody>

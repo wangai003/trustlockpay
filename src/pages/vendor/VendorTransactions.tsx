@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -51,7 +52,10 @@ const VendorTransactions = () => {
     item: tx.item || "—",
     tracking: tx.tracking || null,
     order: tx.order_number ?? (i + 1),
+    industry: tx.industry || null,
   }));
+
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const filtered = allTx
     .filter((t) => filter === "all" || t.status === filter)
@@ -150,6 +154,7 @@ const VendorTransactions = () => {
                     const grayed = isGrayedOut(tx.order);
 
                     return (
+                      <>
                       <tr
                         key={tx.id}
                         className={`border-b border-border last:border-0 transition-colors ${
@@ -182,14 +187,25 @@ const VendorTransactions = () => {
                               <>
                                 {tx.status === "locked" && <Button variant="outline" size="sm" className="text-xs" onClick={() => handleAddTracking(tx.id)}>Add Tracking</Button>}
                                 <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="sm" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                                  {expandedRow === tx.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </Button>
                               </>
                             )}
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
+                      {expandedRow === tx.id && (
+                        <tr>
+                          <td colSpan={8} className="px-4 pb-4 bg-muted/10">
+                            <MilestoneProgress industry={tx.industry} status={tx.status} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
               </table>
             </div>
           </CardContent>
