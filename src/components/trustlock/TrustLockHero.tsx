@@ -31,10 +31,10 @@ const TrustLockHero = () => {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="hero" size="lg" className="text-base px-8">
+            <Button variant="hero" size="lg" className="text-base px-8" onClick={() => navigate("/trustlock/vendor/signup")}>
               Start Free Integration
             </Button>
-            <Button variant="hero-outline" size="lg" className="text-base px-8">
+            <Button variant="hero-outline" size="lg" className="text-base px-8" onClick={() => navigate("/trustlock")}>
               View Documentation
             </Button>
           </div>
