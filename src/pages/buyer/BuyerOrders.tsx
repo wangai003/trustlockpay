@@ -32,7 +32,10 @@ const BuyerOrders = () => {
     date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     item: tx.item || "—",
     tracking: tx.tracking || null,
+    industry: tx.industry || null,
   }));
+
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const filtered = allOrders
     .filter((o) => filter === "all" || o.status === filter)
