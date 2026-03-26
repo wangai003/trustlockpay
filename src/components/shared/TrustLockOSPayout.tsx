@@ -51,6 +51,36 @@ interface TrustLockOSPayoutProps {
   onComplete?: (confirmationCode: string) => void;
 }
 
+interface PayoutFieldConfig {
+  field_name: string;
+  label: string;
+  type: string;
+  placeholder: string;
+  validation_regex: string;
+  is_required: boolean;
+}
+
+interface PayoutConfig {
+  id: string;
+  country_code: string;
+  country_name: string;
+  payout_method: string;
+  required_fields: PayoutFieldConfig[];
+  provider: string;
+}
+
+const PAYOUT_COUNTRIES = [
+  { code: "NG", name: "Nigeria" },
+  { code: "KE", name: "Kenya" },
+  { code: "GH", name: "Ghana" },
+  { code: "ZA", name: "South Africa" },
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "EU", name: "European Union" },
+  { code: "AE", name: "UAE" },
+  { code: "GLOBAL", name: "Crypto (Any Country)" },
+];
+
 const TrustLockOSPayout = ({
   role,
   prefillAmount = "",
@@ -69,11 +99,17 @@ const TrustLockOSPayout = ({
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
 
+  // Dynamic payout fields state
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [payoutConfigs, setPayoutConfigs] = useState<PayoutConfig[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
+  const [loadingFields, setLoadingFields] = useState(false);
+
   const getSeedToken = useGetOrCreateSeedToken();
   const initiatePayout = useInitiatePayout();
   const cancelPayout = useCancelPayout();
 
-  // Get or create seed token on mount
   const [seedToken, setSeedToken] = useState<string>("");
   useEffect(() => {
     getSeedToken.mutate(undefined, {
@@ -81,8 +117,46 @@ const TrustLockOSPayout = ({
     });
   }, []);
 
+  // Fetch payout field configs when country changes
+  const fetchPayoutFields = useCallback(async (countryCode: string) => {
+    if (!countryCode) return;
+    setLoadingFields(true);
+    setPayoutConfigs([]);
+    setSelectedMethod("");
+    setDynamicFields({});
+
+    try {
+      const { data, error } = await supabase.functions.invoke("select-processor", {
+        body: { action: "get_payout_fields", country_code: countryCode },
+      });
+
+      if (error) throw error;
+      if (data?.configs && Array.isArray(data.configs)) {
+        setPayoutConfigs(data.configs as PayoutConfig[]);
+        // Auto-select first method
+        if (data.configs.length > 0) {
+          setSelectedMethod(data.configs[0].payout_method);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch payout fields:", err);
+      toast.error("Failed to load payout fields for this country");
+    } finally {
+      setLoadingFields(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedCountry) {
+      fetchPayoutFields(selectedCountry);
+    }
+  }, [selectedCountry, fetchPayoutFields]);
+
+  const activeConfig = payoutConfigs.find((c) => c.payout_method === selectedMethod);
+  const activeFields = activeConfig?.required_fields ?? [];
+
   const amountNum = parseFloat(amount) || 0;
-  const isCrypto = selectedProvider?.category === "crypto_wallet";
+  const isCrypto = selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
   const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
   const fees = amountNum > 0 ? calculateFees(amountNum, feeType) : null;
 
