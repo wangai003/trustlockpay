@@ -6,10 +6,12 @@ import { ArrowLeft } from "lucide-react";
 import { PLANS, type PlanId, type BillingCycle } from "@/hooks/useVendorPlan";
 import { toast } from "sonner";
 import { useActivatePlan } from "@/hooks/useSupabaseData";
+import { useVendor } from "@/contexts/VendorContext";
 
 const VendorCheckout = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { isTestnet } = useVendor();
   const planId = (params.get("plan") || "starter") as PlanId;
   const billing = (params.get("billing") as BillingCycle) || "yearly";
   const plan = PLANS[planId] || PLANS.starter;
@@ -25,7 +27,6 @@ const VendorCheckout = () => {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
 
-    // Persist to Supabase
     try {
       await activatePlan.mutateAsync({
         planId,
@@ -34,7 +35,6 @@ const VendorCheckout = () => {
       });
     } catch { /* handled by hook */ }
 
-    // Also keep localStorage for plan state helper
     localStorage.setItem("tl_vendor_plan", planId);
     localStorage.setItem("tl_vendor_billing", billing);
     localStorage.setItem("tl_vendor_plan_start", now.toISOString());
@@ -59,6 +59,7 @@ const VendorCheckout = () => {
           prefillService={`TrustLock OS — ${plan.name} (${billing})`}
           prefillAmount={String(amount)}
           onComplete={handleComplete}
+          isTestnet={isTestnet}
         />
       </div>
     </div>
