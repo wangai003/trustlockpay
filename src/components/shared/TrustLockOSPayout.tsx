@@ -1,15 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
-  Check, Copy, Info, Ban,
+  Check, Copy, Info, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import {
   type PaymentProvider,
@@ -43,6 +51,36 @@ interface TrustLockOSPayoutProps {
   onComplete?: (confirmationCode: string) => void;
 }
 
+interface PayoutFieldConfig {
+  field_name: string;
+  label: string;
+  type: string;
+  placeholder: string;
+  validation_regex: string;
+  is_required: boolean;
+}
+
+interface PayoutConfig {
+  id: string;
+  country_code: string;
+  country_name: string;
+  payout_method: string;
+  required_fields: PayoutFieldConfig[];
+  provider: string;
+}
+
+const PAYOUT_COUNTRIES = [
+  { code: "NG", name: "Nigeria" },
+  { code: "KE", name: "Kenya" },
+  { code: "GH", name: "Ghana" },
+  { code: "ZA", name: "South Africa" },
+  { code: "US", name: "United States" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "EU", name: "European Union" },
+  { code: "AE", name: "UAE" },
+  { code: "GLOBAL", name: "Crypto (Any Country)" },
+];
+
 const TrustLockOSPayout = ({
   role,
   prefillAmount = "",
@@ -61,11 +99,17 @@ const TrustLockOSPayout = ({
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
 
+  // Dynamic payout fields state
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [payoutConfigs, setPayoutConfigs] = useState<PayoutConfig[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
+  const [loadingFields, setLoadingFields] = useState(false);
+
   const getSeedToken = useGetOrCreateSeedToken();
   const initiatePayout = useInitiatePayout();
   const cancelPayout = useCancelPayout();
 
-  // Get or create seed token on mount
   const [seedToken, setSeedToken] = useState<string>("");
   useEffect(() => {
     getSeedToken.mutate(undefined, {
@@ -73,8 +117,46 @@ const TrustLockOSPayout = ({
     });
   }, []);
 
+  // Fetch payout field configs when country changes
+  const fetchPayoutFields = useCallback(async (countryCode: string) => {
+    if (!countryCode) return;
+    setLoadingFields(true);
+    setPayoutConfigs([]);
+    setSelectedMethod("");
+    setDynamicFields({});
+
+    try {
+      const { data, error } = await supabase.functions.invoke("select-processor", {
+        body: { action: "get_payout_fields", country_code: countryCode },
+      });
+
+      if (error) throw error;
+      if (data?.configs && Array.isArray(data.configs)) {
+        setPayoutConfigs(data.configs as PayoutConfig[]);
+        // Auto-select first method
+        if (data.configs.length > 0) {
+          setSelectedMethod(data.configs[0].payout_method);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch payout fields:", err);
+      toast.error("Failed to load payout fields for this country");
+    } finally {
+      setLoadingFields(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedCountry) {
+      fetchPayoutFields(selectedCountry);
+    }
+  }, [selectedCountry, fetchPayoutFields]);
+
+  const activeConfig = payoutConfigs.find((c) => c.payout_method === selectedMethod);
+  const activeFields = activeConfig?.required_fields ?? [];
+
   const amountNum = parseFloat(amount) || 0;
-  const isCrypto = selectedProvider?.category === "crypto_wallet";
+  const isCrypto = selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
   const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
   const fees = amountNum > 0 ? calculateFees(amountNum, feeType) : null;
 
@@ -82,9 +164,21 @@ const TrustLockOSPayout = ({
     setProviderFields((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleDynamicFieldChange = (fieldName: string, value: string) => {
+    setDynamicFields((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
   const isFormValid = () => {
-    if (!selectedProvider) return false;
     if (amountNum <= 0) return false;
+
+    // If dynamic fields are active, validate those
+    if (selectedCountry && activeFields.length > 0) {
+      const requiredDynamic = activeFields.filter((f) => f.is_required);
+      return requiredDynamic.every((f) => dynamicFields[f.field_name]?.trim());
+    }
+
+    // Otherwise fall back to provider-based validation
+    if (!selectedProvider) return false;
     const required = selectedProvider.fields.filter((f) => f.required);
     return required.every((f) => providerFields[f.key]?.trim());
   };
@@ -309,6 +403,116 @@ const TrustLockOSPayout = ({
         </Card>
       </div>
 
+      {/* Dynamic Payout Fields — Country-Specific */}
+      <Card className="border-2 border-primary/20">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">Payout Destination</h3>
+          </div>
+
+          {/* Country Selector */}
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Country</Label>
+            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Choose your country" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYOUT_COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Loading */}
+          {loadingFields && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-xs">Loading payout fields...</span>
+            </div>
+          )}
+
+          {/* Method Selector (if multiple methods available) */}
+          {payoutConfigs.length > 1 && (
+            <div>
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Method</Label>
+              <div className="flex gap-2 mt-1">
+                {[...new Set(payoutConfigs.map((c) => c.payout_method))].map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => { setSelectedMethod(method); setDynamicFields({}); }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
+                      selectedMethod === method
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Fields */}
+          {activeFields.length > 0 && (
+            <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-foreground">
+                  {activeConfig?.provider && (
+                    <Badge variant="outline" className="mr-2 text-[10px]">via {activeConfig.provider}</Badge>
+                  )}
+                  Required Information
+                </p>
+              </div>
+              {activeFields.map((field) => (
+                <div key={field.field_name}>
+                  <Label className="text-[10px] text-muted-foreground">
+                    {field.label}{field.is_required && " *"}
+                  </Label>
+                  {field.type === "select" ? (
+                    <Select
+                      value={dynamicFields[field.field_name] || ""}
+                      onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder={field.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.validation_regex
+                          .replace(/^\^?\(?/, "")
+                          .replace(/\)?\$$/, "")
+                          .split("|")
+                          .filter(Boolean)
+                          .map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      type={field.type === "tel" ? "tel" : "text"}
+                      placeholder={field.placeholder}
+                      value={dynamicFields[field.field_name] || ""}
+                      onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
+                      className="mt-1 text-sm"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedCountry && !loadingFields && payoutConfigs.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No specific payout configuration found for this country. Please use the provider search above.
+            </p>
+          )}
+        </CardContent>
+      </Card>
       {/* Fee Summary */}
       {fees && amountNum > 0 && (
         <Card>

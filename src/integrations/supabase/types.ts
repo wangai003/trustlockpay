@@ -685,6 +685,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_field_configs: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          payout_method: string
+          provider: string | null
+          required_fields: Json
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          payout_method?: string
+          provider?: string | null
+          required_fields?: Json
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          payout_method?: string
+          provider?: string | null
+          required_fields?: Json
+        }
+        Relationships: []
+      }
       payout_requests: {
         Row: {
           amount: number
