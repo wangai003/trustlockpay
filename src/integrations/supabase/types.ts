@@ -934,6 +934,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_rates: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          rate_percentage: number
+          tariff_rate_percentage: number | null
+          tax_type: string
+          trade_bloc: string | null
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          rate_percentage?: number
+          tariff_rate_percentage?: number | null
+          tax_type?: string
+          trade_bloc?: string | null
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          rate_percentage?: number
+          tariff_rate_percentage?: number | null
+          tax_type?: string
+          trade_bloc?: string | null
+        }
+        Relationships: []
+      }
       transaction_milestones: {
         Row: {
           assigned_to: string | null
@@ -1078,6 +1114,7 @@ export type Database = {
           released_date: string | null
           shipped_date: string | null
           status: string
+          tax_breakdown: Json | null
           tracking: string | null
           tx_id: string
           type: string | null
@@ -1102,6 +1139,7 @@ export type Database = {
           released_date?: string | null
           shipped_date?: string | null
           status?: string
+          tax_breakdown?: Json | null
           tracking?: string | null
           tx_id: string
           type?: string | null
@@ -1126,6 +1164,7 @@ export type Database = {
           released_date?: string | null
           shipped_date?: string | null
           status?: string
+          tax_breakdown?: Json | null
           tracking?: string | null
           tx_id?: string
           type?: string | null

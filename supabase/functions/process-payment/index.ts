@@ -11,7 +11,6 @@ const THIRDWEB_API = "https://api.thirdweb.com/v1";
 
 // ─── Types ────────────────────────────────────────────────
 interface ProcessPaymentRequest {
-  // Legacy OS payment fields
   action?: string;
   service?: string;
   amount: number;
@@ -23,7 +22,6 @@ interface ProcessPaymentRequest {
   refundReason?: string;
   splitRecipient?: string;
   splitPercentage?: number;
-  // Checkout/payout processor fields
   processor?: "stripe" | "coinbase" | "yellow_card" | "transak" | "thirdweb" | "direct";
   direction?: "onramp" | "offramp";
   currency?: string;
@@ -33,16 +31,46 @@ interface ProcessPaymentRequest {
   receiverAddress?: string;
   buyerEmail?: string;
   transactionId?: string;
+  // Tax fields
+  buyer_country?: string;
+  vendor_country?: string;
+  item_category?: string;
+  is_export?: boolean;
 }
 
+// ─── Tax Rate Fallbacks (used when DB lookup fails) ───────
+const FALLBACK_TAX_RATES: Record<string, { rate: number; type: string; bloc?: string; tariff: number }> = {
+  US: { rate: 7.0, type: "Sales Tax", bloc: "USMCA", tariff: 3.5 },
+  GB: { rate: 20.0, type: "VAT", tariff: 2.5 },
+  DE: { rate: 19.0, type: "VAT", bloc: "EU", tariff: 0 },
+  FR: { rate: 20.0, type: "VAT", bloc: "EU", tariff: 0 },
+  NG: { rate: 7.5, type: "VAT", bloc: "ECOWAS", tariff: 5.0 },
+  KE: { rate: 16.0, type: "VAT", bloc: "EAC", tariff: 4.0 },
+  ZA: { rate: 15.0, type: "VAT", bloc: "SACU", tariff: 3.0 },
+  AE: { rate: 5.0, type: "VAT", bloc: "GCC", tariff: 5.0 },
+  GH: { rate: 15.0, type: "VAT", bloc: "ECOWAS", tariff: 5.0 },
+};
+
+// ─── Item category tariff multipliers ─────────────────────
+const ITEM_TARIFF_MULTIPLIERS: Record<string, number> = {
+  electronics: 1.2,
+  commodities: 0.8,
+  textiles: 1.5,
+  machinery: 1.0,
+  food: 0.5,
+  chemicals: 1.3,
+  automotive: 1.4,
+  general: 1.0,
+};
+
 // ─── Helpers ──────────────────────────────────────────────
+function round(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 function chainToId(chain: string): number {
   const map: Record<string, number> = {
-    polygon: 137,
-    ethereum: 1,
-    base: 8453,
-    arbitrum: 42161,
-    optimism: 10,
+    polygon: 137, ethereum: 1, base: 8453, arbitrum: 42161, optimism: 10,
   };
   return map[chain?.toLowerCase()] || 137;
 }
@@ -63,9 +91,147 @@ function getThirdwebKey(): string {
   return key;
 }
 
-// ─── Thirdweb: Create a payment intent (on-ramp) ─────────
-// Uses the unified Payments API: POST /v1/payments
-// Buyer pays fiat → receives USDC in escrow wallet
+// ─── Tax Calculation Engine ───────────────────────────────
+interface TaxBreakdown {
+  subtotal: number;
+  tax_amount: number;
+  tax_type: string;
+  tax_rate: number;
+  tariff_amount: number;
+  tariff_rate: number;
+  total_with_tax: number;
+  is_domestic: boolean;
+  is_same_bloc: boolean;
+  is_export: boolean;
+  buyer_country: string;
+  vendor_country: string;
+  item_category: string;
+  notes: string;
+}
+
+async function calculateTax(
+  supabase: ReturnType<typeof createClient>,
+  amount: number,
+  buyerCountry?: string,
+  vendorCountry?: string,
+  itemCategory?: string,
+  isExport?: boolean
+): Promise<TaxBreakdown> {
+  const bCountry = (buyerCountry ?? "").toUpperCase().trim();
+  const vCountry = (vendorCountry ?? "").toUpperCase().trim();
+  const category = (itemCategory ?? "general").toLowerCase();
+
+  // Default: no tax if no country info
+  if (!bCountry && !vCountry) {
+    return {
+      subtotal: amount,
+      tax_amount: 0,
+      tax_type: "None",
+      tax_rate: 0,
+      tariff_amount: 0,
+      tariff_rate: 0,
+      total_with_tax: amount,
+      is_domestic: false,
+      is_same_bloc: false,
+      is_export: false,
+      buyer_country: bCountry,
+      vendor_country: vCountry,
+      item_category: category,
+      notes: "No country information provided — tax not applied.",
+    };
+  }
+
+  // Fetch tax rates from DB
+  const countries = [bCountry, vCountry].filter(Boolean);
+  const { data: rates } = await supabase
+    .from("tax_rates")
+    .select("*")
+    .in("country_code", countries)
+    .eq("is_active", true);
+
+  const rateMap: Record<string, { rate: number; type: string; bloc: string | null; tariff: number }> = {};
+  if (rates) {
+    for (const r of rates) {
+      rateMap[r.country_code] = {
+        rate: Number(r.rate_percentage),
+        type: r.tax_type,
+        bloc: r.trade_bloc,
+        tariff: Number(r.tariff_rate_percentage ?? 0),
+      };
+    }
+  }
+
+  // Fallback to static rates
+  const buyerRate = rateMap[bCountry] ?? FALLBACK_TAX_RATES[bCountry] ?? null;
+  const vendorRate = rateMap[vCountry] ?? FALLBACK_TAX_RATES[vCountry] ?? null;
+
+  const isDomestic = bCountry === vCountry && bCountry !== "";
+  const buyerBloc = buyerRate?.bloc ?? null;
+  const vendorBloc = vendorRate?.bloc ?? null;
+  const isSameBloc = !!(buyerBloc && vendorBloc && buyerBloc === vendorBloc && !isDomestic);
+  const isExportTx = isExport ?? (!isDomestic && !isSameBloc);
+
+  let taxAmount = 0;
+  let taxType = "None";
+  let taxRate = 0;
+  let tariffAmount = 0;
+  let tariffRate = 0;
+  let notes = "";
+
+  if (isDomestic) {
+    // Domestic: apply local VAT/sales tax from buyer's country
+    if (buyerRate) {
+      taxRate = buyerRate.rate;
+      taxType = buyerRate.type;
+      taxAmount = round(amount * (taxRate / 100));
+      notes = `Domestic transaction in ${bCountry}. ${taxType} at ${taxRate}% applied.`;
+    } else {
+      notes = `Domestic transaction in ${bCountry}. No tax rate on file.`;
+    }
+  } else if (isSameBloc) {
+    // Same trade bloc (e.g., EU → EU): apply destination VAT
+    if (buyerRate) {
+      taxRate = buyerRate.rate;
+      taxType = `${buyerRate.type} (Destination)`;
+      taxAmount = round(amount * (taxRate / 100));
+      notes = `Intra-bloc (${buyerBloc}) transaction. Destination ${buyerRate.type} at ${taxRate}% applied to buyer country ${bCountry}.`;
+    }
+  } else if (isExportTx) {
+    // International export: zero-rate VAT, apply tariffs
+    taxRate = 0;
+    taxType = "VAT (Zero-Rated Export)";
+    taxAmount = 0;
+
+    // Calculate tariff based on buyer's country import rate
+    if (buyerRate && buyerRate.tariff > 0) {
+      const multiplier = ITEM_TARIFF_MULTIPLIERS[category] ?? 1.0;
+      tariffRate = round(buyerRate.tariff * multiplier);
+      tariffAmount = round(amount * (tariffRate / 100));
+      notes = `International export: VAT zero-rated. Import tariff of ${tariffRate}% applied (base ${buyerRate.tariff}% × ${category} multiplier ${multiplier}).`;
+    } else {
+      notes = `International export: VAT zero-rated. No tariff applicable for destination ${bCountry}.`;
+    }
+  }
+
+  return {
+    subtotal: amount,
+    tax_amount: taxAmount,
+    tax_type: taxType,
+    tax_rate: taxRate,
+    tariff_amount: tariffAmount,
+    tariff_rate: tariffRate,
+    total_with_tax: round(amount + taxAmount + tariffAmount),
+    is_domestic: isDomestic,
+    is_same_bloc: isSameBloc,
+    is_export: isExportTx,
+    buyer_country: bCountry,
+    vendor_country: vCountry,
+    item_category: category,
+    notes,
+  };
+}
+
+// ─── Thirdweb: On-ramp ───────────────────────────────────
 async function thirdwebOnRamp(params: {
   amount: number;
   currency: string;
@@ -110,9 +276,7 @@ async function thirdwebOnRamp(params: {
   };
 }
 
-// ─── Thirdweb: Swap/bridge for off-ramp ──────────────────
-// Uses POST /v1/payments/swap to convert crypto → bridged token
-// Off-ramp to fiat requires Thirdweb dashboard webhook setup
+// ─── Thirdweb: Off-ramp ──────────────────────────────────
 async function thirdwebOffRamp(params: {
   amount: number;
   currency: string;
@@ -123,8 +287,6 @@ async function thirdwebOffRamp(params: {
   const chainId = chainToId(params.chain);
   const tokenAddress = getUsdcAddress(params.chain);
 
-  // For off-ramp, we create a swap from USDC to the target
-  // The actual fiat disbursement is handled by Thirdweb's off-ramp partner
   const res = await fetch(`${THIRDWEB_API}/payments/swap`, {
     method: "POST",
     headers: {
@@ -134,14 +296,8 @@ async function thirdwebOffRamp(params: {
     body: JSON.stringify({
       from: params.walletAddress,
       exact: "input",
-      fromToken: {
-        chainId,
-        tokenAddress,
-      },
-      toToken: {
-        chainId,
-        tokenAddress, // Same token for now; off-ramp partner handles fiat conversion
-      },
+      fromToken: { chainId, tokenAddress },
+      toToken: { chainId, tokenAddress },
       amount: params.amount.toString(),
     }),
   });
@@ -158,7 +314,7 @@ async function thirdwebOffRamp(params: {
     status: "swap_created",
     swapId: data?.id,
     steps: data?.steps,
-    data: data,
+    data,
   };
 }
 
@@ -182,6 +338,7 @@ Deno.serve(async (req) => {
       refundEmail, refundReason, splitRecipient, splitPercentage,
       processor, direction, currency, chain,
       walletAddress, receiverAddress, transactionId,
+      buyer_country, vendor_country, item_category, is_export,
     } = body;
 
     const supabase = createClient(
@@ -202,22 +359,35 @@ Deno.serve(async (req) => {
       userId = data?.user?.id ?? null;
     }
 
+    // ── Calculate tax if country info provided ───────────
+    let taxBreakdown: TaxBreakdown | null = null;
+    if (buyer_country || vendor_country) {
+      taxBreakdown = await calculateTax(
+        supabase, amount, buyer_country, vendor_country, item_category, is_export
+      );
+    }
+
+    const effectiveTotal = taxBreakdown
+      ? round(taxBreakdown.total_with_tax + (fee ?? 0))
+      : (total ?? amount);
+
     // ── Route: Processor-based checkout/payout ───────────
     if (processor && direction) {
       let processorResult: Record<string, unknown>;
+      const chargeAmount = taxBreakdown ? taxBreakdown.total_with_tax : amount;
 
       switch (processor) {
         case "thirdweb": {
           if (direction === "onramp") {
             processorResult = await thirdwebOnRamp({
-              amount,
+              amount: chargeAmount,
               currency: currency || "USD",
               chain: chain || "polygon",
               receiverAddress: receiverAddress || walletAddress || "",
             });
           } else {
             processorResult = await thirdwebOffRamp({
-              amount,
+              amount: chargeAmount,
               currency: currency || "USD",
               chain: chain || "polygon",
               walletAddress: walletAddress || "",
@@ -282,7 +452,7 @@ Deno.serve(async (req) => {
           service: service || `checkout_${direction}`,
           amount,
           fee: fee || 0,
-          total: total || amount,
+          total: effectiveTotal,
           method: processor,
           status: processorResult.status === "not_configured" ? "pending" : "processing",
         })
@@ -291,8 +461,22 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      // Store tax breakdown on the transaction if we have a transactionId
+      if (transactionId && taxBreakdown) {
+        await supabase
+          .from("transactions")
+          .update({ tax_breakdown: taxBreakdown, updated_at: new Date().toISOString() })
+          .eq("id", transactionId);
+      }
+
       return new Response(
-        JSON.stringify({ success: true, payment, processorResult, transactionId: transactionId || null }),
+        JSON.stringify({
+          success: true,
+          payment,
+          processorResult,
+          transactionId: transactionId || null,
+          taxBreakdown: taxBreakdown ?? undefined,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -309,7 +493,7 @@ Deno.serve(async (req) => {
         service,
         amount: parseFloat(String(amount)),
         fee: parseFloat(String(fee || "0")),
-        total: parseFloat(String(total || amount)),
+        total: parseFloat(String(effectiveTotal)),
         method,
         status: "completed",
         refund_email: refundEmail || null,
@@ -323,7 +507,11 @@ Deno.serve(async (req) => {
     if (error) throw error;
 
     return new Response(
-      JSON.stringify({ success: true, payment }),
+      JSON.stringify({
+        success: true,
+        payment,
+        taxBreakdown: taxBreakdown ?? undefined,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
