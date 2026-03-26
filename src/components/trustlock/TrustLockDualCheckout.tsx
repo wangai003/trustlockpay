@@ -20,6 +20,7 @@ const TrustLockDualCheckout = () => {
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
   const feeType = isCrypto ? "crypto_to_crypto" : "fiat_to_crypto";
+  const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? sampleAmount * (t.value / 100) : t.value), 0);
   const fees = calculateFees(sampleAmount, feeType);
 
   const handleModeSwitch = (newMode: "diaspora" | "local") => {
