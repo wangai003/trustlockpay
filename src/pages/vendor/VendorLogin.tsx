@@ -73,7 +73,7 @@ const VendorLogin = () => {
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     setEmail(!checked ? "vendor@kentetest.com" : "");
-    setPassword(!checked ? "123" : "");
+    setPassword("");
     setError("");
     setResendMessage("");
   };
