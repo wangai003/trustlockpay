@@ -13,20 +13,19 @@ export function useRoleSwitcher(currentRole: SwitchableRole) {
   const targetLabel = targetRole === "vendor" ? "Vendor" : "Buyer";
   const targetPath = targetRole === "vendor" ? "/trustlock/vendor" : "/trustlock/buyer";
 
-  const isMainnet = () => {
-    const key = currentRole === "vendor" ? "tl_vendor_network" : "tl_buyer_network";
-    return localStorage.getItem(key) === "mainnet";
-  };
-
   const switchRole = useCallback(async () => {
+    const networkKey = currentRole === "vendor" ? "tl_vendor_network" : "tl_buyer_network";
+    const isMainnet = localStorage.getItem(networkKey) === "mainnet";
+
     // Testnet mode — just navigate
-    if (!isMainnet()) {
+    if (!isMainnet) {
       const targetAuthKey = targetRole === "vendor" ? "tl_vendor_auth" : "tl_buyer_auth";
       const targetNetKey = targetRole === "vendor" ? "tl_vendor_network" : "tl_buyer_network";
       localStorage.setItem(targetAuthKey, "true");
       localStorage.setItem(targetNetKey, "testnet");
-      navigate(targetPath);
       toast.success(`Switched to ${targetLabel} dashboard (Testnet)`);
+      // Use window.location for a full page navigation to ensure clean re-mount
+      window.location.href = targetPath;
       return;
     }
 
@@ -49,7 +48,6 @@ export function useRoleSwitcher(currentRole: SwitchableRole) {
         .maybeSingle();
 
       if (!existingRole) {
-        // Add the new role
         const { error } = await supabase
           .from("user_roles")
           .insert({ user_id: user.id, role: targetRole });
@@ -67,14 +65,14 @@ export function useRoleSwitcher(currentRole: SwitchableRole) {
       localStorage.setItem(targetAuthKey, "true");
       localStorage.setItem(targetNetKey, "mainnet");
 
-      navigate(targetPath);
       toast.success(`Switched to ${targetLabel} dashboard`);
+      window.location.href = targetPath;
     } catch {
       toast.error("Something went wrong");
     } finally {
       setSwitching(false);
     }
-  }, [targetRole, targetLabel, targetPath, navigate]);
+  }, [currentRole, targetRole, targetLabel, targetPath]);
 
   return { switchRole, switching, targetLabel, targetRole };
 }
