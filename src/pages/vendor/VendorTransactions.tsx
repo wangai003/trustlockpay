@@ -154,7 +154,7 @@ const VendorTransactions = () => {
                     const grayed = isGrayedOut(tx.order);
 
                     return (
-                      <tr
+                      <>
                         key={tx.id}
                         className={`border-b border-border last:border-0 transition-colors ${
                           grayed ? "opacity-40 bg-muted/10" : "hover:bg-muted/20"
