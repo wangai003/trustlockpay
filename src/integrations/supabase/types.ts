@@ -359,6 +359,9 @@ export type Database = {
           ai_confidence: number | null
           ai_recommendation: string | null
           amount: number | null
+          arbitration_fee: number | null
+          arbitration_ruling: string | null
+          arbitrator_id: string | null
           buyer_id: string | null
           buyer_name: string | null
           created_at: string
@@ -368,6 +371,8 @@ export type Database = {
           priority: string | null
           reason: string | null
           resolution: string | null
+          ruling_accepted_buyer: boolean | null
+          ruling_accepted_vendor: boolean | null
           status: string
           transaction_id: string | null
           tx_id: string | null
@@ -379,6 +384,9 @@ export type Database = {
           ai_confidence?: number | null
           ai_recommendation?: string | null
           amount?: number | null
+          arbitration_fee?: number | null
+          arbitration_ruling?: string | null
+          arbitrator_id?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
           created_at?: string
@@ -388,6 +396,8 @@ export type Database = {
           priority?: string | null
           reason?: string | null
           resolution?: string | null
+          ruling_accepted_buyer?: boolean | null
+          ruling_accepted_vendor?: boolean | null
           status?: string
           transaction_id?: string | null
           tx_id?: string | null
@@ -399,6 +409,9 @@ export type Database = {
           ai_confidence?: number | null
           ai_recommendation?: string | null
           amount?: number | null
+          arbitration_fee?: number | null
+          arbitration_ruling?: string | null
+          arbitrator_id?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
           created_at?: string
@@ -408,6 +421,8 @@ export type Database = {
           priority?: string | null
           reason?: string | null
           resolution?: string | null
+          ruling_accepted_buyer?: boolean | null
+          ruling_accepted_vendor?: boolean | null
           status?: string
           transaction_id?: string | null
           tx_id?: string | null
