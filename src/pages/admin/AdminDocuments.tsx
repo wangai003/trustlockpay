@@ -4,7 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock } from "lucide-react";
 
+const pinnedDocs = [
+  {
+    title: "TrustLock OS Playbook v1.0",
+    desc: "The complete 17-page reference guide covering escrow workflows, dynamic milestones, fee structure, payout architecture, dispute resolution, tax handling, smart contracts, SOPs, and edge cases across all industries.",
+    updated: "Mar 2026",
+    type: "PDF",
+    pinned: true,
+  },
+];
+
 const documents = [
+  {
+    category: "📌 Pinned — System Playbook",
+    icon: BookOpen,
+    items: pinnedDocs,
+  },
   {
     category: "Security & Authentication",
     icon: Lock,
