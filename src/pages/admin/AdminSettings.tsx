@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Bell, Globe, Lock, Save } from "lucide-react";
-import AuditManager from "@/components/admin/AuditManager";
+
 
 const AdminSettings = () => {
   return (
@@ -126,8 +126,6 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Auditor Access */}
-        <AuditManager />
 
         <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
