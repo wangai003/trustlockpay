@@ -70,7 +70,7 @@ const AdminLogin = () => {
     setError("");
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_admin_auth", "true");
         localStorage.setItem("tl_network", "testnet");
         navigate("/trustlock/admin");
