@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, Globe } from "lucide-react";
 
 const TrustLockHero = () => {
+  const navigate = useNavigate();
   return (
     <section className="pt-28 pb-20 lg:pt-36 lg:pb-28 bg-gradient-to-b from-green-light to-background">
       <div className="container mx-auto px-4 lg:px-8">
@@ -29,10 +31,10 @@ const TrustLockHero = () => {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="hero" size="lg" className="text-base px-8">
+            <Button variant="hero" size="lg" className="text-base px-8" onClick={() => navigate("/trustlock/vendor/signup")}>
               Start Free Integration
             </Button>
-            <Button variant="hero-outline" size="lg" className="text-base px-8">
+            <Button variant="hero-outline" size="lg" className="text-base px-8" onClick={() => navigate("/trustlock")}>
               View Documentation
             </Button>
           </div>
