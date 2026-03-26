@@ -1,8 +1,12 @@
+import { useState } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, ExternalLink, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Download, ExternalLink, Clock, Eye, Shield } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 
 const docs = [
   { title: "Buyer Protection Policy", desc: "How TrustLock escrow protects your funds. Auto-release rules, dispute rights, and refund procedures.", updated: "Mar 2026" },
@@ -13,12 +17,66 @@ const docs = [
 ];
 
 const BuyerDocuments = () => {
+  const [showAckPreview, setShowAckPreview] = useState(false);
+  const [previewIndustry, setPreviewIndustry] = useState("default");
+
   return (
     <div>
       <BuyerHeader title="Documents" />
       <div className="p-3 sm:p-6 space-y-6">
         {/* Upload Section */}
         <DocumentUpload label="Upload Documents (Receipts, Photos, Evidence)" />
+
+        {/* ── Acknowledgement Form Preview ─── */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle className="text-sm">Escrow Acknowledgement Form</CardTitle>
+                  <CardDescription className="text-[10px]">Preview the form you'll sign before your funds are locked.</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
+                <Eye className="w-3 h-3" />
+                {showAckPreview ? "Hide" : "Preview"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showAckPreview && (
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Industry:</span>
+                <Select value={previewIndustry} onValueChange={setPreviewIndustry}>
+                  <SelectTrigger className="w-44 h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">General</SelectItem>
+                    <SelectItem value="e-commerce">E-Commerce</SelectItem>
+                    <SelectItem value="real-estate">Real Estate</SelectItem>
+                    <SelectItem value="professional-services">Professional Services</SelectItem>
+                    <SelectItem value="agriculture-cargo">Agriculture & Cargo</SelectItem>
+                    <SelectItem value="mining-minerals">Mining & Minerals</SelectItem>
+                    <SelectItem value="construction">Construction</SelectItem>
+                    <SelectItem value="logistics-freight">Logistics & Freight</SelectItem>
+                    <SelectItem value="hospitality">Hospitality</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Badge variant="secondary" className="text-[10px]">Preview</Badge>
+              </div>
+              <AcknowledgementForm
+                industry={previewIndustry}
+                orderAmount={5000}
+                buyerName="You"
+                vendorName="Sample Vendor"
+                txId="TL-PREVIEW"
+                onAccept={() => {}}
+              />
+            </CardContent>
+          )}
+        </Card>
 
         {/* Reference Library */}
         <div>
