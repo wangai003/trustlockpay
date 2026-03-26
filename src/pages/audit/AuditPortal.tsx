@@ -41,6 +41,9 @@ const AuditPortal = () => {
   const [activeTab, setActiveTab] = useState("");
   const [tableData, setTableData] = useState<Record<string, any[]>>({});
   const [loadingTable, setLoadingTable] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const callAudit = async (body: Record<string, unknown>) => {
     const res = await fetch(FUNCTION_URL, {
