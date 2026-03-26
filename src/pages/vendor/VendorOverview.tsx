@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions } from "@/hooks/useSupabaseData";
+import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
