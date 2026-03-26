@@ -37,7 +37,7 @@ const VendorLogin = () => {
   const [isTestnet, setIsTestnet] = useState(!shouldPreferMainnet);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(shouldPreferMainnet ? "" : "vendor@kentetest.com");
-  const [password, setPassword] = useState(shouldPreferMainnet ? "" : "123");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -73,7 +73,7 @@ const VendorLogin = () => {
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     setEmail(!checked ? "vendor@kentetest.com" : "");
-    setPassword(!checked ? "123" : "");
+    setPassword("");
     setError("");
     setResendMessage("");
   };
@@ -85,7 +85,7 @@ const VendorLogin = () => {
     if (isLocked) { setError(`Account locked. Try again in ${remainingMin} minutes.`); return; }
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_vendor_auth", "true");
         localStorage.setItem("tl_vendor_network", "testnet");
         localStorage.setItem("tl_vendor_onboarded", "true");

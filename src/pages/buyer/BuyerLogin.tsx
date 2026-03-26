@@ -32,7 +32,7 @@ const BuyerLogin = () => {
   const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(comingFromVerification ? "" : "james@trustlocktest.com");
-  const [password, setPassword] = useState(comingFromVerification ? "" : "123");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -75,7 +75,7 @@ const BuyerLogin = () => {
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     setEmail(!checked ? "james@trustlocktest.com" : "");
-    setPassword(!checked ? "123" : "");
+    setPassword("");
     setError("");
   };
 
@@ -89,7 +89,7 @@ const BuyerLogin = () => {
     }
 
     if (isTestnet) {
-      if (password === "123") {
+      if (password === "333") {
         localStorage.setItem("tl_buyer_auth", "true");
         localStorage.setItem("tl_buyer_network", "testnet");
         localStorage.removeItem("tl_buyer_failed");
