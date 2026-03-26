@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Eye, Download, Clock, Lock, AlertTriangle } from "lucide-react";
+import { Shield, Eye, Download, Clock, Lock, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-audit`;
@@ -41,6 +41,9 @@ const AuditPortal = () => {
   const [activeTab, setActiveTab] = useState("");
   const [tableData, setTableData] = useState<Record<string, any[]>>({});
   const [loadingTable, setLoadingTable] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const callAudit = async (body: Record<string, unknown>) => {
     const res = await fetch(FUNCTION_URL, {
@@ -85,18 +88,39 @@ const AuditPortal = () => {
     setLoading(false);
   };
 
+  const fetchTableData = useCallback(async (tableName: string) => {
+    if (!session) return;
+    setLoadingTable(true);
+    const result = await callAudit({ action: "fetch_data", token, table: tableName });
+    if (result.data) {
+      setTableData((prev) => ({ ...prev, [tableName]: result.data }));
+    }
+    setLoadingTable(false);
+    setLastRefresh(new Date());
+  }, [session, token]);
+
   // Fetch table data when tab changes
   useEffect(() => {
-    if (!session || !activeTab || tableData[activeTab]) return;
-    (async () => {
-      setLoadingTable(true);
-      const result = await callAudit({ action: "fetch_data", token, table: activeTab });
-      if (result.data) {
-        setTableData((prev) => ({ ...prev, [activeTab]: result.data }));
-      }
-      setLoadingTable(false);
-    })();
-  }, [activeTab, session]);
+    if (!session || !activeTab) return;
+    fetchTableData(activeTab);
+  }, [activeTab, session, fetchTableData]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    if (!session || !activeTab) return;
+    intervalRef.current = setInterval(() => {
+      fetchTableData(activeTab);
+    }, 5 * 60 * 1000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [session, activeTab, fetchTableData]);
+
+  const handleManualRefresh = async () => {
+    if (!activeTab) return;
+    setRefreshing(true);
+    await fetchTableData(activeTab);
+    setRefreshing(false);
+    toast.success("Data refreshed");
+  };
 
   const exportCSV = (tableName: string) => {
     const data = tableData[tableName];
@@ -224,6 +248,21 @@ const AuditPortal = () => {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm">{TABLE_LABELS[tableName] || tableName}</CardTitle>
                   <div className="flex items-center gap-2">
+                    {lastRefresh && (
+                      <span className="text-[10px] text-muted-foreground">
+                        Updated {lastRefresh.toLocaleTimeString()}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={handleManualRefresh}
+                      disabled={refreshing}
+                      title="Refresh data"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+                    </Button>
                     <span className="text-xs text-muted-foreground">
                       {tableData[tableName]?.length ?? 0} records
                     </span>
