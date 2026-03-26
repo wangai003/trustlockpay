@@ -75,6 +75,7 @@ const buyerItems: CommandEntry[] = [
   { label: "OS Pay", to: "/trustlock/buyer/os-pay", icon: Wallet, keywords: "internal payment", group: "Buyer" },
   { label: "OS Payout", to: "/trustlock/buyer/payout", icon: Banknote, keywords: "withdraw refund funds", group: "Buyer" },
   { label: "Settings", to: "/trustlock/buyer/settings", icon: Settings, keywords: "preferences notifications", group: "Buyer" },
+  { label: "Industry Playbook", to: "/trustlock/buyer/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Buyer" },
 ];
 
 const knowledgeItems: CommandEntry[] = [
