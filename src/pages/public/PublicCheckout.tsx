@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, ArrowLeft, CheckCircle } from "lucide-react";
+import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
+import SanctionsGate from "@/components/shared/SanctionsGate";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"invoice" | "pay" | "done">("invoice");
+  const [step, setStep] = useState<"invoice" | "compliance" | "pay" | "done">("invoice");
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
     taxTotal: number;
@@ -19,7 +22,6 @@ const PublicCheckout = () => {
     note: string;
   } | null>(null);
 
-  // In production, this would fetch the standalone link details from the database
   const mockLink = {
     id: linkId || "TL-DEMO",
     vendorName: "TrustLock Vendor",
@@ -41,8 +43,16 @@ const PublicCheckout = () => {
       grandTotal: invoice.grandTotal,
       note: invoice.note,
     });
-    setStep("pay");
+    setStep("compliance");
   };
+
+  const handleComplianceClear = useCallback(() => {
+    setStep("pay");
+  }, []);
+
+  const handleComplianceBlock = useCallback(() => {
+    navigate("/");
+  }, [navigate]);
 
   if (step === "done") {
     return (
@@ -57,6 +67,37 @@ const PublicCheckout = () => {
               Your payment of ${invoiceData?.grandTotal.toFixed(2)} has been locked in escrow.
               You'll receive a confirmation email with your transaction details.
             </p>
+
+            {/* Order reference to copy */}
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="text-[10px] text-muted-foreground font-semibold">Your Order Reference</p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono font-bold text-lg text-foreground">{linkId}</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(linkId || ""); toast.success("Copied!"); }}
+                  className="p-1 hover:bg-muted rounded"
+                >
+                  <Copy className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Save this reference — use it to track your order in the Buyer Dashboard
+              </p>
+            </div>
+
+            {/* Login/Signup CTA */}
+            <div className="space-y-2">
+              <Link to="/trustlock/buyer/login">
+                <Button variant="outline" className="w-full gap-2 text-sm">
+                  <LogIn className="w-4 h-4" /> Sign In to Track Order
+                </Button>
+              </Link>
+              <p className="text-[10px] text-muted-foreground">
+                Don't have an account?{" "}
+                <Link to="/trustlock/buyer/signup" className="text-primary underline">Sign up free</Link>
+              </p>
+            </div>
+
             <Badge variant="outline" className="text-xs">
               Transaction ID: {linkId}
             </Badge>
@@ -87,15 +128,23 @@ const PublicCheckout = () => {
       <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
         {/* Steps indicator */}
         <div className="flex items-center gap-3 justify-center">
-          <div className={`flex items-center gap-1.5 text-xs font-semibold ${step === "invoice" ? "text-primary" : "text-muted-foreground"}`}>
-            <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px]">1</span>
-            Review Invoice
-          </div>
-          <div className="w-8 h-px bg-border" />
-          <div className={`flex items-center gap-1.5 text-xs font-semibold ${step === "pay" ? "text-primary" : "text-muted-foreground"}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === "pay" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
-            Pay
-          </div>
+          {[
+            { key: "invoice", label: "Review Invoice", num: 1 },
+            { key: "compliance", label: "Compliance", num: 2 },
+            { key: "pay", label: "Pay", num: 3 },
+          ].map((s, i) => (
+            <div key={s.key} className="flex items-center gap-2">
+              <div className={`flex items-center gap-1.5 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                  step === s.key ? "bg-primary text-primary-foreground" :
+                  (s.key === "invoice" && step !== "invoice") ? "bg-primary text-primary-foreground" :
+                  "bg-muted text-muted-foreground"
+                }`}>{s.num}</span>
+                {s.label}
+              </div>
+              {i < 2 && <div className="w-8 h-px bg-border" />}
+            </div>
+          ))}
         </div>
 
         {/* Invoice Step */}
@@ -108,6 +157,25 @@ const PublicCheckout = () => {
             <StandaloneInvoice
               vendorName={mockLink.vendorName}
               onProceed={handleInvoiceProceed}
+            />
+          </div>
+        )}
+
+        {/* Compliance Step */}
+        {step === "compliance" && invoiceData && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setStep("invoice")}
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Invoice
+            </Button>
+            <SanctionsGate
+              amount={invoiceData.grandTotal}
+              onClear={handleComplianceClear}
+              onBlock={handleComplianceBlock}
             />
           </div>
         )}

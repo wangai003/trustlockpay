@@ -1,10 +1,12 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, CheckCircle, Package, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Shield, CheckCircle, Package, Clock, AlertTriangle, ShieldCheck, Copy, ExternalLink, LogIn } from "lucide-react";
 import { useState } from "react";
 import { useTransaction, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import { toast } from "sonner";
 
 const BuyerConfirmation = () => {
   const { txId } = useParams();
@@ -79,7 +81,33 @@ const BuyerConfirmation = () => {
               <p className="text-sm text-muted-foreground">
                 Funds of <strong>{tx.amount}</strong> will be released to <strong>{tx.vendor}</strong>.
               </p>
-              <p className="text-xs text-muted-foreground">Thank you for using TrustLock. You may close this page.</p>
+
+              {/* Order number to copy */}
+              <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                <p className="text-[10px] text-muted-foreground font-semibold">Your Order Reference</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-mono font-bold text-lg text-foreground">{tx.id}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(tx.id); toast.success("Copied!"); }} className="p-1 hover:bg-muted rounded">
+                    <Copy className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Use this to look up your order in the Buyer Dashboard</p>
+              </div>
+
+              {/* Login link */}
+              <div className="space-y-2">
+                <Link to="/trustlock/buyer/login">
+                  <Button variant="outline" className="w-full gap-2 text-sm">
+                    <LogIn className="w-4 h-4" /> Sign In to Buyer Dashboard
+                  </Button>
+                </Link>
+                <p className="text-[10px] text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Link to="/trustlock/buyer/signup" className="text-primary underline">Sign up free</Link>
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground">You may close this page.</p>
             </CardContent>
           </Card>
         ) : disputed ? (
@@ -92,6 +120,20 @@ const BuyerConfirmation = () => {
               <p className="text-sm text-muted-foreground">
                 Your dispute for <strong>{tx.id}</strong> has been submitted. Emmanuel AI will review your case.
               </p>
+              <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                <p className="text-[10px] text-muted-foreground font-semibold">Track Your Dispute</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-mono font-bold">{tx.id}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(tx.id); toast.success("Copied!"); }} className="p-1 hover:bg-muted rounded">
+                    <Copy className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+              <Link to="/trustlock/buyer/login">
+                <Button variant="outline" className="w-full gap-2 text-sm">
+                  <LogIn className="w-4 h-4" /> Sign In to Track Dispute
+                </Button>
+              </Link>
               <p className="text-xs text-muted-foreground">You'll receive updates via email. You may close this page.</p>
             </CardContent>
           </Card>
