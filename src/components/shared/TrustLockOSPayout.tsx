@@ -49,6 +49,7 @@ interface TrustLockOSPayoutProps {
   payoutType?: "release" | "refund" | "split";
   transactionId?: string;
   onComplete?: (confirmationCode: string) => void;
+  isTestnet?: boolean;
 }
 
 interface PayoutFieldConfig {
