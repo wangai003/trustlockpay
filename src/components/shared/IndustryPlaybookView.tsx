@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Building2, Home, Sprout, Pickaxe, Plane, ShoppingBag, Briefcase, Ship, GraduationCap,
   Search, CheckSquare, Shield, Bot, FileText, Wallet, BarChart3, AlertTriangle, Globe,
-  Download, BookOpen
+  Download, BookOpen, Upload, Lock, Unlock, UserPlus, Eye
 } from "lucide-react";
 
 const industries = [
