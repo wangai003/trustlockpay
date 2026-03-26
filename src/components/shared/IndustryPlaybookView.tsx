@@ -242,12 +242,69 @@ const IndustryPlaybookView = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="workflow">
-                <TabsList className="mb-4">
+              <Tabs defaultValue="milestones">
+                <TabsList className="mb-4 flex-wrap h-auto gap-1">
+                  <TabsTrigger value="milestones">Milestone Template</TabsTrigger>
                   <TabsTrigger value="workflow">Workflow Stages</TabsTrigger>
                   <TabsTrigger value="buyer">Buyer Capabilities</TabsTrigger>
                   <TabsTrigger value="vendor">Vendor Capabilities</TabsTrigger>
                 </TabsList>
+                <TabsContent value="milestones" className="space-y-3">
+                  {(INDUSTRY_MILESTONE_MAP[selected.id] || []).length > 0 ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Document-gated escrow milestones with fund allocation. Each stage can require uploads before funds release.
+                      </p>
+                      {INDUSTRY_MILESTONE_MAP[selected.id].map((ms, i) => (
+                        <Card key={i} className="border-border/60">
+                          <CardContent className="p-3 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="shrink-0 text-xs font-mono">{i + 1}</Badge>
+                                <span className="text-sm font-semibold">{ms.name}</span>
+                              </div>
+                              <Badge className="bg-primary/10 text-primary text-xs">{ms.percentage}%</Badge>
+                            </div>
+                            <Progress value={ms.percentage} className="h-1.5" />
+                            <p className="text-xs text-muted-foreground">{ms.description}</p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {/* Document Mode */}
+                              <Badge variant={ms.documentMode === "required" ? "destructive" : ms.documentMode === "optional" ? "secondary" : "outline"} className="text-[10px] gap-1">
+                                {ms.documentMode === "required" ? <Lock className="w-3 h-3" /> : ms.documentMode === "optional" ? <Unlock className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                Docs: {ms.documentMode}
+                              </Badge>
+                              {/* Observer */}
+                              {ms.requiresObserver && (
+                                <Badge variant="secondary" className="text-[10px] gap-1">
+                                  <Eye className="w-3 h-3" />
+                                  Observer Required
+                                </Badge>
+                              )}
+                            </div>
+                            {/* Required Documents */}
+                            {ms.documents.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {ms.documents.map((doc, di) => (
+                                  <Badge key={di} variant="outline" className="text-[10px] gap-1 font-normal">
+                                    <Upload className="w-2.5 h-2.5" />
+                                    {doc}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 mt-2">
+                        <strong>Total allocation:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].reduce((s, m) => s + m.percentage, 0)}% •
+                        <strong> Doc-gated stages:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].filter(m => m.documentMode === "required").length} •
+                        <strong> Observer stages:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].filter(m => m.requiresObserver).length}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No structured milestone template for this industry yet.</p>
+                  )}
+                </TabsContent>
                 <TabsContent value="workflow" className="space-y-2">
                   {selected.stages.map((stage, i) => (
                     <div key={i} className="flex items-center gap-3 p-2 rounded bg-muted/50">
