@@ -48,6 +48,7 @@ import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
 import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
 import BuyerPayout from "./pages/buyer/BuyerPayout.tsx";
 import BuyerBillPayments from "./pages/buyer/BuyerBillPayments.tsx";
+import BuyerIndustryPlaybook from "./pages/buyer/BuyerIndustryPlaybook.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
