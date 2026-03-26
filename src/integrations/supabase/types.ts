@@ -803,6 +803,65 @@ export type Database = {
         }
         Relationships: []
       }
+      sanctions_screening_logs: {
+        Row: {
+          admin_notes: string | null
+          country: string
+          created_at: string
+          full_name: string
+          id: string
+          matched_entries: Json | null
+          result: string
+          reviewed_by_admin: boolean | null
+          risk_score: number | null
+          screened_at: string | null
+          screening_source: string | null
+          transaction_id: string | null
+          user_id: string
+          user_role: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          country: string
+          created_at?: string
+          full_name: string
+          id?: string
+          matched_entries?: Json | null
+          result: string
+          reviewed_by_admin?: boolean | null
+          risk_score?: number | null
+          screened_at?: string | null
+          screening_source?: string | null
+          transaction_id?: string | null
+          user_id: string
+          user_role?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          country?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          matched_entries?: Json | null
+          result?: string
+          reviewed_by_admin?: boolean | null
+          risk_score?: number | null
+          screened_at?: string | null
+          screening_source?: string | null
+          transaction_id?: string | null
+          user_id?: string
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sanctions_screening_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seed_tokens: {
         Row: {
           created_at: string
