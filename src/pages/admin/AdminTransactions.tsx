@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransactions, useFlagForReview } from "@/hooks/useSupabaseData";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
 
 type TxStatus = "all" | "locked" | "released" | "disputed" | "cancelled";
 
