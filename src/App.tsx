@@ -69,6 +69,7 @@ import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
 import VendorPayout from "./pages/vendor/VendorPayout.tsx";
 import VendorBillPayments from "./pages/vendor/VendorBillPayments.tsx";
 import VendorStandaloneLinks from "./pages/vendor/VendorStandaloneLinks.tsx";
+import PublicCheckout from "./pages/public/PublicCheckout.tsx";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,9 @@ const App = () => (
 
             {/* Standalone Confirmation Page (no login required) */}
             <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+
+            {/* P2P Public Checkout Page (no login required) */}
+            <Route path="/pay/:linkId" element={<PublicCheckout />} />
 
             {/* Read-Only Audit Portal (token-based access) */}
             <Route path="/trustlock/audit/:token" element={<AuditPortal />} />

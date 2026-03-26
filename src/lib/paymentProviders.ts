@@ -186,9 +186,54 @@ const MOBILE_MONEY_OPERATORS = [
   { id: "vodacom_mpesa", name: "Vodacom M-Pesa", countries: ["South Africa", "Tanzania", "Mozambique", "DR Congo"] },
 ];
 
+// Country-specific required fields for banks
+const COUNTRY_BANK_FIELDS: Record<string, ProviderField[]> = {
+  Nigeria: [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number (NUBAN)", placeholder: "10-digit NUBAN", type: "text", required: true },
+    { key: "bvn", label: "BVN (Bank Verification Number)", placeholder: "11-digit BVN", type: "text", required: true },
+    { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text", required: false },
+  ],
+  Kenya: [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
+    { key: "branch_code", label: "Branch Code", placeholder: "e.g. 001", type: "text", required: true },
+    { key: "id_number", label: "National ID Number", placeholder: "ID number", type: "text", required: false },
+  ],
+  Ghana: [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
+    { key: "branch_code", label: "Branch / Sort Code", placeholder: "Branch code", type: "text", required: true },
+  ],
+  "South Africa": [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
+    { key: "branch_code", label: "Branch Code (Universal)", placeholder: "6-digit branch code", type: "text", required: true },
+    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "e.g. SBZAZAJJ", type: "text", required: false },
+  ],
+  Cameroon: [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number / RIB", placeholder: "IBAN or RIB", type: "text", required: true },
+    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
+  ],
+  Egypt: [
+    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+    { key: "account_number", label: "Account Number / IBAN", placeholder: "EG + 27 digits", type: "text", required: true },
+    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
+    { key: "national_id", label: "National ID Number", placeholder: "14-digit NID", type: "text", required: false },
+  ],
+};
+
+const DEFAULT_BANK_FIELDS: ProviderField[] = [
+  { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
+  { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
+  { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
+  { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text", required: false },
+];
+
 function buildBankProviders(country: string, banks: string[]): PaymentProvider[] {
-  // Use Yellow Card for African banks, Coinbase as fallback
   const processor: ProcessorId = "yellow_card";
+  const fields = COUNTRY_BANK_FIELDS[country] || DEFAULT_BANK_FIELDS;
   return banks.map((bank) => ({
     id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
     name: bank,
@@ -196,11 +241,7 @@ function buildBankProviders(country: string, banks: string[]): PaymentProvider[]
     mode: "local" as const,
     countries: [country],
     processor,
-    fields: [
-      { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text" as const, required: true },
-      { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text" as const, required: true },
-      { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text" as const, required: false },
-    ],
+    fields,
   }));
 }
 
