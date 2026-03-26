@@ -130,7 +130,7 @@ interface CommandPaletteProps {
 }
 
 interface LiveResult {
-  type: "transaction" | "dispute" | "order";
+  type: "transaction" | "dispute" | "order" | "document";
   label: string;
   sub: string;
   to: string;
