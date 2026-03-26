@@ -230,8 +230,11 @@ const AcknowledgementForm = ({
   milestoneCount = 1,
   onAccept,
   onDecline,
+  requireTypedSignature = true,
 }: AcknowledgementFormProps) => {
   const [checkedClauses, setCheckedClauses] = useState<Record<string, boolean>>({});
+  const [typedName, setTypedName] = useState("");
+  const nameMatch = !requireTypedSignature || typedName.trim().toLowerCase() === buyerName.trim().toLowerCase();
 
   const clauses = useMemo(() => {
     const key = industry && INDUSTRY_CLAUSES[industry] ? industry : "default";
