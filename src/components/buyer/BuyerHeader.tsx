@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useBuyer } from "@/contexts/BuyerContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { LogOut } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 
