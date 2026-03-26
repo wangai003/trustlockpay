@@ -1,10 +1,12 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, CheckCircle, Package, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Shield, CheckCircle, Package, Clock, AlertTriangle, ShieldCheck, Copy, ExternalLink, LogIn } from "lucide-react";
 import { useState } from "react";
 import { useTransaction, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import { toast } from "sonner";
 
 const BuyerConfirmation = () => {
   const { txId } = useParams();
