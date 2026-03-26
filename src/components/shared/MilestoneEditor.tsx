@@ -78,10 +78,13 @@ const INDUSTRY_TEMPLATES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
+type DocumentMode = "none" | "optional" | "required";
+
 interface MilestoneTemplate {
   name: string;
   percentage: number;
   documents: string[];
+  documentMode: DocumentMode;
   description: string;
   requiresObserver: boolean;
 }
