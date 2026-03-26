@@ -8,6 +8,7 @@ import { Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock, Undo2,
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment } from "@/hooks/useSupabaseData";
+import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 
 const TRUSTLOCK_WALLET = "0x7A3b...F92d";
 
