@@ -238,6 +238,60 @@ const AdminDocuments = () => {
           )}
         </Card>
 
+        {/* ── TrustLock Protection Documents Folder ─── */}
+        <Card className="border-accent/30">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <FolderArchive className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">🗂️ TrustLock Protection Documents</CardTitle>
+                  <CardDescription className="text-xs">All document types required for legal protection — {protectionDocuments.length} document types</CardDescription>
+                </div>
+              </div>
+              <Badge variant="secondary" className="text-[10px]">Testnet + Mainnet</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search protection documents..."
+                value={protectionSearch}
+                onChange={(e) => setProtectionSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {filteredProtectionDocs.map((doc) => (
+                <div key={doc.title} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs font-bold">{doc.title}</h4>
+                      <Badge variant="outline" className="text-[9px]">{doc.type}</Badge>
+                      <Badge variant="secondary" className="text-[9px]">Retain: {doc.retention}</Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{doc.desc}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">
+              Documents are auto-archived when generated per transaction. Search by title or type. All documents follow 7-year immutable retention for cross-border trade compliance.
+            </p>
+          </CardContent>
+        </Card>
+
         <div>
           <h2 className="font-heading text-lg font-bold">Admin Reference Library</h2>
           <p className="text-sm text-muted-foreground">
