@@ -1,4 +1,4 @@
-import { BuyerHeader } from "@/components/buyer/BuyerHeader";
+import BuyerHeader from "@/components/buyer/BuyerHeader";
 import IndustryPlaybookView from "@/components/shared/IndustryPlaybookView";
 
 const BuyerIndustryPlaybook = () => (

@@ -1,4 +1,4 @@
-import { VendorHeader } from "@/components/vendor/VendorHeader";
+import VendorHeader from "@/components/vendor/VendorHeader";
 import IndustryPlaybookView from "@/components/shared/IndustryPlaybookView";
 
 const VendorIndustryPlaybook = () => (
