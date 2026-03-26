@@ -264,22 +264,15 @@ Deno.serve(async (req) => {
         related_buyer_id: user_role === "buyer" ? String(user_id) : null,
       });
 
-      const { data: admins } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "admin");
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((a: { user_id: string }) => ({
-          user_id: a.user_id,
-          title: "⚠️ Sanctions Flag — Review Required",
-          message: `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Flag: ${flagId}`,
-          type: "warning",
-          related_entity_type: "compliance",
-          related_entity_id: flagId,
-        }));
-        await supabase.from("notifications").insert(notifications);
-      }
+      // Notify via triage
+      await triageNotify(
+        "sanctions_flag",
+        String(user_id),
+        `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Flag: ${flagId}`,
+        transaction_id ? String(transaction_id) : undefined,
+        "high",
+        { full_name, country, flagId, riskScore }
+      );
     }
 
     return new Response(
