@@ -20,6 +20,7 @@ interface TrustLockOSPayProps {
   prefillService?: string;
   prefillAmount?: string;
   onComplete?: () => void;
+  isTestnet?: boolean;
 }
 
 const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete }: TrustLockOSPayProps) => {
