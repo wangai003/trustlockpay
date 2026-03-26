@@ -14,7 +14,7 @@ const AdminLogin = () => {
   const [isTestnet, setIsTestnet] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
-  const [password, setPassword] = useState(isTestnet ? "123" : "");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetLink, setShowResetLink] = useState(false);
