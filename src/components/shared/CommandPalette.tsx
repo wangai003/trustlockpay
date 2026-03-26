@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -12,7 +12,7 @@ import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
   ShieldCheck, FileText, BarChart3, Bot, Settings, Wallet, GitBranch,
   Banknote, Package, HelpCircle, CreditCard, Globe, DollarSign, Receipt, Link2,
-  BookOpen, Search, Loader2
+  BookOpen, Search, Loader2, Sparkles
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -33,10 +33,10 @@ const adminItems: CommandEntry[] = [
   { label: "Emmanuel AI", to: "/trustlock/admin/emmanuel", icon: Bot, keywords: "assistant chat ai help", group: "Admin" },
   { label: "Vendors", to: "/trustlock/admin/vendors", icon: Users, keywords: "sellers merchants accounts", group: "Admin" },
   { label: "Buyers", to: "/trustlock/admin/buyers", icon: UserCheck, keywords: "customers purchasers", group: "Admin" },
-  { label: "Compliance", to: "/trustlock/admin/compliance", icon: ShieldCheck, keywords: "aml kyc flags regulatory", group: "Admin" },
+  { label: "Compliance", to: "/trustlock/admin/compliance", icon: ShieldCheck, keywords: "aml kyc flags regulatory sanctions screening", group: "Admin" },
   { label: "Analytics", to: "/trustlock/admin/analytics", icon: BarChart3, keywords: "charts revenue volume metrics", group: "Admin" },
   { label: "Reports", to: "/trustlock/admin/reports", icon: FileText, keywords: "export csv pdf summary", group: "Admin" },
-  { label: "Documents", to: "/trustlock/admin/documents", icon: FileText, keywords: "files contracts evidence archive", group: "Admin" },
+  { label: "Documents", to: "/trustlock/admin/documents", icon: FileText, keywords: "files contracts evidence archive acknowledgement form", group: "Admin" },
   { label: "OS Pay", to: "/trustlock/admin/os-pay", icon: Wallet, keywords: "refund split payment internal", group: "Admin" },
   { label: "OS Payout", to: "/trustlock/admin/payout", icon: Banknote, keywords: "withdraw disbursement funds", group: "Admin" },
   { label: "Audit Access", to: "/trustlock/admin/audit", icon: ShieldCheck, keywords: "regulators read-only session", group: "Admin" },
@@ -52,7 +52,7 @@ const vendorItems: CommandEntry[] = [
   { label: "KYC & Verification", to: "/trustlock/vendor/kyc", icon: ShieldCheck, keywords: "identity documents verify", group: "Vendor" },
   { label: "TrustLock Assist", to: "/trustlock/vendor/assistant", icon: Bot, keywords: "ai chat support help", group: "Vendor" },
   { label: "Analytics", to: "/trustlock/vendor/analytics", icon: BarChart3, keywords: "charts sales trends reports", group: "Vendor" },
-  { label: "Documents", to: "/trustlock/vendor/documents", icon: FileText, keywords: "files invoices contracts", group: "Vendor" },
+  { label: "Documents", to: "/trustlock/vendor/documents", icon: FileText, keywords: "files invoices contracts acknowledgement form", group: "Vendor" },
   { label: "Help Center", to: "/trustlock/vendor/help", icon: HelpCircle, keywords: "faq guides documentation", group: "Vendor" },
   { label: "Plans & Pricing", to: "/trustlock/vendor/pricing", icon: CreditCard, keywords: "upgrade subscription plan", group: "Vendor" },
   { label: "Standalone Links", to: "/trustlock/vendor/standalone-links", icon: Link2, keywords: "p2p payment link invoice share", group: "Vendor" },
@@ -68,7 +68,7 @@ const buyerItems: CommandEntry[] = [
   { label: "Disputes", to: "/trustlock/buyer/disputes", icon: AlertTriangle, keywords: "complaints file resolution", group: "Buyer" },
   { label: "Support Assistant", to: "/trustlock/buyer/assistant", icon: Bot, keywords: "ai chat help support", group: "Buyer" },
   { label: "Analytics", to: "/trustlock/buyer/analytics", icon: BarChart3, keywords: "spending trends reports", group: "Buyer" },
-  { label: "Documents", to: "/trustlock/buyer/documents", icon: FileText, keywords: "receipts invoices evidence", group: "Buyer" },
+  { label: "Documents", to: "/trustlock/buyer/documents", icon: FileText, keywords: "receipts invoices evidence acknowledgement form", group: "Buyer" },
   { label: "Help Center", to: "/trustlock/buyer/help", icon: HelpCircle, keywords: "faq guides documentation", group: "Buyer" },
   { label: "OS Pay", to: "/trustlock/buyer/os-pay", icon: Wallet, keywords: "internal payment", group: "Buyer" },
   { label: "OS Payout", to: "/trustlock/buyer/payout", icon: Banknote, keywords: "withdraw refund funds", group: "Buyer" },
@@ -90,6 +90,35 @@ const knowledgeItems: CommandEntry[] = [
   { label: "Smart Contract", to: "", icon: BookOpen, keywords: "polygon usdc blockchain contract on-chain", group: "Knowledge" },
   { label: "Tax & Tariff Handling", to: "", icon: BookOpen, keywords: "vat gst import duty tariff tax", group: "Knowledge" },
   { label: "Mid-Order Cancellation", to: "", icon: BookOpen, keywords: "cancel order refund partial milestone", group: "Knowledge" },
+  { label: "Acknowledgement Form", to: "", icon: BookOpen, keywords: "acknowledgement agreement contract digital signature sign-off", group: "Knowledge" },
+  { label: "Escrow Holdback Clause", to: "", icon: BookOpen, keywords: "holdback 90% retention inspection risk", group: "Knowledge" },
+  { label: "Observer Sign-Off", to: "", icon: BookOpen, keywords: "observer third-party inspector bank customs sign off", group: "Knowledge" },
+  { label: "Document Retention Policy", to: "", icon: BookOpen, keywords: "retention archival 7-year destroy documents confidential", group: "Knowledge" },
+  { label: "Arbitration Escalation", to: "", icon: BookOpen, keywords: "arbitration escalate third-party mediator legal", group: "Knowledge" },
+];
+
+// Rotating placeholder hints
+const placeholderHints = [
+  'Try: "order #1042" or "dispute DSP-001"… (⌘K)',
+  'Search: transaction ID, vendor name, or order number…',
+  'Try: "gold export", "acknowledgement form", "KYC"…',
+  'Find: disputes, orders, contracts, or any document…',
+  'Search: "real estate", "milestone", or buyer name…',
+  'Tip: type a partial name — we\'ll search the database live',
+];
+
+// Suggestion phrases for autocomplete when query is short
+const searchSuggestions = [
+  { text: "Acknowledgement Form", hint: "Digital agreement document" },
+  { text: "Dispute Resolution", hint: "Complaint & arbitration process" },
+  { text: "KYC Documents", hint: "Identity verification files" },
+  { text: "Milestone Workflow", hint: "Dynamic order stages" },
+  { text: "Standalone Payment Link", hint: "P2P invoice without website" },
+  { text: "Observer Sign-Off", hint: "Third-party inspector approval" },
+  { text: "Escrow Holdback", hint: "90/10 fund retention protocol" },
+  { text: "AML Screening", hint: "Sanctions & compliance checks" },
+  { text: "Payout Request", hint: "Fund withdrawal & disbursement" },
+  { text: "Contract Upload", hint: "B2B agreement documentation" },
 ];
 
 interface CommandPaletteProps {
@@ -108,7 +137,17 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
   const [search, setSearch] = useState("");
   const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const navigate = useNavigate();
+
+  // Rotate placeholder every 4 seconds
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      setPlaceholderIdx((i) => (i + 1) % placeholderHints.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -132,48 +171,51 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
       const results: LiveResult[] = [];
       const basePath = `/trustlock/${role}`;
       try {
-        // Search transactions
+        // Search transactions — includes order_number
         const { data: txs } = await supabase
           .from("transactions")
-          .select("tx_id, item, amount, status, buyer_name, vendor_name")
+          .select("tx_id, item, amount, status, buyer_name, vendor_name, order_number, created_at")
           .or(`tx_id.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .order("created_at", { ascending: false })
           .limit(5);
         txs?.forEach((tx) => {
-          const txRoute = role === "admin" ? `${basePath}/transactions` : role === "vendor" ? `${basePath}/transactions` : `${basePath}/orders`;
+          const txRoute = role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`;
           results.push({
             type: "transaction",
-            label: `${tx.tx_id} — ${tx.item || "Order"}`,
-            sub: `$${tx.amount} · ${tx.status} · ${tx.buyer_name || ""} → ${tx.vendor_name || ""}`,
+            label: `${tx.tx_id}${tx.order_number ? ` (#${tx.order_number})` : ""} — ${tx.item || "Order"}`,
+            sub: `$${Number(tx.amount).toLocaleString()} · ${tx.status} · ${tx.buyer_name || ""} → ${tx.vendor_name || ""} · ${new Date(tx.created_at).toLocaleDateString()}`,
             to: txRoute,
           });
         });
 
-        // Search disputes
+        // Search disputes — includes order-linked tx_id and date
         const { data: disputes } = await supabase
           .from("disputes")
-          .select("dispute_id, reason, status, buyer_name, vendor_name, amount")
-          .or(`dispute_id.ilike.%${search}%,reason.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .select("dispute_id, reason, status, buyer_name, vendor_name, amount, tx_id, created_at, priority")
+          .or(`dispute_id.ilike.%${search}%,reason.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%,tx_id.ilike.%${search}%`)
+          .order("created_at", { ascending: false })
           .limit(5);
         disputes?.forEach((d) => {
           results.push({
             type: "dispute",
-            label: `${d.dispute_id} — ${d.reason || "Dispute"}`,
-            sub: `$${d.amount || 0} · ${d.status} · ${d.buyer_name || ""} vs ${d.vendor_name || ""}`,
-            to: role === "buyer" ? `${basePath}/disputes` : `${basePath}/disputes`,
+            label: `${d.dispute_id}${d.tx_id ? ` (TX: ${d.tx_id})` : ""} — ${d.reason || "Dispute"}`,
+            sub: `$${Number(d.amount || 0).toLocaleString()} · ${d.status} · ${d.priority || "medium"} · ${d.buyer_name || ""} vs ${d.vendor_name || ""} · ${new Date(d.created_at).toLocaleDateString()}`,
+            to: role === "admin" ? `${basePath}/disputes` : `${basePath}/disputes`,
           });
         });
 
         // Search carbon copies / orders
         const { data: orders } = await supabase
           .from("order_carbon_copies")
-          .select("order_number, item, amount, status, buyer_name, vendor_name")
-          .or(`order_number.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
+          .select("order_number, item, amount, status, buyer_name, vendor_name, created_at, confirmation_code")
+          .or(`order_number.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%,confirmation_code.ilike.%${search}%`)
+          .order("created_at", { ascending: false })
           .limit(5);
         orders?.forEach((o) => {
           results.push({
             type: "order",
             label: `Order ${o.order_number || ""} — ${o.item || "Item"}`,
-            sub: `$${o.amount || 0} · ${o.status} · ${o.buyer_name || ""}`,
+            sub: `$${Number(o.amount || 0).toLocaleString()} · ${o.status} · ${o.buyer_name || ""} · ${new Date(o.created_at).toLocaleDateString()}`,
             to: role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`,
           });
         });
@@ -208,10 +250,16 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     }
   };
 
+  // Show suggestions when user typed 1 char or empty
+  const showSuggestions = open && search.length < 2 && search.length >= 0;
+  const filteredSuggestions = search.length === 0
+    ? searchSuggestions
+    : searchSuggestions.filter((s) => s.text.toLowerCase().includes(search.toLowerCase()));
+
   return (
     <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
       <CommandInput
-        placeholder="Search pages, transactions, disputes, orders…"
+        placeholder={placeholderHints[placeholderIdx]}
         value={search}
         onValueChange={setSearch}
       />
@@ -222,9 +270,29 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
               <Loader2 className="w-4 h-4 animate-spin" /> Searching database…
             </span>
           ) : (
-            "No results found."
+            "No results found. Try a different term or browse pages below."
           )}
         </CommandEmpty>
+
+        {/* Suggestions when query is short */}
+        {showSuggestions && filteredSuggestions.length > 0 && search.length === 0 && (
+          <CommandGroup heading="💡 Try searching for…">
+            {filteredSuggestions.slice(0, 6).map((s) => (
+              <CommandItem
+                key={s.text}
+                value={s.text}
+                onSelect={() => setSearch(s.text)}
+                className="gap-3"
+              >
+                <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm">{s.text}</span>
+                  <span className="text-[10px] text-muted-foreground ml-2">— {s.hint}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
 
         {/* Live DB Results */}
         {liveResults.length > 0 && (
