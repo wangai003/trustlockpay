@@ -214,6 +214,30 @@ const PublicCheckout = () => {
           </div>
         )}
 
+        {/* Contract Step */}
+        {step === "contract" && invoiceData && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setStep("acknowledge")}
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Acknowledgement
+            </Button>
+            <PreOrderSignatoryContract
+              orderAmount={invoiceData.grandTotal}
+              buyerName="You"
+              vendorName={mockLink.vendorName}
+              txId={mockLink.id}
+              isAutoSigned
+              onBothSigned={handleContractSigned}
+              onDecline={() => setStep("invoice")}
+              role="buyer"
+            />
+          </div>
+        )}
+
         {/* Pay Step */}
         {step === "pay" && invoiceData && (
           <div className="space-y-4">
