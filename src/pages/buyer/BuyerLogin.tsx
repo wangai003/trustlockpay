@@ -75,7 +75,7 @@ const BuyerLogin = () => {
   const handleToggle = (checked: boolean) => {
     setIsTestnet(!checked);
     setEmail(!checked ? "james@trustlocktest.com" : "");
-    setPassword(!checked ? "123" : "");
+    setPassword("");
     setError("");
   };
 
