@@ -128,6 +128,7 @@ const AdminTransactions = () => {
                           </td>
                         </tr>
                       )}
+                      </>
                     );
                   })}
                 </tbody>
