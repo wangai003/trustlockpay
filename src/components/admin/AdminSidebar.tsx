@@ -23,6 +23,7 @@ const navItems = [
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/admin/os-pay", tip: "Process internal payments, refunds, and splits" },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/admin/payout", tip: "Manage fund withdrawals and disbursements" },
   { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators" },
+  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview" },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences" },
 ];
 
