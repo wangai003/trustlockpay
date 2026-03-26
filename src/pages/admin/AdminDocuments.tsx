@@ -91,6 +91,12 @@ const AdminDocuments = () => {
   const [showConsentPreview, setShowConsentPreview] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
+  const [protectionSearch, setProtectionSearch] = useState("");
+
+  const filteredProtectionDocs = protectionDocuments.filter(d =>
+    d.title.toLowerCase().includes(protectionSearch.toLowerCase()) ||
+    d.type.toLowerCase().includes(protectionSearch.toLowerCase())
+  );
 
   return (
     <div>
