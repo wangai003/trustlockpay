@@ -1,17 +1,24 @@
 import { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight } from "lucide-react";
-import { useDisputes, useReviewDispute } from "@/hooks/useSupabaseData";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck } from "lucide-react";
+import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling } from "@/hooks/useSupabaseData";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pending Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
+  under_review: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
   ai_reviewing: { label: "Emmanuel Analyzing", color: "bg-primary/15 text-primary", icon: Bot },
   resolved: { label: "Resolved", color: "bg-primary/15 text-primary", icon: CheckCircle },
   escalated: { label: "Escalated", color: "bg-destructive/15 text-destructive", icon: ArrowUpRight },
+  arbitration_pending: { label: "Arbitration Pending", color: "bg-accent/20 text-accent-foreground", icon: Scale },
+  arbitration_in_progress: { label: "Arbitration Active", color: "bg-primary/20 text-primary", icon: Gavel },
+  ruling_issued: { label: "Ruling Issued", color: "bg-primary/15 text-primary", icon: UserCheck },
 };
 
 const priorityColors: Record<string, string> = {
@@ -23,33 +30,51 @@ const priorityColors: Record<string, string> = {
 
 const AdminDisputes = () => {
   const [search, setSearch] = useState("");
+  const [assignDialog, setAssignDialog] = useState<string | null>(null);
+  const [rulingDialog, setRulingDialog] = useState<string | null>(null);
+  const [arbName, setArbName] = useState("");
+  const [arbEmail, setArbEmail] = useState("");
+  const [ruling, setRuling] = useState("");
+  const [splitPct, setSplitPct] = useState("50");
+
   const { data: rawDisputes = [] } = useDisputes();
   const reviewDispute = useReviewDispute();
+  const escalateToArb = useEscalateToArbitration();
+  const assignArb = useAssignArbitrator();
+  const submitRuling = useSubmitRuling();
 
-  const disputes = rawDisputes.map(d => ({
+  const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
     dbId: d.id,
     txId: d.tx_id || "—",
     buyer: d.buyer_name || "Unknown",
     vendor: d.vendor_name || "Unknown",
-    amount: d.amount ? `$${Number(d.amount).toLocaleString()}` : "—",
+    amount: d.amount ? Number(d.amount) : 0,
+    amountStr: d.amount ? `$${Number(d.amount).toLocaleString()}` : "—",
     reason: d.reason || "—",
     status: d.status,
     aiConfidence: d.ai_confidence ?? 0,
     aiRecommendation: d.ai_recommendation || "Awaiting analysis",
     filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     priority: d.priority || "medium",
+    arbitrationFee: d.arbitration_fee ? `$${Number(d.arbitration_fee).toLocaleString()}` : null,
+    arbitrationRuling: d.arbitration_ruling,
+    rulingAcceptedBuyer: d.ruling_accepted_buyer,
+    rulingAcceptedVendor: d.ruling_accepted_vendor,
   }));
 
-  const filtered = disputes.filter((d) =>
+  const filtered = disputes.filter((d: any) =>
     d.id.toLowerCase().includes(search.toLowerCase()) ||
     d.buyer.toLowerCase().includes(search.toLowerCase()) ||
     d.vendor.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openCount = disputes.filter(d => d.status !== "resolved").length;
-  const aiProcessing = disputes.filter(d => d.status === "ai_reviewing").length;
-  const resolvedCount = disputes.filter(d => d.status === "resolved").length;
+  const openCount = disputes.filter((d: any) => d.status !== "resolved").length;
+  const aiProcessing = disputes.filter((d: any) => d.status === "ai_reviewing").length;
+  const resolvedCount = disputes.filter((d: any) => d.status === "resolved").length;
+  const arbCount = disputes.filter((d: any) => ["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(d.status)).length;
+
+  const isArbEligible = (d: any) => d.amount >= 10000 && !["arbitration_pending", "arbitration_in_progress", "ruling_issued", "resolved"].includes(d.status);
 
   return (
     <div>
@@ -59,7 +84,7 @@ const AdminDisputes = () => {
           {[
             { label: "Open Disputes", value: String(openCount), icon: AlertTriangle },
             { label: "Emmanuel Processing", value: String(aiProcessing), icon: Bot },
-            { label: "Avg Resolution", value: "2.4 days", icon: Clock },
+            { label: "In Arbitration", value: String(arbCount), icon: Scale },
             { label: "Resolved (30d)", value: String(resolvedCount), icon: CheckCircle },
           ].map((s) => (
             <Card key={s.label}>
@@ -80,7 +105,7 @@ const AdminDisputes = () => {
         </div>
 
         <div className="space-y-4">
-          {filtered.map((dispute) => {
+          {filtered.map((dispute: any) => {
             const cfg = statusConfig[dispute.status] || statusConfig.pending;
             return (
               <Card key={dispute.id} className={dispute.priority === "critical" ? "border-destructive/30" : ""}>
@@ -95,15 +120,32 @@ const AdminDisputes = () => {
                         <Badge className={`text-[10px] ${priorityColors[dispute.priority] || ""}`}>
                           {dispute.priority.toUpperCase()}
                         </Badge>
+                        {dispute.amount >= 10000 && (
+                          <Badge variant="outline" className="text-[10px] border-destructive/50 text-destructive">
+                            <Scale className="w-3 h-3 mr-1" /> ARB ELIGIBLE
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-foreground">
                         <strong>{dispute.buyer}</strong> vs <strong>{dispute.vendor}</strong> — {dispute.reason}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                         <span>TX: {dispute.txId}</span>
-                        <span>Amount: {dispute.amount}</span>
+                        <span>Amount: {dispute.amountStr}</span>
                         <span>Filed: {dispute.filed}</span>
+                        {dispute.arbitrationFee && <span className="text-destructive font-medium">Arb Fee: {dispute.arbitrationFee}</span>}
                       </div>
+
+                      {/* Ruling status */}
+                      {dispute.status === "ruling_issued" && (
+                        <div className="bg-muted/50 rounded-lg p-2 mt-1 space-y-1">
+                          <p className="text-xs font-semibold flex items-center gap-1"><Gavel className="w-3 h-3" /> Ruling: {dispute.arbitrationRuling?.replace("_", " ")}</p>
+                          <div className="flex gap-3 text-xs">
+                            <span>Buyer: {dispute.rulingAcceptedBuyer ? "✅ Accepted" : "⏳ Pending"}</span>
+                            <span>Vendor: {dispute.rulingAcceptedVendor ? "✅ Accepted" : "⏳ Pending"}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="lg:w-72 bg-muted/50 rounded-lg p-3 space-y-2">
@@ -120,8 +162,23 @@ const AdminDisputes = () => {
 
                     <div className="flex lg:flex-col gap-2">
                       <Button size="sm" variant="outline" className="gap-1"><Eye className="w-3 h-3" /> View</Button>
-                      {dispute.status !== "resolved" && (
+                      {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
                         <Button size="sm" className="gap-1" onClick={() => reviewDispute.mutate(dispute.dbId)}>Review</Button>
+                      )}
+                      {isArbEligible(dispute) && (
+                        <Button size="sm" variant="destructive" className="gap-1" onClick={() => escalateToArb.mutate(dispute.id)}>
+                          <Scale className="w-3 h-3" /> Arbitrate
+                        </Button>
+                      )}
+                      {dispute.status === "arbitration_pending" && (
+                        <Button size="sm" className="gap-1" onClick={() => setAssignDialog(dispute.id)}>
+                          <UserCheck className="w-3 h-3" /> Assign
+                        </Button>
+                      )}
+                      {dispute.status === "arbitration_in_progress" && (
+                        <Button size="sm" className="gap-1" onClick={() => setRulingDialog(dispute.id)}>
+                          <Gavel className="w-3 h-3" /> Ruling
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -131,6 +188,77 @@ const AdminDisputes = () => {
           })}
         </div>
       </div>
+
+      {/* Assign Arbitrator Dialog */}
+      <Dialog open={!!assignDialog} onOpenChange={() => setAssignDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Assign Arbitrator</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Arbitrator Name</Label>
+              <Input value={arbName} onChange={(e) => setArbName(e.target.value)} placeholder="Jane Doe, Esq." />
+            </div>
+            <div>
+              <Label>Arbitrator Email</Label>
+              <Input value={arbEmail} onChange={(e) => setArbEmail(e.target.value)} placeholder="arbitrator@firm.com" type="email" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (assignDialog && arbName && arbEmail) {
+                assignArb.mutate({ disputeId: assignDialog, arbitratorName: arbName, arbitratorEmail: arbEmail });
+                setAssignDialog(null);
+                setArbName("");
+                setArbEmail("");
+              }
+            }}>Assign & Notify</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit Ruling Dialog */}
+      <Dialog open={!!rulingDialog} onOpenChange={() => setRulingDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Submit Arbitration Ruling</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Ruling</Label>
+              <Select value={ruling} onValueChange={setRuling}>
+                <SelectTrigger><SelectValue placeholder="Select ruling..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_refund">Full Refund to Buyer</SelectItem>
+                  <SelectItem value="partial_refund">Partial Refund (Split)</SelectItem>
+                  <SelectItem value="vendor_release">Full Release to Vendor</SelectItem>
+                  <SelectItem value="dismiss">Dismiss Dispute</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {ruling === "partial_refund" && (
+              <div>
+                <Label>Buyer's Share (%)</Label>
+                <Input type="number" value={splitPct} onChange={(e) => setSplitPct(e.target.value)} min="1" max="99" />
+                <p className="text-xs text-muted-foreground mt-1">Vendor receives {100 - Number(splitPct)}%</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRulingDialog(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (rulingDialog && ruling) {
+                submitRuling.mutate({
+                  disputeId: rulingDialog,
+                  ruling,
+                  splitPercentage: ruling === "partial_refund" ? Number(splitPct) : undefined,
+                });
+                setRulingDialog(null);
+                setRuling("");
+                setSplitPct("50");
+              }
+            }}>Submit Ruling</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
