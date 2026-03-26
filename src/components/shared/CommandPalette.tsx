@@ -122,6 +122,7 @@ const searchSuggestions = [
   { text: "AML Screening", hint: "Sanctions & compliance checks" },
   { text: "Payout Request", hint: "Fund withdrawal & disbursement" },
   { text: "Contract Upload", hint: "B2B agreement documentation" },
+  { text: "Industry Playbook", hint: "Workflow capabilities by industry" },
 ];
 
 interface CommandPaletteProps {
