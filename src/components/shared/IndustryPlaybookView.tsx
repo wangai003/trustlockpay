@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Building2, Home, Sprout, Pickaxe, Plane, ShoppingBag, Briefcase, Ship, GraduationCap,
   Search, CheckSquare, Shield, Bot, FileText, Wallet, BarChart3, AlertTriangle, Globe,
-  Download, BookOpen
+  Download, BookOpen, Upload, Lock, Unlock, UserPlus, Eye
 } from "lucide-react";
 
 const industries = [
@@ -74,6 +75,80 @@ const industries = [
     vendorCaps: ["Structured tuition collection", "Upload course materials per module", "Student progress tracking", "Certificate generation tools", "Multi-cohort management", "Subscription billing support"],
   },
 ];
+
+// ─── Map playbook industry IDs → MilestoneEditor template keys ───
+type DocumentMode = "none" | "optional" | "required";
+interface MilestoneTemplate {
+  name: string;
+  percentage: number;
+  documents: string[];
+  documentMode: DocumentMode;
+  description: string;
+  requiresObserver: boolean;
+}
+
+const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
+  "construction": [
+    { name: "Contract Upload & Dual Acknowledgement", percentage: 5, documents: ["Construction Contract", "Subcontractor Agreements"], documentMode: "required", description: "Both parties sign and upload the construction contract", requiresObserver: false },
+    { name: "Foundation Inspection", percentage: 15, documents: ["Foundation Inspection Report", "Soil Test Results"], documentMode: "required", description: "Independent inspector verifies foundation work", requiresObserver: true },
+    { name: "Structural Phase", percentage: 25, documents: ["Structural Engineer Report", "Progress Photos"], documentMode: "required", description: "Walls, roofing, and structural elements completed", requiresObserver: true },
+    { name: "MEP Verification", percentage: 20, documents: ["Electrical Certification", "Plumbing Test Report"], documentMode: "required", description: "Mechanical, electrical, and plumbing systems verified", requiresObserver: true },
+    { name: "Final Walkthrough & Punch List", percentage: 15, documents: ["Punch List", "Walkthrough Report"], documentMode: "optional", description: "Final inspection with buyer to identify remaining items", requiresObserver: false },
+    { name: "Certificate of Occupancy", percentage: 10, documents: ["Certificate of Occupancy"], documentMode: "required", description: "Government-issued occupancy certificate obtained", requiresObserver: true },
+    { name: "Final Payout Release", percentage: 10, documents: ["Completion Certificate"], documentMode: "optional", description: "All milestones fulfilled, final escrow release", requiresObserver: false },
+  ],
+  "real-estate": [
+    { name: "Due Diligence", percentage: 10, documents: ["Title Deed", "Property Survey"], documentMode: "required", description: "Legal review and property verification", requiresObserver: true },
+    { name: "Inspection", percentage: 15, documents: ["Inspection Report"], documentMode: "optional", description: "Physical property inspection", requiresObserver: false },
+    { name: "Appraisal", percentage: 15, documents: ["Appraisal Report"], documentMode: "required", description: "Independent property valuation", requiresObserver: true },
+    { name: "Closing", percentage: 60, documents: ["Closing Documents", "Transfer Agreement"], documentMode: "required", description: "Final transfer and key handover", requiresObserver: true },
+  ],
+  "agriculture": [
+    { name: "Contract Signed", percentage: 10, documents: ["Purchase Contract", "Export License"], documentMode: "required", description: "Trade agreement executed", requiresObserver: true },
+    { name: "Harvest & Quality Assay", percentage: 15, documents: ["Quality Certificate", "Grading Report"], documentMode: "required", description: "Harvest confirmed with quality testing", requiresObserver: true },
+    { name: "Packaging & Certification", percentage: 15, documents: ["Phytosanitary Certificate", "Packaging Report"], documentMode: "required", description: "Goods packaged and certified for export", requiresObserver: true },
+    { name: "Shipping", percentage: 25, documents: ["Bill of Lading", "Insurance Certificate"], documentMode: "required", description: "Goods in transit", requiresObserver: true },
+    { name: "Customs Clearance", percentage: 15, documents: ["Certificate of Origin", "Customs Declaration"], documentMode: "required", description: "Import clearance completed", requiresObserver: true },
+    { name: "Delivery & Acceptance", percentage: 20, documents: ["Delivery Receipt", "Quality Report"], documentMode: "optional", description: "Goods received and accepted", requiresObserver: false },
+  ],
+  "mining": [
+    { name: "Assay & Certification", percentage: 10, documents: ["Assay Report", "Purity Certificate (LBMA)"], documentMode: "required", description: "Independent assay lab certifies mineral purity and weight", requiresObserver: true },
+    { name: "Export License", percentage: 5, documents: ["Mining License", "Export Permit", "Tax Clearance"], documentMode: "required", description: "Government export authorization obtained", requiresObserver: true },
+    { name: "Insurance & Packaging", percentage: 10, documents: ["Insurance Certificate", "Secure Packaging Report"], documentMode: "required", description: "Goods insured and sealed in tamper-proof packaging", requiresObserver: false },
+    { name: "Customs (Origin)", percentage: 15, documents: ["Customs Declaration", "Certificate of Origin", "AML Declaration"], documentMode: "required", description: "Origin country customs clearance and AML check", requiresObserver: true },
+    { name: "Shipping", percentage: 25, documents: ["Air Waybill / Bill of Lading", "Tracking Manifest"], documentMode: "required", description: "Secure transit via freight", requiresObserver: true },
+    { name: "Destination Clearance", percentage: 20, documents: ["Import Declaration", "Hallmarking Certificate"], documentMode: "required", description: "Destination customs clearance and verification", requiresObserver: true },
+    { name: "Delivery & Fund Release", percentage: 15, documents: ["Delivery Receipt", "Buyer Acceptance Form"], documentMode: "required", description: "Physical delivery confirmed, escrow funds released", requiresObserver: false },
+  ],
+  "tourism": [
+    { name: "Booking Confirmed", percentage: 50, documents: ["Booking Confirmation"], documentMode: "optional", description: "Reservation secured with deposit", requiresObserver: false },
+    { name: "Service Completed", percentage: 50, documents: ["Checkout Confirmation", "Review Form"], documentMode: "optional", description: "Stay/experience completed", requiresObserver: false },
+  ],
+  "retail": [
+    { name: "Order & Payment", percentage: 100, documents: [], documentMode: "none", description: "Full payment locked in escrow upon order", requiresObserver: false },
+  ],
+  "freelance": [
+    { name: "Discovery & Scope", percentage: 20, documents: ["Scope Document"], documentMode: "optional", description: "Requirements gathering and project scoping", requiresObserver: false },
+    { name: "Draft Delivery", percentage: 30, documents: ["Draft Deliverable"], documentMode: "optional", description: "First draft or prototype delivered", requiresObserver: false },
+    { name: "Revision Round", percentage: 20, documents: [], documentMode: "none", description: "Client feedback and revisions", requiresObserver: false },
+    { name: "Final Delivery", percentage: 30, documents: ["Final Deliverable", "Sign-off Form"], documentMode: "required", description: "Approved final work product", requiresObserver: false },
+  ],
+  "logistics": [
+    { name: "LC Issuance / Trade Agreement", percentage: 5, documents: ["Letter of Credit", "Trade Contract"], documentMode: "required", description: "Issuing bank opens the LC or trade agreement signed", requiresObserver: true },
+    { name: "Origin Inspection", percentage: 15, documents: ["Inspection Certificate", "Quality Report"], documentMode: "required", description: "Goods inspected at origin", requiresObserver: true },
+    { name: "Export Customs", percentage: 15, documents: ["Customs Declaration", "Export License"], documentMode: "required", description: "Origin country customs clearance", requiresObserver: true },
+    { name: "Shipping", percentage: 25, documents: ["Bill of Lading", "Insurance Certificate"], documentMode: "required", description: "Goods in transit", requiresObserver: true },
+    { name: "Import Customs", percentage: 15, documents: ["Import Declaration", "Duty Receipt"], documentMode: "required", description: "Destination customs processing", requiresObserver: true },
+    { name: "Destination Inspection", percentage: 10, documents: ["Delivery Receipt", "POD"], documentMode: "optional", description: "Final inspection at destination", requiresObserver: false },
+    { name: "Final Settlement", percentage: 15, documents: ["Bank Payment Confirmation"], documentMode: "required", description: "Escrow released upon confirmed delivery", requiresObserver: true },
+  ],
+  "education": [
+    { name: "Enrollment & Deposit", percentage: 25, documents: ["Enrollment Form"], documentMode: "optional", description: "Student enrolled, tuition deposited in escrow", requiresObserver: false },
+    { name: "Course Access", percentage: 25, documents: ["Course Materials"], documentMode: "optional", description: "Access to learning materials provided", requiresObserver: false },
+    { name: "Assessment", percentage: 25, documents: ["Assessment Results"], documentMode: "optional", description: "Mid-program or final assessment completed", requiresObserver: false },
+    { name: "Certification & Payout", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certificate issued, final payout released", requiresObserver: false },
+  ],
+};
 
 const platformTools = [
   { icon: Search, name: "Universal Search (Cmd+K)", desc: "Live database search across transactions, disputes, orders" },
@@ -167,12 +242,69 @@ const IndustryPlaybookView = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="workflow">
-                <TabsList className="mb-4">
+              <Tabs defaultValue="milestones">
+                <TabsList className="mb-4 flex-wrap h-auto gap-1">
+                  <TabsTrigger value="milestones">Milestone Template</TabsTrigger>
                   <TabsTrigger value="workflow">Workflow Stages</TabsTrigger>
                   <TabsTrigger value="buyer">Buyer Capabilities</TabsTrigger>
                   <TabsTrigger value="vendor">Vendor Capabilities</TabsTrigger>
                 </TabsList>
+                <TabsContent value="milestones" className="space-y-3">
+                  {(INDUSTRY_MILESTONE_MAP[selected.id] || []).length > 0 ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Document-gated escrow milestones with fund allocation. Each stage can require uploads before funds release.
+                      </p>
+                      {INDUSTRY_MILESTONE_MAP[selected.id].map((ms, i) => (
+                        <Card key={i} className="border-border/60">
+                          <CardContent className="p-3 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="shrink-0 text-xs font-mono">{i + 1}</Badge>
+                                <span className="text-sm font-semibold">{ms.name}</span>
+                              </div>
+                              <Badge className="bg-primary/10 text-primary text-xs">{ms.percentage}%</Badge>
+                            </div>
+                            <Progress value={ms.percentage} className="h-1.5" />
+                            <p className="text-xs text-muted-foreground">{ms.description}</p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {/* Document Mode */}
+                              <Badge variant={ms.documentMode === "required" ? "destructive" : ms.documentMode === "optional" ? "secondary" : "outline"} className="text-[10px] gap-1">
+                                {ms.documentMode === "required" ? <Lock className="w-3 h-3" /> : ms.documentMode === "optional" ? <Unlock className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                Docs: {ms.documentMode}
+                              </Badge>
+                              {/* Observer */}
+                              {ms.requiresObserver && (
+                                <Badge variant="secondary" className="text-[10px] gap-1">
+                                  <Eye className="w-3 h-3" />
+                                  Observer Required
+                                </Badge>
+                              )}
+                            </div>
+                            {/* Required Documents */}
+                            {ms.documents.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {ms.documents.map((doc, di) => (
+                                  <Badge key={di} variant="outline" className="text-[10px] gap-1 font-normal">
+                                    <Upload className="w-2.5 h-2.5" />
+                                    {doc}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 mt-2">
+                        <strong>Total allocation:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].reduce((s, m) => s + m.percentage, 0)}% •
+                        <strong> Doc-gated stages:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].filter(m => m.documentMode === "required").length} •
+                        <strong> Observer stages:</strong> {INDUSTRY_MILESTONE_MAP[selected.id].filter(m => m.requiresObserver).length}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No structured milestone template for this industry yet.</p>
+                  )}
+                </TabsContent>
                 <TabsContent value="workflow" className="space-y-2">
                   {selected.stages.map((stage, i) => (
                     <div key={i} className="flex items-center gap-3 p-2 rounded bg-muted/50">
