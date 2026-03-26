@@ -173,6 +173,20 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   }, [role, fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const criticalCount = notifications.filter((n) => !n.read && triagePriority(n) === "critical").length;
+
+  // Sort by priority then recency
+  const sortedNotifications = useMemo(() => {
+    const filtered = filterPriority
+      ? notifications.filter((n) => triagePriority(n) === filterPriority)
+      : notifications;
+    return [...filtered].sort((a, b) => {
+      const pa = priorityOrder[triagePriority(a)];
+      const pb = priorityOrder[triagePriority(b)];
+      if (pa !== pb) return pa - pb;
+      return a.read === b.read ? 0 : a.read ? 1 : -1;
+    });
+  }, [notifications, filterPriority]);
 
   const markRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -193,7 +207,6 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
 
   const dismiss = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    // No DB delete — just UI dismiss
   };
 
   return (
@@ -201,7 +214,10 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
       <button onClick={() => setOpen(!open)} className="relative p-2 rounded-lg hover:bg-muted transition-colors">
         <Bell className="w-5 h-5 text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+          <span className={cn(
+            "absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center",
+            criticalCount > 0 ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-destructive text-destructive-foreground"
+          )}>
             {unreadCount}
           </span>
         )}
@@ -212,28 +228,65 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Notifications</h3>
+              <h3 className="text-sm font-semibold">
+                Notifications
+                {criticalCount > 0 && (
+                  <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-bold">
+                    {criticalCount} CRITICAL
+                  </span>
+                )}
+              </h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button onClick={markAllRead} className="text-[10px] text-primary hover:underline">Mark all read</button>
                 )}
               </div>
             </div>
+
+            {/* Priority filter tabs */}
+            {role === "admin" && (
+              <div className="flex gap-1 px-3 py-2 border-b border-border">
+                {[null, "critical", "high", "medium", "low"].map((p) => (
+                  <button
+                    key={p || "all"}
+                    onClick={() => setFilterPriority(p)}
+                    className={cn(
+                      "text-[9px] px-2 py-0.5 rounded-full font-medium transition-colors",
+                      filterPriority === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {p ? p.toUpperCase() : "ALL"}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="max-h-80 overflow-y-auto divide-y divide-border">
-              {notifications.length === 0 ? (
+              {sortedNotifications.length === 0 ? (
                 <p className="p-6 text-center text-sm text-muted-foreground">No notifications</p>
               ) : (
-                notifications.map((n) => {
+                sortedNotifications.map((n) => {
                   const Icon = typeIcons[n.type];
+                  const prio = triagePriority(n);
+                  const prioMeta = priorityLabels[prio];
                   return (
                     <div
                       key={n.id}
                       onClick={() => markRead(n.id)}
-                      className={cn("p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer", !n.read && "bg-primary/5")}
+                      className={cn(
+                        "p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer",
+                        !n.read && "bg-primary/5",
+                        !n.read && prio === "critical" && "bg-destructive/5 border-l-2 border-destructive"
+                      )}
                     >
                       <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", typeColors[n.type])} />
                       <div className="flex-1 min-w-0">
-                        <p className={cn("text-xs", !n.read && "font-semibold")}>{n.title}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className={cn("text-xs flex-1", !n.read && "font-semibold")}>{n.title}</p>
+                          <span className={cn("text-[8px] px-1 py-0.5 rounded font-bold shrink-0", prioMeta.color)}>
+                            {prioMeta.label}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{n.message}</p>
                         <p className="text-[9px] text-muted-foreground mt-1">{n.time}</p>
                       </div>
