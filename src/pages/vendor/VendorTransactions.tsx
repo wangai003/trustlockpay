@@ -18,12 +18,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
-import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
+import { useTransactions, useRejectOrders, useAddTracking, useMarkDelivered } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -60,12 +61,14 @@ const VendorTransactions = () => {
   const { data: rawTransactions = [] } = useTransactions();
   const rejectOrders = useRejectOrders();
   const addTracking = useAddTracking();
+  const markDelivered = useMarkDelivered();
 
   const planState = getVendorPlanState();
   const orderMax = planState.orderMax;
   const isUnlimited = orderMax === -1;
 
   const allTx = rawTransactions.map((tx, i) => ({
+    dbId: tx.id,
     id: tx.tx_id,
     buyer: tx.buyer_name || "Unknown",
     amount: Number(tx.amount),
@@ -112,11 +115,14 @@ const VendorTransactions = () => {
   };
 
   const handleMarkShipped = (txId: string) => {
-    toast.success(`Order ${txId} marked as shipped`);
+    void (async () => {
+      const tracking = prompt("Optional tracking number (leave blank for manual ship):")?.trim() || `MANUAL-${Date.now()}`;
+      await addTracking.mutateAsync({ txId, tracking });
+    })();
   };
 
-  const handleUploadDoc = (txId: string) => {
-    toast.info(`Document upload for ${txId} — coming soon`);
+  const handleMarkDelivered = async (txId: string) => {
+    await markDelivered.mutateAsync(txId);
   };
 
   return (
@@ -274,13 +280,13 @@ const VendorTransactions = () => {
                                   </>
                                 )}
                                 {tx.status === "shipped" && (
-                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleUploadDoc(tx.id)} title="Upload delivery docs">
-                                    <FileText className="w-3 h-3 mr-1" /> Docs
+                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
+                                    <PackageCheck className="w-3 h-3 mr-1" /> Delivered
                                   </Button>
                                 )}
                                 {(tx.status === "locked" || tx.status === "shipped") && (
-                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleUploadDoc(tx.id)} title="Upload milestone document">
-                                    <PackageCheck className="w-3 h-3" />
+                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => setExpandedRow(tx.id)} title="Open work-order panel">
+                                    <FileText className="w-3 h-3" />
                                   </Button>
                                 )}
                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
@@ -347,6 +353,12 @@ const VendorTransactions = () => {
                                   />
                                 </>
                               )}
+                              <MilestoneWorkOrderPanel
+                                role="vendor"
+                                txId={tx.id}
+                                transactionId={tx.dbId}
+                                industry={tx.industry}
+                              />
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments
                                   tx={{
