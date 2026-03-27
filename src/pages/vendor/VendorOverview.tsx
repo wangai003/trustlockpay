@@ -26,10 +26,73 @@ const statusColors: Record<string, string> = {
 const VendorOverview = () => {
   const { vendor } = useVendor();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const planState = getVendorPlanState();
   const isUnlimited = planState.orderMax === -1;
   const planConfig = PLANS[planState.currentPlan];
   const { data: transactions = [] } = useTransactions();
+
+  // Work Log: pending contracts
+  const [pendingContracts, setPendingContracts] = useState<any[]>([]);
+  const [workLogLoading, setWorkLogLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchWorkLog = async () => {
+      setWorkLogLoading(true);
+      try {
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vendor-work-log`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+          }
+        );
+        const data = await resp.json();
+        setPendingContracts(data.contracts || []);
+      } catch {
+        // silent
+      }
+      setWorkLogLoading(false);
+    };
+    fetchWorkLog();
+  }, [user]);
+
+  const handleWorkLogAction = async (action: string, contractId?: string, reason?: string) => {
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vendor-work-log`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            action,
+            contract_id: contractId,
+            typed_name: vendor.name,
+            reason,
+          }),
+        }
+      );
+      const result = await resp.json();
+      if (result.success || result.signed !== undefined) {
+        toast.success(action === "accept_all" ? `Signed ${result.signed} contracts` : action === "reject" ? "Contract declined" : "Contract signed");
+        setPendingContracts(prev => prev.filter(c => action === "accept_all" ? false : c.id !== contractId));
+      } else {
+        toast.error(result.error || "Action failed");
+      }
+    } catch {
+      toast.error("Failed to process action");
+    }
+  };
 
   const recentTx = transactions.slice(0, 5).map((tx, i) => ({
     id: tx.tx_id,
