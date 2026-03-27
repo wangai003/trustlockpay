@@ -237,6 +237,12 @@ const PreOrderSignatoryContract = ({
                 </ul>
               </div>
             )}
+          </div>
+        </ScrollArea>
+
+        <Separator />
+
+        {/* ── Dual Signature Block ───────── */}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold flex items-center gap-1.5">
             <PenLine className="h-4 w-4 text-primary" /> Binding Signatures
