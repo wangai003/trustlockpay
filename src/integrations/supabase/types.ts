@@ -982,6 +982,60 @@ export type Database = {
         }
         Relationships: []
       }
+      standalone_links: {
+        Row: {
+          created_at: string
+          grand_total: number
+          id: string
+          industry: string | null
+          invoice_items: Json
+          link_id: string
+          note: string | null
+          status: string
+          subtotal: number
+          tax_items: Json
+          tax_total: number
+          title: string
+          updated_at: string
+          vendor_id: string
+          vendor_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          grand_total?: number
+          id?: string
+          industry?: string | null
+          invoice_items?: Json
+          link_id: string
+          note?: string | null
+          status?: string
+          subtotal?: number
+          tax_items?: Json
+          tax_total?: number
+          title: string
+          updated_at?: string
+          vendor_id: string
+          vendor_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          grand_total?: number
+          id?: string
+          industry?: string | null
+          invoice_items?: Json
+          link_id?: string
+          note?: string | null
+          status?: string
+          subtotal?: number
+          tax_items?: Json
+          tax_total?: number
+          title?: string
+          updated_at?: string
+          vendor_id?: string
+          vendor_name?: string | null
+        }
+        Relationships: []
+      }
       tax_rates: {
         Row: {
           country_code: string
