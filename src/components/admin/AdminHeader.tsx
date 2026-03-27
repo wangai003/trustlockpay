@@ -1,9 +1,10 @@
 import { useAdmin } from "@/contexts/AdminContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Search } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
+import SearchBar from "@/components/shared/SearchBar";
 
 const AdminHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet } = useAdmin();
@@ -31,15 +32,7 @@ const AdminHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 text-muted-foreground hover:text-primary"
-            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-            title="Search (⌘K)"
-          >
-            <Search className="w-4 h-4" />
-          </Button>
+          <SearchBar onOpen={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))} />
 
           <NotificationCenter role="admin" />
 

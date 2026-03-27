@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useBuyer } from "@/contexts/BuyerContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Search } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
+import SearchBar from "@/components/shared/SearchBar";
 
 const BuyerHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, buyer } = useBuyer();
@@ -35,15 +36,7 @@ const BuyerHeader = ({ title }: { title: string }) => {
             </Badge>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-8 h-8 text-muted-foreground hover:text-primary"
-            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-            title="Search (⌘K)"
-          >
-            <Search className="w-4 h-4" />
-          </Button>
+          <SearchBar onOpen={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))} />
 
           <NotificationCenter role="buyer" />
 

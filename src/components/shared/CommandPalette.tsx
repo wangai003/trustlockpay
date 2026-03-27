@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -12,10 +12,13 @@ import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
   ShieldCheck, FileText, BarChart3, Bot, Settings, Wallet, GitBranch,
   Banknote, Package, HelpCircle, CreditCard, Globe, DollarSign, Receipt, Link2,
-  BookOpen, Search, Loader2, Sparkles
+  BookOpen, Search, Loader2, Sparkles, Brain, Eye, Calendar, MapPin, Tag, TrendingUp
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import ReactMarkdown from "react-markdown";
+
+/* ─── route items (pages, knowledge) ─── */
 
 type CommandEntry = {
   label: string;
@@ -78,81 +81,41 @@ const buyerItems: CommandEntry[] = [
   { label: "Industry Playbook", to: "/trustlock/buyer/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Buyer" },
 ];
 
-const knowledgeItems: CommandEntry[] = [
-  { label: "How Escrow Works", to: "", icon: BookOpen, keywords: "escrow flow lock release funds payment", group: "Knowledge" },
-  { label: "14-Day Auto-Release", to: "", icon: BookOpen, keywords: "auto release timer countdown mandate", group: "Knowledge" },
-  { label: "Dynamic Milestones", to: "", icon: BookOpen, keywords: "milestone workflow stages industry", group: "Knowledge" },
-  { label: "Dispute Resolution", to: "", icon: BookOpen, keywords: "dispute arbitration resolution refund", group: "Knowledge" },
-  { label: "KYC Verification", to: "", icon: BookOpen, keywords: "kyc identity verify documents compliance", group: "Knowledge" },
-  { label: "Payment Processors", to: "", icon: BookOpen, keywords: "stripe coinbase yellow card thirdweb transak", group: "Knowledge" },
-  { label: "Fee Structure", to: "", icon: BookOpen, keywords: "fees platform escrow processing costs", group: "Knowledge" },
-  { label: "Payout Methods", to: "", icon: BookOpen, keywords: "bank mobile money crypto withdraw", group: "Knowledge" },
-  { label: "Widget Installation", to: "", icon: BookOpen, keywords: "install widget script embed checkout", group: "Knowledge" },
-  { label: "Standalone Payment Links", to: "", icon: BookOpen, keywords: "p2p link share invoice no website", group: "Knowledge" },
-  { label: "Audit & Compliance", to: "", icon: BookOpen, keywords: "audit regulator read-only session", group: "Knowledge" },
-  { label: "Smart Contract", to: "", icon: BookOpen, keywords: "polygon usdc blockchain contract on-chain", group: "Knowledge" },
-  { label: "Tax & Tariff Handling", to: "", icon: BookOpen, keywords: "vat gst import duty tariff tax", group: "Knowledge" },
-  { label: "Mid-Order Cancellation", to: "", icon: BookOpen, keywords: "cancel order refund partial milestone", group: "Knowledge" },
-  { label: "Acknowledgement Form", to: "", icon: BookOpen, keywords: "acknowledgement agreement contract digital signature sign-off", group: "Knowledge" },
-  { label: "Escrow Holdback Clause", to: "", icon: BookOpen, keywords: "holdback 90% retention inspection risk", group: "Knowledge" },
-  { label: "Observer Sign-Off", to: "", icon: BookOpen, keywords: "observer third-party inspector bank customs sign off", group: "Knowledge" },
-  { label: "Document Retention Policy", to: "", icon: BookOpen, keywords: "retention archival 7-year destroy documents confidential", group: "Knowledge" },
-  { label: "Arbitration Escalation", to: "", icon: BookOpen, keywords: "arbitration escalate third-party mediator legal", group: "Knowledge" },
-];
-
-// Rotating placeholder hints
-const placeholderHints = [
-  'Try: "order #1042" or "dispute DSP-001"… (⌘K)',
-  'Search: transaction ID, vendor name, or order number…',
-  'Try: "gold export", "acknowledgement form", "KYC"…',
-  'Find: disputes, orders, contracts, or any document…',
-  'Search: "real estate", "milestone", or buyer name…',
-  'Tip: type a partial name — we\'ll search the database live',
-];
-
-// Suggestion phrases for autocomplete when query is short
 const searchSuggestions = [
-  { text: "Acknowledgement Form", hint: "Digital agreement document" },
-  { text: "Dispute Resolution", hint: "Complaint & arbitration process" },
-  { text: "KYC Documents", hint: "Identity verification files" },
-  { text: "Milestone Workflow", hint: "Dynamic order stages" },
-  { text: "Standalone Payment Link", hint: "P2P invoice without website" },
-  { text: "Observer Sign-Off", hint: "Third-party inspector approval" },
-  { text: "Escrow Holdback", hint: "90/10 fund retention protocol" },
-  { text: "AML Screening", hint: "Sanctions & compliance checks" },
-  { text: "Payout Request", hint: "Fund withdrawal & disbursement" },
-  { text: "Contract Upload", hint: "B2B agreement documentation" },
-  { text: "Industry Playbook", hint: "Workflow capabilities by industry" },
+  { text: "How does escrow work?", hint: "AI-powered answer" },
+  { text: "Dispute resolution process", hint: "Knowledge base" },
+  { text: "Milestone workflow", hint: "Dynamic order stages" },
+  { text: "Payout methods", hint: "Bank, M-Pesa, crypto" },
+  { text: "Fee structure", hint: "Platform & processing fees" },
+  { text: "KYC verification", hint: "Identity documents" },
+  { text: "Auto-release policy", hint: "14-day mandate" },
+  { text: "Industry playbook", hint: "Mining, construction, agriculture" },
 ];
+
+/* ─── types ─── */
+
+interface SearchResults {
+  knowledge_answer: string | null;
+  ai_answer: string | null;
+  transactions: any[];
+  disputes: any[];
+  orders: any[];
+}
 
 interface CommandPaletteProps {
   role: "admin" | "vendor" | "buyer";
 }
 
-interface LiveResult {
-  type: "transaction" | "dispute" | "order" | "document";
-  label: string;
-  sub: string;
-  to: string;
-}
+/* ─── component ─── */
 
 const CommandPalette = ({ role }: CommandPaletteProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
+  const [results, setResults] = useState<SearchResults | null>(null);
   const [searching, setSearching] = useState(false);
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const navigate = useNavigate();
 
-  // Rotate placeholder every 4 seconds
-  useEffect(() => {
-    if (!open) return;
-    const interval = setInterval(() => {
-      setPlaceholderIdx((i) => (i + 1) % placeholderHints.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [open]);
-
+  // Open from keyboard shortcut or dispatched event
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -164,96 +127,35 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  // Live DB search with debounce
+  // Debounced search via edge function
   useEffect(() => {
     if (!open || search.length < 2) {
-      setLiveResults([]);
+      setResults(null);
       return;
     }
     const timer = setTimeout(async () => {
       setSearching(true);
-      const results: LiveResult[] = [];
-      const basePath = `/trustlock/${role}`;
       try {
-        // Search transactions — includes order_number
-        const { data: txs } = await supabase
-          .from("transactions")
-          .select("tx_id, item, amount, status, buyer_name, vendor_name, order_number, created_at")
-          .or(`tx_id.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%`)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        txs?.forEach((tx) => {
-          const txRoute = role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`;
-          results.push({
-            type: "transaction",
-            label: `${tx.tx_id}${tx.order_number ? ` (#${tx.order_number})` : ""} — ${tx.item || "Order"}`,
-            sub: `$${Number(tx.amount).toLocaleString()} · ${tx.status} · ${tx.buyer_name || ""} → ${tx.vendor_name || ""} · ${new Date(tx.created_at).toLocaleDateString()}`,
-            to: txRoute,
-          });
-        });
-
-        // Search disputes — includes order-linked tx_id and date
-        const { data: disputes } = await supabase
-          .from("disputes")
-          .select("dispute_id, reason, status, buyer_name, vendor_name, amount, tx_id, created_at, priority")
-          .or(`dispute_id.ilike.%${search}%,reason.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%,tx_id.ilike.%${search}%`)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        disputes?.forEach((d) => {
-          results.push({
-            type: "dispute",
-            label: `${d.dispute_id}${d.tx_id ? ` (TX: ${d.tx_id})` : ""} — ${d.reason || "Dispute"}`,
-            sub: `$${Number(d.amount || 0).toLocaleString()} · ${d.status} · ${d.priority || "medium"} · ${d.buyer_name || ""} vs ${d.vendor_name || ""} · ${new Date(d.created_at).toLocaleDateString()}`,
-            to: role === "admin" ? `${basePath}/disputes` : `${basePath}/disputes`,
-          });
-        });
-
-        // Search carbon copies / orders
-        const { data: orders } = await supabase
-          .from("order_carbon_copies")
-          .select("order_number, item, amount, status, buyer_name, vendor_name, created_at, confirmation_code")
-          .or(`order_number.ilike.%${search}%,item.ilike.%${search}%,buyer_name.ilike.%${search}%,vendor_name.ilike.%${search}%,confirmation_code.ilike.%${search}%`)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        orders?.forEach((o) => {
-          results.push({
-            type: "order",
-            label: `Order ${o.order_number || ""} — ${o.item || "Item"}`,
-            sub: `$${Number(o.amount || 0).toLocaleString()} · ${o.status} · ${o.buyer_name || ""} · ${new Date(o.created_at).toLocaleDateString()}`,
-            to: role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`,
-          });
-        });
-
-        // Search documents via edge function
-        if (search.length >= 3) {
-          try {
-            const docRes = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-sharing`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-                body: JSON.stringify({ action: "search_documents", query: search, user_role: role }),
-              }
-            );
-            const docData = await docRes.json();
-            if (docData.success && docData.data?.documents) {
-              docData.data.documents.slice(0, 5).forEach((d: any) => {
-                results.push({
-                  type: "document",
-                  label: `📄 ${d.file_name}`,
-                  sub: `${d.source} · ${d.milestone_title} · ${d.transaction_id ? `TX: ${d.transaction_id}` : ""} · ${d.buyer_name || d.vendor_name || ""} · ${d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString() : ""}`.replace(/· ·/g, "·"),
-                  to: `${basePath}/documents`,
-                });
-              });
-            }
-          } catch (_) { /* silent */ }
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trustlock-search`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ query: search, role }),
+          }
+        );
+        const data = await resp.json();
+        if (data.success) {
+          setResults(data.data);
         }
       } catch {
         // silent
       }
-      setLiveResults(results);
       setSearching(false);
-    }, 350);
+    }, 400);
     return () => clearTimeout(timer);
   }, [search, open, role]);
 
@@ -265,49 +167,47 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     }
   }, [role]);
 
-  const handleSelect = (to: string) => {
+  const handleSelect = useCallback((to: string) => {
     setOpen(false);
     setSearch("");
+    setResults(null);
     if (to) navigate(to);
-  };
+  }, [navigate]);
 
-  const typeIcon = (type: LiveResult["type"]) => {
-    switch (type) {
-      case "transaction": return ArrowLeftRight;
-      case "dispute": return AlertTriangle;
-      case "order": return Package;
-      case "document": return FileText;
-    }
-  };
+  const basePath = `/trustlock/${role}`;
 
-  // Show suggestions when user typed 1 char or empty
-  const showSuggestions = open && search.length < 2 && search.length >= 0;
-  const filteredSuggestions = search.length === 0
-    ? searchSuggestions
-    : searchSuggestions.filter((s) => s.text.toLowerCase().includes(search.toLowerCase()));
+  const hasResults = results && (
+    results.knowledge_answer ||
+    results.ai_answer ||
+    results.transactions.length > 0 ||
+    results.disputes.length > 0 ||
+    results.orders.length > 0
+  );
 
   return (
-    <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
+    <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSearch(""); setResults(null); } }}>
       <CommandInput
-        placeholder={placeholderHints[placeholderIdx]}
+        placeholder="Search TrustLock — orders, disputes, documents, or ask a question…"
         value={search}
         onValueChange={setSearch}
       />
-      <CommandList>
+      <CommandList className="max-h-[70vh]">
         <CommandEmpty>
           {searching ? (
-            <span className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" /> Searching database…
+            <span className="flex items-center justify-center gap-2 text-muted-foreground py-6">
+              <Loader2 className="w-4 h-4 animate-spin" /> Searching TrustLock…
             </span>
+          ) : search.length < 2 ? (
+            <span className="text-muted-foreground">Type at least 2 characters to search</span>
           ) : (
-            "No results found. Try a different term or browse pages below."
+            "No results found. Try a different term."
           )}
         </CommandEmpty>
 
-        {/* Suggestions when query is short */}
-        {showSuggestions && filteredSuggestions.length > 0 && search.length === 0 && (
-          <CommandGroup heading="💡 Try searching for…">
-            {filteredSuggestions.slice(0, 6).map((s) => (
+        {/* Suggestions when empty */}
+        {search.length < 2 && (
+          <CommandGroup heading="💡 Try asking…">
+            {searchSuggestions.map((s) => (
               <CommandItem
                 key={s.text}
                 value={s.text}
@@ -324,47 +224,151 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </CommandGroup>
         )}
 
-        {/* Live DB Results */}
-        {liveResults.length > 0 && (
-          <CommandGroup heading="Database Results">
-            {liveResults.map((r, i) => {
-              const Icon = typeIcon(r.type);
-              return (
-                <CommandItem
-                  key={`live-${i}`}
-                  value={`${r.label} ${r.sub}`}
-                  onSelect={() => handleSelect(r.to)}
-                  className="gap-3"
-                >
-                  <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">{r.label}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{r.sub}</p>
+        {/* AI / Knowledge Answer */}
+        {(results?.knowledge_answer || results?.ai_answer) && (
+          <div className="px-2 py-2">
+            <div className="flex items-center gap-2 px-2 mb-1.5">
+              <Brain className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary">TrustLock Answer</span>
+            </div>
+            <Card className="p-3 bg-primary/5 border-primary/20">
+              <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed">
+                <ReactMarkdown>{results.knowledge_answer || results.ai_answer || ""}</ReactMarkdown>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Transaction Previews */}
+        {results && results.transactions.length > 0 && (
+          <CommandGroup heading="📦 Transactions">
+            {results.transactions.map((tx: any) => (
+              <CommandItem
+                key={tx.id}
+                value={`tx ${tx.tx_id} ${tx.item} ${tx.buyer_name} ${tx.vendor_name}`}
+                onSelect={() => handleSelect(role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ArrowLeftRight className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{tx.tx_id}</span>
+                    {tx.order_number && <Badge variant="outline" className="text-[9px]">#{tx.order_number}</Badge>}
+                    <Badge variant={tx.status === "released" ? "default" : "secondary"} className="text-[9px] capitalize">{tx.status}</Badge>
                   </div>
-                  <Badge variant="secondary" className="text-[9px] shrink-0 capitalize">{r.type}</Badge>
-                </CommandItem>
-              );
-            })}
+                  <p className="text-[11px] text-muted-foreground truncate">{tx.item || "Order"}</p>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />${Number(tx.amount).toLocaleString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />{tx.buyer_name || "—"} → {tx.vendor_name || "—"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(tx.created_at).toLocaleDateString()}
+                    </span>
+                    {tx.industry && (
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-3 h-3" />{tx.industry}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </CommandItem>
+            ))}
           </CommandGroup>
         )}
 
-        <CommandGroup heading="Pages">
+        {/* Dispute Previews */}
+        {results && results.disputes.length > 0 && (
+          <CommandGroup heading="⚠️ Disputes">
+            {results.disputes.map((d: any) => (
+              <CommandItem
+                key={d.id}
+                value={`dispute ${d.dispute_id} ${d.reason} ${d.buyer_name} ${d.vendor_name}`}
+                onSelect={() => handleSelect(`${basePath}/disputes`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{d.dispute_id}</span>
+                    <Badge variant={d.priority === "high" ? "destructive" : "secondary"} className="text-[9px] capitalize">{d.priority || "medium"}</Badge>
+                    <Badge variant="outline" className="text-[9px] capitalize">{d.status}</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{d.reason || d.description || "Dispute"}</p>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />${Number(d.amount || 0).toLocaleString()}
+                    </span>
+                    <span>{d.buyer_name || "—"} vs {d.vendor_name || "—"}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(d.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {d.ai_recommendation && (
+                    <p className="text-[10px] text-primary italic truncate">AI: {d.ai_recommendation}</p>
+                  )}
+                </div>
+                <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* Order Previews */}
+        {results && results.orders.length > 0 && (
+          <CommandGroup heading="🛒 Orders">
+            {results.orders.map((o: any) => (
+              <CommandItem
+                key={o.id}
+                value={`order ${o.order_number} ${o.item} ${o.buyer_name} ${o.vendor_name}`}
+                onSelect={() => handleSelect(role === "buyer" ? `${basePath}/orders` : `${basePath}/transactions`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <Package className="w-4 h-4 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Order #{o.order_number || "—"}</span>
+                    <Badge variant="outline" className="text-[9px] capitalize">{o.status}</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{o.item || "Item"}</p>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />${Number(o.amount || 0).toLocaleString()}
+                    </span>
+                    <span>{o.buyer_name || "—"}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(o.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* Loading indicator when searching */}
+        {searching && search.length >= 2 && (
+          <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-xs">Searching TrustLock database & knowledge base…</span>
+          </div>
+        )}
+
+        {/* Pages — always show */}
+        <CommandGroup heading="📄 Pages">
           {roleItems.map((item) => (
             <CommandItem
               key={item.to}
-              value={`${item.label} ${item.keywords}`}
-              onSelect={() => handleSelect(item.to)}
-              className="gap-3"
-            >
-              <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span>{item.label}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Knowledge Base">
-          {knowledgeItems.map((item, i) => (
-            <CommandItem
-              key={i}
               value={`${item.label} ${item.keywords}`}
               onSelect={() => handleSelect(item.to)}
               className="gap-3"
