@@ -820,14 +820,14 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
           </DialogHeader>
           {showAckModal && transactionId && (
             <AcknowledgementForm
-              transactionId={transactionId}
-              milestoneId={showAckModal}
-              formType="milestone_signoff"
-              title={`Milestone Sign-off: ${milestones.find((m) => m.id === showAckModal)?.title ?? ""}`}
-              onComplete={() => {
+              txId={transactionId}
+              milestoneCount={1}
+              requireTypedSignature
+              onAccept={() => {
                 setShowAckModal(null);
                 toast.success("Acknowledgement signed — payment can now be released");
               }}
+              onDecline={() => setShowAckModal(null)}
             />
           )}
         </DialogContent>
