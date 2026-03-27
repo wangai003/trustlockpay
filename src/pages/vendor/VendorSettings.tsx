@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
+import { supabase } from "@/integrations/supabase/client";
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
