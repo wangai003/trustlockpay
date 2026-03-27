@@ -22,6 +22,8 @@ import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSup
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
+import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
