@@ -79,7 +79,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   const shownCriticalRef = useRef<Set<string>>(new Set());
 
   /* ── Fetch via edge function ──────────────────────────── */
-  const fetchTriaged = useCallback(async (userId: string) => {
+  const fetchTriaged = useCallback(async (userId: string, fallbackRole: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("notification-triage", {
@@ -90,10 +90,16 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
         for (const prio of ["critical", "high", "medium", "low", "other"]) {
           if (data.grouped?.[prio]) all.push(...data.grouped[prio]);
         }
-        setNotifications(all);
+        if (all.length > 0) {
+          setNotifications(all);
+          return;
+        }
       }
+      // Fall back to mock data if edge function returns empty or fails
+      setNotifications(mockNotifications[fallbackRole] || []);
     } catch (e) {
       console.error("notification-triage fetch error:", e);
+      setNotifications(mockNotifications[fallbackRole] || []);
     } finally {
       setLoading(false);
     }
