@@ -115,9 +115,36 @@ const PublicCheckout = () => {
     setStep("acknowledge");
   }, []);
 
-  const handleAcknowledgementAccept = useCallback(() => {
+  const handleAcknowledgementAccept = useCallback(async () => {
+    // Call auto-signature-protocol to check if vendor auto-signed
+    if (linkData) {
+      try {
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auto-signature-protocol`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              vendor_id: (linkData as any).vendor_id || null,
+              transaction_id: (linkData as any).transaction_id || linkData.link_id,
+              order_amount: linkData.grand_total,
+              industry: linkData.industry,
+              buyer_name: "Checkout Buyer",
+            }),
+          }
+        );
+        const result = await resp.json();
+        setAutoSignResult(result);
+      } catch {
+        // Fallback — proceed without auto-sign info
+        setAutoSignResult(null);
+      }
+    }
     setStep("contract");
-  }, []);
+  }, [linkData]);
 
   const handleContractSigned = useCallback(() => {
     setStep("pay");
