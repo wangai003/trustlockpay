@@ -18,6 +18,7 @@ import {
   RotateCcw, DollarSign, Receipt, Tag, Layers
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
@@ -315,15 +316,13 @@ const VendorSites = () => {
                         )}
                       </div>
 
-                      {/* Integration Script */}
+                      {/* Guided Installation */}
                       {isWidgetEnabled && (
-                        <div className="mt-3 bg-muted/30 rounded-lg p-3">
-                          <p className="text-xs font-semibold mb-2">Integration Script</p>
-                          <div className="bg-background rounded border border-border p-2 font-mono text-xs overflow-x-auto">
-                            {`<script src="https://cdn.trustlock.africa/widget.js" data-site-id="${site.id}" data-vendor-id="${vendor.name.toLowerCase().replace(/\s/g, '-')}"></script>`}
-                          </div>
-                          <Button variant="ghost" size="sm" className="mt-2 text-xs gap-1"><Copy className="w-3 h-3" /> Copy</Button>
-                        </div>
+                        <WidgetInstallGuide
+                          platform={site.platform || "Custom Website"}
+                          siteId={site.id}
+                          vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
+                        />
                       )}
                     </div>
                     <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
