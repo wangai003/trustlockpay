@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2 } from "lucide-react";
+import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2, Download } from "lucide-react";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
@@ -176,6 +177,21 @@ const PublicCheckout = () => {
                 <Link to="/trustlock/buyer/signup" className="text-primary underline">Sign up free</Link>
               </p>
             </div>
+
+            {/* Free downloadable documents */}
+            <TransactionDocuments
+              tx={{
+                txId: refId,
+                vendorName: vendorName,
+                buyerName: "You",
+                item: linkTitle,
+                amount: invoiceData?.grandTotal ?? linkData?.grand_total ?? 0,
+                date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                status: "locked",
+                industry: linkData?.industry,
+                invoiceItems: linkData?.invoice_items,
+              }}
+            />
 
             <Badge variant="outline" className="text-xs">
               Transaction ID: {refId}

@@ -7,6 +7,7 @@ import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin,
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -281,12 +282,28 @@ const BuyerOrders = () => {
                     </div>
                   </div>
                   {expandedOrder === order.id && (
-                    <div className="mt-3 border-t border-border pt-3 space-y-2">
+                    <div className="mt-3 border-t border-border pt-3 space-y-3">
                       <MilestoneTimeline industry={order.industry} status={order.status} />
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                         <MilestoneProgress industry={order.industry} status={order.status} />
                       </details>
+                      <div className="pt-2 border-t border-border">
+                        <TransactionDocuments
+                          tx={{
+                            txId: order.id,
+                            vendorName: order.vendor,
+                            buyerName: "You",
+                            item: order.item,
+                            amount: parseFloat(order.amount.replace(/[$,]/g, "")),
+                            date: order.date,
+                            status: order.status,
+                            tracking: order.tracking || undefined,
+                            industry: order.industry || undefined,
+                          }}
+                          compact
+                        />
+                      </div>
                     </div>
                   )}
                 </CardContent>

@@ -21,6 +21,7 @@ import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrd
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -317,6 +318,22 @@ const VendorTransactions = () => {
                                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                                 <MilestoneProgress industry={tx.industry} status={tx.status} />
                               </details>
+                              <div className="pt-2 border-t border-border mt-2">
+                                <TransactionDocuments
+                                  tx={{
+                                    txId: tx.id,
+                                    vendorName: "Your Business",
+                                    buyerName: tx.buyer,
+                                    item: tx.item,
+                                    amount: tx.amount,
+                                    date: tx.date,
+                                    status: tx.status,
+                                    tracking: tx.tracking || undefined,
+                                    industry: tx.industry || undefined,
+                                  }}
+                                  compact
+                                />
+                              </div>
                             </div>
                           </td>
                         </tr>
