@@ -67,7 +67,7 @@ const PublicCheckout = () => {
         vendor_name: data.vendor_name || "Vendor",
         title: data.title,
         invoice_items: (data.invoice_items as any[]) || [],
-        tax_items: (data.tax_items as TaxLineItem[]) || [],
+        tax_items: (data.tax_items as unknown as TaxLineItem[]) || [],
         note: data.note || "",
         subtotal: Number(data.subtotal),
         tax_total: Number(data.tax_total),
