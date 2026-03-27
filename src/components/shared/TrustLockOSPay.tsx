@@ -337,7 +337,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             )}
           </div>
 
-          {/* ─── PAYMENT METHODS (mode-specific) ─── */}
+          {/* ─── PAYMENT METHODS (vendor/buyer only) ─── */}
+          {!isAdmin && (
+          <>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pay With — {payMode === "local" ? "Local Africa" : "Diaspora / International"}
@@ -432,7 +434,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {/* Tax Breakdown */}
           {amount && parsedAmount > 0 && (
-            <TaxBreakdown subtotal={parsedAmount} taxItems={taxItems} onTaxItemsChange={setTaxItems} editable={role === "vendor" || role === "admin"} />
+            <TaxBreakdown subtotal={parsedAmount} taxItems={taxItems} onTaxItemsChange={setTaxItems} editable={role === "vendor"} />
+          )}
+          </>
           )}
 
           {/* Summary */}
