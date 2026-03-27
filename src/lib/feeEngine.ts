@@ -121,12 +121,14 @@ export interface FeeBreakdown {
   totalFees: number;
   netAmount: number;
   // Wallet routing
-  transactionWalletReceives: number;  // Goes to AZIX_WALLETS.transaction
-  escrowWalletReceives: number;       // Goes to AZIX_WALLETS.escrow
+  transactionWalletReceives: number;  // Platform fee + trickled escrow fee → AZIX_WALLETS.transaction
+  escrowWalletReceives: number;       // Net zero — escrow forwards fees to transaction wallet
   processorReceives: number;          // Goes to external processor
+  feeTrickleToTransactionWallet: number; // Escrow fee forwarded to transaction wallet
   // Metadata
   processorUsed: ProcessorId;
   feePercentage: number;       // Total fee as % of amount
+  trickleRule: "none" | "full_escrow_fee" | "vendor_share_only";
 }
 
 // ─── Fee Rules by Transaction Type ─────────────────────────
