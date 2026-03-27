@@ -76,6 +76,7 @@ describe("Fee Engine V2", () => {
       expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
       expect(result.feeTrickleToTransactionWallet).toBe(6);
       expect(result.trickleRule).toBe("vendor_share_only");
+    });
 
     it("handles zero amount without division errors", () => {
       const result = calculateFeesV2(0, "checkout_fiat", "stripe");
