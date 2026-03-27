@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
+import { supabase } from "@/integrations/supabase/client";
 
 const VendorHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, vendor } = useVendor();
