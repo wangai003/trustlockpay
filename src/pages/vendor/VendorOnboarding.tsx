@@ -117,7 +117,7 @@ const VendorOnboarding = () => {
   const canProceed = () => {
     if (step === 1) return vendorType !== null;
     if (step === 2) return vendorType === "product" || (selectedCategories.length > 0 && selectedSubTypes.length > 0);
-    if (step === 3) return businessName.trim() !== "" && businessLocation.trim() !== "";
+    if (step === 3) return businessName.trim() !== "" && businessLocation.trim() !== "" && primaryIndustry !== "";
     return true;
   };
 
