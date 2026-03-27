@@ -215,20 +215,18 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Label className="text-xs text-muted-foreground">TrustLock Service</Label>
             <select
               value={service}
-              onChange={e => setService(e.target.value)}
+              onChange={e => {
+                const selected = serviceList.find(s => s.label === e.target.value);
+                setService(e.target.value);
+                if (selected?.amount) setAmount(selected.amount);
+              }}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">Select a service...</option>
-              {SERVICE_CATEGORIES.map(s => (
-                <option key={s} value={s}>{s}</option>
+              {serviceList.map(s => (
+                <option key={s.label} value={s.label}>{s.label}</option>
               ))}
             </select>
-            <Input
-              placeholder="Or describe custom service..."
-              value={SERVICE_CATEGORIES.includes(service) ? "" : service}
-              onChange={e => setService(e.target.value)}
-              className="mt-1"
-            />
           </div>
 
           {/* Amount */}
