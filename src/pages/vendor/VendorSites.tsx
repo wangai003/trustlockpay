@@ -54,6 +54,7 @@ const VendorSites = () => {
   const [siteName, setSiteName] = useState("");
   const [sitePlatform, setSitePlatform] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
+  const [siteIndustry, setSiteIndustry] = useState("");
   const [widgetState, setWidgetState] = useState<WidgetFeeState>(getWidgetFeeState);
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
