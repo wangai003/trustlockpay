@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
@@ -7,11 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeftRight, DollarSign, Clock, TrendingUp, CheckCircle,
-  AlertTriangle, Eye, Lock, ArrowUpCircle, Shield
+  AlertTriangle, Eye, Lock, ArrowUpCircle, Shield, PenLine, Check, X
 } from "lucide-react";
 import { getVendorPlanState, PLANS, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions } from "@/hooks/useSupabaseData";
 import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
