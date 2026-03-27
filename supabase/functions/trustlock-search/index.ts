@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // 10. AI-powered answer if knowledge base didn't match well
+    // 11. AI-powered answer if knowledge base didn't match well
     let aiAnswer: string | null = null;
     if (!knowledgeAnswer && q.length >= 4) {
       try {
@@ -193,6 +193,7 @@ Deno.serve(async (req) => {
         archived_reports: reports || [],
         screening_logs: screeningLogs,
         protection_documents: protectionDocs || [],
+        contracts: contracts || [],
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
