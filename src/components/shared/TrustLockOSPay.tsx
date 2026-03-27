@@ -13,9 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
-
-const TRUSTLOCK_WALLET = "0x7A3b...F92d";
-const ESCROW_WALLET = "0x4E1c...A83b";
+import { AZIX_WALLETS } from "@/lib/feeEngine";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "thirdweb" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
@@ -34,7 +32,7 @@ const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string
   { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
   { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
   { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
 ];
 
 /* ── Diaspora payment methods ── */
@@ -44,7 +42,7 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC (1.5% fee)" },
   { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp (1.0% fee)" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto (1.5% fee)" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
 ];
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
@@ -245,14 +243,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
-              <p className="text-xs font-semibold">Custodian Wallet Link</p>
+              <p className="text-xs font-semibold">Transaction Fee Wallet Link</p>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Your payment routes through the Azix custodian escrow wallet. Link your seed token to authorize.
+              Platform service payments route to the Azix Transaction Fee Wallet. This is separate from the Escrow Wallet used for payouts.
             </p>
             <div className="flex gap-2">
               <Input
-                placeholder="Seed token (auto-generated)"
+                placeholder="Pay seed token (auto-generated)"
                 value={seedToken}
                 readOnly
                 className="font-mono text-xs bg-muted flex-1"
@@ -268,14 +266,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </Button>
             </div>
             {seedTokenLinked && (
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="text-[10px]">
                 <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Transaction Wallet</p>
-                  <p className="font-mono font-medium">{TRUSTLOCK_WALLET}</p>
-                </div>
-                <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Escrow Wallet</p>
-                  <p className="font-mono font-medium">{ESCROW_WALLET}</p>
+                  <p className="text-muted-foreground">Routing to → Azix Transaction Fee Wallet</p>
+                  <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
+                  <p className="text-muted-foreground mt-1">{AZIX_WALLETS.transaction.purpose}</p>
                 </div>
               </div>
             )}
@@ -404,14 +399,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           {method === "azix" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               <div>
-                <Label className="text-xs text-muted-foreground">TrustLock Escrow Wallet (auto-filled)</Label>
-                <Input value={ESCROW_WALLET} disabled className="mt-1 bg-muted font-mono text-xs" />
+                <Label className="text-xs text-muted-foreground">Azix Transaction Fee Wallet (auto-filled)</Label>
+                <Input value={AZIX_WALLETS.transaction.publicKey} disabled className="mt-1 bg-muted font-mono text-xs" />
               </div>
               <div>
                 <Label className="text-xs">Your Azix Wallet Address</Label>
                 <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
               </div>
-              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route directly to escrow</p>
+              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route to Transaction Fee Wallet</p>
             </div>
           )}
 
@@ -421,7 +416,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 {method === "coinbase" ? "Coinbase Commerce" : method === "thirdweb" ? "Thirdweb Pay" : "Transak"} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
-                Converts your fiat to USDC and routes to TrustLock escrow wallet.
+                Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
                 {method === "thirdweb" ? " 1.0% fee" : " 1.5% fee"}
               </p>
             </div>
@@ -482,7 +477,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon · Seed Token Verified</span>
+            <span>Secured by Azix Smart Contracts on Polygon · Transaction Fee Wallet · Seed Token Verified</span>
           </div>
         </CardContent>
       </Card>
