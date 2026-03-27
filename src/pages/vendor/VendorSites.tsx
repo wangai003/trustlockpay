@@ -86,6 +86,13 @@ const VendorSites = () => {
     localStorage.setItem("tl_site_widget_states", JSON.stringify(siteWidgetStates));
   }, [siteWidgetStates]);
 
+  // Auto-detect no-checkout platforms
+  useEffect(() => {
+    if (NO_CHECKOUT_PLATFORMS.includes(sitePlatform)) {
+      setHasCheckout(false);
+    }
+  }, [sitePlatform]);
+
   const handleAddSite = async () => {
     if (!siteName) return;
     if (!siteIndustry) {
@@ -93,7 +100,7 @@ const VendorSites = () => {
       return;
     }
     await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
-    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry("");
+    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry(""); setHasCheckout(true);
     setShowAdd(false);
   };
 
