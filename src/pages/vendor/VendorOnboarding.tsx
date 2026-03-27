@@ -92,7 +92,7 @@ const VendorOnboarding = () => {
   const [businessWebsite, setBusinessWebsite] = useState("");
   const [primaryIndustry, setPrimaryIndustry] = useState("");
   const [platformDescription, setPlatformDescription] = useState("");
-  const [defaultOrderType, setDefaultOrderType] = useState<"simple" | "milestone">("simple");
+  const [defaultOrderType, setDefaultOrderType] = useState<"simple" | "milestone" | "hybrid">("simple");
 
   const selectedIndustryInfo = industryOptions.find(i => i.value === primaryIndustry);
 
