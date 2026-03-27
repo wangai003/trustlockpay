@@ -15,7 +15,7 @@ import {
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
   Check, Copy, Info, Loader2,
-  Wallet,
+  Wallet, ArrowDown, Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
