@@ -302,7 +302,9 @@ const AdminDocuments = () => {
                 </div>
                 <div>
                   <CardTitle className="text-base">🗂️ TrustLock Protection Documents</CardTitle>
-                  <CardDescription className="text-xs">All document types required for legal protection — {protectionDocuments.length} document types</CardDescription>
+                  <CardDescription className="text-xs">
+                    Archived protection documents — {docsLoading ? "loading..." : `${(realDocs || []).length} records`}
+                  </CardDescription>
                 </div>
               </div>
               <Badge variant="secondary" className="text-[10px]">Testnet + Mainnet</Badge>
@@ -313,35 +315,69 @@ const AdminDocuments = () => {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search protection documents..."
+                placeholder="Search protection documents by title..."
                 value={protectionSearch}
-                onChange={(e) => setProtectionSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {filteredProtectionDocs.map((doc) => (
-                <div key={doc.title} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-xs font-bold">{doc.title}</h4>
-                      <Badge variant="outline" className="text-[9px]">{doc.type}</Badge>
-                      <Badge variant="secondary" className="text-[9px]">Retain: {doc.retention}</Badge>
+              {docsLoading && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-border">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-2 w-1/2" />
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{doc.desc}</p>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {!docsLoading && (realDocs || []).length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs">No protection documents found{protectionSearch ? ` matching "${protectionSearch}"` : ""}.</p>
+                  <p className="text-[10px] mt-1">Documents are auto-generated when transactions change status.</p>
+                </div>
+              )}
+              {!docsLoading && (realDocs || []).map((doc) => {
+                const retention = getRetentionCountdown(doc.created_at, doc.retention_years || 7);
+                const typeLabel = docTypeLabel[doc.document_type] || doc.document_type;
+                const isExpired = (doc.metadata as any)?.retention_expired === true;
+                return (
+                  <div key={doc.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${isExpired ? "border-destructive/30 bg-destructive/5" : "border-border hover:bg-muted/20"}`}>
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      {isExpired ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-bold">{doc.title}</h4>
+                        <Badge variant="outline" className="text-[9px]">{typeLabel}</Badge>
+                        <Badge className={`text-[9px] ${retention.color}`}>
+                          <Clock className="w-2.5 h-2.5 mr-0.5" />
+                          {retention.label}
+                        </Badge>
+                        {isExpired && <Badge variant="destructive" className="text-[9px]">Review Required</Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                        {doc.industry && <span className="text-[10px] text-muted-foreground">Industry: {doc.industry}</span>}
+                        {doc.signed_by_buyer && <span className="text-[10px] text-muted-foreground">Buyer: ✓</span>}
+                        {doc.signed_by_vendor && <span className="text-[10px] text-muted-foreground">Vendor: ✓</span>}
+                        <span className="text-[10px] text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <p className="text-[10px] text-muted-foreground italic">
-              Documents are auto-archived when generated per transaction. Search by title or type. All documents follow 7-year immutable retention for cross-border trade compliance.
+              Documents are auto-archived when generated per transaction. Search by title. All documents follow 7-year immutable retention for cross-border trade compliance.
             </p>
           </CardContent>
         </Card>
