@@ -44,8 +44,9 @@ describe("Fee Engine V2", () => {
       expect(result.gasFee).toBe(0.02);
       expect(result.totalFees).toBeCloseTo(4.92, 2);
       expect(result.netAmount).toBeCloseTo(95.08, 2);
-      expect(result.transactionWalletReceives).toBe(1.5);
-      expect(result.escrowWalletReceives).toBe(0.5);
+      expect(result.transactionWalletReceives).toBe(2); // 1.5 platform + 0.5 trickled escrow
+      expect(result.escrowWalletReceives).toBe(0); // Escrow forwards all fees
+      expect(result.feeTrickleToTransactionWallet).toBe(0.5);
     });
 
     it("calculates checkout_crypto with direct (no processor fee)", () => {
