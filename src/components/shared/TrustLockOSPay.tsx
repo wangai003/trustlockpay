@@ -32,17 +32,17 @@ const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string
   { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
   { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
   { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC · 1.0% platform fee · no processor fee" },
 ];
 
 /* ── Diaspora payment methods ── */
 const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-  { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard (international)" },
-  { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay" },
-  { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC (1.5% fee)" },
-  { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp (1.0% fee)" },
-  { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto (1.5% fee)" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
+  { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
+  { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
+  { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
+  { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp · 1.5% platform + 1.0% processor" },
+  { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC · 1.0% platform fee · no processor fee" },
 ];
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
@@ -406,7 +406,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <Label className="text-xs">Your Azix Wallet Address</Label>
                 <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
               </div>
-              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route to Transaction Fee Wallet</p>
+              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet</p>
             </div>
           )}
 
@@ -417,7 +417,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
-                {method === "thirdweb" ? " 1.0% fee" : " 1.5% fee"}
+                {method === "thirdweb" ? " 1.5% platform + 1.0% processor fee" : " 1.5% platform + 1.5% processor fee"}
               </p>
             </div>
           )}
@@ -443,7 +443,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">TrustLock Fee ({(feeRate * 100).toFixed(1)}%)</span>
+                <span className="text-muted-foreground">Platform Fee ({(feeRate * 100).toFixed(1)}%)</span>
                 <span className="font-medium">${fee}</span>
               </div>
               <div className="flex justify-between border-t border-border pt-1 mt-1">
@@ -477,7 +477,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon · Transaction Fee Wallet · Seed Token Verified</span>
+            <span>Secured by Azix Smart Contracts on Polygon · Platform Fee → Transaction Wallet · Seed Token Verified</span>
           </div>
         </CardContent>
       </Card>

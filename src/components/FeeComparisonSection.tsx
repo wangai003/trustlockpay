@@ -1,15 +1,19 @@
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Info } from "lucide-react";
+import { useState } from "react";
+import { ALL_IN_RANGES, FEE_CATEGORIES } from "@/lib/feeEngine";
 
 const methods = [
   { name: "Bank Wire", cost: "5% – 10%", highlight: false },
   { name: "Remittance Services", cost: "6% – 9%", highlight: false },
   { name: "Online Payment Platforms", cost: "3% – 7%", highlight: false },
   { name: "Legal Escrow Services", cost: "5% – 12%", highlight: false },
-  { name: "Azix Escrow", cost: "1% – 2.5%", highlight: true },
+  { name: "Azix Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range.split(" – ")[0]} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
 ];
 
 const FeeComparisonSection = () => {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
   return (
     <section id="pricing" className="py-20 lg:py-28 bg-background">
       <div className="container mx-auto px-4 lg:px-8">
@@ -36,7 +40,7 @@ const FeeComparisonSection = () => {
           <div className="rounded-xl border border-border overflow-hidden">
             <div className="grid grid-cols-2 px-6 py-3 bg-muted">
               <span className="text-sm font-semibold text-foreground">Payment Method</span>
-              <span className="text-sm font-semibold text-foreground text-right">Typical Cost</span>
+              <span className="text-sm font-semibold text-foreground text-right">All-in Cost</span>
             </div>
             {methods.map((m) => (
               <div
@@ -55,6 +59,57 @@ const FeeComparisonSection = () => {
               </div>
             ))}
           </div>
+
+          {/* Fee breakdown toggle */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setShowBreakdown(!showBreakdown)}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+              {showBreakdown ? "Hide fee breakdown" : "See how our fees break down"}
+            </button>
+          </div>
+
+          {showBreakdown && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mt-3 rounded-lg border border-border bg-muted/30 p-4 space-y-3 text-xs"
+            >
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.platform.label}</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.platform.range}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.processor.label}</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.processor.range}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.escrow.label} (at deposit)</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.escrow.atCheckout.display}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.escrow.label} (at release)</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.escrow.atRelease.display}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.gas.label}</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.gas.estimate}</span>
+              </div>
+              <div className="border-t border-border pt-2 space-y-1">
+                <p className="text-muted-foreground">
+                  <strong className="text-foreground">Crypto Direct:</strong> {ALL_IN_RANGES.cryptoDirect.range} (no processor fee)
+                </p>
+                <p className="text-muted-foreground">
+                  <strong className="text-foreground">Fiat Payment:</strong> {ALL_IN_RANGES.fiat.range} (includes processor)
+                </p>
+                <p className="text-muted-foreground">
+                  <strong className="text-foreground">Refunds:</strong> {ALL_IN_RANGES.refund.range} — escrow fees waived
+                </p>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </section>

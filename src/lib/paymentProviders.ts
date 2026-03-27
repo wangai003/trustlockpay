@@ -26,7 +26,7 @@ export interface PaymentProvider {
 }
 
 // Re-export the V2 engine for new code
-export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE } from "./feeEngine";
+export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE, FEE_CATEGORIES, ALL_IN_RANGES, FEE_DISCLOSURE_SHORT, FEE_DISCLOSURE_FULL } from "./feeEngine";
 export type { FeeBreakdown, TransactionType } from "./feeEngine";
 
 // Legacy calculateFees — keeps the old signature for existing consumers
@@ -49,9 +49,9 @@ export function calculateFees(amount: number, type: string): { trustlock: number
   return { trustlock, processor, escrow, gas, total, net: amount - total };
 }
 
-// Legacy getFeeRange for backward compat
+// Legacy getFeeRange — now uses canonical constants
 export function getFeeRange(): string {
-  return "2% – 4%";
+  return "2.5% – 5.9%";
 }
 
 // ─── DIASPORA PROVIDERS ────────────────────────────────────
@@ -382,4 +382,4 @@ export const SUPPORTED_COUNTRIES = [
 
 export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Yellow Card, Transak, Thirdweb) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
 
-export const FEE_DISCLOSURE = `TrustLock Pay fees range from 1% to 5% depending on payment method and processor. Crypto-to-crypto transfers (1.5%) are lowest as they bypass fiat conversion. Fiat payments (3–5%) include processor conversion fees from Stripe, Coinbase, Yellow Card, Transak, or Thirdweb depending on region. Thirdweb on/off-ramp fees are typically 1%. Escrow service fees (0.5–1%) are collected by a separate Azix escrow wallet upon fund release to vendors — no escrow fees on refunds. Split payout escrow fees apply only to the vendor's fractional share. All fees are transparently displayed before you confirm any transaction.`;
+export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.0%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (0.5% at deposit, 1.0% at release) for smart contract custody — fully waived on refunds. Gas fees (~$0.02–$0.05) cover Polygon L2 network costs. All-in: 1.5%–2.5% crypto direct, 3.0%–5.9% fiat. All fees displayed before confirmation.`;

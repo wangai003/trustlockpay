@@ -4,7 +4,8 @@ import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, Lock, I
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ProviderSearch from "@/components/shared/ProviderSearch";
-import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, FEE_DISCLOSURE, getFeeRange } from "@/lib/paymentProviders";
+import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, getFeeRange } from "@/lib/paymentProviders";
+import { FEE_DISCLOSURE_SHORT } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
@@ -192,7 +193,7 @@ const TrustLockDualCheckout = () => {
                 )}
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground flex items-center gap-1">
-                    TrustLock Pay Fee ({getFeeRange()})
+                    TrustLock Pay Fee ({isCrypto ? "1.5% – 2.5%" : getFeeRange()})
                     <button onClick={() => setShowFees(!showFees)}>
                       <Info className="w-3 h-3" />
                     </button>
@@ -208,7 +209,7 @@ const TrustLockDualCheckout = () => {
                   </span>
                 </div>
                 {showFees && (
-                  <p className="text-[9px] text-muted-foreground mt-1 leading-relaxed border-t border-border pt-1">{FEE_DISCLOSURE}</p>
+                  <p className="text-[9px] text-muted-foreground mt-1 leading-relaxed border-t border-border pt-1">{FEE_DISCLOSURE_SHORT}</p>
                 )}
               </div>
 

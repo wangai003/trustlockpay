@@ -273,27 +273,106 @@ export function calculateFeesV2(
 export function getFeeRangeForType(type: TransactionType): string {
   switch (type) {
     case "checkout_crypto":
-    case "refund_crypto":
-      return "1.5% – 2%";
+      return "1.5% – 2.5% (platform + escrow deposit)";
     case "checkout_fiat":
+      return "3.0% – 5.4% (platform + processor + escrow deposit)";
+    case "refund_crypto":
+      return "Gas only (~$0.05) — all fees waived";
     case "refund_fiat":
-      return "3% – 5%";
+      return "Gas only (~$0.02) — all fees waived";
     case "release_to_vendor":
-      return "1% – 1.5%";
+      return "1.0% escrow service fee";
     case "split_payout":
-      return "1% – 2% (vendor side only)";
+      return "1.0% escrow fee (vendor side only)";
     case "os_payment":
-      return "1.5%";
+      return "1.0% – 1.5% platform fee (no escrow)";
     default:
-      return "2% – 4%";
+      return "2.5% – 5.9%";
   }
 }
 
-// ─── Fee disclosure text with dual wallet explanation ──────
+// ─── Canonical Fee Display Constants ───────────────────────
+// Single source of truth for ALL fee labels, ranges, and disclosures
+// across landing pages, checkout widgets, OS Pay, documents, and PDFs.
+
+export const FEE_CATEGORIES = {
+  platform: {
+    label: "TrustLock Platform Fee",
+    shortLabel: "Platform Fee",
+    crypto: { rate: 1.0, display: "1.0%" },
+    fiat: { rate: 1.5, display: "1.5%" },
+    range: "1.0% – 1.5%",
+    wallet: "transaction" as WalletType,
+    description: "Covers payment processing, currency conversion coordination, and network infrastructure.",
+    when: "Charged at checkout on every transaction.",
+  },
+  processor: {
+    label: "Payment Processor Fee",
+    shortLabel: "Processor Fee",
+    rates: {
+      thirdweb: { rate: 1.0, display: "1.0%" },
+      coinbase: { rate: 1.5, display: "1.5%" },
+      transak: { rate: 1.5, display: "1.5%" },
+      yellow_card: { rate: 2.0, display: "2.0%" },
+      stripe: { rate: 2.9, display: "2.9%" },
+      direct: { rate: 0, display: "0%" },
+    },
+    range: "1.0% – 2.9%",
+    rangeWithDirect: "0% – 2.9%",
+    wallet: "external" as const,
+    description: "Paid to the payment processor (Stripe, Coinbase, Yellow Card, Transak, or Thirdweb) for fiat-to-crypto conversion.",
+    when: "Charged at checkout. Direct crypto-to-crypto transfers bypass this fee entirely.",
+  },
+  escrow: {
+    label: "Escrow Service Fee",
+    shortLabel: "Escrow Fee",
+    atCheckout: { rate: 0.5, display: "0.5%" },
+    atRelease: { rate: 1.0, display: "1.0%" },
+    range: "0.5% – 1.0%",
+    totalLifecycle: "1.5%",
+    wallet: "escrow" as WalletType,
+    description: "Covers smart contract escrow custody, milestone tracking, and secure fund release.",
+    when: "0.5% charged at checkout deposit. 1.0% charged upon fund release to vendor. Fully waived on refunds.",
+  },
+  gas: {
+    label: "Network Gas Fee",
+    shortLabel: "Gas",
+    estimate: "$0.02 – $0.05",
+    description: "Polygon L2 blockchain transaction cost. Minimal and fixed.",
+    when: "Charged per on-chain transaction.",
+  },
+} as const;
+
+// ─── All-in fee ranges (checkout + release combined) ───────
+export const ALL_IN_RANGES = {
+  cryptoDirect: { range: "1.5% – 2.5%", label: "Crypto-to-Crypto (Direct)" },
+  cryptoViaProcessor: { range: "2.5% – 4.0%", label: "Crypto via Processor" },
+  fiat: { range: "3.0% – 5.9%", label: "Fiat-to-Crypto" },
+  refund: { range: "Gas only (~$0.02–$0.05)", label: "Refund" },
+  osPayment: { range: "1.0% – 1.5%", label: "OS Platform Payment (no escrow)" },
+} as const;
+
+// ─── Formatted disclosure text ────────────────────────────
 export const DUAL_WALLET_DISCLOSURE = `TrustLock uses two separate custodian wallets for maximum transparency:
 
-• **Transaction Wallet** (${AZIX_WALLETS.transaction.publicKey}): Collects platform processing fees at checkout. These fees cover payment processing, crypto conversion, and network costs.
+• **Transaction Wallet** (${AZIX_WALLETS.transaction.publicKey}): Collects platform fees (${FEE_CATEGORIES.platform.range}) at checkout, plus all OS service payments (plan upgrades, AI packs). These are unconditional fees that are never refunded.
 
-• **Escrow Wallet** (${AZIX_WALLETS.escrow.publicKey}): Collects escrow service fees ONLY when funds are released to vendors. No escrow fees are charged on refunds. For split payouts after dispute resolution, escrow fees apply only to the vendor's share.
+• **Escrow Wallet** (${AZIX_WALLETS.escrow.publicKey}): Collects escrow service fees ONLY when funds are released to vendors (${FEE_CATEGORIES.escrow.atRelease.display} at release, ${FEE_CATEGORIES.escrow.atCheckout.display} at deposit). No escrow fees on refunds. Split payout escrow fees apply only to the vendor's share.
 
-Fee ranges: Crypto-to-crypto (1.5–2%), Fiat-to-crypto (3–5%), Escrow release (1–1.5%), Refunds (gas fees only, ~$0.02–$0.05).`;
+Processor fees (${FEE_CATEGORIES.processor.range}) are paid directly to the external payment processor and vary by provider.
+
+All-in fee ranges: Crypto direct (${ALL_IN_RANGES.cryptoDirect.range}), Fiat (${ALL_IN_RANGES.fiat.range}), Refunds (${ALL_IN_RANGES.refund.range}).`;
+
+export const FEE_DISCLOSURE_SHORT = `Platform fee: ${FEE_CATEGORIES.platform.range} · Processor fee: ${FEE_CATEGORIES.processor.range} · Escrow fee: ${FEE_CATEGORIES.escrow.range} · Gas: ${FEE_CATEGORIES.gas.estimate}. All-in: ${ALL_IN_RANGES.cryptoDirect.range} (crypto) to ${ALL_IN_RANGES.fiat.range} (fiat). No escrow fees on refunds.`;
+
+export const FEE_DISCLOSURE_FULL = `TrustLock Pay fees consist of three components:
+
+1. **Platform Fee** (${FEE_CATEGORIES.platform.range}): ${FEE_CATEGORIES.platform.description} ${FEE_CATEGORIES.platform.when}
+
+2. **Processor Fee** (${FEE_CATEGORIES.processor.range}): ${FEE_CATEGORIES.processor.description} ${FEE_CATEGORIES.processor.when}
+
+3. **Escrow Service Fee** (${FEE_CATEGORIES.escrow.range}): ${FEE_CATEGORIES.escrow.description} ${FEE_CATEGORIES.escrow.when}
+
+4. **Gas Fee** (${FEE_CATEGORIES.gas.estimate}): ${FEE_CATEGORIES.gas.description}
+
+All fees are transparently displayed before you confirm any transaction.`;

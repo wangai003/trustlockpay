@@ -132,7 +132,7 @@ describe("Fee Engine V2", () => {
       for (const t of types) {
         const range = getFeeRangeForType(t);
         expect(range).toBeTruthy();
-        expect(range.includes("%")).toBe(true);
+        expect(range.includes("%") || range.includes("$")).toBe(true);
       }
     });
   });
