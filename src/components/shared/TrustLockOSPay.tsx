@@ -212,7 +212,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           </div>
           )}
 
-          {/* ─── SERVICE CATEGORY ─── */}
+          {/* ─── SERVICE CATEGORY (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">TrustLock Service</Label>
             <select
@@ -230,6 +231,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               ))}
             </select>
           </div>
+          )}
 
           {/* Amount */}
           <div>
