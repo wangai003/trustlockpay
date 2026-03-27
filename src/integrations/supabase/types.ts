@@ -1212,6 +1212,8 @@ export type Database = {
           id: string
           industry: string | null
           item: string | null
+          milestone_proposed_by: string | null
+          milestone_status: string | null
           order_number: number | null
           released_date: string | null
           shipped_date: string | null
@@ -1237,6 +1239,8 @@ export type Database = {
           id?: string
           industry?: string | null
           item?: string | null
+          milestone_proposed_by?: string | null
+          milestone_status?: string | null
           order_number?: number | null
           released_date?: string | null
           shipped_date?: string | null
@@ -1262,6 +1266,8 @@ export type Database = {
           id?: string
           industry?: string | null
           item?: string | null
+          milestone_proposed_by?: string | null
+          milestone_status?: string | null
           order_number?: number | null
           released_date?: string | null
           shipped_date?: string | null
