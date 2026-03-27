@@ -47,14 +47,31 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
 ];
 
-/* ── TrustLock OS Service categories ── */
-const SERVICE_CATEGORIES = [
-  "Plan Upgrade (Starter / Growth / Pro / Enterprise)",
-  "Data Analytics Print-out",
-  "AI Query Pack (50 / 200 / 500)",
-  "Widget Restoration Fee",
-  "Custom Report Generation",
-  "Compliance Certification",
+/* ── Role-specific monetizable services (hardcoded from business model) ── */
+const VENDOR_SERVICES = [
+  { label: "Plan Upgrade (Starter / Growth / Pro / Enterprise)", amount: "" },
+  { label: "AI Query Pack (50 queries — $2.50)", amount: "2.50" },
+  { label: "AI Query Pack (200 queries — $10.00)", amount: "10.00" },
+  { label: "AI Query Pack (500 queries — $25.00)", amount: "25.00" },
+  { label: "Widget Restoration Fee", amount: "10.00" },
+  { label: "Data Analytics Print-out", amount: "1.00" },
+  { label: "Custom Report Generation", amount: "5.00" },
+  { label: "Compliance Certification", amount: "15.00" },
+];
+
+const BUYER_SERVICES = [
+  { label: "Analytics Report Download ($0.50/report)", amount: "0.50" },
+  { label: "AI Query Pack (50 queries — $2.50)", amount: "2.50" },
+  { label: "AI Query Pack (200 queries — $10.00)", amount: "10.00" },
+  { label: "AI Query Pack (500 queries — $25.00)", amount: "25.00" },
+  { label: "Acknowledgement Form Download", amount: "0.50" },
+  { label: "Custom Report Generation", amount: "5.00" },
+];
+
+const ADMIN_SERVICES = [
+  { label: "Platform Analytics Export", amount: "" },
+  { label: "Compliance Audit Report", amount: "" },
+  { label: "Custom Report Generation", amount: "" },
 ];
 
 const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
