@@ -483,6 +483,8 @@ Deno.serve(async (req) => {
                 escrowWallet: AZIX_ESCROW_WALLET,
                 transactionWalletReceives: fees.transactionWalletReceives,
                 escrowWalletReceives: fees.escrowWalletReceives,
+                feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
+                trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
               },
             },
           })
