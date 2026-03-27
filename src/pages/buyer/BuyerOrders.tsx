@@ -7,6 +7,7 @@ import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin,
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
