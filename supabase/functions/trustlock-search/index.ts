@@ -192,6 +192,7 @@ Deno.serve(async (req) => {
         acknowledgement_forms: ackForms || [],
         archived_reports: reports || [],
         screening_logs: screeningLogs,
+        protection_documents: protectionDocs || [],
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
