@@ -18,6 +18,7 @@ import {
   RotateCcw, DollarSign, Receipt, Tag, Layers
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
