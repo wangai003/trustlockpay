@@ -282,19 +282,40 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
-      {/* Seed Token Display */}
+      {/* Seed Token + Custodian Wallet Link */}
       <Card className="rounded-t-none -mt-4 border-t-0">
-        <CardContent className="p-4 space-y-1">
-          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your Secure Seed Token</Label>
+        <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Input
-              value={seedToken}
-              disabled
-              className="font-mono text-xs bg-muted flex-1"
-            />
-            <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Wallet className="w-4 h-4 text-primary" />
+            <p className="text-xs font-semibold">Custodian Escrow Wallet Link</p>
           </div>
-          <p className="text-[10px] text-muted-foreground">This token links securely to the Azix escrow wallet. It cannot be edited.</p>
+          <p className="text-[10px] text-muted-foreground">
+            Your payout routes through the Azix custodian escrow wallet. Funds are released via your seed token to your selected payment method.
+          </p>
+          <div>
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your Secure Seed Token</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input
+                value={seedToken}
+                disabled
+                className="font-mono text-xs bg-muted flex-1"
+              />
+              <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-[10px]">
+            <div className="p-2 rounded bg-muted">
+              <p className="text-muted-foreground">Transaction Wallet</p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.transaction}</p>
+            </div>
+            <div className="p-2 rounded bg-muted">
+              <p className="text-muted-foreground">Escrow Wallet</p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.escrow}</p>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Platform fees → Transaction Wallet · Escrow service fees → Escrow Wallet
+          </p>
         </CardContent>
       </Card>
 
