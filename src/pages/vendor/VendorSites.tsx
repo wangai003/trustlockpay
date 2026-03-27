@@ -25,6 +25,13 @@ const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
   "BigCommerce", "Magento", "PrestaShop", "OpenCart", "Jumia Seller",
   "Konga Seller", "Flutterwave Store", "Paystack Storefront", "Custom Website",
+  "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
+];
+
+// Platforms that inherently don't have checkout pages
+const NO_CHECKOUT_PLATFORMS = [
+  "Jumia Seller", "Konga Seller", "Paystack Storefront",
+  "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
 ];
 
 const TRUSTLOCK_INDUSTRIES = [
