@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Keyboard } from "lucide-react";
+import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Keyboard, Link } from "lucide-react";
 import { toast } from "sonner";
 
 interface WidgetInstallGuideProps {
@@ -14,7 +14,7 @@ const SCRIPT_TAG = (siteId: string, vendorSlug: string) =>
   `<script src="https://cdn.trustlock.africa/widget.js" data-site-id="${siteId}" data-vendor-id="${vendorSlug}"></script>`;
 
 type PlatformGuide = {
-  steps: { title: string; detail: string; shortcut?: string }[];
+  steps: { title: string; detail: string; shortcut?: string; link?: { url: string; label: string } }[];
   tip?: string;
 };
 
@@ -32,7 +32,7 @@ const PLATFORM_GUIDES: Record<string, PlatformGuide> = {
   },
   WooCommerce: {
     steps: [
-      { title: "Log in to your WordPress admin", detail: "Go to your-site.com/wp-admin and log in" },
+      { title: "Log in to your WordPress admin", detail: "Go to your-site.com/wp-admin and log in", link: { url: "https://wordpress.org/support/article/first-steps-with-wordpress/", label: "WordPress Admin Guide" } },
       { title: "Go to Appearance > Theme Editor", detail: "In the left sidebar, hover over Appearance and click Theme File Editor" },
       { title: "Select footer.php", detail: "On the right side, find and click on footer.php in the file list", shortcut: "Ctrl+F to search for footer.php" },
       { title: "Paste the widget code", detail: "Find the closing body tag at the bottom. Paste the TrustLock code on the line ABOVE it", shortcut: "Ctrl+End then Ctrl+V to paste" },
@@ -42,8 +42,8 @@ const PLATFORM_GUIDES: Record<string, PlatformGuide> = {
   },
   WordPress: {
     steps: [
-      { title: "Log in to WordPress admin", detail: "Go to your-site.com/wp-admin" },
-      { title: "Install WPCode plugin", detail: "Go to Plugins > Add New, search for WPCode, install and activate it" },
+      { title: "Log in to WordPress admin", detail: "Go to your-site.com/wp-admin", link: { url: "https://wordpress.org/support/article/first-steps-with-wordpress/", label: "WordPress Login Help" } },
+      { title: "Install WPCode plugin", detail: "Go to Plugins > Add New, search for WPCode, install and activate it", link: { url: "https://wordpress.org/plugins/insert-headers-and-footers/", label: "Get WPCode Plugin" } },
       { title: "Go to Code Snippets > Header and Footer", detail: "In the left sidebar, click Code Snippets then Header and Footer" },
       { title: "Paste in the Footer section", detail: "Paste the TrustLock widget code in the Footer text box", shortcut: "Ctrl+V to paste" },
       { title: "Click Save Changes", detail: "Scroll down and click Save Changes. Done!" },
@@ -162,6 +162,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{step.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
+              {step.link && (
+                <a href={step.link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline mt-1">
+                  <Link className="w-3 h-3" />
+                  {step.link.label}
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
               {step.shortcut && (
                 <div className="flex items-center gap-1.5 mt-1">
                   <Keyboard className="w-3 h-3 text-primary/60" />
