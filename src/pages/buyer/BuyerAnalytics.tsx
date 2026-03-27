@@ -41,6 +41,7 @@ const archivedReports = [
 
 const BuyerAnalytics = () => {
   const { buyer } = useBuyer();
+  const navigate = useNavigate();
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState("2026-03-22");
   const [archiveSearch, setArchiveSearch] = useState("");
@@ -48,8 +49,7 @@ const BuyerAnalytics = () => {
   const [pendingReport, setPendingReport] = useState<string | null>(null);
 
   const handleDownloadClick = (name: string) => {
-    setPendingReport(name);
-    setPayDialogOpen(true);
+    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Analytics Report Download ($0.50/report)`)}&amount=0.50`);
   };
 
   const handlePaymentComplete = () => {
