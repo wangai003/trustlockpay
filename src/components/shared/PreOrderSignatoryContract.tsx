@@ -217,12 +217,26 @@ const PreOrderSignatoryContract = ({
                 </p>
               )}
             </div>
-          </div>
-        </ScrollArea>
 
-        <Separator />
-
-        {/* ── Dual Signature Block ───────── */}
+            {/* Milestone Negotiation Notice for milestone-based industries */}
+            {isMilestoneIndustry(industry) && (
+              <div className="p-3 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
+                <h4 className="text-xs font-semibold flex items-center gap-1.5 mb-1">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Milestone-Based Project Notice
+                </h4>
+                <p className="text-[10px] text-muted-foreground leading-relaxed mb-1.5">
+                  This transaction falls under a <strong>milestone-based industry ({clauseSet.label})</strong>.
+                  After payment is locked in escrow, both parties must agree on the milestone breakdown
+                  (stages, payment percentages, and deliverables) before work can begin.
+                </p>
+                <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc pl-4">
+                  <li>Either party (buyer or vendor) may draft the milestone proposal first.</li>
+                  <li>The counterparty must review and approve via the Milestone Agreement panel in the dashboard.</li>
+                  <li>Funds remain locked until both parties agree. No deadline — negotiate at your own pace.</li>
+                  <li>Once agreed, milestone modifications require mutual consent via the change request protocol.</li>
+                </ul>
+              </div>
+            )}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold flex items-center gap-1.5">
             <PenLine className="h-4 w-4 text-primary" /> Binding Signatures
