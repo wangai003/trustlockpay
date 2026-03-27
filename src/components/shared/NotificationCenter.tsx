@@ -130,7 +130,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
       setIsMainnet(true);
       const userId = session.user.id;
       userIdRef.current = userId;
-      await fetchTriaged(userId);
+      await fetchTriaged(userId, role);
 
       // Realtime subscription — admin sees all, others see own
       const channelConfig: any = {
