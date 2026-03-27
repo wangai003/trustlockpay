@@ -340,11 +340,16 @@ const VendorSites = () => {
 
                       {/* Guided Installation */}
                       {isWidgetEnabled && (
-                        <WidgetInstallGuide
-                          platform={site.platform || "Custom Website"}
-                          siteId={site.id}
-                          vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
-                        />
+                        <>
+                          <WidgetInstallGuide
+                            platform={site.platform || "Custom Website"}
+                            siteId={site.id}
+                            vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
+                          />
+                          <div className="mt-4">
+                            <WidgetPreviewMockup />
+                          </div>
+                        </>
                       )}
                     </div>
                     <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
