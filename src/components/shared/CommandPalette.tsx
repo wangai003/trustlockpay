@@ -13,7 +13,7 @@ import {
   ShieldCheck, FileText, BarChart3, Bot, Settings, Wallet, GitBranch,
   Banknote, Package, HelpCircle, CreditCard, Globe, DollarSign, Receipt, Link2,
   BookOpen, Search, Loader2, Sparkles, Brain, Eye, Calendar, MapPin, Tag, TrendingUp,
-  Download, ShieldX, Shield, Landmark, ClipboardCheck, Clock
+  Download, ShieldX, Shield, Landmark, ClipboardCheck, Clock, Handshake
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
