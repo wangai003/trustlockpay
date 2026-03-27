@@ -127,9 +127,20 @@ const BuyerSettings = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-amber-600 hover:bg-amber-700" onClick={() => {
-              toast.success("Account paused. Log back in to reactivate.");
-              setShowPauseDialog(false);
+            <AlertDialogAction className="bg-amber-600 hover:bg-amber-700" onClick={async () => {
+              try {
+                const { error } = await supabase.functions.invoke("manage-account-lifecycle", {
+                  body: { action: "pause", user_id: buyer.id },
+                });
+                if (error) throw error;
+                toast.success("Account paused. Log back in to reactivate.");
+                setShowPauseDialog(false);
+                await supabase.auth.signOut();
+                localStorage.clear();
+                navigate("/trustlock/buyer/login");
+              } catch (err: any) {
+                toast.error(err.message || "Failed to pause account");
+              }
             }}>Pause Account</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
