@@ -7,7 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Store, Wrench, ArrowRight, ArrowLeft, CheckCircle, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Store, Wrench, ArrowRight, ArrowLeft, CheckCircle, Upload, Globe, Info } from "lucide-react";
+
+const industryOptions = [
+  { value: "ecommerce", label: "E-Commerce / Retail", milestone: false },
+  { value: "construction", label: "Construction", milestone: true },
+  { value: "real_estate", label: "Real Estate", milestone: true },
+  { value: "mining", label: "Mining & Extraction", milestone: true },
+  { value: "agriculture", label: "Agriculture & Export", milestone: true },
+  { value: "freelance", label: "Freelance / Professional Services", milestone: true },
+  { value: "logistics", label: "Logistics & Shipping", milestone: true },
+  { value: "tourism", label: "Tourism & Hospitality", milestone: false },
+  { value: "education", label: "Education & Training", milestone: true },
+  { value: "project_management", label: "Project Management", milestone: true },
+  { value: "automotive", label: "Automotive", milestone: false },
+  { value: "other", label: "Other", milestone: false },
+];
 
 const serviceCategories = [
   {
