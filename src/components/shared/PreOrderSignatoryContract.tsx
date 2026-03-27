@@ -32,6 +32,18 @@ interface PreOrderSignatoryContractProps {
   role?: "buyer" | "vendor"; // who is currently viewing/signing
 }
 
+// Industries with 3+ milestone stages that require negotiation
+const MILESTONE_INDUSTRIES = [
+  "construction", "real-estate", "agriculture", "mining",
+  "projectmanagement", "freelance", "logistics", "education",
+];
+
+const isMilestoneIndustry = (industry?: string) => {
+  if (!industry) return false;
+  const key = industry.toLowerCase().replace(/[^a-z-]/g, "");
+  return MILESTONE_INDUSTRIES.some(m => key.includes(m.replace("-", "")));
+};
+
 const CONTRACT_TERMS = [
   {
     id: "escrow-commitment",
