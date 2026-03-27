@@ -347,4 +347,4 @@ const PreOrderSignatoryContract = ({
 };
 
 export default PreOrderSignatoryContract;
-export { CONTRACT_TERMS };
+export { CONTRACT_TERMS, MILESTONE_INDUSTRIES, isMilestoneIndustry };
