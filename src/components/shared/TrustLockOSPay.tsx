@@ -417,7 +417,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
-                {method === "thirdweb" ? " 1.0% fee" : " 1.5% fee"}
+                {method === "thirdweb" ? " 1.5% platform + 1.0% processor fee" : " 1.5% platform + 1.5% processor fee"}
               </p>
             </div>
           )}
