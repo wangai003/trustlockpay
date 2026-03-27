@@ -146,9 +146,25 @@ const PublicCheckout = () => {
     setStep("contract");
   }, [linkData]);
 
-  const handleContractSigned = useCallback(() => {
+  const handleContractSigned = useCallback(async () => {
+    // If we have a contract_id from auto-signature, update buyer signature
+    if (autoSignResult?.contract_id) {
+      try {
+        await supabase
+          .from("pre_order_contracts" as any)
+          .update({
+            buyer_typed_name: "Checkout Buyer",
+            buyer_signed_at: new Date().toISOString(),
+            buyer_ip: null, // captured server-side
+            status: "fully_signed",
+          })
+          .eq("id", autoSignResult.contract_id);
+      } catch {
+        // Non-blocking — proceed to payment
+      }
+    }
     setStep("pay");
-  }, []);
+  }, [autoSignResult]);
 
   const handleComplianceBlock = useCallback(() => {
     navigate("/");
