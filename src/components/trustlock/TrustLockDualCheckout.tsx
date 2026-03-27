@@ -4,7 +4,8 @@ import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, Lock, I
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ProviderSearch from "@/components/shared/ProviderSearch";
-import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, FEE_DISCLOSURE, getFeeRange } from "@/lib/paymentProviders";
+import { type PaymentProvider, calculateFees, PRIVACY_DISCLAIMER, getFeeRange } from "@/lib/paymentProviders";
+import { FEE_DISCLOSURE_SHORT } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
