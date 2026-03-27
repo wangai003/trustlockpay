@@ -40,6 +40,7 @@ const PublicCheckout = () => {
     note: string;
   } | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
 
   // Load link data from DB
   useEffect(() => {
