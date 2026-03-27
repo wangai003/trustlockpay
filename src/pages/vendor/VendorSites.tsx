@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import {
   Globe, Plus, ExternalLink, Copy, Trash2, CheckCircle, AlertTriangle,
-  RotateCcw, DollarSign, Receipt, Tag, Layers
+  RotateCcw, DollarSign, Receipt, Tag, Layers, Shield
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
@@ -54,6 +54,7 @@ const VendorSites = () => {
   const [siteName, setSiteName] = useState("");
   const [sitePlatform, setSitePlatform] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
+  const [siteIndustry, setSiteIndustry] = useState("");
   const [widgetState, setWidgetState] = useState<WidgetFeeState>(getWidgetFeeState);
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
@@ -78,8 +79,12 @@ const VendorSites = () => {
 
   const handleAddSite = async () => {
     if (!siteName) return;
+    if (!siteIndustry) {
+      toast.error("Please select an industry for your site.");
+      return;
+    }
     await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
-    setSiteName(""); setSitePlatform(""); setSiteUrl("");
+    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry("");
     setShowAdd(false);
   };
 
@@ -264,6 +269,22 @@ const VendorSites = () => {
                   <Label>Website URL</Label>
                   <Input placeholder="e.g., mystore.myshopify.com" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} />
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Industry / Category</Label>
+                  <Select value={siteIndustry} onValueChange={setSiteIndustry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRUSTLOCK_INDUSTRIES.map((ind) => (
+                        <SelectItem key={ind.key} value={ind.key}>
+                          {ind.icon} {ind.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddSite}>Connect Site</Button>
@@ -282,8 +303,8 @@ const VendorSites = () => {
               <Card key={site.id}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Globe className="w-6 h-6 text-primary" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isWidgetEnabled ? "bg-primary/15" : "bg-muted/20"}`}>
+                      {isWidgetEnabled ? <Shield className="w-6 h-6 text-primary" /> : <Globe className="w-6 h-6 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
