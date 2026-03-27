@@ -312,20 +312,27 @@ const VendorOnboarding = () => {
                       <div className="space-y-3">
                         <div className="space-y-2">
                           <Label>Default Order Type</Label>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-3 gap-2">
                             <button
                               onClick={() => setDefaultOrderType("simple")}
                               className={`p-3 rounded-lg border-2 text-left transition-all ${defaultOrderType === "simple" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
                             >
                               <p className="text-xs font-semibold">Simple</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">Pay → Ship → Deliver → Release</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Pay → Ship → Release</p>
                             </button>
                             <button
                               onClick={() => setDefaultOrderType("milestone")}
                               className={`p-3 rounded-lg border-2 text-left transition-all ${defaultOrderType === "milestone" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
                             >
-                              <p className="text-xs font-semibold">Milestone-Based</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">Staged payments with mutual agreement</p>
+                              <p className="text-xs font-semibold">Milestone</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Staged payments</p>
+                            </button>
+                            <button
+                              onClick={() => setDefaultOrderType("hybrid")}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${defaultOrderType === "hybrid" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                            >
+                              <p className="text-xs font-semibold">Hybrid</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Both types</p>
                             </button>
                           </div>
                         </div>

@@ -33,10 +33,11 @@ const buyerTasks: OnboardingTask[] = [
   { id: "b2", label: "Complete profile (name, location, phone)", frequency: "one-time", description: "Required for order tracking and dispute resolution." },
   { id: "b3", label: "Review Escrow Acknowledgement Form", frequency: "always", description: "Understand the escrow terms before each purchase." },
   { id: "b4", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Digital signature required at checkout for every transaction." },
-  { id: "b5", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
-  { id: "b6", label: "Upload customs clearance proof (cross-border)", frequency: "sometimes", description: "Required for international shipments before fund release." },
-  { id: "b7", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
-  { id: "b8", label: "Review auto-release countdown notifications", frequency: "always", description: "Monitor the 48h/14d countdown — act before funds auto-release." },
+  { id: "b5", label: "Review & agree on milestone stages", frequency: "sometimes", description: "For milestone orders: review vendor's proposed stages, approve or request changes before work begins." },
+  { id: "b6", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
+  { id: "b7", label: "Upload customs clearance proof (cross-border)", frequency: "sometimes", description: "Required for international shipments before fund release." },
+  { id: "b8", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
+  { id: "b9", label: "Review auto-release countdown notifications", frequency: "always", description: "Monitor the 48h/14d countdown — act before funds auto-release." },
 ];
 
 const adminTasks: OnboardingTask[] = [

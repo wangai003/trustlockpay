@@ -285,9 +285,44 @@ const MilestoneNegotiation = ({
 
           {/* Agreed */}
           {status === "agreed" && (
-            <div className="text-center text-xs text-green-600 py-2">
-              <CheckCircle2 className="h-4 w-4 inline mr-1" />
-              Milestones locked — work may begin
+            <div className="space-y-2">
+              <div className="text-center text-xs text-green-600 py-2">
+                <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                Milestones locked — work may begin
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1.5 text-xs border-amber-500/30 text-amber-700 hover:bg-amber-500/10"
+                onClick={() => setShowChangeInput(true)}
+              >
+                <PenLine className="h-3.5 w-3.5" />
+                Request Post-Agreement Changes
+              </Button>
+              {showChangeInput && (
+                <div className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                  <Label className="text-xs">Describe the changes needed (released milestones cannot be modified)</Label>
+                  <Textarea
+                    placeholder="E.g., 'Extend Phase 2 timeline' or 'Split Stage 4 into two sub-stages'"
+                    value={changeNote}
+                    onChange={e => setChangeNote(e.target.value)}
+                    className="text-xs min-h-[60px]"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!changeNote.trim()}
+                    onClick={() => {
+                      onRequestChanges(changeNote);
+                      setChangeNote("");
+                      setShowChangeInput(false);
+                    }}
+                    className="w-full"
+                  >
+                    Submit Change Request
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
