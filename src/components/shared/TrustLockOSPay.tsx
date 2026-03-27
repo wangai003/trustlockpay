@@ -104,12 +104,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const getSeedToken = useGetOrCreateSeedToken();
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
-  const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-  const feeRate = payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
+  const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
+  const feeRate = isAdmin ? 0
+    : payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
     : payMode === "diaspora" && method === "thirdweb" ? 0.01
     : method === "azix" ? 0.01
     : 0.015;
-  const fee = parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
+  const fee = isAdmin ? "0.00" : parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
 
   const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
