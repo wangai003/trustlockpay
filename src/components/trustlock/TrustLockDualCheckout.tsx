@@ -209,7 +209,7 @@ const TrustLockDualCheckout = () => {
                   </span>
                 </div>
                 {showFees && (
-                  <p className="text-[9px] text-muted-foreground mt-1 leading-relaxed border-t border-border pt-1">{FEE_DISCLOSURE}</p>
+                  <p className="text-[9px] text-muted-foreground mt-1 leading-relaxed border-t border-border pt-1">{FEE_DISCLOSURE_SHORT}</p>
                 )}
               </div>
 
