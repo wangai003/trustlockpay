@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action, txId, tracking, reason } = body;
+    const { action, txId, tracking, reason, description } = body;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -41,6 +41,22 @@ Deno.serve(async (req) => {
             status: "released",
             delivered_date: new Date().toISOString(),
             released_date: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (error) throw error;
+        result = data;
+        break;
+      }
+
+      case "mark_delivered": {
+        const { data, error } = await supabase
+          .from("transactions")
+          .update({
+            status: "delivered",
+            delivered_date: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq("tx_id", txId)
@@ -90,6 +106,7 @@ Deno.serve(async (req) => {
             vendor_name: txData.data.vendor_name,
             amount: txData.data.amount,
             reason: reason || "Dispute filed by buyer",
+            description: description || null,
             status: "pending",
             priority: "medium",
           })

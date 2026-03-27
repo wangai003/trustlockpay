@@ -86,6 +86,19 @@ export function useConfirmDelivery() {
   });
 }
 
+export function useMarkDelivered() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (txId: string) =>
+      callEdgeFunction("manage-transaction", { action: "mark_delivered", txId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Order marked as delivered");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useRejectOrders() {
   const qc = useQueryClient();
   return useMutation({
@@ -115,12 +128,146 @@ export function useFlagForReview() {
 export function useOpenDispute() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { txId: string; reason?: string }) =>
+    mutationFn: (params: { txId: string; reason?: string; description?: string }) =>
       callEdgeFunction("manage-transaction", { action: "open_dispute", ...params }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["disputes"] });
       toast.success("Dispute filed successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Milestones / Observers ────────────────────────────────
+export function useTransactionMilestones(transactionId?: string) {
+  return useQuery({
+    queryKey: ["transaction_milestones", transactionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transaction_milestones")
+        .select("*")
+        .eq("transaction_id", transactionId!)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!transactionId,
+  });
+}
+
+export function useTransactionObservers(transactionId?: string) {
+  return useQuery({
+    queryKey: ["transaction_observers", transactionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transaction_observers")
+        .select("*")
+        .eq("transaction_id", transactionId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!transactionId,
+  });
+}
+
+export function useCreateMilestones() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      transactionId: string;
+      userId?: string | null;
+      industryKey?: string;
+      customMilestones?: Record<string, unknown>[];
+    }) =>
+      callEdgeFunction("escrow-manager", {
+        action: "create_milestones",
+        transaction_id: params.transactionId,
+        user_id: params.userId,
+        industry_key: params.industryKey,
+        custom_milestones: params.customMilestones,
+      }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["transaction_milestones", variables.transactionId] });
+      toast.success("Milestones initialized");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      milestoneId: string;
+      userId?: string | null;
+      status?: string;
+      description?: string;
+      uploadedDocuments?: unknown[];
+    }) =>
+      callEdgeFunction("escrow-manager", {
+        action: "update_milestone",
+        milestone_id: params.milestoneId,
+        user_id: params.userId,
+        status: params.status,
+        description: params.description,
+        uploaded_documents: params.uploadedDocuments,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transaction_milestones"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Milestone updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useReleaseMilestonePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { milestoneId: string; userId?: string | null }) =>
+      callEdgeFunction("escrow-manager", {
+        action: "release_milestone_payment",
+        milestone_id: params.milestoneId,
+        user_id: params.userId,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transaction_milestones"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["payouts"] });
+      toast.success("Milestone payment released");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useAddTransactionObserver() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      transactionId: string;
+      observerName: string;
+      observerEmail: string;
+      observerRole?: string;
+      milestoneIds?: string[];
+      permissions?: string[];
+      userId?: string | null;
+    }) =>
+      callEdgeFunction("escrow-manager", {
+        action: "add_observer",
+        transaction_id: params.transactionId,
+        observer_name: params.observerName,
+        observer_email: params.observerEmail,
+        observer_role: params.observerRole,
+        milestone_ids: params.milestoneIds ?? [],
+        permissions: params.permissions ?? ["view", "sign", "upload", "comment"],
+        user_id: params.userId,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transaction_observers"] });
+      qc.invalidateQueries({ queryKey: ["transaction_milestones"] });
+      toast.success("Observer invited");
     },
     onError: (e: Error) => toast.error(e.message),
   });

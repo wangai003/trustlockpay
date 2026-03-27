@@ -10,6 +10,7 @@ import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -151,6 +152,7 @@ const BuyerOrders = () => {
   };
 
   const allOrders = rawTransactions.map(tx => ({
+    dbId: tx.id,
     id: tx.tx_id,
     vendor: tx.vendor_name || "Unknown",
     amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
@@ -275,7 +277,18 @@ const BuyerOrders = () => {
                       {order.status === "delivered" && <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>}
                       {order.status === "shipped" && <Button variant="outline" size="sm">Track</Button>}
                       {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
-                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => openDispute.mutate({ txId: order.id })}>Dispute</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30"
+                          onClick={() => {
+                            const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
+                            const description = window.prompt("Add note/details for dispute (optional):", "") || "";
+                            openDispute.mutate({ txId: order.id, reason, description });
+                          }}
+                        >
+                          Dispute
+                        </Button>
                       )}
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
@@ -317,6 +330,12 @@ const BuyerOrders = () => {
                           />
                         </>
                       )}
+                      <MilestoneWorkOrderPanel
+                        role="buyer"
+                        txId={order.id}
+                        transactionId={order.dbId}
+                        industry={order.industry}
+                      />
                       <div className="pt-2 border-t border-border">
                         <TransactionDocuments
                           tx={{
