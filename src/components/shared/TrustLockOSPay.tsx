@@ -243,14 +243,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
-              <p className="text-xs font-semibold">Custodian Wallet Link</p>
+              <p className="text-xs font-semibold">Transaction Fee Wallet Link</p>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Your payment routes through the Azix custodian escrow wallet. Link your seed token to authorize.
+              Platform service payments route to the Azix Transaction Fee Wallet. This is separate from the Escrow Wallet used for payouts.
             </p>
             <div className="flex gap-2">
               <Input
-                placeholder="Seed token (auto-generated)"
+                placeholder="Pay seed token (auto-generated)"
                 value={seedToken}
                 readOnly
                 className="font-mono text-xs bg-muted flex-1"
@@ -266,14 +266,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </Button>
             </div>
             {seedTokenLinked && (
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="text-[10px]">
                 <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Transaction Wallet</p>
-                  <p className="font-mono font-medium">{TRUSTLOCK_WALLET}</p>
-                </div>
-                <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Escrow Wallet</p>
-                  <p className="font-mono font-medium">{ESCROW_WALLET}</p>
+                  <p className="text-muted-foreground">Routing to → Azix Transaction Fee Wallet</p>
+                  <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
+                  <p className="text-muted-foreground mt-1">{AZIX_WALLETS.transaction.purpose}</p>
                 </div>
               </div>
             )}
