@@ -125,6 +125,7 @@ interface SearchResults {
   archived_reports: any[];
   screening_logs: any[];
   protection_documents: any[];
+  contracts: any[];
 }
 
 interface CommandPaletteProps {
