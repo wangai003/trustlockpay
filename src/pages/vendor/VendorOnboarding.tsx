@@ -125,6 +125,9 @@ const VendorOnboarding = () => {
     localStorage.setItem("tl_vendor_auth", "true");
     localStorage.setItem("tl_vendor_network", "testnet");
     localStorage.setItem("tl_vendor_onboarded", "true");
+    localStorage.setItem("tl_vendor_industry", primaryIndustry);
+    localStorage.setItem("tl_vendor_order_type", defaultOrderType);
+    if (platformDescription.trim()) localStorage.setItem("tl_vendor_platform_desc", platformDescription);
     navigate("/trustlock/vendor");
   };
 
