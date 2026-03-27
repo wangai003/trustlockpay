@@ -95,11 +95,62 @@ const AdminDocuments = () => {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
   const [protectionSearch, setProtectionSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const filteredProtectionDocs = protectionDocuments.filter(d =>
-    d.title.toLowerCase().includes(protectionSearch.toLowerCase()) ||
-    d.type.toLowerCase().includes(protectionSearch.toLowerCase())
-  );
+  // Debounce search
+  const handleSearchChange = (val: string) => {
+    setProtectionSearch(val);
+    clearTimeout((window as any).__protDocSearchTimer);
+    (window as any).__protDocSearchTimer = setTimeout(() => setDebouncedSearch(val), 300);
+  };
+
+  // Fetch real protection documents from DB
+  const { data: realDocs, isLoading: docsLoading } = useQuery({
+    queryKey: ["protection-documents", debouncedSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from("protection_documents")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (debouncedSearch) {
+        query = query.ilike("title", `%${debouncedSearch}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getRetentionCountdown = (createdAt: string, retentionYears: number) => {
+    const created = new Date(createdAt);
+    const expiry = new Date(created);
+    expiry.setFullYear(expiry.getFullYear() + retentionYears);
+    const now = new Date();
+    const diffMs = expiry.getTime() - now.getTime();
+    if (diffMs <= 0) return { label: "Expired", color: "bg-destructive/15 text-destructive" };
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+    if (years > 5) return { label: `${years}y ${months}m left`, color: "bg-primary/15 text-primary" };
+    if (years > 1) return { label: `${years}y ${months}m left`, color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" };
+    return { label: `${diffDays}d left`, color: "bg-destructive/15 text-destructive" };
+  };
+
+  const docTypeLabel: Record<string, string> = {
+    escrow_acknowledgement: "Legal",
+    pre_order_contract: "Contract",
+    aml_certificate: "Compliance",
+    payout_reconciliation: "Financial",
+    dispute_evidence_package: "Evidence",
+    vendor_consent: "Legal",
+    ack_form: "Legal",
+    account_pause_record: "Audit",
+    account_deletion_archive: "Compliance",
+    milestone_completion: "Certificate",
+  };
 
   return (
     <div>
