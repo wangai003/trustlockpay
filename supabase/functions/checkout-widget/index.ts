@@ -222,6 +222,11 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       walletAddresses: session.walletAddresses,
       vendorName,
       item,
+      contract: contractResult.contract_id ? {
+        contractId: contractResult.contract_id,
+        autoSigned: contractResult.auto_signed || false,
+        route: contractResult.route || null,
+      } : null,
     },
   });
 }

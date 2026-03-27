@@ -213,6 +213,57 @@ const VendorOverview = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Work Log Section */}
+        {pendingContracts.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">Work Log</CardTitle>
+                <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
+                  <Check className="w-3 h-3" /> Accept All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Order</th>
+                      <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Industry</th>
+                      <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Amount</th>
+                      <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Date</th>
+                      <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingContracts.map((c: any) => (
+                      <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20">
+                        <td className="p-3 text-xs font-mono">{c.order_number || "—"}</td>
+                        <td className="p-3 text-xs hidden sm:table-cell text-muted-foreground">{c.industry || "—"}</td>
+                        <td className="p-3 text-xs text-right font-semibold">${Number(c.order_amount || 0).toLocaleString()}</td>
+                        <td className="p-3 text-xs text-center text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleWorkLogAction("sign_single", c.id)}>
+                              <PenLine className="w-3 h-3" /> Sign
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => handleWorkLogAction("reject", c.id, "Vendor declined")}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

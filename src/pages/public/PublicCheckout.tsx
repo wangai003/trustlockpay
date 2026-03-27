@@ -432,7 +432,7 @@ const PublicCheckout = () => {
               buyerName="You"
               vendorName={vendorName}
               txId={refId}
-              isAutoSigned
+              isAutoSigned={autoSignResult?.auto_signed ?? true}
               onBothSigned={handleContractSigned}
               onDecline={() => setStep("invoice")}
               role="buyer"
