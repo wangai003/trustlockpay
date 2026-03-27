@@ -55,6 +55,7 @@ const VENDOR_SERVICES = [
   { label: "AI Query Pack (500 queries — $25.00)", amount: "25.00" },
   { label: "Widget Restoration Fee", amount: "10.00" },
   { label: "Data Analytics Print-out", amount: "1.00" },
+  { label: "Acknowledgement Form Download", amount: "0.50" },
   { label: "Custom Report Generation", amount: "5.00" },
   { label: "Compliance Certification", amount: "15.00" },
 ];
