@@ -20,11 +20,12 @@ const vendorTasks: OnboardingTask[] = [
   { id: "v4", label: "Set payout preferences (Managed or Self-Custody)", frequency: "one-time", description: "Choose how you receive released funds — fiat off-ramp or direct wallet." },
   { id: "v5", label: "Review Escrow Acknowledgement Form", frequency: "always", description: "Generated per transaction — understand the escrow terms before each order." },
   { id: "v6", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Binding contract signed at checkout/standalone link for each transaction." },
-  { id: "v7", label: "Upload milestone documents (if applicable)", frequency: "sometimes", description: "Required for milestone-based orders: inspection certs, shipping manifests, etc." },
-  { id: "v8", label: "Confirm shipment / mark delivered", frequency: "always", description: "Update order status to trigger buyer confirmation countdown." },
-  { id: "v9", label: "Respond to disputes within 72 hours", frequency: "sometimes", description: "Upload evidence and respond to buyer-filed disputes before escalation." },
-  { id: "v10", label: "KYC Tier upgrade for higher volumes", frequency: "future", description: "Submit additional docs when approaching plan order limits." },
-  { id: "v11", label: "Renew subscription plan before expiry", frequency: "future", description: "Avoid service interruption by renewing before your plan expires." },
+  { id: "v7", label: "Draft & agree on milestone stages", frequency: "sometimes", description: "For milestone/hybrid orders: propose stages, review with buyer, and Approve & Lock before work begins." },
+  { id: "v8", label: "Upload milestone documents (if applicable)", frequency: "sometimes", description: "Required for milestone-based orders: inspection certs, shipping manifests, etc." },
+  { id: "v9", label: "Confirm shipment / mark delivered", frequency: "always", description: "Update order status to trigger buyer confirmation countdown." },
+  { id: "v10", label: "Respond to disputes within 72 hours", frequency: "sometimes", description: "Upload evidence and respond to buyer-filed disputes before escalation." },
+  { id: "v11", label: "KYC Tier upgrade for higher volumes", frequency: "future", description: "Submit additional docs when approaching plan order limits." },
+  { id: "v12", label: "Renew subscription plan before expiry", frequency: "future", description: "Avoid service interruption by renewing before your plan expires." },
 ];
 
 const buyerTasks: OnboardingTask[] = [
