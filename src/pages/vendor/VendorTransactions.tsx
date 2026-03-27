@@ -320,6 +320,20 @@ const VendorTransactions = () => {
                                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                                 <MilestoneProgress industry={tx.industry} status={tx.status} />
                               </details>
+                              {isMilestoneIndustry(tx.industry) && tx.status === "locked" && (
+                                <MilestoneNegotiation
+                                  role="vendor"
+                                  txId={tx.id}
+                                  industry={tx.industry || undefined}
+                                  orderAmount={tx.amount}
+                                  buyerName={tx.buyer}
+                                  vendorName="Your Business"
+                                  status="drafting"
+                                  onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${tx.buyer} for review`)}
+                                  onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                                  onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                                />
+                              )}
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments
                                   tx={{
