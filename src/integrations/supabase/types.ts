@@ -893,6 +893,65 @@ export type Database = {
         }
         Relationships: []
       }
+      protection_documents: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          document_type: string
+          id: string
+          industry: string | null
+          is_archived: boolean | null
+          metadata: Json | null
+          retention_years: number | null
+          role: string | null
+          signed_by_buyer: string | null
+          signed_by_vendor: string | null
+          title: string
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          document_type: string
+          id?: string
+          industry?: string | null
+          is_archived?: boolean | null
+          metadata?: Json | null
+          retention_years?: number | null
+          role?: string | null
+          signed_by_buyer?: string | null
+          signed_by_vendor?: string | null
+          title: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          document_type?: string
+          id?: string
+          industry?: string | null
+          is_archived?: boolean | null
+          metadata?: Json | null
+          retention_years?: number | null
+          role?: string | null
+          signed_by_buyer?: string | null
+          signed_by_vendor?: string | null
+          title?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protection_documents_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sanctions_screening_logs: {
         Row: {
           admin_notes: string | null
