@@ -46,10 +46,15 @@ const BuyerDocuments = () => {
                   <CardDescription className="text-[10px]">Preview the form you'll sign before your funds are locked.</CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
-                <Eye className="w-3 h-3" />
-                {showAckPreview ? "Hide" : "Preview"}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleDownloadForm}>
+                  <Download className="w-3 h-3" /> PDF <Badge variant="secondary" className="text-[9px] ml-1">$0.50</Badge>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
+                  <Eye className="w-3 h-3" />
+                  {showAckPreview ? "Hide" : "Preview"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           {showAckPreview && (
