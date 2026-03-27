@@ -4,16 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock, Undo2, Split, AlertTriangle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
+  Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useProcessPayment } from "@/hooks/useSupabaseData";
+import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 
 const TRUSTLOCK_WALLET = "0x7A3b...F92d";
+const ESCROW_WALLET = "0x4E1c...A83b";
 
-type PaymentMethod = "card" | "applepay" | "azix" | null;
+type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "thirdweb" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
+type PayMode = "local" | "diaspora";
 
 interface TrustLockOSPayProps {
   role: "admin" | "vendor" | "buyer";
@@ -23,9 +29,38 @@ interface TrustLockOSPayProps {
   isTestnet?: boolean;
 }
 
+/* ── Local Africa payment methods ── */
+const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
+  { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
+  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
+  { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+];
+
+/* ── Diaspora payment methods ── */
+const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
+  { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard (international)" },
+  { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay" },
+  { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC (1.5% fee)" },
+  { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp (1.0% fee)" },
+  { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto (1.5% fee)" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+];
+
+/* ── TrustLock OS Service categories ── */
+const SERVICE_CATEGORIES = [
+  "Plan Upgrade (Starter / Growth / Pro / Enterprise)",
+  "Data Analytics Print-out",
+  "AI Query Pack (50 / 200 / 500)",
+  "Widget Restoration Fee",
+  "Custom Report Generation",
+  "Compliance Certification",
+];
+
 const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
   const isAdmin = role === "admin";
 
+  const [payMode, setPayMode] = useState<PayMode>("local");
   const [method, setMethod] = useState<PaymentMethod>(null);
   const [adminAction, setAdminAction] = useState<AdminAction>(null);
   const [service, setService] = useState(prefillService);
@@ -38,18 +73,44 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [refundReason, setRefundReason] = useState("");
   const [splitRecipient, setSplitRecipient] = useState("");
   const [splitPercentage, setSplitPercentage] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [mobileProvider, setMobileProvider] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [processing, setProcessing] = useState(false);
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
+  const [seedToken, setSeedToken] = useState("");
+  const [seedTokenLinked, setSeedTokenLinked] = useState(false);
+
   const processPayment = useProcessPayment();
+  const getSeedToken = useGetOrCreateSeedToken();
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-  const fee = parsedAmount ? (parsedAmount * 0.015).toFixed(2) : "0.00";
+  const feeRate = payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
+    : payMode === "diaspora" && method === "thirdweb" ? 0.01
+    : method === "azix" ? 0.01
+    : 0.015;
+  const fee = parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
+
+  const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
+
+  const handleLinkSeedToken = async () => {
+    try {
+      const result = await getSeedToken.mutateAsync();
+      setSeedToken(result.token || result.seed_token || "");
+      setSeedTokenLinked(true);
+      toast.success("Seed token linked to custodian wallet");
+    } catch {
+      toast.error("Failed to link seed token");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!seedTokenLinked && method === "azix") { toast.error("Link your seed token first"); return; }
     if (isAdmin && adminAction === "refund" && !refundEmail) { toast.error("Enter recipient email for refund"); return; }
     if (isAdmin && adminAction === "split" && (!splitRecipient || !splitPercentage)) { toast.error("Fill split payment details"); return; }
 
@@ -63,13 +124,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         total,
         method: method!,
         role,
+        payMode,
         refundEmail: refundEmail || undefined,
         refundReason: refundReason || undefined,
         splitRecipient: splitRecipient || undefined,
         splitPercentage: splitPercentage || undefined,
       });
       const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
-      toast.success(`✅ ${label} of $${amount} processed successfully`);
+      toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
       onComplete?.();
     } catch {
       // error handled by hook
@@ -78,14 +140,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   };
 
-  const methods: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-    { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard" },
-    { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant" },
-    { id: "azix", icon: Wallet, label: "Azix Wallet", sub: "Pay with USDC balance" },
-  ];
-
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <div className="max-w-xl mx-auto space-y-4">
       {/* Testnet Banner */}
       {isTestnet && (
         <div className="rounded-t-xl bg-accent/20 border border-accent/40 px-4 py-2 flex items-center justify-center gap-2">
@@ -105,26 +161,104 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             {isTestnet ? "TEST" : "LIVE"}
           </Badge>
           <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">
-            {isAdmin ? "Admin Access" : "Secure Payment"}
+            {isAdmin ? "Admin" : role === "vendor" ? "Vendor" : "Buyer"}
           </Badge>
         </div>
       </div>
 
       <Card className="rounded-t-none -mt-4 border-t-0">
         <CardContent className="p-4 space-y-5">
-          {/* Service & Amount */}
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Service / Item</Label>
-              <Input placeholder="e.g. Starter Plan, Analytics Report" value={service} onChange={e => setService(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
-              <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
-            </div>
+
+          {/* ─── DUAL MODE TOGGLE ─── */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Region</p>
+            <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setMethod(null); }}>
+              <TabsList className="w-full grid grid-cols-2">
+                <TabsTrigger value="local" className="gap-1.5 text-xs">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Local Africa
+                </TabsTrigger>
+                <TabsTrigger value="diaspora" className="gap-1.5 text-xs">
+                  <Globe className="w-3.5 h-3.5" />
+                  Diaspora
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <p className="text-[10px] text-muted-foreground text-center">
+              {payMode === "local"
+                ? "Pay via mobile money, local bank, or crypto within Africa"
+                : "Pay via international card, crypto on-ramps, or direct wallet transfer"}
+            </p>
           </div>
 
-          {/* Admin-only: Refund & Split */}
+          {/* ─── SERVICE CATEGORY ─── */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">TrustLock Service</Label>
+            <select
+              value={service}
+              onChange={e => setService(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Select a service...</option>
+              {SERVICE_CATEGORIES.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <Input
+              placeholder="Or describe custom service..."
+              value={SERVICE_CATEGORIES.includes(service) ? "" : service}
+              onChange={e => setService(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Amount */}
+          <div>
+            <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
+            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
+          </div>
+
+          {/* ─── SEED TOKEN + WALLET LINK ─── */}
+          <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-primary" />
+              <p className="text-xs font-semibold">Custodian Wallet Link</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Your payment routes through the Azix custodian escrow wallet. Link your seed token to authorize.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Seed token (auto-generated)"
+                value={seedToken}
+                readOnly
+                className="font-mono text-xs bg-muted flex-1"
+              />
+              <Button
+                size="sm"
+                variant={seedTokenLinked ? "outline" : "default"}
+                onClick={handleLinkSeedToken}
+                disabled={seedTokenLinked || getSeedToken.isPending}
+                className="shrink-0 text-xs"
+              >
+                {getSeedToken.isPending ? "Linking..." : seedTokenLinked ? "✓ Linked" : "Link Token"}
+              </Button>
+            </div>
+            {seedTokenLinked && (
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="p-2 rounded bg-muted">
+                  <p className="text-muted-foreground">Transaction Wallet</p>
+                  <p className="font-mono font-medium">{TRUSTLOCK_WALLET}</p>
+                </div>
+                <div className="p-2 rounded bg-muted">
+                  <p className="text-muted-foreground">Escrow Wallet</p>
+                  <p className="font-mono font-medium">{ESCROW_WALLET}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ─── ADMIN ACTIONS ─── */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Admin Actions</p>
             <div className="grid grid-cols-2 gap-2">
@@ -139,10 +273,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 )}
               >
                 <Undo2 className="w-4 h-4 text-destructive shrink-0" />
-                <div>
-                  <p className="font-semibold">Refund</p>
-                  <p className="text-muted-foreground text-[10px]">Full repayment</p>
-                </div>
+                <div><p className="font-semibold">Refund</p><p className="text-muted-foreground text-[10px]">Full repayment</p></div>
                 {adminAction === "refund" && <Check className="w-3 h-3 text-primary ml-auto" />}
               </button>
               <button
@@ -156,35 +287,20 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 )}
               >
                 <Split className="w-4 h-4 text-accent shrink-0" />
-                <div>
-                  <p className="font-semibold">Split Pay</p>
-                  <p className="text-muted-foreground text-[10px]">Partial resolution</p>
-                </div>
+                <div><p className="font-semibold">Split Pay</p><p className="text-muted-foreground text-[10px]">Partial resolution</p></div>
                 {adminAction === "split" && <Check className="w-3 h-3 text-primary ml-auto" />}
               </button>
             </div>
 
-            {/* Refund fields */}
             {isAdmin && adminAction === "refund" && (
               <div className="space-y-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                <div>
-                  <Label className="text-xs">Recipient Email</Label>
-                  <Input placeholder="buyer@email.com" value={refundEmail} onChange={e => setRefundEmail(e.target.value)} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Reason</Label>
-                  <Input placeholder="Dispute resolution, product return..." value={refundReason} onChange={e => setRefundReason(e.target.value)} className="mt-1" />
-                </div>
+                <div><Label className="text-xs">Recipient Email</Label><Input placeholder="buyer@email.com" value={refundEmail} onChange={e => setRefundEmail(e.target.value)} className="mt-1" /></div>
+                <div><Label className="text-xs">Reason</Label><Input placeholder="Dispute resolution, product return..." value={refundReason} onChange={e => setRefundReason(e.target.value)} className="mt-1" /></div>
               </div>
             )}
-
-            {/* Split fields */}
             {isAdmin && adminAction === "split" && (
               <div className="space-y-2 p-3 rounded-lg bg-accent/5 border border-accent/20">
-                <div>
-                  <Label className="text-xs">Recipient (Buyer email or ID)</Label>
-                  <Input placeholder="BYR-2026-0102 or email" value={splitRecipient} onChange={e => setSplitRecipient(e.target.value)} className="mt-1" />
-                </div>
+                <div><Label className="text-xs">Recipient (Buyer email or ID)</Label><Input placeholder="BYR-2026-0102 or email" value={splitRecipient} onChange={e => setSplitRecipient(e.target.value)} className="mt-1" /></div>
                 <div>
                   <Label className="text-xs">Split % to recipient</Label>
                   <Input type="number" placeholder="50" min="1" max="99" value={splitPercentage} onChange={e => setSplitPercentage(e.target.value)} className="mt-1" />
@@ -198,10 +314,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             )}
           </div>
 
-          {/* Payment methods */}
+          {/* ─── PAYMENT METHODS (mode-specific) ─── */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pay With</p>
-            {methods.map(m => (
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pay With — {payMode === "local" ? "Local Africa" : "Diaspora / International"}
+            </p>
+            {activeMethods.map(m => (
               <button
                 key={m.id}
                 onClick={() => setMethod(method === m.id ? null : m.id)}
@@ -222,13 +340,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             ))}
           </div>
 
-          {/* Method-specific fields */}
+          {/* ─── METHOD-SPECIFIC FIELDS ─── */}
           {method === "card" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div>
-                <Label className="text-xs">Card Number</Label>
-                <Input placeholder="4242 4242 4242 4242" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="mt-1" />
-              </div>
+              <div><Label className="text-xs">Card Number</Label><Input placeholder="4242 4242 4242 4242" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="mt-1" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label className="text-xs">Expiry</Label><Input placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="mt-1" /></div>
                 <div><Label className="text-xs">CVC</Label><Input placeholder="123" value={cardCvc} onChange={e => setCardCvc(e.target.value)} className="mt-1" /></div>
@@ -236,16 +351,53 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
+          {method === "mobile_money" && (
+            <div className="space-y-2 p-3 rounded-lg border border-border">
+              <div>
+                <Label className="text-xs">Mobile Money Provider</Label>
+                <select value={mobileProvider} onChange={e => setMobileProvider(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">Select provider...</option>
+                  <option value="mpesa">M-Pesa</option>
+                  <option value="mtn">MTN Mobile Money</option>
+                  <option value="airtel">Airtel Money</option>
+                  <option value="orange">Orange Money</option>
+                  <option value="vodafone">Vodafone Cash</option>
+                </select>
+              </div>
+              <div><Label className="text-xs">Phone Number</Label><Input placeholder="+254 7XX XXX XXX" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className="mt-1" /></div>
+            </div>
+          )}
+
+          {method === "bank_transfer" && (
+            <div className="space-y-2 p-3 rounded-lg border border-border">
+              <div><Label className="text-xs">Bank Name</Label><Input placeholder="e.g. GTBank, KCB, Standard Bank" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" /></div>
+              <div><Label className="text-xs">Account Number</Label><Input placeholder="Account / NUBAN number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" /></div>
+            </div>
+          )}
+
           {method === "azix" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               <div>
-                <Label className="text-xs text-muted-foreground">TrustLock Azix Wallet (auto-filled)</Label>
-                <Input value={TRUSTLOCK_WALLET} disabled className="mt-1 bg-muted font-mono text-xs" />
+                <Label className="text-xs text-muted-foreground">TrustLock Escrow Wallet (auto-filled)</Label>
+                <Input value={ESCROW_WALLET} disabled className="mt-1 bg-muted font-mono text-xs" />
               </div>
               <div>
-                <Label className="text-xs">Your Azix Wallet Address (optional)</Label>
+                <Label className="text-xs">Your Azix Wallet Address</Label>
                 <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
               </div>
+              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route directly to escrow</p>
+            </div>
+          )}
+
+          {(method === "coinbase" || method === "thirdweb" || method === "transak") && (
+            <div className="p-3 rounded-lg border border-border text-center space-y-1">
+              <p className="text-xs font-medium">
+                {method === "coinbase" ? "Coinbase Commerce" : method === "thirdweb" ? "Thirdweb Pay" : "Transak"} on-ramp
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Converts your fiat to USDC and routes to TrustLock escrow wallet.
+                {method === "thirdweb" ? " 1.0% fee" : " 1.5% fee"}
+              </p>
             </div>
           )}
 
@@ -257,23 +409,28 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {/* Tax Breakdown */}
           {amount && parsedAmount > 0 && (
-            <TaxBreakdown
-              subtotal={parsedAmount}
-              taxItems={taxItems}
-              onTaxItemsChange={setTaxItems}
-              editable={role === "vendor" || role === "admin"}
-            />
+            <TaxBreakdown subtotal={parsedAmount} taxItems={taxItems} onTaxItemsChange={setTaxItems} editable={role === "vendor" || role === "admin"} />
           )}
 
           {/* Summary */}
           {amount && parsedAmount > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Service Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
               {taxTotal > 0 && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
               )}
-              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Pay Fee (1.5%)</span><span className="font-medium">${fee}</span></div>
-              <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-bold text-sm">Total</span><span className="font-bold text-sm text-primary">${total}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">TrustLock Fee ({(feeRate * 100).toFixed(1)}%)</span>
+                <span className="font-medium">${fee}</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-1 mt-1">
+                <span className="font-bold text-sm">Total</span>
+                <span className="font-bold text-sm text-primary">${total}</span>
+              </div>
+              <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
+                <span>Mode</span>
+                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"}</span>
+              </div>
             </div>
           )}
 
@@ -289,7 +446,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon</span>
+            <span>Secured by Azix Smart Contracts on Polygon · Seed Token Verified</span>
           </div>
         </CardContent>
       </Card>
