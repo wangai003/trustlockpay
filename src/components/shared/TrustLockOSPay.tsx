@@ -239,7 +239,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
           </div>
 
-          {/* ─── SEED TOKEN + WALLET LINK ─── */}
+          {/* ─── SEED TOKEN + WALLET LINK (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
@@ -278,6 +279,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
             )}
           </div>
+          )}
 
           {/* ─── ADMIN ACTIONS ─── */}
           <div className="space-y-2">
