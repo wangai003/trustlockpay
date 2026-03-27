@@ -35,12 +35,130 @@ Deno.serve(async (req) => {
     }
 
     const { action, ...params } = await req.json();
-    const validActions = ["create", "mark_read", "mark_all_read", "get_unread_count"];
+    const validActions = [
+      "create", "mark_read", "mark_all_read", "get_unread_count",
+      "contract_auto_signed", "contract_manual_required", "contract_buyer_signed",
+      "contract_fully_signed", "contract_declined", "check_stale_contracts",
+    ];
     if (!validActions.includes(action)) {
       return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // --- Contract notification helpers ---
+    const insertNotification = async (userId: string, title: string, message: string, type: string, entityType?: string, entityId?: string) => {
+      const { data, error } = await supabaseAdmin.from("notifications").insert({
+        user_id: userId, title, message, type,
+        related_entity_type: entityType || null,
+        related_entity_id: entityId || null,
+      }).select().single();
+      if (error) throw error;
+      return data;
+    };
+
+    if (action === "contract_auto_signed") {
+      const { vendor_id, order_number, contract_id } = params;
+      if (!vendor_id) return json({ success: false, error: "vendor_id required" }, 400);
+      const n = await insertNotification(
+        vendor_id,
+        "Order Auto-Accepted",
+        `Order ${order_number || "N/A"} was auto-signed by your TrustLock protocol. Work order is active.`,
+        "info", "pre_order_contract", contract_id
+      );
+      return json({ success: true, notification: n });
+    }
+
+    if (action === "contract_manual_required") {
+      const { vendor_id, order_number, contract_id } = params;
+      if (!vendor_id) return json({ success: false, error: "vendor_id required" }, 400);
+      const n = await insertNotification(
+        vendor_id,
+        "Manual Signature Required",
+        `Order ${order_number || "N/A"} requires your manual signature. Go to Work Log to review.`,
+        "action_required", "pre_order_contract", contract_id
+      );
+      return json({ success: true, notification: n });
+    }
+
+    if (action === "contract_buyer_signed") {
+      const { vendor_id, order_number, contract_id } = params;
+      if (!vendor_id) return json({ success: false, error: "vendor_id required" }, 400);
+      const n = await insertNotification(
+        vendor_id,
+        "Buyer Signed Contract",
+        `The buyer has signed the Pre-Order Signatory Contract for order ${order_number || "N/A"}.`,
+        "info", "pre_order_contract", contract_id
+      );
+      return json({ success: true, notification: n });
+    }
+
+    if (action === "contract_fully_signed") {
+      const { vendor_id, buyer_id, order_number, contract_id } = params;
+      if (!vendor_id && !buyer_id) return json({ success: false, error: "vendor_id or buyer_id required" }, 400);
+      const msg = `Both parties have signed. Order ${order_number || "N/A"} work order is now active.`;
+      const notifications = [];
+      if (vendor_id) notifications.push(await insertNotification(vendor_id, "Contract Complete — Work Order Active", msg, "info", "pre_order_contract", contract_id));
+      if (buyer_id) notifications.push(await insertNotification(buyer_id, "Contract Complete — Work Order Active", msg, "info", "pre_order_contract", contract_id));
+      return json({ success: true, notifications });
+    }
+
+    if (action === "contract_declined") {
+      const { buyer_id, order_number, contract_id, reason } = params;
+      if (!buyer_id) return json({ success: false, error: "buyer_id required" }, 400);
+      const n = await insertNotification(
+        buyer_id,
+        "Order Declined by Vendor",
+        `The vendor has declined order ${order_number || "N/A"}. Your funds will be refunded.${reason ? " Reason: " + reason : ""}`,
+        "warning", "pre_order_contract", contract_id
+      );
+      return json({ success: true, notification: n });
+    }
+
+    if (action === "check_stale_contracts") {
+      // Find contracts stuck in 'pending' for 14+ days and notify vendors
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+      const { data: stale, error: staleErr } = await supabaseAdmin
+        .from("pre_order_contracts")
+        .select("id, vendor_id, order_number")
+        .eq("status", "pending")
+        .lte("created_at", fourteenDaysAgo.toISOString());
+
+      if (staleErr) throw staleErr;
+
+      let reminded = 0;
+      for (const c of stale || []) {
+        if (!c.vendor_id) continue;
+        // Avoid duplicate reminders: check if one was already sent in last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const { count } = await supabaseAdmin
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", c.vendor_id)
+          .eq("related_entity_id", c.id)
+          .eq("type", "reminder")
+          .gte("created_at", sevenDaysAgo.toISOString());
+
+        if ((count || 0) === 0) {
+          await insertNotification(
+            c.vendor_id,
+            "Pending Contract Reminder",
+            `Order ${c.order_number || "N/A"} has been awaiting your signature for over 14 days. Please sign or decline in your Work Log.`,
+            "reminder", "pre_order_contract", c.id
+          );
+          reminded++;
+        }
+      }
+      return json({ success: true, stale_count: stale?.length || 0, reminded });
     }
 
     const json = (data: unknown, status = 200) =>
