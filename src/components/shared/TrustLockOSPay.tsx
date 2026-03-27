@@ -443,7 +443,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">TrustLock Fee ({(feeRate * 100).toFixed(1)}%)</span>
+                <span className="text-muted-foreground">Platform Fee ({(feeRate * 100).toFixed(1)}%)</span>
                 <span className="font-medium">${fee}</span>
               </div>
               <div className="flex justify-between border-t border-border pt-1 mt-1">
