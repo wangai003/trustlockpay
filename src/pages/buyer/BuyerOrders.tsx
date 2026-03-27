@@ -1,12 +1,15 @@
 import { useState } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2 } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -21,9 +24,128 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 const BuyerOrders = () => {
   const [filter, setFilter] = useState<OrderStatus>("all");
   const [search, setSearch] = useState("");
+  const [claimCode, setClaimCode] = useState("");
+  const [claiming, setClaiming] = useState(false);
+  const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDelivery = useConfirmDelivery();
   const openDispute = useOpenDispute();
+
+  const handleClaimOrder = async () => {
+    const code = claimCode.trim();
+    if (!code) {
+      toast.error("Please enter an order number or confirmation code");
+      return;
+    }
+    setClaiming(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be signed in to claim an order");
+        setClaiming(false);
+        return;
+      }
+
+      // Try matching by order_number first, then by confirmation_code in order_carbon_copies
+      let matched = false;
+
+      // Check transactions table by order_number
+      const orderNum = parseInt(code, 10);
+      if (!isNaN(orderNum)) {
+        const { data: txByNum } = await supabase
+          .from("transactions")
+          .select("id, buyer_id")
+          .eq("order_number", orderNum)
+          .maybeSingle();
+
+        if (txByNum) {
+          if (txByNum.buyer_id === user.id) {
+            toast.info("This order is already linked to your account");
+            matched = true;
+          } else if (!txByNum.buyer_id) {
+            const { error } = await supabase
+              .from("transactions")
+              .update({ buyer_id: user.id })
+              .eq("id", txByNum.id);
+            if (!error) {
+              toast.success("Order claimed successfully!");
+              matched = true;
+            }
+          } else {
+            toast.error("This order belongs to another account");
+            matched = true;
+          }
+        }
+      }
+
+      // Check order_carbon_copies by confirmation_code
+      if (!matched) {
+        const { data: ccMatch } = await supabase
+          .from("order_carbon_copies")
+          .select("id, transaction_id, buyer_id, confirmation_code")
+          .or(`confirmation_code.eq.${code},order_number.eq.${code}`)
+          .maybeSingle();
+
+        if (ccMatch) {
+          if (ccMatch.buyer_id === user.id) {
+            toast.info("This order is already linked to your account");
+            matched = true;
+          } else if (!ccMatch.buyer_id) {
+            const { error } = await supabase
+              .from("order_carbon_copies")
+              .update({ buyer_id: user.id })
+              .eq("id", ccMatch.id);
+            if (!error) {
+              // Also link the main transaction
+              if (ccMatch.transaction_id) {
+                await supabase
+                  .from("transactions")
+                  .update({ buyer_id: user.id })
+                  .eq("id", ccMatch.transaction_id);
+              }
+              toast.success("Order claimed successfully!");
+              matched = true;
+            }
+          } else {
+            toast.error("This order belongs to another account");
+            matched = true;
+          }
+        }
+      }
+
+      // Check by tx_id as last resort
+      if (!matched) {
+        const { data: txByTxId } = await supabase
+          .from("transactions")
+          .select("id, buyer_id")
+          .eq("tx_id", code)
+          .maybeSingle();
+
+        if (txByTxId) {
+          if (txByTxId.buyer_id === user.id) {
+            toast.info("This order is already linked to your account");
+          } else if (!txByTxId.buyer_id) {
+            const { error } = await supabase
+              .from("transactions")
+              .update({ buyer_id: user.id })
+              .eq("id", txByTxId.id);
+            if (!error) toast.success("Order claimed successfully!");
+          } else {
+            toast.error("This order belongs to another account");
+          }
+        } else {
+          toast.error("No order found with that number. Please check and try again.");
+        }
+      }
+
+      setClaimCode("");
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to claim order");
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   const allOrders = rawTransactions.map(tx => ({
     id: tx.tx_id,
@@ -46,6 +168,36 @@ const BuyerOrders = () => {
     <div>
       <BuyerHeader title="My Orders" />
       <div className="p-6 space-y-6">
+        {/* Claim Order Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <PackagePlus className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Claim Your Order</h3>
+                  <p className="text-xs text-muted-foreground">Enter the order number or confirmation code from your checkout receipt</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-1 w-full sm:w-auto">
+                <Input
+                  placeholder="e.g. 100234 or TL-CONF-ABC123"
+                  value={claimCode}
+                  onChange={(e) => setClaimCode(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleClaimOrder()}
+                  className="flex-1 bg-background"
+                />
+                <Button onClick={handleClaimOrder} disabled={claiming || !claimCode.trim()} size="sm" className="shrink-0">
+                  {claiming ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  {claiming ? "Claiming..." : "Claim"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -61,6 +213,15 @@ const BuyerOrders = () => {
         </div>
 
         <div className="space-y-4">
+          {filtered.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Package className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">No orders yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Use the claim box above to add your first order</p>
+              </CardContent>
+            </Card>
+          )}
           {filtered.map((order) => {
             const cfg = statusConfig[order.status] || statusConfig.locked;
             return (
