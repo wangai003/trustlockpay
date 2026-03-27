@@ -95,7 +95,9 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
       expect(result.escrowFee).toBe(5); // 1%
-      expect(result.escrowWalletReceives).toBe(5);
+      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.feeTrickleToTransactionWallet).toBe(5);
+      expect(result.transactionWalletReceives).toBe(5); // 0 platform + 5 trickled
     });
   });
 
