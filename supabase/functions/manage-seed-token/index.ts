@@ -37,6 +37,10 @@ function generateConfirmationCode(): string {
 }
 
 // ─── Fee Calculation with Dual Wallet Routing ──────────────
+// Fee trickle-down logic:
+//   RELEASE: Escrow deducts 1% → vendor gets net → 1% fee forwarded to Transaction Wallet
+//   REFUND:  Escrow returns full principal → buyer gets 100% → NO fees to Transaction Wallet
+//   SPLIT:   Both parties paid equally → 1% fee from VENDOR share only → forwarded to Transaction Wallet
 interface FeeResult {
   trustlockFee: number;
   processorFee: number;
@@ -46,6 +50,7 @@ interface FeeResult {
   netAmount: number;
   transactionWalletReceives: number;
   escrowWalletReceives: number;
+  feeTrickleToTransactionWallet: number; // Amount forwarded from escrow → transaction wallet
 }
 
 function calculatePayoutFees(
