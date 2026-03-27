@@ -162,6 +162,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{step.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
+              {step.link && (
+                <a href={step.link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline mt-1">
+                  <Link className="w-3 h-3" />
+                  {step.link.label}
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
               {step.shortcut && (
                 <div className="flex items-center gap-1.5 mt-1">
                   <Keyboard className="w-3 h-3 text-primary/60" />
