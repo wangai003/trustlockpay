@@ -3,11 +3,14 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const pinnedDocs = [
   {
@@ -19,23 +22,7 @@ const pinnedDocs = [
   },
 ];
 
-const protectionDocuments = [
-  { title: "Vendor Automated Consent Form", desc: "Signed by every vendor — authorizes TrustLock auto-signature protocol and automated order processing.", type: "Legal", retention: "7 years" },
-  { title: "Pre-Order Signatory Contract", desc: "Per-transaction binding contract with dual typed signatures (buyer + vendor). Industry-specific addendums.", type: "Contract", retention: "7 years" },
-  { title: "Escrow Acknowledgement Form", desc: "Dynamic acknowledgement adapting by industry — absolves TrustLock of force majeure and third-party failures.", type: "Legal", retention: "7 years" },
-  { title: "AML/KYC Screening Certificate", desc: "Auto-generated after OFAC/EU/UN sanctions check. Records screening result, timestamp, and risk score.", type: "Compliance", retention: "7 years" },
-  { title: "Dispute Evidence Package", desc: "All documents uploaded during dispute lifecycle — photos, receipts, communications, inspection reports.", type: "Evidence", retention: "7 years" },
-  { title: "Milestone Completion Certificate", desc: "Signed observer/inspector verification per milestone stage. Includes timestamps and document hashes.", type: "Certificate", retention: "7 years" },
-  { title: "Auto-Release Waiver Notice", desc: "Sent to buyer 48h before auto-release. Records delivery of notice and buyer acknowledgement (or inaction).", type: "Notice", retention: "5 years" },
-  { title: "Payout Reconciliation Receipt", desc: "Generated after each payout — records amount, fee, net, method, confirmation code, and recipient details.", type: "Financial", retention: "7 years" },
-  { title: "Tax Withholding Certificate (W-9/W-8BEN)", desc: "Collected from vendors for US tax reporting. Required when cumulative payouts exceed $600.", type: "Tax", retention: "7 years" },
-  { title: "Data Deletion Confirmation", desc: "Generated when a user exercises right to delete. Records what was purged, what was retained (legal hold), and timestamp.", type: "Compliance", retention: "Permanent" },
-  { title: "Account Pause/Suspension Record", desc: "Logs reason, timestamp, and admin/user action when an account is paused or suspended.", type: "Audit", retention: "5 years" },
-  { title: "Letter of Credit / Bank Observer Report", desc: "Third-party bank verification for high-value transactions. Includes observer sign-off and fund confirmation.", type: "Financial", retention: "7 years" },
-  { title: "Cross-Border Customs Declaration", desc: "Buyer-uploaded proof of customs clearance for international shipments before fund release.", type: "Trade", retention: "7 years" },
-  { title: "Arbitration Filing Record", desc: "Generated when disputes exceed $10k and enter binding arbitration. Records all parties, evidence, and timeline.", type: "Legal", retention: "Permanent" },
-  { title: "Platform Terms of Service Acceptance", desc: "Timestamped record of user acceptance of TOS, privacy policy, and cookie consent.", type: "Legal", retention: "Duration of account + 2 years" },
-];
+// Protection documents are now fetched from the database
 
 const documents = [
   {
@@ -92,11 +79,62 @@ const AdminDocuments = () => {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
   const [protectionSearch, setProtectionSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const filteredProtectionDocs = protectionDocuments.filter(d =>
-    d.title.toLowerCase().includes(protectionSearch.toLowerCase()) ||
-    d.type.toLowerCase().includes(protectionSearch.toLowerCase())
-  );
+  // Debounce search
+  const handleSearchChange = (val: string) => {
+    setProtectionSearch(val);
+    clearTimeout((window as any).__protDocSearchTimer);
+    (window as any).__protDocSearchTimer = setTimeout(() => setDebouncedSearch(val), 300);
+  };
+
+  // Fetch real protection documents from DB
+  const { data: realDocs, isLoading: docsLoading } = useQuery({
+    queryKey: ["protection-documents", debouncedSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from("protection_documents")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (debouncedSearch) {
+        query = query.ilike("title", `%${debouncedSearch}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getRetentionCountdown = (createdAt: string, retentionYears: number) => {
+    const created = new Date(createdAt);
+    const expiry = new Date(created);
+    expiry.setFullYear(expiry.getFullYear() + retentionYears);
+    const now = new Date();
+    const diffMs = expiry.getTime() - now.getTime();
+    if (diffMs <= 0) return { label: "Expired", color: "bg-destructive/15 text-destructive" };
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+    if (years > 5) return { label: `${years}y ${months}m left`, color: "bg-primary/15 text-primary" };
+    if (years > 1) return { label: `${years}y ${months}m left`, color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" };
+    return { label: `${diffDays}d left`, color: "bg-destructive/15 text-destructive" };
+  };
+
+  const docTypeLabel: Record<string, string> = {
+    escrow_acknowledgement: "Legal",
+    pre_order_contract: "Contract",
+    aml_certificate: "Compliance",
+    payout_reconciliation: "Financial",
+    dispute_evidence_package: "Evidence",
+    vendor_consent: "Legal",
+    ack_form: "Legal",
+    account_pause_record: "Audit",
+    account_deletion_archive: "Compliance",
+    milestone_completion: "Certificate",
+  };
 
   return (
     <div>
@@ -248,7 +286,9 @@ const AdminDocuments = () => {
                 </div>
                 <div>
                   <CardTitle className="text-base">🗂️ TrustLock Protection Documents</CardTitle>
-                  <CardDescription className="text-xs">All document types required for legal protection — {protectionDocuments.length} document types</CardDescription>
+                  <CardDescription className="text-xs">
+                    Archived protection documents — {docsLoading ? "loading..." : `${(realDocs || []).length} records`}
+                  </CardDescription>
                 </div>
               </div>
               <Badge variant="secondary" className="text-[10px]">Testnet + Mainnet</Badge>
@@ -259,35 +299,69 @@ const AdminDocuments = () => {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search protection documents..."
+                placeholder="Search protection documents by title..."
                 value={protectionSearch}
-                onChange={(e) => setProtectionSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {filteredProtectionDocs.map((doc) => (
-                <div key={doc.title} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-xs font-bold">{doc.title}</h4>
-                      <Badge variant="outline" className="text-[9px]">{doc.type}</Badge>
-                      <Badge variant="secondary" className="text-[9px]">Retain: {doc.retention}</Badge>
+              {docsLoading && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-border">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-2 w-1/2" />
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{doc.desc}</p>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {!docsLoading && (realDocs || []).length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs">No protection documents found{protectionSearch ? ` matching "${protectionSearch}"` : ""}.</p>
+                  <p className="text-[10px] mt-1">Documents are auto-generated when transactions change status.</p>
+                </div>
+              )}
+              {!docsLoading && (realDocs || []).map((doc) => {
+                const retention = getRetentionCountdown(doc.created_at, doc.retention_years || 7);
+                const typeLabel = docTypeLabel[doc.document_type] || doc.document_type;
+                const isExpired = (doc.metadata as any)?.retention_expired === true;
+                return (
+                  <div key={doc.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${isExpired ? "border-destructive/30 bg-destructive/5" : "border-border hover:bg-muted/20"}`}>
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      {isExpired ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-bold">{doc.title}</h4>
+                        <Badge variant="outline" className="text-[9px]">{typeLabel}</Badge>
+                        <Badge className={`text-[9px] ${retention.color}`}>
+                          <Clock className="w-2.5 h-2.5 mr-0.5" />
+                          {retention.label}
+                        </Badge>
+                        {isExpired && <Badge variant="destructive" className="text-[9px]">Review Required</Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                        {doc.industry && <span className="text-[10px] text-muted-foreground">Industry: {doc.industry}</span>}
+                        {doc.signed_by_buyer && <span className="text-[10px] text-muted-foreground">Buyer: ✓</span>}
+                        {doc.signed_by_vendor && <span className="text-[10px] text-muted-foreground">Vendor: ✓</span>}
+                        <span className="text-[10px] text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <p className="text-[10px] text-muted-foreground italic">
-              Documents are auto-archived when generated per transaction. Search by title or type. All documents follow 7-year immutable retention for cross-border trade compliance.
+              Documents are auto-archived when generated per transaction. Search by title. All documents follow 7-year immutable retention for cross-border trade compliance.
             </p>
           </CardContent>
         </Card>

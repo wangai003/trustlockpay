@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
 } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const BuyerSettings = () => {
   const { buyer } = useBuyer();
@@ -126,9 +127,20 @@ const BuyerSettings = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-amber-600 hover:bg-amber-700" onClick={() => {
-              toast.success("Account paused. Log back in to reactivate.");
-              setShowPauseDialog(false);
+            <AlertDialogAction className="bg-amber-600 hover:bg-amber-700" onClick={async () => {
+              try {
+                const { error } = await supabase.functions.invoke("manage-account-lifecycle", {
+                  body: { action: "pause", user_id: buyer.id },
+                });
+                if (error) throw error;
+                toast.success("Account paused. Log back in to reactivate.");
+                setShowPauseDialog(false);
+                await supabase.auth.signOut();
+                localStorage.clear();
+                navigate("/trustlock/buyer/login");
+              } catch (err: any) {
+                toast.error(err.message || "Failed to pause account");
+              }
             }}>Pause Account</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -161,11 +173,20 @@ const BuyerSettings = () => {
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               disabled={deleteConfirmText !== "DELETE"}
-              onClick={() => {
-                toast.success("Account deletion initiated. Data will be purged within 14 days.");
-                setDeleteConfirmText("");
-                setShowDeleteDialog(false);
-                navigate("/trustlock/buyer/login");
+              onClick={async () => {
+                try {
+                  const { error } = await supabase.functions.invoke("manage-account-lifecycle", {
+                    body: { action: "delete", user_id: buyer.id, confirmation: "DELETE MY ACCOUNT" },
+                  });
+                  if (error) throw error;
+                  toast.success("Account deletion initiated. Data will be purged within 14 days.");
+                  setDeleteConfirmText("");
+                  setShowDeleteDialog(false);
+                  localStorage.clear();
+                  navigate("/trustlock/buyer/login");
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to delete account");
+                }
               }}
             >Delete Permanently</AlertDialogAction>
           </AlertDialogFooter>
