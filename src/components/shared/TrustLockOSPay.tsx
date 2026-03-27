@@ -399,14 +399,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           {method === "azix" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               <div>
-                <Label className="text-xs text-muted-foreground">TrustLock Escrow Wallet (auto-filled)</Label>
-                <Input value={ESCROW_WALLET} disabled className="mt-1 bg-muted font-mono text-xs" />
+                <Label className="text-xs text-muted-foreground">Azix Transaction Fee Wallet (auto-filled)</Label>
+                <Input value={AZIX_WALLETS.transaction.publicKey} disabled className="mt-1 bg-muted font-mono text-xs" />
               </div>
               <div>
                 <Label className="text-xs">Your Azix Wallet Address</Label>
                 <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
               </div>
-              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route directly to escrow</p>
+              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route to Transaction Fee Wallet</p>
             </div>
           )}
 
