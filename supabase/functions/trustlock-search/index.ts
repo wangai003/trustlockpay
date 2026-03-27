@@ -138,7 +138,15 @@ Deno.serve(async (req) => {
       screeningLogs = logs || [];
     }
 
-    // 9. AI-powered answer if knowledge base didn't match well
+    // 9. Protection documents
+    const { data: protectionDocs } = await supabase
+      .from("protection_documents")
+      .select("id, document_type, title, transaction_id, user_id, role, industry, retention_years, created_at, is_archived, signed_by_buyer, signed_by_vendor")
+      .or(`title.ilike.%${q}%,document_type.ilike.%${q}%,transaction_id::text.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // 10. AI-powered answer if knowledge base didn't match well
     let aiAnswer: string | null = null;
     if (!knowledgeAnswer && q.length >= 4) {
       try {
