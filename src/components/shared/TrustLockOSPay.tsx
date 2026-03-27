@@ -42,7 +42,7 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC (1.5% fee)" },
   { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp (1.0% fee)" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto (1.5% fee)" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
 ];
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
