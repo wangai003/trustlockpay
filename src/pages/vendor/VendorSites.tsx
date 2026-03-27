@@ -301,6 +301,41 @@ const VendorSites = () => {
                   </Select>
                   <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
                 </div>
+
+                {/* Checkout toggle */}
+                <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/10">
+                  <Switch checked={hasCheckout} onCheckedChange={setHasCheckout} />
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold">
+                      {hasCheckout ? "My site has a checkout page" : "My site does NOT have a checkout page"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {hasCheckout
+                        ? "The TrustLock widget will be installed on your checkout page"
+                        : "You will use Standalone Payment Links to collect escrow-protected payments"}
+                    </p>
+                  </div>
+                  {!hasCheckout && (
+                    <Badge variant="secondary" className="text-[9px] shrink-0">Standalone Links</Badge>
+                  )}
+                </div>
+
+                {/* No-checkout guidance */}
+                {!hasCheckout && (
+                  <div className="sm:col-span-2 flex items-start gap-2 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                    <Shield className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground mb-1">How it works without a checkout page</p>
+                      <ol className="list-decimal ml-4 space-y-1">
+                        <li>Add your site so TrustLock knows your business</li>
+                        <li>Go to <strong>Standalone Links</strong> to create payment links for your products or services</li>
+                        <li>Share links with buyers via WhatsApp, email, SMS, or social media</li>
+                        <li>Buyers complete the full TrustLock escrow checkout through the link</li>
+                      </ol>
+                      <p className="mt-2 italic">No coding or website changes required!</p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddSite}>Connect Site</Button>
