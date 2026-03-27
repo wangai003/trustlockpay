@@ -290,6 +290,20 @@ const BuyerOrders = () => {
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                         <MilestoneProgress industry={order.industry} status={order.status} />
                       </details>
+                      {isMilestoneIndustry(order.industry) && order.status === "locked" && (
+                        <MilestoneNegotiation
+                          role="buyer"
+                          txId={order.id}
+                          industry={order.industry || undefined}
+                          orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+                          buyerName="You"
+                          vendorName={order.vendor}
+                          status="drafting"
+                          onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
+                          onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                          onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                        />
+                      )}
                       <div className="pt-2 border-t border-border">
                         <TransactionDocuments
                           tx={{
