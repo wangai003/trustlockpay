@@ -306,11 +306,11 @@ const TrustLockOSPayout = ({
           <div className="grid grid-cols-2 gap-2 text-[10px]">
             <div className="p-2 rounded bg-muted">
               <p className="text-muted-foreground">Transaction Wallet</p>
-              <p className="font-mono font-medium">{AZIX_WALLETS.transaction}</p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
             </div>
             <div className="p-2 rounded bg-muted">
               <p className="text-muted-foreground">Escrow Wallet</p>
-              <p className="font-mono font-medium">{AZIX_WALLETS.escrow}</p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.escrow.publicKey}</p>
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground">
