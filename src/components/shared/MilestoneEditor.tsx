@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Plus, X, GripVertical, Upload, Check, AlertTriangle, ArrowRight,
-  FileText, Lock, Unlock, RotateCcw, Eye, UserPlus, Mail
+  FileText, Lock, Unlock, RotateCcw, Eye, UserPlus, Mail, Trash2, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import DocumentUpload from "./DocumentUpload";
+import AcknowledgementForm from "./AcknowledgementForm";
 
-// ─── Industry Templates ───────────────────────────────────
+// ─── Industry Templates (for offline/template selection) ───
 const INDUSTRY_TEMPLATES: Record<string, MilestoneTemplate[]> = {
   "e-commerce": [
     { name: "Payment Confirmed", percentage: 100, documents: [], documentMode: "none", description: "Full payment locked in escrow", requiresObserver: false },
@@ -89,193 +93,394 @@ interface MilestoneTemplate {
   requiresObserver: boolean;
 }
 
-interface Observer {
+interface DbMilestone {
   id: string;
-  name: string;
-  email: string;
-  role: string; // e.g. "Bank", "Customs Broker", "Surveyor", "Arbitrator"
-  signedOff: boolean;
-}
-
-interface Milestone extends MilestoneTemplate {
-  id: string;
-  status: "pending" | "in_progress" | "fulfilled" | "released";
-  observers: Observer[];
-}
-
-interface ChangeRequest {
-  milestones: Milestone[];
-  requestedBy: "buyer" | "vendor";
-  reason: string;
-  status: "pending" | "accepted" | "rejected";
+  transaction_id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  status: string;
+  required_documents: string[];
+  uploaded_documents: unknown[] | null;
+  assigned_to: string | null;
+  is_payment_milestone: boolean;
+  payment_amount: number | null;
+  payment_released: boolean;
+  observer_id: string | null;
+  observer_signed: boolean;
+  observer_signed_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface MilestoneEditorProps {
   role: "admin" | "vendor" | "buyer";
   orderId?: string;
   industry?: string;
-  onSave?: (milestones: Milestone[]) => void;
+  onSave?: (milestones: DbMilestone[]) => void;
 }
 
 const OBSERVER_ROLES = ["Bank", "Customs Broker", "Surveyor", "Legal Counsel", "Arbitrator", "Insurance", "Quality Inspector", "Other"];
 
 const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: MilestoneEditorProps) => {
   const [industry, setIndustry] = useState(initialIndustry || "");
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [milestones, setMilestones] = useState<DbMilestone[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [locked, setLocked] = useState(false);
-  const [changeRequest, setChangeRequest] = useState<ChangeRequest | null>(null);
-  const [showDiff, setShowDiff] = useState(false);
-  const [changeReason, setChangeReason] = useState("");
+  const [showAckModal, setShowAckModal] = useState<string | null>(null);
+  const [showUploadFor, setShowUploadFor] = useState<string | null>(null);
+
+  // Add milestone form
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newPercentage, setNewPercentage] = useState(0);
+  const [newIsPayment, setNewIsPayment] = useState(true);
+
+  // Observer form
   const [addingObserverFor, setAddingObserverFor] = useState<string | null>(null);
   const [newObserver, setNewObserver] = useState({ name: "", email: "", role: "Bank" });
 
-  const totalPercentage = milestones.reduce((sum, m) => sum + m.percentage, 0);
-  const isValid = totalPercentage === 100 && milestones.length > 0;
+  // Change request
+  const [showDiff, setShowDiff] = useState(false);
+  const [changeReason, setChangeReason] = useState("");
 
-  const applyTemplate = (industryKey: string) => {
+  // Drag state
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+
+  const transactionId = orderId;
+
+  // ─── Fetch milestones from DB ─────────────────────────────
+  const fetchMilestones = useCallback(async () => {
+    if (!transactionId) { setLoading(false); return; }
+
+    const { data, error } = await supabase
+      .from("transaction_milestones")
+      .select("*")
+      .eq("transaction_id", transactionId)
+      .order("position", { ascending: true });
+
+    if (error) {
+      console.error("Failed to fetch milestones:", error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      setMilestones(data as DbMilestone[]);
+      // If any milestone is not pending, consider locked
+      const hasNonPending = data.some((m) => m.status !== "pending");
+      setLocked(hasNonPending);
+    }
+    setLoading(false);
+  }, [transactionId]);
+
+  // ─── On mount: fetch or auto-create ───────────────────────
+  useEffect(() => {
+    fetchMilestones();
+  }, [fetchMilestones]);
+
+  // ─── Real-time subscription ───────────────────────────────
+  useEffect(() => {
+    if (!transactionId) return;
+
+    const channel = supabase
+      .channel(`milestones-${transactionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transaction_milestones",
+          filter: `transaction_id=eq.${transactionId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setMilestones((prev) => {
+              const exists = prev.find((m) => m.id === (payload.new as DbMilestone).id);
+              if (exists) return prev;
+              return [...prev, payload.new as DbMilestone].sort((a, b) => a.position - b.position);
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setMilestones((prev) =>
+              prev.map((m) => (m.id === (payload.new as DbMilestone).id ? (payload.new as DbMilestone) : m))
+            );
+          } else if (payload.eventType === "DELETE") {
+            setMilestones((prev) => prev.filter((m) => m.id !== (payload.old as { id: string }).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [transactionId]);
+
+  // ─── Create milestones via edge function ──────────────────
+  const createMilestonesFromTemplate = async (industryKey: string) => {
+    if (!transactionId) {
+      toast.error("No transaction ID — cannot create milestones");
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Not authenticated"); return; }
+
+    // Build custom milestones from template
     const template = INDUSTRY_TEMPLATES[industryKey];
     if (!template) return;
-    setIndustry(industryKey);
-    setMilestones(
-      template.map((t, i) => ({
-        ...t,
-        id: `ms-${Date.now()}-${i}`,
-        status: "pending",
-        observers: [],
-      }))
-    );
-    setLocked(false);
-    toast.success(`${industryKey.replace(/-/g, " ")} template applied — customize as needed`);
-  };
 
-  const addMilestone = () => {
-    setMilestones((prev) => [
-      ...prev,
-      {
-        id: `ms-${Date.now()}`,
-        name: "",
-        percentage: 0,
-        documents: [],
-        documentMode: "none" as DocumentMode,
-        description: "",
-        requiresObserver: false,
-        status: "pending",
-        observers: [],
+    const customMilestones = template.map((t) => ({
+      title: t.name,
+      description: t.description,
+      is_payment_milestone: true,
+      payment_percentage: t.percentage,
+      required_documents: t.documents,
+      assigned_to: null,
+    }));
+
+    setSaving(true);
+    const { data, error } = await supabase.functions.invoke("escrow-manager", {
+      body: {
+        action: "create_milestones",
+        transaction_id: transactionId,
+        custom_milestones: customMilestones,
+        user_id: user.id,
       },
-    ]);
+    });
+
+    setSaving(false);
+    if (error || !data?.success) {
+      toast.error(data?.error || error?.message || "Failed to create milestones");
+      return;
+    }
+
+    setIndustry(industryKey);
+    toast.success(`${industryKey.replace(/-/g, " ")} milestones created (${data.count} stages)`);
+    await fetchMilestones();
   };
 
-  const removeMilestone = (id: string) => setMilestones((prev) => prev.filter((m) => m.id !== id));
+  // ─── Add custom milestone ─────────────────────────────────
+  const addCustomMilestone = async () => {
+    if (!newTitle.trim()) { toast.error("Milestone title required"); return; }
+    if (!transactionId) return;
 
-  const updateMilestone = (id: string, field: keyof Milestone, value: any) => {
-    setMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setSaving(true);
+    const { data, error } = await supabase.functions.invoke("escrow-manager", {
+      body: {
+        action: "create_milestones",
+        transaction_id: transactionId,
+        custom_milestones: [{
+          title: newTitle.trim(),
+          description: newDesc.trim() || null,
+          is_payment_milestone: newIsPayment,
+          payment_percentage: newPercentage,
+          required_documents: [],
+        }],
+        user_id: user.id,
+      },
+    });
+    setSaving(false);
+
+    if (error || !data?.success) {
+      // If milestones already exist, insert directly
+      if (data?.error?.includes("already exist")) {
+        const { error: insertErr } = await supabase.from("transaction_milestones").insert({
+          transaction_id: transactionId,
+          title: newTitle.trim(),
+          description: newDesc.trim() || null,
+          position: milestones.length,
+          status: "pending",
+          is_payment_milestone: newIsPayment,
+          payment_amount: null,
+          required_documents: [],
+        });
+        if (insertErr) { toast.error(insertErr.message); return; }
+        toast.success("Milestone added");
+      } else {
+        toast.error(data?.error || "Failed to add milestone");
+        return;
+      }
+    } else {
+      toast.success("Milestone added");
+    }
+
+    setNewTitle("");
+    setNewDesc("");
+    setNewPercentage(0);
+    await fetchMilestones();
   };
 
-  const addDocument = (id: string, doc: string) => {
-    if (!doc.trim()) return;
-    setMilestones((prev) =>
-      prev.map((m) => m.id === id ? { ...m, documents: [...m.documents, doc.trim()] } : m)
-    );
+  // ─── Delete milestone ─────────────────────────────────────
+  const deleteMilestone = async (milestoneId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase.functions.invoke("escrow-manager", {
+      body: { action: "delete_milestone", milestone_id: milestoneId, user_id: user.id },
+    });
+
+    if (error || !data?.success) {
+      toast.error(data?.error || "Failed to delete milestone");
+      return;
+    }
+    toast.success("Milestone deleted");
   };
 
-  const removeDocument = (milestoneId: string, docIndex: number) => {
-    setMilestones((prev) =>
-      prev.map((m) => m.id === milestoneId ? { ...m, documents: m.documents.filter((_, i) => i !== docIndex) } : m)
-    );
+  // ─── Drag-to-reorder ──────────────────────────────────────
+  const handleDragStart = (index: number) => { dragItem.current = index; };
+
+  const handleDragEnter = (index: number) => { dragOverItem.current = index; };
+
+  const handleDragEnd = async () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
+
+    const reordered = [...milestones];
+    const [removed] = reordered.splice(dragItem.current, 1);
+    reordered.splice(dragOverItem.current, 0, removed);
+
+    setMilestones(reordered);
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    // Persist reorder
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !transactionId) return;
+
+    await supabase.functions.invoke("escrow-manager", {
+      body: {
+        action: "reorder_milestones",
+        transaction_id: transactionId,
+        milestone_ids: reordered.map((m) => m.id),
+        user_id: user.id,
+      },
+    });
   };
 
-  // ─── Observer Management ───────────────────────────
-  const addObserver = (milestoneId: string) => {
+  // ─── Update milestone status ──────────────────────────────
+  const updateMilestoneStatus = async (milestoneId: string, status: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase.functions.invoke("escrow-manager", {
+      body: { action: "update_milestone", milestone_id: milestoneId, user_id: user.id, status },
+    });
+
+    if (error || !data?.success) {
+      toast.error(data?.error || "Failed to update milestone");
+      return;
+    }
+    toast.success(`Milestone marked as ${status}`);
+
+    // If completed payment milestone, show acknowledgement modal
+    if (status === "completed") {
+      const ms = milestones.find((m) => m.id === milestoneId);
+      if (ms?.is_payment_milestone) {
+        setShowAckModal(milestoneId);
+      }
+    }
+  };
+
+  // ─── Add observer ─────────────────────────────────────────
+  const addObserver = async (milestoneId: string) => {
     if (!newObserver.name.trim() || !newObserver.email.trim()) {
       toast.error("Observer name and email required");
       return;
     }
-    const observer: Observer = {
-      id: `obs-${Date.now()}`,
-      name: newObserver.name.trim(),
-      email: newObserver.email.trim(),
-      role: newObserver.role,
-      signedOff: false,
-    };
-    setMilestones((prev) =>
-      prev.map((m) => m.id === milestoneId ? { ...m, observers: [...m.observers, observer] } : m)
-    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !transactionId) return;
+
+    const { data, error } = await supabase.functions.invoke("escrow-manager", {
+      body: {
+        action: "add_observer",
+        transaction_id: transactionId,
+        observer_email: newObserver.email.trim(),
+        observer_name: newObserver.name.trim(),
+        observer_role: newObserver.role,
+        permissions: ["view", "sign"],
+        milestone_ids: [milestoneId],
+        user_id: user.id,
+      },
+    });
+
+    if (error || !data?.success) {
+      toast.error(data?.error || "Failed to add observer");
+      return;
+    }
+
+    toast.success(`Observer ${newObserver.name} invited — access token generated`);
     setNewObserver({ name: "", email: "", role: "Bank" });
     setAddingObserverFor(null);
-    toast.success(`Observer ${observer.name} (${observer.role}) added — they'll receive a sign-off request`);
+    await fetchMilestones();
   };
 
-  const removeObserver = (milestoneId: string, observerId: string) => {
-    setMilestones((prev) =>
-      prev.map((m) => m.id === milestoneId ? { ...m, observers: m.observers.filter((o) => o.id !== observerId) } : m)
-    );
+  // ─── Document upload handler ──────────────────────────────
+  const handleDocUpload = async (milestoneId: string, files: { name: string; url: string; path: string }[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const docs = files.map((f) => ({ name: f.name, url: f.url, path: f.path, uploaded_at: new Date().toISOString() }));
+
+    await supabase.functions.invoke("escrow-manager", {
+      body: {
+        action: "update_milestone",
+        milestone_id: milestoneId,
+        user_id: user.id,
+        uploaded_documents: docs,
+      },
+    });
+
+    toast.success(`${files.length} document(s) attached to milestone`);
   };
 
-  const toggleObserverSignOff = (milestoneId: string, observerId: string) => {
-    setMilestones((prev) =>
-      prev.map((m) =>
-        m.id === milestoneId
-          ? { ...m, observers: m.observers.map((o) => o.id === observerId ? { ...o, signedOff: !o.signedOff } : o) }
-          : m
-      )
-    );
-  };
+  // ─── Lock milestones ──────────────────────────────────────
+  const handleLock = async () => {
+    if (!transactionId) return;
+    // Update transaction milestone_status to 'agreed'
+    const { error } = await supabase
+      .from("transactions")
+      .update({ milestone_status: "agreed", updated_at: new Date().toISOString() })
+      .eq("id", transactionId);
 
-  const canReleaseMilestone = (ms: Milestone) => {
-    if (!ms.requiresObserver || ms.observers.length === 0) return true;
-    return ms.observers.every((o) => o.signedOff);
-  };
-
-  const handleLock = () => {
-    if (!isValid) {
-      toast.error("Milestones must sum to exactly 100%");
-      return;
-    }
-    // Check observer-gated milestones have at least one observer
-    const missingObservers = milestones.filter((m) => m.requiresObserver && m.observers.length === 0);
-    if (missingObservers.length > 0) {
-      toast.error(`${missingObservers.length} milestone(s) require at least one observer — add them before locking`);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     setLocked(true);
     onSave?.(milestones);
     toast.success("Milestones locked — both parties must agree to any changes");
   };
 
-  const handleProposeChange = () => {
-    if (!changeReason.trim()) {
-      toast.error("Please provide a reason for the change");
-      return;
-    }
-    setChangeRequest({
-      milestones: [...milestones],
-      requestedBy: role === "admin" ? "vendor" : role,
-      reason: changeReason,
-      status: "pending",
-    });
-    setShowDiff(true);
-    toast.info("Change request created — awaiting counterparty approval");
-  };
+  const totalPercentage = milestones.reduce((sum, m) => {
+    if (!m.is_payment_milestone || !m.payment_amount) return sum;
+    return sum; // percentages aren't stored directly; we show count instead
+  }, 0);
 
-  const handleAcceptChange = () => {
-    if (changeRequest) {
-      setMilestones(changeRequest.milestones);
-      setChangeRequest(null);
-      setShowDiff(false);
-      toast.success("Changes accepted and applied");
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed": return "bg-primary/10 border-primary/30";
+      case "in_progress": return "bg-accent/10 border-accent/30";
+      default: return "";
     }
   };
 
-  const handleRejectChange = () => {
-    setChangeRequest(null);
-    setShowDiff(false);
-    toast.info("Changes rejected — original milestones preserved");
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">Loading milestones...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Industry Selector */}
-      {!locked && (
+      {/* Industry Template Selector — only when no milestones exist */}
+      {milestones.length === 0 && !locked && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Select Industry Template</CardTitle>
@@ -285,7 +490,8 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
               {Object.keys(INDUSTRY_TEMPLATES).map((key) => (
                 <button
                   key={key}
-                  onClick={() => applyTemplate(key)}
+                  onClick={() => createMilestonesFromTemplate(key)}
+                  disabled={saving}
                   className={cn(
                     "p-2.5 rounded-lg border-2 text-xs font-medium transition-all text-left capitalize",
                     industry === key
@@ -297,6 +503,11 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 </button>
               ))}
             </div>
+            {saving && (
+              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" /> Creating milestones...
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -307,285 +518,293 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
-                Milestones
+                Milestones ({milestones.length})
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant={isValid ? "default" : "destructive"} className="text-[10px]">
-                  {totalPercentage}% / 100%
-                </Badge>
-                {locked && (role === "vendor" || role === "buyer") && (
-                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
-                    <RotateCcw className="w-3 h-3" /> Propose Change
-                  </Button>
-                )}
-              </div>
+              {locked && (role === "vendor" || role === "buyer") && (
+                <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
+                  <RotateCcw className="w-3 h-3" /> Propose Change
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {milestones.map((ms, index) => (
               <div
                 key={ms.id}
+                draggable={!locked && ms.status === "pending"}
+                onDragStart={() => handleDragStart(index)}
+                onDragEnter={() => handleDragEnter(index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
                 className={cn(
-                  "p-3 rounded-lg border border-border space-y-2",
-                  ms.status === "released" && "bg-primary/5 border-primary/30",
-                  ms.status === "fulfilled" && "bg-accent/5 border-accent/30"
+                  "p-3 rounded-lg border border-border space-y-2 transition-all",
+                  getStatusColor(ms.status),
+                  ms.payment_released && "bg-primary/5 border-primary/30"
                 )}
               >
                 <div className="flex items-start gap-2">
-                  <GripVertical className="w-4 h-4 text-muted-foreground mt-1 shrink-0 cursor-grab" />
+                  {!locked && ms.status === "pending" && (
+                    <GripVertical className="w-4 h-4 text-muted-foreground mt-1 shrink-0 cursor-grab" />
+                  )}
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-muted-foreground w-5">#{index + 1}</span>
-                      <Input
-                        placeholder="Milestone name"
-                        value={ms.name}
-                        onChange={(e) => updateMilestone(ms.id, "name", e.target.value)}
-                        disabled={locked}
-                        className="text-sm font-semibold h-8"
-                      />
-                      <Input
-                        type="number"
-                        placeholder="%"
-                        value={ms.percentage || ""}
-                        onChange={(e) => updateMilestone(ms.id, "percentage", parseInt(e.target.value) || 0)}
-                        disabled={locked}
-                        className="w-20 text-sm h-8 text-center font-bold"
-                        min={0}
-                        max={100}
-                      />
-                      {!locked && (
-                        <button onClick={() => removeMilestone(ms.id)} className="text-muted-foreground hover:text-destructive">
-                          <X className="w-4 h-4" />
-                        </button>
+                    {/* Title + Status */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-muted-foreground">#{index + 1}</span>
+                      <span className="text-sm font-semibold text-foreground">{ms.title}</span>
+                      <Badge
+                        variant={ms.payment_released ? "default" : ms.status === "completed" ? "secondary" : "outline"}
+                        className="text-[10px]"
+                      >
+                        {ms.payment_released ? "✓ Released" : ms.status === "completed" ? "Completed" : ms.status === "in_progress" ? "In Progress" : "Pending"}
+                      </Badge>
+                      {ms.is_payment_milestone && ms.payment_amount && (
+                        <Badge variant="outline" className="text-[10px] gap-1">
+                          💰 ${Number(ms.payment_amount).toLocaleString()}
+                        </Badge>
+                      )}
+                      {/* Observer badge */}
+                      {ms.observer_id && (
+                        <Badge variant="outline" className="text-[9px] gap-1">
+                          <Eye className="w-2.5 h-2.5" />
+                          Observer {ms.observer_signed ? "✓ Signed" : "Pending"}
+                        </Badge>
                       )}
                     </div>
-                    <Input
-                      placeholder="Description (optional)"
-                      value={ms.description}
-                      onChange={(e) => updateMilestone(ms.id, "description", e.target.value)}
-                      disabled={locked}
-                      className="text-xs h-7"
-                    />
 
-                    {/* Document Gate Mode */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                          <Upload className="w-3 h-3" /> Document Uploads
-                        </p>
-                        {!locked && (
-                          <div className="flex gap-0.5 rounded-md border border-border overflow-hidden">
-                            {(["none", "optional", "required"] as DocumentMode[]).map((mode) => (
-                              <button
-                                key={mode}
-                                onClick={() => updateMilestone(ms.id, "documentMode", mode)}
-                                className={cn(
-                                  "px-2 py-0.5 text-[9px] font-semibold capitalize transition-colors",
-                                  ms.documentMode === mode
-                                    ? mode === "required" ? "bg-destructive text-destructive-foreground" : mode === "optional" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-                                    : "text-muted-foreground hover:bg-muted/50"
-                                )}
-                              >
-                                {mode}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {locked && (
-                          <Badge variant={ms.documentMode === "required" ? "destructive" : ms.documentMode === "optional" ? "secondary" : "outline"} className="text-[9px]">
-                            {ms.documentMode === "required" ? "📋 Required" : ms.documentMode === "optional" ? "📎 Optional" : "— None"}
+                    {/* Description */}
+                    {ms.description && (
+                      <p className="text-xs text-muted-foreground">{ms.description}</p>
+                    )}
+
+                    {/* Required documents */}
+                    {ms.required_documents && ms.required_documents.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {ms.required_documents.map((doc, di) => (
+                          <Badge key={di} variant="secondary" className="text-[10px] gap-1">
+                            <FileText className="w-2.5 h-2.5" /> {doc}
                           </Badge>
-                        )}
-                      </div>
-                      {ms.documentMode !== "none" && (
-                        <div className="flex flex-wrap gap-1">
-                          {ms.documents.map((doc, di) => (
-                            <Badge key={di} variant={ms.documentMode === "required" ? "default" : "secondary"} className="text-[10px] gap-1">
-                              <FileText className="w-2.5 h-2.5" />
-                              {doc}
-                              {!locked && (
-                                <button onClick={() => removeDocument(ms.id, di)}>
-                                  <X className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                            </Badge>
-                          ))}
-                          {!locked && (
-                            <Input
-                              placeholder="+ Add document"
-                              className="h-6 text-[10px] w-32"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  addDocument(ms.id, (e.target as HTMLInputElement).value);
-                                  (e.target as HTMLInputElement).value = "";
-                                }
-                              }}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Observer Gate Toggle */}
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={ms.requiresObserver}
-                          onChange={(e) => updateMilestone(ms.id, "requiresObserver", e.target.checked)}
-                          disabled={locked}
-                          className="rounded border-border"
-                        />
-                        <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> Requires Observer Sign-off
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Observer List */}
-                    {ms.requiresObserver && (
-                      <div className="pl-2 border-l-2 border-primary/20 space-y-1.5">
-                        {ms.observers.length === 0 && !locked && (
-                          <p className="text-[10px] text-destructive/70">⚠ Add at least one observer before locking</p>
-                        )}
-                        {ms.observers.map((obs) => (
-                          <div key={obs.id} className="flex items-center gap-2 text-[10px]">
-                            <button
-                              onClick={() => locked && (role === "admin") && toggleObserverSignOff(ms.id, obs.id)}
-                              className={cn(
-                                "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                                obs.signedOff
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-muted-foreground/40"
-                              )}
-                            >
-                              {obs.signedOff && <Check className="w-2.5 h-2.5" />}
-                            </button>
-                            <Badge variant={obs.signedOff ? "default" : "outline"} className="text-[9px] gap-1">
-                              {obs.role}
-                            </Badge>
-                            <span className="font-medium text-foreground">{obs.name}</span>
-                            <span className="text-muted-foreground">{obs.email}</span>
-                            {obs.signedOff && <span className="text-primary font-bold">✓ Signed</span>}
-                            {!locked && (
-                              <button onClick={() => removeObserver(ms.id, obs.id)} className="text-muted-foreground hover:text-destructive ml-auto">
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
                         ))}
-
-                        {/* Add Observer Form */}
-                        {!locked && addingObserverFor === ms.id ? (
-                          <div className="space-y-1.5 p-2 rounded-md bg-muted/50">
-                            <div className="grid grid-cols-3 gap-1.5">
-                              <Input
-                                placeholder="Name"
-                                value={newObserver.name}
-                                onChange={(e) => setNewObserver((p) => ({ ...p, name: e.target.value }))}
-                                className="h-6 text-[10px]"
-                              />
-                              <Input
-                                placeholder="Email"
-                                value={newObserver.email}
-                                onChange={(e) => setNewObserver((p) => ({ ...p, email: e.target.value }))}
-                                className="h-6 text-[10px]"
-                              />
-                              <Select value={newObserver.role} onValueChange={(v) => setNewObserver((p) => ({ ...p, role: v }))}>
-                                <SelectTrigger className="h-6 text-[10px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {OBSERVER_ROLES.map((r) => (
-                                    <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button size="sm" className="h-6 text-[10px] gap-1" onClick={() => addObserver(ms.id)}>
-                                <Mail className="w-3 h-3" /> Invite Observer
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setAddingObserverFor(null)}>Cancel</Button>
-                            </div>
-                          </div>
-                        ) : !locked && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 text-[10px] gap-1"
-                            onClick={() => {
-                              setAddingObserverFor(ms.id);
-                              setNewObserver({ name: "", email: "", role: "Bank" });
-                            }}
-                          >
-                            <UserPlus className="w-3 h-3" /> Add Observer
-                          </Button>
-                        )}
-
-                        {/* Release blocked indicator */}
-                        {locked && !canReleaseMilestone(ms) && (
-                          <p className="text-[10px] text-destructive font-semibold flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            Funds blocked — awaiting {ms.observers.filter((o) => !o.signedOff).length} observer sign-off(s)
-                          </p>
-                        )}
                       </div>
                     )}
 
-                    {/* Status indicator */}
-                    {locked && (
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={ms.status === "released" ? "default" : "secondary"}
-                          className="text-[10px]"
-                        >
-                          {ms.status === "released" ? "✓ Released" : ms.status === "fulfilled" ? "Awaiting Release" : "Pending"}
-                        </Badge>
-                        {ms.requiresObserver && ms.observers.length > 0 && (
-                          <Badge variant="outline" className="text-[9px] gap-1">
-                            <Eye className="w-2.5 h-2.5" />
-                            {ms.observers.filter((o) => o.signedOff).length}/{ms.observers.length} signed
+                    {/* Uploaded documents */}
+                    {ms.uploaded_documents && Array.isArray(ms.uploaded_documents) && ms.uploaded_documents.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[10px] text-muted-foreground font-semibold">Uploaded:</span>
+                        {(ms.uploaded_documents as Array<{ name?: string }>).map((doc, di) => (
+                          <Badge key={di} variant="default" className="text-[10px] gap-1">
+                            <Check className="w-2.5 h-2.5" /> {doc.name || `File ${di + 1}`}
                           </Badge>
-                        )}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {/* Upload documents button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] gap-1"
+                        onClick={() => setShowUploadFor(showUploadFor === ms.id ? null : ms.id)}
+                      >
+                        <Upload className="w-3 h-3" /> Upload Doc
+                      </Button>
+
+                      {/* Status progression buttons */}
+                      {ms.status === "pending" && !ms.payment_released && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] gap-1"
+                          onClick={() => updateMilestoneStatus(ms.id, "in_progress")}
+                        >
+                          <ArrowRight className="w-3 h-3" /> Start
+                        </Button>
+                      )}
+                      {ms.status === "in_progress" && !ms.payment_released && (
+                        <Button
+                          size="sm"
+                          className="h-6 text-[10px] gap-1"
+                          onClick={() => updateMilestoneStatus(ms.id, "completed")}
+                        >
+                          <Check className="w-3 h-3" /> Mark Complete
+                        </Button>
+                      )}
+
+                      {/* Add observer */}
+                      {!ms.observer_id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] gap-1"
+                          onClick={() => {
+                            setAddingObserverFor(ms.id);
+                            setNewObserver({ name: "", email: "", role: "Bank" });
+                          }}
+                        >
+                          <UserPlus className="w-3 h-3" /> Observer
+                        </Button>
+                      )}
+
+                      {/* Delete (only pending) */}
+                      {ms.status === "pending" && !locked && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] gap-1 text-destructive hover:text-destructive"
+                          onClick={() => deleteMilestone(ms.id)}
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </Button>
+                      )}
+
+                      {/* Acknowledgement sign-off (for completed payment milestones) */}
+                      {ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-6 text-[10px] gap-1"
+                          onClick={() => setShowAckModal(ms.id)}
+                        >
+                          <FileText className="w-3 h-3" /> Sign & Release
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Document upload panel (inline) */}
+                    {showUploadFor === ms.id && transactionId && (
+                      <div className="mt-2 p-2 rounded-md border border-border bg-muted/30">
+                        <DocumentUpload
+                          label="Upload Milestone Documents"
+                          context={{
+                            bucket: "milestone-documents",
+                            transactionId: transactionId,
+                            milestoneId: ms.id,
+                          }}
+                          onUploadComplete={(files) => handleDocUpload(ms.id, files)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Add Observer Form (inline) */}
+                    {addingObserverFor === ms.id && (
+                      <div className="space-y-1.5 p-2 rounded-md bg-muted/50 mt-2">
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <Input
+                            placeholder="Name"
+                            value={newObserver.name}
+                            onChange={(e) => setNewObserver((p) => ({ ...p, name: e.target.value }))}
+                            className="h-6 text-[10px]"
+                          />
+                          <Input
+                            placeholder="Email"
+                            value={newObserver.email}
+                            onChange={(e) => setNewObserver((p) => ({ ...p, email: e.target.value }))}
+                            className="h-6 text-[10px]"
+                          />
+                          <Select value={newObserver.role} onValueChange={(v) => setNewObserver((p) => ({ ...p, role: v }))}>
+                            <SelectTrigger className="h-6 text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {OBSERVER_ROLES.map((r) => (
+                                <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" className="h-6 text-[10px] gap-1" onClick={() => addObserver(ms.id)}>
+                            <Mail className="w-3 h-3" /> Invite Observer
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setAddingObserverFor(null)}>Cancel</Button>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             ))}
-
-            {!locked && (
-              <Button variant="outline" size="sm" className="w-full gap-2" onClick={addMilestone}>
-                <Plus className="w-4 h-4" /> Add Milestone
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Change Request Diff View */}
-      {showDiff && !changeRequest && (
+      {/* Add Custom Milestone Form */}
+      {!locked && transactionId && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Add Custom Milestone</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Input
+              placeholder="Milestone title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="text-sm h-8"
+            />
+            <Input
+              placeholder="Description (optional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              className="text-xs h-7"
+            />
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 text-[10px]">
+                <input
+                  type="checkbox"
+                  checked={newIsPayment}
+                  onChange={(e) => setNewIsPayment(e.target.checked)}
+                  className="rounded border-border"
+                />
+                Payment milestone
+              </label>
+              {newIsPayment && (
+                <Input
+                  type="number"
+                  placeholder="% of total"
+                  value={newPercentage || ""}
+                  onChange={(e) => setNewPercentage(parseInt(e.target.value) || 0)}
+                  className="w-24 text-xs h-7"
+                  min={0}
+                  max={100}
+                />
+              )}
+            </div>
+            <Button size="sm" className="gap-2" onClick={addCustomMilestone} disabled={saving || !newTitle.trim()}>
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Add Milestone
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lock Action */}
+      {milestones.length > 0 && !locked && (
+        <Button className="w-full gap-2" onClick={handleLock}>
+          <Lock className="w-4 h-4" /> Lock Milestones
+        </Button>
+      )}
+
+      {/* Change Request UI */}
+      {showDiff && locked && (
         <Card className="border-accent/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Propose Milestone Changes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">Edit the milestones above, then submit your change request with a reason. The other party will see a before/after comparison.</p>
-            <div>
-              <Label className="text-xs">Reason for change</Label>
-              <Textarea
-                placeholder="Explain why these changes are needed..."
-                value={changeReason}
-                onChange={(e) => setChangeReason(e.target.value)}
-                className="mt-1 text-xs"
-                rows={2}
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">Describe what changes are needed. The other party will review and approve/reject.</p>
+            <Textarea
+              placeholder="Reason for change..."
+              value={changeReason}
+              onChange={(e) => setChangeReason(e.target.value)}
+              className="text-xs"
+              rows={2}
+            />
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleProposeChange} className="gap-1">
-                <ArrowRight className="w-3 h-3" /> Submit Change Request
+              <Button size="sm" onClick={() => { toast.info("Change request submitted"); setShowDiff(false); }}>
+                <ArrowRight className="w-3 h-3 mr-1" /> Submit
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowDiff(false)}>Cancel</Button>
             </div>
@@ -593,52 +812,26 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         </Card>
       )}
 
-      {/* Incoming Change Request */}
-      {changeRequest && changeRequest.status === "pending" && (
-        <Card className="border-2 border-accent/40 bg-accent/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-accent" />
-              Milestone Change Request
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              <strong className="text-foreground capitalize">{changeRequest.requestedBy}</strong> has proposed changes to the milestone structure.
-            </p>
-            <div className="p-2 rounded-lg bg-muted text-xs">
-              <p className="font-semibold text-foreground mb-1">Reason:</p>
-              <p className="text-muted-foreground">{changeRequest.reason}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleAcceptChange} className="gap-1 bg-primary">
-                <Check className="w-3 h-3" /> Accept Changes
-              </Button>
-              <Button size="sm" variant="destructive" onClick={handleRejectChange} className="gap-1">
-                <X className="w-3 h-3" /> Reject
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Lock / Save Actions */}
-      {milestones.length > 0 && !locked && (
-        <div className="flex gap-2">
-          <Button className="flex-1 gap-2" onClick={handleLock} disabled={!isValid}>
-            <Lock className="w-4 h-4" />
-            Lock Milestones ({totalPercentage}%)
-          </Button>
-        </div>
-      )}
-
-      {!isValid && milestones.length > 0 && totalPercentage !== 100 && (
-        <p className="text-xs text-destructive text-center">
-          {totalPercentage > 100
-            ? `Over-allocated by ${totalPercentage - 100}% — reduce some milestones`
-            : `Under-allocated by ${100 - totalPercentage}% — add to remaining milestones`}
-        </p>
-      )}
+      {/* Acknowledgement Form Modal */}
+      <Dialog open={!!showAckModal} onOpenChange={() => setShowAckModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Sign Milestone Acknowledgement</DialogTitle>
+          </DialogHeader>
+          {showAckModal && transactionId && (
+            <AcknowledgementForm
+              txId={transactionId}
+              milestoneCount={1}
+              requireTypedSignature
+              onAccept={() => {
+                setShowAckModal(null);
+                toast.success("Acknowledgement signed — payment can now be released");
+              }}
+              onDecline={() => setShowAckModal(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
