@@ -303,8 +303,8 @@ const VendorSites = () => {
               <Card key={site.id}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Globe className="w-6 h-6 text-primary" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isWidgetEnabled ? "bg-primary/15" : "bg-muted/20"}`}>
+                      {isWidgetEnabled ? <Shield className="w-6 h-6 text-primary" /> : <Globe className="w-6 h-6 text-muted-foreground" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
