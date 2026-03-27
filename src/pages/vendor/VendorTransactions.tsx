@@ -22,6 +22,8 @@ import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSup
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
+import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -318,6 +320,20 @@ const VendorTransactions = () => {
                                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                                 <MilestoneProgress industry={tx.industry} status={tx.status} />
                               </details>
+                              {isMilestoneIndustry(tx.industry) && tx.status === "locked" && (
+                                <MilestoneNegotiation
+                                  role="vendor"
+                                  txId={tx.id}
+                                  industry={tx.industry || undefined}
+                                  orderAmount={tx.amount}
+                                  buyerName={tx.buyer}
+                                  vendorName="Your Business"
+                                  status="drafting"
+                                  onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${tx.buyer} for review`)}
+                                  onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                                  onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                                />
+                              )}
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments
                                   tx={{

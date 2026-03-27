@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2 } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
+import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import { supabase } from "@/integrations/supabase/client";
@@ -288,6 +290,20 @@ const BuyerOrders = () => {
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                         <MilestoneProgress industry={order.industry} status={order.status} />
                       </details>
+                      {isMilestoneIndustry(order.industry) && order.status === "locked" && (
+                        <MilestoneNegotiation
+                          role="buyer"
+                          txId={order.id}
+                          industry={order.industry || undefined}
+                          orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+                          buyerName="You"
+                          vendorName={order.vendor}
+                          status="drafting"
+                          onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
+                          onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                          onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                        />
+                      )}
                       <div className="pt-2 border-t border-border">
                         <TransactionDocuments
                           tx={{
