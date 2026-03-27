@@ -193,7 +193,7 @@ const TrustLockDualCheckout = () => {
                 )}
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground flex items-center gap-1">
-                    TrustLock Pay Fee ({getFeeRange()})
+                    TrustLock Pay Fee ({isCrypto ? "1.5% – 2.5%" : getFeeRange()})
                     <button onClick={() => setShowFees(!showFees)}>
                       <Info className="w-3 h-3" />
                     </button>
