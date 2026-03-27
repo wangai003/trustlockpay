@@ -269,6 +269,22 @@ const VendorSites = () => {
                   <Label>Website URL</Label>
                   <Input placeholder="e.g., mystore.myshopify.com" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} />
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Industry / Category</Label>
+                  <Select value={siteIndustry} onValueChange={setSiteIndustry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRUSTLOCK_INDUSTRIES.map((ind) => (
+                        <SelectItem key={ind.key} value={ind.key}>
+                          {ind.icon} {ind.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddSite}>Connect Site</Button>
