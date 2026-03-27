@@ -439,8 +439,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           </>
           )}
 
-          {/* Summary */}
-          {amount && parsedAmount > 0 && (
+          {/* Summary (vendor/buyer only — admin has no fees) */}
+          {!isAdmin && amount && parsedAmount > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Service Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
               {taxTotal > 0 && (
@@ -461,8 +461,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
+          {/* Admin summary — no fees */}
+          {isAdmin && amount && parsedAmount > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="font-medium text-primary">$0.00 (Admin)</span></div>
+            </div>
+          )}
+
           {/* Submit */}
-          <Button className="w-full h-12 gap-2 font-semibold" onClick={handleSubmit} disabled={processing || !method || !amount}>
+          <Button className="w-full h-12 gap-2 font-semibold" onClick={handleSubmit} disabled={processing || (!isAdmin && !method) || !amount}>
             {processing ? "Processing..." : (
               <>
                 {isAdmin && adminAction === "refund" ? "Process Refund" : isAdmin && adminAction === "split" ? "Process Split Payment" : "Pay with TrustLock Pay"}
