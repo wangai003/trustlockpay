@@ -188,7 +188,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       <Card className="rounded-t-none -mt-4 border-t-0">
         <CardContent className="p-4 space-y-5">
 
-          {/* ─── DUAL MODE TOGGLE ─── */}
+          {/* ─── DUAL MODE TOGGLE (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Region</p>
             <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setMethod(null); }}>
@@ -209,6 +210,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 : "Pay via international card, crypto on-ramps, or direct wallet transfer"}
             </p>
           </div>
+          )}
 
           {/* ─── SERVICE CATEGORY ─── */}
           <div className="space-y-2">
