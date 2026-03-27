@@ -104,12 +104,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const getSeedToken = useGetOrCreateSeedToken();
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
-  const taxTotal = taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-  const feeRate = payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
+  const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
+  const feeRate = isAdmin ? 0
+    : payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
     : payMode === "diaspora" && method === "thirdweb" ? 0.01
     : method === "azix" ? 0.01
     : 0.015;
-  const fee = parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
+  const fee = isAdmin ? "0.00" : parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
 
   const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
@@ -187,7 +188,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       <Card className="rounded-t-none -mt-4 border-t-0">
         <CardContent className="p-4 space-y-5">
 
-          {/* ─── DUAL MODE TOGGLE ─── */}
+          {/* ─── DUAL MODE TOGGLE (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Region</p>
             <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setMethod(null); }}>
@@ -208,8 +210,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 : "Pay via international card, crypto on-ramps, or direct wallet transfer"}
             </p>
           </div>
+          )}
 
-          {/* ─── SERVICE CATEGORY ─── */}
+          {/* ─── SERVICE CATEGORY (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">TrustLock Service</Label>
             <select
@@ -227,6 +231,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               ))}
             </select>
           </div>
+          )}
 
           {/* Amount */}
           <div>
@@ -234,7 +239,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
           </div>
 
-          {/* ─── SEED TOKEN + WALLET LINK ─── */}
+          {/* ─── SEED TOKEN + WALLET LINK (vendor/buyer only) ─── */}
+          {!isAdmin && (
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
@@ -273,6 +279,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
             )}
           </div>
+          )}
 
           {/* ─── ADMIN ACTIONS ─── */}
           <div className="space-y-2">
@@ -330,7 +337,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             )}
           </div>
 
-          {/* ─── PAYMENT METHODS (mode-specific) ─── */}
+          {/* ─── PAYMENT METHODS (vendor/buyer only) ─── */}
+          {!isAdmin && (
+          <>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pay With — {payMode === "local" ? "Local Africa" : "Diaspora / International"}
@@ -425,11 +434,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {/* Tax Breakdown */}
           {amount && parsedAmount > 0 && (
-            <TaxBreakdown subtotal={parsedAmount} taxItems={taxItems} onTaxItemsChange={setTaxItems} editable={role === "vendor" || role === "admin"} />
+            <TaxBreakdown subtotal={parsedAmount} taxItems={taxItems} onTaxItemsChange={setTaxItems} editable={role === "vendor"} />
+          )}
+          </>
           )}
 
-          {/* Summary */}
-          {amount && parsedAmount > 0 && (
+          {/* Summary (vendor/buyer only — admin has no fees) */}
+          {!isAdmin && amount && parsedAmount > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Service Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
               {taxTotal > 0 && (
@@ -450,8 +461,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
+          {/* Admin summary — no fees */}
+          {isAdmin && amount && parsedAmount > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="font-medium text-primary">$0.00 (Admin)</span></div>
+            </div>
+          )}
+
           {/* Submit */}
-          <Button className="w-full h-12 gap-2 font-semibold" onClick={handleSubmit} disabled={processing || !method || !amount}>
+          <Button className="w-full h-12 gap-2 font-semibold" onClick={handleSubmit} disabled={processing || (!isAdmin && !method) || !amount}>
             {processing ? "Processing..." : (
               <>
                 {isAdmin && adminAction === "refund" ? "Process Refund" : isAdmin && adminAction === "split" ? "Process Split Payment" : "Pay with TrustLock Pay"}
