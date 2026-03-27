@@ -341,6 +341,7 @@ const PublicCheckout = () => {
             </Button>
             <SanctionsGate
               amount={invoiceData?.grandTotal ?? linkData?.grand_total ?? 0}
+              vendorName={linkData?.vendor_name}
               onClear={handleComplianceClear}
               onBlock={handleComplianceBlock}
             />
