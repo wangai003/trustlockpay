@@ -61,7 +61,7 @@ const SanctionsGate = ({
           return data;
         };
 
-        let finalResult: "clear" | "flagged" | "blocked" = "clear";
+        let finalResult: string = "clear";
         let finalRisk = 0;
         let reason = "";
 
@@ -72,7 +72,7 @@ const SanctionsGate = ({
             finalResult = "blocked";
             finalRisk = buyerResult.risk_score;
             reason = `Buyer "${buyerName}" from ${buyerCountry} is on the OFAC/EU/UN sanctions list. TrustLock cannot process this transaction.`;
-          } else if (buyerResult.result === "flagged" && finalResult !== "blocked") {
+          } else if (buyerResult.result === "flagged") {
             finalResult = "flagged";
             finalRisk = Math.max(finalRisk, buyerResult.risk_score);
             reason = `Buyer "${buyerName}" flagged — ${buyerResult.matched_entries?.length ?? 0} potential match(es). Risk score: ${buyerResult.risk_score}%.`;
