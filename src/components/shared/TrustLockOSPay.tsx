@@ -477,7 +477,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon · Seed Token Verified</span>
+            <span>Secured by Azix Smart Contracts on Polygon · Transaction Fee Wallet · Seed Token Verified</span>
           </div>
         </CardContent>
       </Card>
