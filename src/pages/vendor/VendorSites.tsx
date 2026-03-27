@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
+import WidgetPreviewMockup from "@/components/vendor/WidgetPreviewMockup";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
