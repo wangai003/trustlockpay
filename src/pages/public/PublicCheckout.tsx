@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink } from "lucide-react";
+import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
@@ -11,25 +11,86 @@ import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import SanctionsGate from "@/components/shared/SanctionsGate";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
+import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
+
+interface LinkData {
+  link_id: string;
+  vendor_name: string;
+  title: string;
+  invoice_items: any[];
+  tax_items: TaxLineItem[];
+  note: string;
+  subtotal: number;
+  tax_total: number;
+  grand_total: number;
+  industry: string;
+}
 
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done">("invoice");
+  const [step, setStep] = useState<"loading" | "invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done">("loading");
+  const [linkData, setLinkData] = useState<LinkData | null>(null);
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
     taxTotal: number;
     grandTotal: number;
     note: string;
   } | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  const mockLink = {
-    id: linkId || "TL-DEMO",
-    vendorName: "TrustLock Vendor",
-    title: "Payment Request",
-    createdAt: new Date().toISOString(),
-  };
+  // Load link data from DB
+  useEffect(() => {
+    const loadLink = async () => {
+      if (!linkId) {
+        setLoadError(true);
+        setStep("invoice");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("standalone_links")
+        .select("*")
+        .eq("link_id", linkId)
+        .single();
+
+      if (error || !data) {
+        // Fallback to demo mode if link not found
+        setLinkData(null);
+        setStep("invoice");
+        return;
+      }
+
+      setLinkData({
+        link_id: data.link_id,
+        vendor_name: data.vendor_name || "Vendor",
+        title: data.title,
+        invoice_items: (data.invoice_items as any[]) || [],
+        tax_items: (data.tax_items as unknown as TaxLineItem[]) || [],
+        note: data.note || "",
+        subtotal: Number(data.subtotal),
+        tax_total: Number(data.tax_total),
+        grand_total: Number(data.grand_total),
+        industry: data.industry || "default",
+      });
+
+      // Auto-set invoice data from saved link
+      setInvoiceData({
+        subtotal: Number(data.subtotal),
+        taxTotal: Number(data.tax_total),
+        grandTotal: Number(data.grand_total),
+        note: data.note || "",
+      });
+
+      setStep("invoice");
+    };
+    loadLink();
+  }, [linkId]);
+
+  const vendorName = linkData?.vendor_name || "TrustLock Vendor";
+  const linkTitle = linkData?.title || "Payment Request";
+  const refId = linkId || "TL-DEMO";
 
   const handleInvoiceProceed = (invoice: {
     items: any[];
@@ -64,6 +125,14 @@ const PublicCheckout = () => {
     navigate("/");
   }, [navigate]);
 
+  if (step === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (step === "done") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -82,9 +151,9 @@ const PublicCheckout = () => {
             <div className="p-3 rounded-lg bg-muted/50 space-y-2">
               <p className="text-[10px] text-muted-foreground font-semibold">Your Order Reference</p>
               <div className="flex items-center justify-center gap-2">
-                <span className="font-mono font-bold text-lg text-foreground">{linkId}</span>
+                <span className="font-mono font-bold text-lg text-foreground">{refId}</span>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(linkId || ""); toast.success("Copied!"); }}
+                  onClick={() => { navigator.clipboard.writeText(refId); toast.success("Copied!"); }}
                   className="p-1 hover:bg-muted rounded"
                 >
                   <Copy className="w-4 h-4 text-muted-foreground" />
@@ -109,7 +178,7 @@ const PublicCheckout = () => {
             </div>
 
             <Badge variant="outline" className="text-xs">
-              Transaction ID: {linkId}
+              Transaction ID: {refId}
             </Badge>
             <p className="text-[10px] text-muted-foreground">
               Funds will be released to the vendor once you confirm delivery or after the 14-day auto-release window.
@@ -163,18 +232,88 @@ const PublicCheckout = () => {
         {step === "invoice" && (
           <div className="space-y-4">
             <div className="text-center space-y-1">
-              <h1 className="text-lg font-bold">{mockLink.title}</h1>
-              <p className="text-xs text-muted-foreground">From: {mockLink.vendorName} · Ref: {mockLink.id}</p>
+              <h1 className="text-lg font-bold">{linkTitle}</h1>
+              <p className="text-xs text-muted-foreground">From: {vendorName} · Ref: {refId}</p>
             </div>
-            <StandaloneInvoice
-              vendorName={mockLink.vendorName}
-              onProceed={handleInvoiceProceed}
-            />
+
+            {linkData ? (
+              /* Read-only invoice display for saved links */
+              <Card className="overflow-hidden border-2 border-primary/20 shadow-xl max-w-md mx-auto">
+                <div className="bg-primary px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary-foreground" />
+                    <span className="text-sm font-bold text-primary-foreground">TrustLock Invoice</span>
+                  </div>
+                  <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">
+                    Ref: {refId}
+                  </Badge>
+                </div>
+                <div className="p-5 space-y-4 bg-background">
+                  <div className="text-center pb-3 border-b border-border">
+                    <p className="text-xs text-muted-foreground">Invoice from</p>
+                    <p className="font-heading font-bold text-foreground">{vendorName}</p>
+                  </div>
+
+                  {/* Line items */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Items</p>
+                    {linkData.invoice_items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg border border-border bg-muted/20 text-xs">
+                        <div>
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-muted-foreground">Qty: {item.quantity} × ${Number(item.unitPrice).toFixed(2)}</p>
+                        </div>
+                        <span className="font-semibold">${(item.quantity * item.unitPrice).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Note */}
+                  {linkData.note && (
+                    <div className="p-2.5 rounded-lg bg-muted/30 text-xs">
+                      <p className="text-muted-foreground font-semibold mb-1">Vendor Note</p>
+                      <p>{linkData.note}</p>
+                    </div>
+                  )}
+
+                  {/* Summary */}
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-medium">${linkData.subtotal.toFixed(2)}</span>
+                    </div>
+                    {linkData.tax_total > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Taxes & Duties</span>
+                        <span className="font-medium">${linkData.tax_total.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-border pt-1 mt-1">
+                      <span className="font-bold text-sm">Total</span>
+                      <span className="font-bold text-sm text-primary">${linkData.grand_total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => setStep("compliance")}
+                  >
+                    Proceed to Checkout <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              /* Editable invoice for demo/fallback */
+              <StandaloneInvoice
+                vendorName={vendorName}
+                onProceed={handleInvoiceProceed}
+              />
+            )}
           </div>
         )}
 
         {/* Compliance Step */}
-        {step === "compliance" && invoiceData && (
+        {step === "compliance" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button
               variant="ghost"
@@ -185,7 +324,7 @@ const PublicCheckout = () => {
               <ArrowLeft className="w-4 h-4" /> Back to Invoice
             </Button>
             <SanctionsGate
-              amount={invoiceData.grandTotal}
+              amount={invoiceData?.grandTotal ?? linkData?.grand_total ?? 0}
               onClear={handleComplianceClear}
               onBlock={handleComplianceBlock}
             />
@@ -193,7 +332,7 @@ const PublicCheckout = () => {
         )}
 
         {/* Acknowledgement Step */}
-        {step === "acknowledge" && invoiceData && (
+        {step === "acknowledge" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button
               variant="ghost"
@@ -204,10 +343,11 @@ const PublicCheckout = () => {
               <ArrowLeft className="w-4 h-4" /> Back to Compliance
             </Button>
             <AcknowledgementForm
-              orderAmount={invoiceData.grandTotal}
-              vendorName={mockLink.vendorName}
+              industry={linkData?.industry}
+              orderAmount={invoiceData?.grandTotal ?? linkData?.grand_total ?? 0}
+              vendorName={vendorName}
               buyerName="You"
-              txId={mockLink.id}
+              txId={refId}
               onAccept={handleAcknowledgementAccept}
               onDecline={() => setStep("invoice")}
             />
@@ -215,7 +355,7 @@ const PublicCheckout = () => {
         )}
 
         {/* Contract Step */}
-        {step === "contract" && invoiceData && (
+        {step === "contract" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button
               variant="ghost"
@@ -226,10 +366,11 @@ const PublicCheckout = () => {
               <ArrowLeft className="w-4 h-4" /> Back to Acknowledgement
             </Button>
             <PreOrderSignatoryContract
-              orderAmount={invoiceData.grandTotal}
+              industry={linkData?.industry}
+              orderAmount={invoiceData?.grandTotal ?? linkData?.grand_total ?? 0}
               buyerName="You"
-              vendorName={mockLink.vendorName}
-              txId={mockLink.id}
+              vendorName={vendorName}
+              txId={refId}
               isAutoSigned
               onBothSigned={handleContractSigned}
               onDecline={() => setStep("invoice")}
@@ -239,20 +380,20 @@ const PublicCheckout = () => {
         )}
 
         {/* Pay Step */}
-        {step === "pay" && invoiceData && (
+        {step === "pay" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button
               variant="ghost"
               size="sm"
               className="gap-2 text-muted-foreground"
-              onClick={() => setStep("invoice")}
+              onClick={() => setStep("contract")}
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Invoice
+              <ArrowLeft className="w-4 h-4" /> Back to Contract
             </Button>
             <TrustLockOSPay
               role="buyer"
-              prefillService={mockLink.title}
-              prefillAmount={String(invoiceData.grandTotal)}
+              prefillService={linkTitle}
+              prefillAmount={String(invoiceData?.grandTotal ?? linkData?.grand_total ?? 0)}
               onComplete={() => setStep("done")}
             />
           </div>

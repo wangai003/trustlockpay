@@ -1,71 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Link2, Copy, Check, Plus, ExternalLink, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 
 interface GeneratedLink {
   id: string;
+  link_id: string;
   title: string;
-  amount: string;
-  url: string;
-  createdAt: string;
-  status: "active" | "paid" | "expired";
+  grand_total: number;
+  created_at: string;
+  status: string;
 }
 
 const VendorStandaloneLinks = () => {
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
-  const [title, setTitle] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [links, setLinks] = useState<GeneratedLink[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock generated links for testnet
-  const [links, setLinks] = useState<GeneratedLink[]>([
-    {
-      id: "TL-1719300000",
-      title: "Logo Design Package",
-      amount: "350.00",
-      url: "https://trustlockpay.lovable.app/pay/TL-1719300000",
-      createdAt: "2026-03-20",
-      status: "active",
-    },
-    {
-      id: "TL-1719200000",
-      title: "Consulting Session — 2hrs",
-      amount: "200.00",
-      url: "https://trustlockpay.lovable.app/pay/TL-1719200000",
-      createdAt: "2026-03-18",
-      status: "paid",
-    },
-  ]);
+  const baseUrl = window.location.origin;
+
+  // Load vendor's links
+  useEffect(() => {
+    const loadLinks = async () => {
+      if (!session?.user?.id) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("standalone_links")
+        .select("id, link_id, title, grand_total, created_at, status")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) setLinks(data);
+      setLoading(false);
+    };
+    loadLinks();
+  }, [session?.user?.id]);
 
   const handleCopy = (link: GeneratedLink) => {
-    navigator.clipboard.writeText(link.url);
-    setCopiedId(link.id);
+    navigator.clipboard.writeText(`${baseUrl}/pay/${link.link_id}`);
+    setCopiedId(link.link_id);
     toast.success("Link copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleCreateLink = () => {
-    if (!title) {
-      toast.error("Enter a title for the payment link");
+  const handleCreateLink = async (invoice: {
+    items: { id: string; description: string; quantity: number; unitPrice: number }[];
+    taxItems: TaxLineItem[];
+    subtotal: number;
+    taxTotal: number;
+    grandTotal: number;
+    note: string;
+  }) => {
+    const linkId = `TL-${Date.now()}`;
+    const vendorId = session?.user?.id;
+
+    if (!vendorId) {
+      toast.error("You must be logged in to create a link");
       return;
     }
-    const newId = `TL-${Date.now()}`;
-    const newLink: GeneratedLink = {
-      id: newId,
-      title,
-      amount: "0.00",
-      url: `https://trustlockpay.lovable.app/pay/${newId}`,
-      createdAt: new Date().toISOString().split("T")[0],
+
+    // Get vendor profile name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", vendorId)
+      .single();
+
+    const { error } = await supabase.from("standalone_links").insert({
+      link_id: linkId,
+      vendor_id: vendorId,
+      vendor_name: profile?.full_name || "Vendor",
+      title: invoice.items[0]?.description || "Payment Request",
+      invoice_items: invoice.items as any,
+      tax_items: invoice.taxItems as any,
+      note: invoice.note,
+      subtotal: invoice.subtotal,
+      tax_total: invoice.taxTotal,
+      grand_total: invoice.grandTotal,
       status: "active",
-    };
-    setLinks((prev) => [newLink, ...prev]);
-    setTitle("");
+    });
+
+    if (error) {
+      toast.error("Failed to create link");
+      return;
+    }
+
+    // Refresh list
+    const { data } = await supabase
+      .from("standalone_links")
+      .select("id, link_id, title, grand_total, created_at, status")
+      .order("created_at", { ascending: false });
+
+    if (data) setLinks(data);
     setShowCreate(false);
     toast.success("Payment link created! Share it with your buyer.");
   };
@@ -98,69 +136,68 @@ const VendorStandaloneLinks = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Create Payment Link</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-xs">Link Title</Label>
-                <Input
-                  placeholder="e.g. Logo Design, Used iPhone 15, Consulting Fee"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              {/* Invoice preview */}
-              <div className="border border-border rounded-lg p-4 bg-muted/30">
-                <p className="text-xs font-semibold text-muted-foreground mb-3">📄 Invoice Preview (buyer will see this)</p>
-                <StandaloneInvoice vendorName="Your Business" onProceed={() => {}} />
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={handleCreateLink} className="gap-2">
-                  <Link2 className="w-4 h-4" /> Generate Link
-                </Button>
-                <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              </div>
+            <CardContent>
+              <StandaloneInvoice
+                vendorName={session?.user?.user_metadata?.full_name || "Your Business"}
+                onProceed={handleCreateLink}
+              />
             </CardContent>
           </Card>
         )}
 
         {/* Links list */}
-        <div className="space-y-3">
-          {links.map((link) => (
-            <Card key={link.id}>
-              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold truncate">{link.title}</p>
-                    <Badge
-                      variant={link.status === "paid" ? "default" : link.status === "active" ? "outline" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {link.status}
-                    </Badge>
+        {loading ? (
+          <p className="text-xs text-muted-foreground text-center py-8">Loading links...</p>
+        ) : links.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Link2 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No payment links yet. Tap "New Link" to create one.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {links.map((link) => (
+              <Card key={link.id}>
+                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold truncate">{link.title}</p>
+                      <Badge
+                        variant={link.status === "paid" ? "default" : link.status === "active" ? "outline" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {link.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-semibold text-primary">${link.grand_total.toFixed(2)}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">{baseUrl}/pay/{link.link_id}</p>
+                    <p className="text-[10px] text-muted-foreground">Created {new Date(link.created_at).toLocaleDateString()}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-mono truncate">{link.url}</p>
-                  <p className="text-[10px] text-muted-foreground">Created {link.createdAt}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs"
-                    onClick={() => handleCopy(link)}
-                  >
-                    {copiedId === link.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copiedId === link.id ? "Copied" : "Copy"}
-                  </Button>
-                  <Button size="sm" variant="ghost" className="gap-1.5 text-xs">
-                    <ExternalLink className="w-3 h-3" /> Preview
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs"
+                      onClick={() => handleCopy(link)}
+                    >
+                      {copiedId === link.link_id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedId === link.link_id ? "Copied" : "Copy"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-xs"
+                      onClick={() => navigate(`/pay/${link.link_id}`)}
+                    >
+                      <ExternalLink className="w-3 h-3" /> Preview
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
