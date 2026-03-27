@@ -19,9 +19,14 @@ const docs = [
 ];
 
 const BuyerDocuments = () => {
+  const navigate = useNavigate();
   const [showAckPreview, setShowAckPreview] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
+
+  const handleDownloadForm = () => {
+    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Acknowledgement Form Download`)}&amount=0.50`);
+  };
 
   return (
     <div>
