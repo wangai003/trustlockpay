@@ -7,10 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Globe, Plus, ExternalLink, Copy, Trash2, CheckCircle, AlertTriangle,
-  RotateCcw, DollarSign, Receipt
+  RotateCcw, DollarSign, Receipt, Tag, Layers
 } from "lucide-react";
 import { useState, useEffect } from "react";
+
+const PLATFORM_OPTIONS = [
+  "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
+  "BigCommerce", "Magento", "PrestaShop", "OpenCart", "Jumia Seller",
+  "Konga Seller", "Flutterwave Store", "Paystack Storefront", "Custom Website",
+];
+
+const TRUSTLOCK_INDUSTRIES = [
+  { key: "construction", label: "Construction", icon: "🏗️" },
+  { key: "real_estate", label: "Real Estate", icon: "🏘️" },
+  { key: "agriculture", label: "Agriculture", icon: "🌾" },
+  { key: "mining", label: "Mining & Export", icon: "⛏️" },
+  { key: "tourism", label: "Tourism & Hospitality", icon: "✈️" },
+  { key: "retail", label: "Retail & E-Commerce", icon: "🛒" },
+  { key: "freelance", label: "Freelance & Consulting", icon: "💼" },
+  { key: "logistics", label: "Logistics & Shipping", icon: "🚚" },
+  { key: "education", label: "Education & Training", icon: "🎓" },
+  { key: "project_management", label: "Project Management", icon: "📋" },
+];
 import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
 import {
@@ -222,7 +248,16 @@ const VendorSites = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Platform</Label>
-                  <Input placeholder="e.g., Shopify, WooCommerce, Custom" value={sitePlatform} onChange={e => setSitePlatform(e.target.value)} />
+                  <Select value={sitePlatform} onValueChange={setSitePlatform}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLATFORM_OPTIONS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Website URL</Label>
@@ -300,6 +335,30 @@ const VendorSites = () => {
             );
           })}
         </div>
+
+        {/* Industries Served by TrustLock */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Industries Served by TrustLock
+            </CardTitle>
+            <CardDescription>TrustLock provides escrow-backed checkout workflows tailored to these industries</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {TRUSTLOCK_INDUSTRIES.map((ind) => (
+                <div
+                  key={ind.key}
+                  className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/10 hover:bg-muted/30 transition-colors"
+                >
+                  <span className="text-lg">{ind.icon}</span>
+                  <span className="text-xs font-medium">{ind.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
