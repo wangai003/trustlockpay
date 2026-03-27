@@ -32,7 +32,7 @@ const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string
   { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
   { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
   { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to escrow wallet" },
+  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC to transaction fee wallet" },
 ];
 
 /* ── Diaspora payment methods ── */
