@@ -248,7 +248,16 @@ const VendorSites = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Platform</Label>
-                  <Input placeholder="e.g., Shopify, WooCommerce, Custom" value={sitePlatform} onChange={e => setSitePlatform(e.target.value)} />
+                  <Select value={sitePlatform} onValueChange={setSitePlatform}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLATFORM_OPTIONS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Website URL</Label>
