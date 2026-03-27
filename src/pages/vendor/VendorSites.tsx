@@ -7,10 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Globe, Plus, ExternalLink, Copy, Trash2, CheckCircle, AlertTriangle,
-  RotateCcw, DollarSign, Receipt
+  RotateCcw, DollarSign, Receipt, Tag, Layers
 } from "lucide-react";
 import { useState, useEffect } from "react";
+
+const PLATFORM_OPTIONS = [
+  "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
+  "BigCommerce", "Magento", "PrestaShop", "OpenCart", "Jumia Seller",
+  "Konga Seller", "Flutterwave Store", "Paystack Storefront", "Custom Website",
+];
+
+const TRUSTLOCK_INDUSTRIES = [
+  { key: "construction", label: "Construction", icon: "🏗️" },
+  { key: "real_estate", label: "Real Estate", icon: "🏘️" },
+  { key: "agriculture", label: "Agriculture", icon: "🌾" },
+  { key: "mining", label: "Mining & Export", icon: "⛏️" },
+  { key: "tourism", label: "Tourism & Hospitality", icon: "✈️" },
+  { key: "retail", label: "Retail & E-Commerce", icon: "🛒" },
+  { key: "freelance", label: "Freelance & Consulting", icon: "💼" },
+  { key: "logistics", label: "Logistics & Shipping", icon: "🚚" },
+  { key: "education", label: "Education & Training", icon: "🎓" },
+  { key: "project_management", label: "Project Management", icon: "📋" },
+];
 import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
 import {
