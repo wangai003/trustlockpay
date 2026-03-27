@@ -430,7 +430,11 @@ export function useArchivedReports(role: string) {
 // ─── Seed Tokens ────────────────────────────────────────────
 export function useGetOrCreateSeedToken() {
   return useMutation({
-    mutationFn: () => callEdgeFunction("manage-seed-token", { action: "get_or_create_token" }),
+    mutationFn: async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      const userId = session?.user?.id || "testnet-demo-user";
+      return callEdgeFunction("manage-seed-token", { action: "get_or_create_token", userId });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
