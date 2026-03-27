@@ -62,7 +62,7 @@ const WidgetPreviewMockup = () => {
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 animate-in fade-in duration-200">
             <div className="bg-background rounded-xl border border-border shadow-xl w-[90%] max-w-sm mx-auto overflow-hidden">
               {/* Popup Header */}
-              <div className="bg-[hsl(var(--green-dark,145,60%,12%))] p-4 flex items-center justify-between"
+              <div className="p-4 flex items-center justify-between bg-green-dark"
                 style={{ background: "linear-gradient(135deg, hsl(145 60% 12%), hsl(145 50% 18%))" }}
               >
                 <div className="flex items-center gap-2">
