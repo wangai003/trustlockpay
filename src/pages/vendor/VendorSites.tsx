@@ -335,6 +335,30 @@ const VendorSites = () => {
             );
           })}
         </div>
+
+        {/* Industries Served by TrustLock */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Industries Served by TrustLock
+            </CardTitle>
+            <CardDescription>TrustLock provides escrow-backed checkout workflows tailored to these industries</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {TRUSTLOCK_INDUSTRIES.map((ind) => (
+                <div
+                  key={ind.key}
+                  className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/10 hover:bg-muted/30 transition-colors"
+                >
+                  <span className="text-lg">{ind.icon}</span>
+                  <span className="text-xs font-medium">{ind.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
