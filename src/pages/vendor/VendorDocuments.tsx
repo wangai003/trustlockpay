@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,15 @@ const docs = [
 ];
 
 const VendorDocuments = () => {
+  const navigate = useNavigate();
   const [showAckPreview, setShowAckPreview] = useState(false);
   const [showConsentPreview, setShowConsentPreview] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
+
+  const handleDownloadForm = (formName: string) => {
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Acknowledgement Form Download`)}&amount=0.50`);
+  };
 
   return (
     <div>
@@ -43,10 +49,15 @@ const VendorDocuments = () => {
                   <CardDescription className="text-[10px]">Preview the legal form your buyers will sign before payment.</CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
-                <Eye className="w-3 h-3" />
-                {showAckPreview ? "Hide" : "Preview"}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleDownloadForm("Escrow Acknowledgement Form")}>
+                  <Download className="w-3 h-3" /> PDF <Badge variant="secondary" className="text-[9px] ml-1">$0.50</Badge>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
+                  <Eye className="w-3 h-3" />
+                  {showAckPreview ? "Hide" : "Preview"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           {showAckPreview && (

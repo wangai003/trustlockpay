@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,14 @@ const docs = [
 ];
 
 const BuyerDocuments = () => {
+  const navigate = useNavigate();
   const [showAckPreview, setShowAckPreview] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
+
+  const handleDownloadForm = () => {
+    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Acknowledgement Form Download`)}&amount=0.50`);
+  };
 
   return (
     <div>
@@ -40,10 +46,15 @@ const BuyerDocuments = () => {
                   <CardDescription className="text-[10px]">Preview the form you'll sign before your funds are locked.</CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
-                <Eye className="w-3 h-3" />
-                {showAckPreview ? "Hide" : "Preview"}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleDownloadForm}>
+                  <Download className="w-3 h-3" /> PDF <Badge variant="secondary" className="text-[9px] ml-1">$0.50</Badge>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
+                  <Eye className="w-3 h-3" />
+                  {showAckPreview ? "Hide" : "Preview"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           {showAckPreview && (
