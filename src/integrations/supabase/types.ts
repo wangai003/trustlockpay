@@ -860,6 +860,86 @@ export type Database = {
           },
         ]
       }
+      pre_order_contracts: {
+        Row: {
+          buyer_id: string | null
+          buyer_ip: string | null
+          buyer_signed_at: string | null
+          buyer_typed_name: string | null
+          buyer_user_agent: string | null
+          contract_terms_version: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          industry_addendum: string | null
+          is_vendor_auto_signed: boolean | null
+          milestone_count: number | null
+          order_amount: number | null
+          order_number: string | null
+          status: string | null
+          transaction_id: string | null
+          vendor_id: string | null
+          vendor_ip: string | null
+          vendor_signed_at: string | null
+          vendor_typed_name: string | null
+          vendor_user_agent: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          buyer_ip?: string | null
+          buyer_signed_at?: string | null
+          buyer_typed_name?: string | null
+          buyer_user_agent?: string | null
+          contract_terms_version?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          industry_addendum?: string | null
+          is_vendor_auto_signed?: boolean | null
+          milestone_count?: number | null
+          order_amount?: number | null
+          order_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          vendor_id?: string | null
+          vendor_ip?: string | null
+          vendor_signed_at?: string | null
+          vendor_typed_name?: string | null
+          vendor_user_agent?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          buyer_ip?: string | null
+          buyer_signed_at?: string | null
+          buyer_typed_name?: string | null
+          buyer_user_agent?: string | null
+          contract_terms_version?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          industry_addendum?: string | null
+          is_vendor_auto_signed?: boolean | null
+          milestone_count?: number | null
+          order_amount?: number | null
+          order_number?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          vendor_id?: string | null
+          vendor_ip?: string | null
+          vendor_signed_at?: string | null
+          vendor_typed_name?: string | null
+          vendor_user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_order_contracts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
