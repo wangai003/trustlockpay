@@ -25,6 +25,13 @@ const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
   "BigCommerce", "Magento", "PrestaShop", "OpenCart", "Jumia Seller",
   "Konga Seller", "Flutterwave Store", "Paystack Storefront", "Custom Website",
+  "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
+];
+
+// Platforms that inherently don't have checkout pages
+const NO_CHECKOUT_PLATFORMS = [
+  "Jumia Seller", "Konga Seller", "Paystack Storefront",
+  "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
 ];
 
 const TRUSTLOCK_INDUSTRIES = [
@@ -56,6 +63,7 @@ const VendorSites = () => {
   const [sitePlatform, setSitePlatform] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
   const [siteIndustry, setSiteIndustry] = useState("");
+  const [hasCheckout, setHasCheckout] = useState(true);
   const [widgetState, setWidgetState] = useState<WidgetFeeState>(getWidgetFeeState);
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
@@ -78,6 +86,13 @@ const VendorSites = () => {
     localStorage.setItem("tl_site_widget_states", JSON.stringify(siteWidgetStates));
   }, [siteWidgetStates]);
 
+  // Auto-detect no-checkout platforms
+  useEffect(() => {
+    if (NO_CHECKOUT_PLATFORMS.includes(sitePlatform)) {
+      setHasCheckout(false);
+    }
+  }, [sitePlatform]);
+
   const handleAddSite = async () => {
     if (!siteName) return;
     if (!siteIndustry) {
@@ -85,7 +100,7 @@ const VendorSites = () => {
       return;
     }
     await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
-    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry("");
+    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry(""); setHasCheckout(true);
     setShowAdd(false);
   };
 
@@ -286,6 +301,41 @@ const VendorSites = () => {
                   </Select>
                   <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
                 </div>
+
+                {/* Checkout toggle */}
+                <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/10">
+                  <Switch checked={hasCheckout} onCheckedChange={setHasCheckout} />
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold">
+                      {hasCheckout ? "My site has a checkout page" : "My site does NOT have a checkout page"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {hasCheckout
+                        ? "The TrustLock widget will be installed on your checkout page"
+                        : "You will use Standalone Payment Links to collect escrow-protected payments"}
+                    </p>
+                  </div>
+                  {!hasCheckout && (
+                    <Badge variant="secondary" className="text-[9px] shrink-0">Standalone Links</Badge>
+                  )}
+                </div>
+
+                {/* No-checkout guidance */}
+                {!hasCheckout && (
+                  <div className="sm:col-span-2 flex items-start gap-2 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                    <Shield className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground mb-1">How it works without a checkout page</p>
+                      <ol className="list-decimal ml-4 space-y-1">
+                        <li>Add your site so TrustLock knows your business</li>
+                        <li>Go to <strong>Standalone Links</strong> to create payment links for your products or services</li>
+                        <li>Share links with buyers via WhatsApp, email, SMS, or social media</li>
+                        <li>Buyers complete the full TrustLock escrow checkout through the link</li>
+                      </ol>
+                      <p className="mt-2 italic">No coding or website changes required!</p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddSite}>Connect Site</Button>
@@ -300,55 +350,87 @@ const VendorSites = () => {
           {allSites.map((site) => {
             const isWidgetEnabled = siteWidgetStates[site.id] ?? false;
             const isDeleted = widgetState.widgetState === "deleted";
+            const isNoCheckoutPlatform = NO_CHECKOUT_PLATFORMS.includes(site.platform || "");
             return (
               <Card key={site.id}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isWidgetEnabled ? "bg-primary/15" : "bg-muted/20"}`}>
-                      {isWidgetEnabled ? <Shield className="w-6 h-6 text-primary" /> : <Globe className="w-6 h-6 text-muted-foreground" />}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      isNoCheckoutPlatform ? "bg-accent/15" : isWidgetEnabled ? "bg-primary/15" : "bg-muted/20"
+                    }`}>
+                      {isNoCheckoutPlatform
+                        ? <ExternalLink className="w-6 h-6 text-accent" />
+                        : isWidgetEnabled
+                          ? <Shield className="w-6 h-6 text-primary" />
+                          : <Globe className="w-6 h-6 text-muted-foreground" />
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-heading font-bold">{site.name}</h3>
                         <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
-                        <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                        {isNoCheckoutPlatform ? (
+                          <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
+                        ) : (
+                          <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                         <ExternalLink className="w-3 h-3" /> {site.url}
                       </p>
 
-                      {/* Widget Toggle */}
-                      <div className="mt-3 flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
-                        <Switch
-                          checked={isWidgetEnabled}
-                          onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
-                        />
-                        <div>
-                          <p className="text-xs font-semibold">{isWidgetEnabled ? "Widget Enabled" : "Widget Disabled"}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {isWidgetEnabled
-                              ? "TrustLock Pay widget is active on this storefront"
-                              : "Toggle to enable the TrustLock Pay widget"}
-                          </p>
-                        </div>
-                        {isDeleted && (
-                          <Button variant="outline" size="sm" className="ml-auto text-xs gap-1" onClick={() => handleRestoreWidget(site.id)}>
-                            <RotateCcw className="w-3 h-3" /> Restore Widget ($5)
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Guided Installation */}
-                      {isWidgetEnabled && (
-                        <>
-                          <WidgetInstallGuide
-                            platform={site.platform || "Custom Website"}
-                            siteId={site.id}
-                            vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
-                          />
-                          <div className="mt-4">
-                            <WidgetPreviewMockup />
+                      {/* No-checkout platform: Standalone Links guidance */}
+                      {isNoCheckoutPlatform ? (
+                        <div className="mt-3 space-y-3">
+                          <div className="flex items-start gap-2 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                            <Shield className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                            <div className="text-xs text-muted-foreground">
+                              <p className="font-semibold text-foreground mb-1">This site uses Standalone Payment Links</p>
+                              <p>Since {site.platform} does not support custom checkout widgets, you collect payments by sharing TrustLock payment links with your buyers. Links can be sent via WhatsApp, email, SMS, or posted on social media.</p>
+                            </div>
                           </div>
+                          <Button size="sm" variant="default" className="gap-1.5 text-xs" asChild>
+                            <a href="/trustlock/vendor/standalone-links">
+                              <ExternalLink className="w-3 h-3" /> Create Standalone Payment Link
+                            </a>
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Widget Toggle */}
+                          <div className="mt-3 flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
+                            <Switch
+                              checked={isWidgetEnabled}
+                              onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
+                            />
+                            <div>
+                              <p className="text-xs font-semibold">{isWidgetEnabled ? "Widget Enabled" : "Widget Disabled"}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {isWidgetEnabled
+                                  ? "TrustLock Pay widget is active on this storefront"
+                                  : "Toggle to enable the TrustLock Pay widget"}
+                              </p>
+                            </div>
+                            {isDeleted && (
+                              <Button variant="outline" size="sm" className="ml-auto text-xs gap-1" onClick={() => handleRestoreWidget(site.id)}>
+                                <RotateCcw className="w-3 h-3" /> Restore Widget ($5)
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Guided Installation */}
+                          {isWidgetEnabled && (
+                            <>
+                              <WidgetInstallGuide
+                                platform={site.platform || "Custom Website"}
+                                siteId={site.id}
+                                vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
+                              />
+                              <div className="mt-4">
+                                <WidgetPreviewMockup />
+                              </div>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
