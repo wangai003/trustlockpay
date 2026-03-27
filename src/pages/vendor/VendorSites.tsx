@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import {
   Globe, Plus, ExternalLink, Copy, Trash2, CheckCircle, AlertTriangle,
-  RotateCcw, DollarSign, Receipt, Tag, Layers
+  RotateCcw, DollarSign, Receipt, Tag, Layers, Shield
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
