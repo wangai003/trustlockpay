@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,8 +112,35 @@ const VendorConsentForm = ({
     hour: "2-digit", minute: "2-digit", timeZoneName: "short",
   });
 
-  const handleSubmit = () => {
+  const { user } = useAuth();
+
+  const handleSubmit = async () => {
     if (!canSubmit) return;
+
+    // Persist consent to database
+    if (user && !previewMode) {
+      try {
+        const { error } = await supabase.from("vendor_consent_records" as any).insert({
+          vendor_id: user.id,
+          consent_type: "auto_signature",
+          typed_name: typedName.trim(),
+          auto_accept_enabled: autoAcceptEnabled,
+          plan_id: vendorPlan,
+          ip_address: null, // captured server-side in production
+          user_agent: navigator.userAgent,
+        });
+        if (error) {
+          console.error("Consent insert error:", error);
+          toast.error("Failed to save consent. Please try again.");
+          return;
+        }
+      } catch (err) {
+        console.error("Consent save error:", err);
+        toast.error("Failed to save consent.");
+        return;
+      }
+    }
+
     toast.success("Vendor Automated Consent signed! Auto-signature protocol is now active.");
     onConsent();
   };

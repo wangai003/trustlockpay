@@ -40,6 +40,7 @@ const PublicCheckout = () => {
     note: string;
   } | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
 
   // Load link data from DB
   useEffect(() => {
@@ -114,13 +115,56 @@ const PublicCheckout = () => {
     setStep("acknowledge");
   }, []);
 
-  const handleAcknowledgementAccept = useCallback(() => {
+  const handleAcknowledgementAccept = useCallback(async () => {
+    // Call auto-signature-protocol to check if vendor auto-signed
+    if (linkData) {
+      try {
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auto-signature-protocol`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              vendor_id: (linkData as any).vendor_id || null,
+              transaction_id: (linkData as any).transaction_id || linkData.link_id,
+              order_amount: linkData.grand_total,
+              industry: linkData.industry,
+              buyer_name: "Checkout Buyer",
+            }),
+          }
+        );
+        const result = await resp.json();
+        setAutoSignResult(result);
+      } catch {
+        // Fallback — proceed without auto-sign info
+        setAutoSignResult(null);
+      }
+    }
     setStep("contract");
-  }, []);
+  }, [linkData]);
 
-  const handleContractSigned = useCallback(() => {
+  const handleContractSigned = useCallback(async () => {
+    // If we have a contract_id from auto-signature, update buyer signature
+    if (autoSignResult?.contract_id) {
+      try {
+        await supabase
+          .from("pre_order_contracts" as any)
+          .update({
+            buyer_typed_name: "Checkout Buyer",
+            buyer_signed_at: new Date().toISOString(),
+            buyer_ip: null, // captured server-side
+            status: "fully_signed",
+          })
+          .eq("id", autoSignResult.contract_id);
+      } catch {
+        // Non-blocking — proceed to payment
+      }
+    }
     setStep("pay");
-  }, []);
+  }, [autoSignResult]);
 
   const handleComplianceBlock = useCallback(() => {
     navigate("/");
@@ -388,7 +432,7 @@ const PublicCheckout = () => {
               buyerName="You"
               vendorName={vendorName}
               txId={refId}
-              isAutoSigned
+              isAutoSigned={autoSignResult?.auto_signed ?? true}
               onBothSigned={handleContractSigned}
               onDecline={() => setStep("invoice")}
               role="buyer"
