@@ -518,6 +518,65 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </CommandGroup>
         )}
 
+        {/* ─── Protection Documents ─── */}
+        {results && results.protection_documents?.length > 0 && (
+          <CommandGroup heading="🔒 Protection Documents">
+            {results.protection_documents.map((doc: any) => {
+              const docTypeLabels: Record<string, string> = {
+                vendor_consent: "Vendor Consent",
+                pre_order_contract: "Pre-Order Contract",
+                escrow_acknowledgement: "Acknowledgement",
+                aml_certificate: "AML Certificate",
+                payout_reconciliation: "Payout Receipt",
+                dispute_evidence_package: "Dispute Evidence",
+                account_pause_record: "Account Pause",
+                account_deletion_archive: "Data Deletion",
+                account_reactivation_record: "Reactivation",
+              };
+              const label = docTypeLabels[doc.document_type] || doc.document_type?.replace(/_/g, " ");
+              const retentionYears = doc.retention_years || 7;
+              const created = new Date(doc.created_at);
+              const expiry = new Date(created);
+              expiry.setFullYear(expiry.getFullYear() + retentionYears);
+              const yearsLeft = Math.max(0, Math.round((expiry.getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000) * 10) / 10);
+              const retentionColor = yearsLeft > 5 ? "text-primary" : yearsLeft > 1 ? "text-amber-500" : "text-destructive";
+
+              return (
+                <CommandItem
+                  key={doc.id}
+                  value={`protection ${doc.title} ${doc.document_type} ${doc.transaction_id}`}
+                  onSelect={() => handleSelect(`${basePath}/documents`)}
+                  className="gap-3 py-2.5"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">{doc.title}</span>
+                      <Badge variant="outline" className="text-[9px] capitalize">{label}</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      {doc.industry && (
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />{doc.industry}
+                        </span>
+                      )}
+                      <span className={`flex items-center gap-1 ${retentionColor}`}>
+                        <Clock className="w-3 h-3" />{yearsLeft}yr retention
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />{created.toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
         {/* ─── Sanctions Screening Logs (admin only) ─── */}
         {results && results.screening_logs.length > 0 && (
           <CommandGroup heading="🛡️ Sanctions Screening">
