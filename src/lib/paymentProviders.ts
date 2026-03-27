@@ -26,7 +26,7 @@ export interface PaymentProvider {
 }
 
 // Re-export the V2 engine for new code
-export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE } from "./feeEngine";
+export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE, FEE_CATEGORIES, ALL_IN_RANGES, FEE_DISCLOSURE_SHORT, FEE_DISCLOSURE_FULL } from "./feeEngine";
 export type { FeeBreakdown, TransactionType } from "./feeEngine";
 
 // Legacy calculateFees — keeps the old signature for existing consumers
@@ -49,9 +49,9 @@ export function calculateFees(amount: number, type: string): { trustlock: number
   return { trustlock, processor, escrow, gas, total, net: amount - total };
 }
 
-// Legacy getFeeRange for backward compat
+// Legacy getFeeRange — now uses canonical constants
 export function getFeeRange(): string {
-  return "2% – 4%";
+  return "2.5% – 5.9%";
 }
 
 // ─── DIASPORA PROVIDERS ────────────────────────────────────
