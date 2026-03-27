@@ -21,6 +21,7 @@ import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrd
 import { useTransactions, useRejectOrders, useAddTracking } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
