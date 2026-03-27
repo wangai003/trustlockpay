@@ -14,7 +14,7 @@ const SCRIPT_TAG = (siteId: string, vendorSlug: string) =>
   `<script src="https://cdn.trustlock.africa/widget.js" data-site-id="${siteId}" data-vendor-id="${vendorSlug}"></script>`;
 
 type PlatformGuide = {
-  steps: { title: string; detail: string; shortcut?: string }[];
+  steps: { title: string; detail: string; shortcut?: string; link?: { url: string; label: string } }[];
   tip?: string;
 };
 
