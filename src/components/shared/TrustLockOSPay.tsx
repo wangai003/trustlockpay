@@ -416,7 +416,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 {method === "coinbase" ? "Coinbase Commerce" : method === "thirdweb" ? "Thirdweb Pay" : "Transak"} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
-                Converts your fiat to USDC and routes to TrustLock escrow wallet.
+                Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
                 {method === "thirdweb" ? " 1.0% fee" : " 1.5% fee"}
               </p>
             </div>
