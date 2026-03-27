@@ -291,18 +291,31 @@ const BuyerOrders = () => {
                         <MilestoneProgress industry={order.industry} status={order.status} />
                       </details>
                       {isMilestoneIndustry(order.industry) && order.status === "locked" && (
-                        <MilestoneNegotiation
-                          role="buyer"
-                          txId={order.id}
-                          industry={order.industry || undefined}
-                          orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
-                          buyerName="You"
-                          vendorName={order.vendor}
-                          status="drafting"
-                          onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
-                          onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
-                          onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
-                        />
+                        <>
+                          {/* Milestone negotiation alert banner */}
+                          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-amber-700">⚠️ Milestone Agreement Required</p>
+                              <p className="text-amber-600 mt-0.5">
+                                This is a milestone-based order. Both parties must agree on project stages before work can begin.
+                                Either you or the vendor can draft the milestone breakdown below.
+                              </p>
+                            </div>
+                          </div>
+                          <MilestoneNegotiation
+                            role="buyer"
+                            txId={order.id}
+                            industry={order.industry || undefined}
+                            orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+                            buyerName="You"
+                            vendorName={order.vendor}
+                            status="drafting"
+                            onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
+                            onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                            onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                          />
+                        </>
                       )}
                       <div className="pt-2 border-t border-border">
                         <TransactionDocuments

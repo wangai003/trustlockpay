@@ -321,18 +321,31 @@ const VendorTransactions = () => {
                                 <MilestoneProgress industry={tx.industry} status={tx.status} />
                               </details>
                               {isMilestoneIndustry(tx.industry) && tx.status === "locked" && (
-                                <MilestoneNegotiation
-                                  role="vendor"
-                                  txId={tx.id}
-                                  industry={tx.industry || undefined}
-                                  orderAmount={tx.amount}
-                                  buyerName={tx.buyer}
-                                  vendorName="Your Business"
-                                  status="drafting"
-                                  onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${tx.buyer} for review`)}
-                                  onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
-                                  onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
-                                />
+                                <>
+                                  {/* Milestone negotiation alert banner */}
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+                                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="font-semibold text-amber-700">⚠️ Milestone Agreement Required</p>
+                                      <p className="text-amber-600 mt-0.5">
+                                        This is a milestone-based order. Both parties must agree on project stages before work can begin.
+                                        Either you or the buyer can draft the milestone breakdown below.
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <MilestoneNegotiation
+                                    role="vendor"
+                                    txId={tx.id}
+                                    industry={tx.industry || undefined}
+                                    orderAmount={tx.amount}
+                                    buyerName={tx.buyer}
+                                    vendorName="Your Business"
+                                    status="drafting"
+                                    onSubmitDraft={(milestones) => toast.success(`Milestone proposal sent to ${tx.buyer} for review`)}
+                                    onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                                    onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                                  />
+                                </>
                               )}
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments

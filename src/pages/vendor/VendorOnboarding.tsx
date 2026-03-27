@@ -7,7 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Store, Wrench, ArrowRight, ArrowLeft, CheckCircle, Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Store, Wrench, ArrowRight, ArrowLeft, CheckCircle, Upload, Globe, Info } from "lucide-react";
+
+const industryOptions = [
+  { value: "ecommerce", label: "E-Commerce / Retail", milestone: false },
+  { value: "construction", label: "Construction", milestone: true },
+  { value: "real_estate", label: "Real Estate", milestone: true },
+  { value: "mining", label: "Mining & Extraction", milestone: true },
+  { value: "agriculture", label: "Agriculture & Export", milestone: true },
+  { value: "freelance", label: "Freelance / Professional Services", milestone: true },
+  { value: "logistics", label: "Logistics & Shipping", milestone: true },
+  { value: "tourism", label: "Tourism & Hospitality", milestone: false },
+  { value: "education", label: "Education & Training", milestone: true },
+  { value: "project_management", label: "Project Management", milestone: true },
+  { value: "automotive", label: "Automotive", milestone: false },
+  { value: "other", label: "Other", milestone: false },
+];
 
 const serviceCategories = [
   {
@@ -73,6 +90,11 @@ const VendorOnboarding = () => {
   const [businessName, setBusinessName] = useState("");
   const [businessLocation, setBusinessLocation] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("");
+  const [primaryIndustry, setPrimaryIndustry] = useState("");
+  const [platformDescription, setPlatformDescription] = useState("");
+  const [defaultOrderType, setDefaultOrderType] = useState<"simple" | "milestone">("simple");
+
+  const selectedIndustryInfo = industryOptions.find(i => i.value === primaryIndustry);
 
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) => {
@@ -95,7 +117,7 @@ const VendorOnboarding = () => {
   const canProceed = () => {
     if (step === 1) return vendorType !== null;
     if (step === 2) return vendorType === "product" || (selectedCategories.length > 0 && selectedSubTypes.length > 0);
-    if (step === 3) return businessName.trim() !== "" && businessLocation.trim() !== "";
+    if (step === 3) return businessName.trim() !== "" && businessLocation.trim() !== "" && primaryIndustry !== "";
     return true;
   };
 
@@ -103,6 +125,9 @@ const VendorOnboarding = () => {
     localStorage.setItem("tl_vendor_auth", "true");
     localStorage.setItem("tl_vendor_network", "testnet");
     localStorage.setItem("tl_vendor_onboarded", "true");
+    localStorage.setItem("tl_vendor_industry", primaryIndustry);
+    localStorage.setItem("tl_vendor_order_type", defaultOrderType);
+    if (platformDescription.trim()) localStorage.setItem("tl_vendor_platform_desc", platformDescription);
     navigate("/trustlock/vendor");
   };
 
@@ -230,13 +255,13 @@ const VendorOnboarding = () => {
             </motion.div>
           )}
 
-          {/* Step 3: Business Info */}
+          {/* Step 3: Business Info + Industry Config */}
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <Card>
                 <CardHeader>
                   <CardTitle>Business Information</CardTitle>
-                  <CardDescription>Tell us about your business</CardDescription>
+                  <CardDescription>Tell us about your business and industry — this configures your checkout widget</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -250,6 +275,84 @@ const VendorOnboarding = () => {
                   <div className="space-y-2">
                     <Label>Website (optional)</Label>
                     <Input value={businessWebsite} onChange={(e) => setBusinessWebsite(e.target.value)} placeholder="e.g., www.kentecraft.com" />
+                  </div>
+
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary" />
+                      <h3 className="font-heading font-bold text-sm">Industry & Order Configuration</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This determines how the TrustLock Pay widget behaves on your platform — what type of orders it expects and whether milestone-based agreements are enabled.
+                    </p>
+
+                    <div className="space-y-2">
+                      <Label>Primary Industry *</Label>
+                      <Select value={primaryIndustry} onValueChange={(val) => {
+                        setPrimaryIndustry(val);
+                        const info = industryOptions.find(i => i.value === val);
+                        if (info?.milestone) setDefaultOrderType("milestone");
+                        else setDefaultOrderType("simple");
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your industry" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {industryOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                              {opt.milestone && " ⚙️"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {primaryIndustry && (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label>Default Order Type</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setDefaultOrderType("simple")}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${defaultOrderType === "simple" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                            >
+                              <p className="text-xs font-semibold">Simple</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Pay → Ship → Deliver → Release</p>
+                            </button>
+                            <button
+                              onClick={() => setDefaultOrderType("milestone")}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${defaultOrderType === "milestone" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                            >
+                              <p className="text-xs font-semibold">Milestone-Based</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Staged payments with mutual agreement</p>
+                            </button>
+                          </div>
+                        </div>
+
+                        {selectedIndustryInfo?.milestone && defaultOrderType === "simple" && (
+                          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-[10px] text-amber-700">
+                              <strong>{selectedIndustryInfo.label}</strong> typically uses milestone-based orders. You can still choose "Simple" but buyers may request milestones per order.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <Label>Describe your platform (optional)</Label>
+                          <Textarea
+                            value={platformDescription}
+                            onChange={(e) => setPlatformDescription(e.target.value)}
+                            placeholder="e.g., We build residential homes in Accra with 4-6 month project timelines..."
+                            className="text-sm min-h-[60px]"
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            Helps our team pre-configure your milestone templates and compliance requirements.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
