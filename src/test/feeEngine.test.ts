@@ -73,8 +73,9 @@ describe("Fee Engine V2", () => {
       });
       // Escrow 1% on vendor's $600 = $6
       expect(result.escrowFee).toBe(6);
-      expect(result.escrowWalletReceives).toBe(6);
-    });
+      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.feeTrickleToTransactionWallet).toBe(6);
+      expect(result.trickleRule).toBe("vendor_share_only");
 
     it("handles zero amount without division errors", () => {
       const result = calculateFeesV2(0, "checkout_fiat", "stripe");
