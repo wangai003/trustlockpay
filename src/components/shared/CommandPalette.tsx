@@ -103,9 +103,12 @@ const searchSuggestions = [
   { text: "Milestone workflow", hint: "Dynamic order stages" },
   { text: "Payout methods", hint: "Bank, M-Pesa, crypto" },
   { text: "Fee structure", hint: "Platform & processing fees" },
-  { text: "KYC verification", hint: "Identity documents" },
-  { text: "Auto-release policy", hint: "14-day mandate" },
-  { text: "Industry playbook", hint: "Mining, construction, agriculture" },
+  { text: "Vendor Consent Form", hint: "Protection document" },
+  { text: "Pre-Order Contract", hint: "Protection document" },
+  { text: "AML Certificate", hint: "Compliance record" },
+  { text: "Data Deletion Record", hint: "Account lifecycle" },
+  { text: "Payout Receipt", hint: "Reconciliation document" },
+  { text: "Account Pause Record", hint: "Account lifecycle" },
   { text: "Sanctions screening", hint: "OFAC, EU, UN checks" },
 ];
 
