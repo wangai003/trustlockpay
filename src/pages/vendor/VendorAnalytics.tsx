@@ -72,9 +72,10 @@ const VendorAnalytics = () => {
     size: r.file_size || "—",
   }));
 
+  const navigate = useNavigate();
+
   const handleDownloadClick = (reportName: string) => {
-    setPendingReport(reportName);
-    setPayDialogOpen(true);
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent("Data Analytics Print-out")}&amount=1.00`);
   };
 
   const handlePaymentComplete = () => {
