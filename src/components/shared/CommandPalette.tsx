@@ -219,7 +219,8 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     results.payouts.length > 0 ||
     results.acknowledgement_forms.length > 0 ||
     results.archived_reports.length > 0 ||
-    results.screening_logs.length > 0
+    results.screening_logs.length > 0 ||
+    results.protection_documents.length > 0
   );
 
   const currentHint = searchHints[hintIndex];
