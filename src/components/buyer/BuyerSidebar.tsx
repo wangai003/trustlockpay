@@ -85,16 +85,16 @@ const BuyerSidebar = () => {
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.label}
               </NavLink>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
                     <Info className="w-3 h-3" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                </PopoverTrigger>
+                <PopoverContent side="right" className="max-w-[200px] text-xs p-2">
                   {item.tip}
-                </TooltipContent>
-              </Tooltip>
+                </PopoverContent>
+              </Popover>
             </div>
           ))}
         </nav>
