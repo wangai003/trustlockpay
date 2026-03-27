@@ -358,6 +358,7 @@ export function useProcessPayment() {
       total: string;
       method: string;
       role: string;
+      payMode?: string;
       refundEmail?: string;
       refundReason?: string;
       splitRecipient?: string;
