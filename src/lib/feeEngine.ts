@@ -121,12 +121,14 @@ export interface FeeBreakdown {
   totalFees: number;
   netAmount: number;
   // Wallet routing
-  transactionWalletReceives: number;  // Goes to AZIX_WALLETS.transaction
-  escrowWalletReceives: number;       // Goes to AZIX_WALLETS.escrow
+  transactionWalletReceives: number;  // Platform fee + trickled escrow fee → AZIX_WALLETS.transaction
+  escrowWalletReceives: number;       // Net zero — escrow forwards fees to transaction wallet
   processorReceives: number;          // Goes to external processor
+  feeTrickleToTransactionWallet: number; // Escrow fee forwarded to transaction wallet
   // Metadata
   processorUsed: ProcessorId;
   feePercentage: number;       // Total fee as % of amount
+  trickleRule: "none" | "full_escrow_fee" | "vendor_share_only";
 }
 
 // ─── Fee Rules by Transaction Type ─────────────────────────
@@ -252,6 +254,11 @@ export function calculateFeesV2(
   const totalFees = trustlockFee + processorFee + escrowFee + gasFee;
   const netAmount = amount - totalFees;
 
+  // Trickle-down: escrow fees are forwarded to the transaction wallet
+  const feeTrickleToTransactionWallet = rule.escrowApplies ? escrowFee : 0;
+  const trickleRule: "none" | "full_escrow_fee" | "vendor_share_only" =
+    !rule.escrowApplies ? "none" : rule.escrowVendorOnly ? "vendor_share_only" : "full_escrow_fee";
+
   return {
     transactionType,
     amount,
@@ -261,11 +268,13 @@ export function calculateFeesV2(
     gasFee,
     totalFees,
     netAmount,
-    transactionWalletReceives: trustlockFee,
-    escrowWalletReceives: escrowFee,
+    transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,
+    escrowWalletReceives: 0, // Escrow wallet forwards all fees — net zero
     processorReceives: processorFee,
+    feeTrickleToTransactionWallet,
     processorUsed: processorId,
     feePercentage: amount > 0 ? (totalFees / amount) * 100 : 0,
+    trickleRule,
   };
 }
 

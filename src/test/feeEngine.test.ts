@@ -44,8 +44,9 @@ describe("Fee Engine V2", () => {
       expect(result.gasFee).toBe(0.02);
       expect(result.totalFees).toBeCloseTo(4.92, 2);
       expect(result.netAmount).toBeCloseTo(95.08, 2);
-      expect(result.transactionWalletReceives).toBe(1.5);
-      expect(result.escrowWalletReceives).toBe(0.5);
+      expect(result.transactionWalletReceives).toBe(2); // 1.5 platform + 0.5 trickled escrow
+      expect(result.escrowWalletReceives).toBe(0); // Escrow forwards all fees
+      expect(result.feeTrickleToTransactionWallet).toBe(0.5);
     });
 
     it("calculates checkout_crypto with direct (no processor fee)", () => {
@@ -72,7 +73,9 @@ describe("Fee Engine V2", () => {
       });
       // Escrow 1% on vendor's $600 = $6
       expect(result.escrowFee).toBe(6);
-      expect(result.escrowWalletReceives).toBe(6);
+      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.feeTrickleToTransactionWallet).toBe(6);
+      expect(result.trickleRule).toBe("vendor_share_only");
     });
 
     it("handles zero amount without division errors", () => {
@@ -92,7 +95,9 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
       expect(result.escrowFee).toBe(5); // 1%
-      expect(result.escrowWalletReceives).toBe(5);
+      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.feeTrickleToTransactionWallet).toBe(5);
+      expect(result.transactionWalletReceives).toBe(5); // 0 platform + 5 trickled
     });
   });
 

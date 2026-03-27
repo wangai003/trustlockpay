@@ -37,6 +37,10 @@ function generateConfirmationCode(): string {
 }
 
 // ─── Fee Calculation with Dual Wallet Routing ──────────────
+// Fee trickle-down logic:
+//   RELEASE: Escrow deducts 1% → vendor gets net → 1% fee forwarded to Transaction Wallet
+//   REFUND:  Escrow returns full principal → buyer gets 100% → NO fees to Transaction Wallet
+//   SPLIT:   Both parties paid equally → 1% fee from VENDOR share only → forwarded to Transaction Wallet
 interface FeeResult {
   trustlockFee: number;
   processorFee: number;
@@ -46,6 +50,7 @@ interface FeeResult {
   netAmount: number;
   transactionWalletReceives: number;
   escrowWalletReceives: number;
+  feeTrickleToTransactionWallet: number; // Amount forwarded from escrow → transaction wallet
 }
 
 function calculatePayoutFees(
@@ -103,6 +108,10 @@ function calculatePayoutFees(
 
   const totalFees = trustlockFee + processorFee + escrowFee + gasEstimate;
 
+  // Fee trickle-down: escrow service fees are forwarded to the transaction wallet
+  // EXCEPT on refunds (no fees) and the escrow wallet retains nothing — it forwards all collected fees
+  const feeTrickleToTransactionWallet = applyEscrow ? escrowFee : 0;
+
   return {
     trustlockFee,
     processorFee,
@@ -110,8 +119,9 @@ function calculatePayoutFees(
     gasFee: gasEstimate,
     totalFees,
     netAmount: amount - totalFees,
-    transactionWalletReceives: trustlockFee,  // → AZIX_TRANSACTION_WALLET
-    escrowWalletReceives: escrowFee,           // → AZIX_ESCROW_WALLET
+    transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,  // Platform fee + trickled escrow fee → AZIX_TRANSACTION_WALLET
+    escrowWalletReceives: 0,  // Escrow wallet forwards all fees — net zero retention
+    feeTrickleToTransactionWallet,  // Specifically the amount forwarded from escrow → transaction wallet
   };
 }
 
@@ -220,16 +230,18 @@ Deno.serve(async (req) => {
             provider_details: {
               ...providerDetails,
               processor,
-              feeBreakdown: {
-                trustlockFee: fees.trustlockFee,
-                processorFee: fees.processorFee,
-                escrowFee: fees.escrowFee,
-                gasFee: fees.gasFee,
-                transactionWallet: AZIX_TRANSACTION_WALLET,
-                escrowWallet: AZIX_ESCROW_WALLET,
-                transactionWalletReceives: fees.transactionWalletReceives,
-                escrowWalletReceives: fees.escrowWalletReceives,
-              },
+                feeBreakdown: {
+                  trustlockFee: fees.trustlockFee,
+                  processorFee: fees.processorFee,
+                  escrowFee: fees.escrowFee,
+                  gasFee: fees.gasFee,
+                  transactionWallet: AZIX_TRANSACTION_WALLET,
+                  escrowWallet: AZIX_ESCROW_WALLET,
+                  transactionWalletReceives: fees.transactionWalletReceives,
+                  escrowWalletReceives: fees.escrowWalletReceives,
+                  feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
+                  trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
+                },
             },
             mode: mode || "local",
             status: "processing",
@@ -471,6 +483,8 @@ Deno.serve(async (req) => {
                 escrowWallet: AZIX_ESCROW_WALLET,
                 transactionWalletReceives: fees.transactionWalletReceives,
                 escrowWalletReceives: fees.escrowWalletReceives,
+                feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
+                trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
               },
             },
           })
