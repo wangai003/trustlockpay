@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
+import { supabase } from "@/integrations/supabase/client";
 
 const VendorHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, vendor } = useVendor();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_vendor_auth");
     localStorage.removeItem("tl_vendor_network");
     navigate("/trustlock/vendor/login");
