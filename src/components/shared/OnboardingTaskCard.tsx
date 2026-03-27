@@ -20,11 +20,12 @@ const vendorTasks: OnboardingTask[] = [
   { id: "v4", label: "Set payout preferences (Managed or Self-Custody)", frequency: "one-time", description: "Choose how you receive released funds — fiat off-ramp or direct wallet." },
   { id: "v5", label: "Review Escrow Acknowledgement Form", frequency: "always", description: "Generated per transaction — understand the escrow terms before each order." },
   { id: "v6", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Binding contract signed at checkout/standalone link for each transaction." },
-  { id: "v7", label: "Upload milestone documents (if applicable)", frequency: "sometimes", description: "Required for milestone-based orders: inspection certs, shipping manifests, etc." },
-  { id: "v8", label: "Confirm shipment / mark delivered", frequency: "always", description: "Update order status to trigger buyer confirmation countdown." },
-  { id: "v9", label: "Respond to disputes within 72 hours", frequency: "sometimes", description: "Upload evidence and respond to buyer-filed disputes before escalation." },
-  { id: "v10", label: "KYC Tier upgrade for higher volumes", frequency: "future", description: "Submit additional docs when approaching plan order limits." },
-  { id: "v11", label: "Renew subscription plan before expiry", frequency: "future", description: "Avoid service interruption by renewing before your plan expires." },
+  { id: "v7", label: "Draft & agree on milestone stages", frequency: "sometimes", description: "For milestone/hybrid orders: propose stages, review with buyer, and Approve & Lock before work begins." },
+  { id: "v8", label: "Upload milestone documents (if applicable)", frequency: "sometimes", description: "Required for milestone-based orders: inspection certs, shipping manifests, etc." },
+  { id: "v9", label: "Confirm shipment / mark delivered", frequency: "always", description: "Update order status to trigger buyer confirmation countdown." },
+  { id: "v10", label: "Respond to disputes within 72 hours", frequency: "sometimes", description: "Upload evidence and respond to buyer-filed disputes before escalation." },
+  { id: "v11", label: "KYC Tier upgrade for higher volumes", frequency: "future", description: "Submit additional docs when approaching plan order limits." },
+  { id: "v12", label: "Renew subscription plan before expiry", frequency: "future", description: "Avoid service interruption by renewing before your plan expires." },
 ];
 
 const buyerTasks: OnboardingTask[] = [
@@ -32,10 +33,11 @@ const buyerTasks: OnboardingTask[] = [
   { id: "b2", label: "Complete profile (name, location, phone)", frequency: "one-time", description: "Required for order tracking and dispute resolution." },
   { id: "b3", label: "Review Escrow Acknowledgement Form", frequency: "always", description: "Understand the escrow terms before each purchase." },
   { id: "b4", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Digital signature required at checkout for every transaction." },
-  { id: "b5", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
-  { id: "b6", label: "Upload customs clearance proof (cross-border)", frequency: "sometimes", description: "Required for international shipments before fund release." },
-  { id: "b7", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
-  { id: "b8", label: "Review auto-release countdown notifications", frequency: "always", description: "Monitor the 48h/14d countdown — act before funds auto-release." },
+  { id: "b5", label: "Review & agree on milestone stages", frequency: "sometimes", description: "For milestone orders: review vendor's proposed stages, approve or request changes before work begins." },
+  { id: "b6", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
+  { id: "b7", label: "Upload customs clearance proof (cross-border)", frequency: "sometimes", description: "Required for international shipments before fund release." },
+  { id: "b8", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
+  { id: "b9", label: "Review auto-release countdown notifications", frequency: "always", description: "Monitor the 48h/14d countdown — act before funds auto-release." },
 ];
 
 const adminTasks: OnboardingTask[] = [
