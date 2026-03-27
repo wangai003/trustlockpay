@@ -164,6 +164,20 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
   // Calculate fees
   const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto);
 
+  // Call auto-signature-protocol before creating session
+  let contractResult: Record<string, unknown> = {};
+  try {
+    contractResult = (await callEdgeFunction("auto-signature-protocol", {
+      vendor_id: String(vendorId),
+      transaction_id: `checkout_${Date.now()}`,
+      order_amount: numAmount,
+      industry: params.industry || null,
+      buyer_name: String(buyerName),
+    })) as Record<string, unknown>;
+  } catch {
+    // Non-blocking — proceed without contract
+  }
+
   // Create session
   const sessionId = generateSessionId();
   const session: CheckoutSession = {
