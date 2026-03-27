@@ -1393,6 +1393,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_consent_records: {
+        Row: {
+          auto_accept_enabled: boolean | null
+          browser_fingerprint: string | null
+          consent_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          plan_id: string | null
+          revoked_at: string | null
+          typed_name: string
+          user_agent: string | null
+          vendor_id: string
+        }
+        Insert: {
+          auto_accept_enabled?: boolean | null
+          browser_fingerprint?: string | null
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          plan_id?: string | null
+          revoked_at?: string | null
+          typed_name: string
+          user_agent?: string | null
+          vendor_id: string
+        }
+        Update: {
+          auto_accept_enabled?: boolean | null
+          browser_fingerprint?: string | null
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          plan_id?: string | null
+          revoked_at?: string | null
+          typed_name?: string
+          user_agent?: string | null
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vendor_plans: {
         Row: {
           billing_cycle: string | null
