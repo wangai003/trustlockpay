@@ -3,7 +3,7 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
@@ -80,6 +80,32 @@ const AdminDocuments = () => {
   const [previewIndustry, setPreviewIndustry] = useState("default");
   const [protectionSearch, setProtectionSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [contractSearch, setContractSearch] = useState("");
+  const [debouncedContractSearch, setDebouncedContractSearch] = useState("");
+
+  const handleContractSearchChange = (val: string) => {
+    setContractSearch(val);
+    clearTimeout((window as any).__contractSearchTimer);
+    (window as any).__contractSearchTimer = setTimeout(() => setDebouncedContractSearch(val), 300);
+  };
+
+  // Fetch pre_order_contracts
+  const { data: contractDocs, isLoading: contractsLoading } = useQuery({
+    queryKey: ["pre-order-contracts-admin", debouncedContractSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from("pre_order_contracts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (debouncedContractSearch) {
+        query = query.or(`order_number.ilike.%${debouncedContractSearch}%,buyer_typed_name.ilike.%${debouncedContractSearch}%,vendor_typed_name.ilike.%${debouncedContractSearch}%,industry.ilike.%${debouncedContractSearch}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Debounce search
   const handleSearchChange = (val: string) => {
@@ -274,6 +300,94 @@ const AdminDocuments = () => {
               />
             </CardContent>
           )}
+        </Card>
+
+        {/* ── Signed Pre-Order Contracts ─── */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Handshake className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">📝 Signed Pre-Order Contracts</CardTitle>
+                  <CardDescription className="text-xs">
+                    All pre-order signatory contracts — {contractsLoading ? "loading..." : `${(contractDocs || []).length} records`}. Immutable storage (no deletion).
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant="secondary" className="text-[10px]">Immutable</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search contracts by order number, buyer, vendor, or industry..."
+                value={contractSearch}
+                onChange={(e) => handleContractSearchChange(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {contractsLoading && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-border">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-2 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!contractsLoading && (contractDocs || []).length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Handshake className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs">No contracts found{contractSearch ? ` matching "${contractSearch}"` : ""}.</p>
+                  <p className="text-[10px] mt-1">Contracts are created when orders go through the checkout flow.</p>
+                </div>
+              )}
+              {!contractsLoading && (contractDocs || []).map((c) => {
+                const statusIcon = c.status === "fully_signed" ? <CheckCircle className="w-4 h-4 text-primary" /> :
+                  c.status === "declined" ? <XCircle className="w-4 h-4 text-destructive" /> :
+                  <Clock className="w-4 h-4 text-muted-foreground" />;
+                const statusColor = c.status === "fully_signed" ? "bg-primary/15 text-primary" :
+                  c.status === "declined" ? "bg-destructive/15 text-destructive" :
+                  "bg-muted text-muted-foreground";
+                return (
+                  <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      {statusIcon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-bold">Contract {c.order_number ? `#${c.order_number}` : "—"}</h4>
+                        <Badge className={`text-[9px] capitalize ${statusColor}`}>{c.status?.replace(/_/g, " ")}</Badge>
+                        {c.is_vendor_auto_signed && <Badge variant="outline" className="text-[9px]">Auto-Signed</Badge>}
+                        {c.industry && <Badge variant="secondary" className="text-[9px]">{c.industry}</Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap text-[10px] text-muted-foreground">
+                        <span>${Number(c.order_amount || 0).toLocaleString()}</span>
+                        {c.buyer_typed_name && <span>Buyer: {c.buyer_typed_name}</span>}
+                        {c.vendor_typed_name && <span>Vendor: {c.vendor_typed_name}</span>}
+                        <span>v{c.contract_terms_version || "1.0"}</span>
+                        <span>{new Date(c.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0"><Eye className="w-3 h-3" /></Button>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">
+              Contracts are immutable — no deletion allowed. Linked to order carbon copies via transaction_id for full audit trail.
+            </p>
+          </CardContent>
         </Card>
 
         {/* ── TrustLock Protection Documents Folder ─── */}
