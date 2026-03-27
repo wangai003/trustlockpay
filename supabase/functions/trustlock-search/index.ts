@@ -146,6 +146,14 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(5);
 
+    // 10. Pre-order contracts
+    const { data: contracts } = await supabase
+      .from("pre_order_contracts")
+      .select("id, transaction_id, order_number, buyer_id, vendor_id, industry, order_amount, buyer_typed_name, vendor_typed_name, is_vendor_auto_signed, status, created_at, contract_terms_version, industry_addendum")
+      .or(`order_number.ilike.%${q}%,buyer_typed_name.ilike.%${q}%,vendor_typed_name.ilike.%${q}%,industry.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
     // 11. AI-powered answer if knowledge base didn't match well
     let aiAnswer: string | null = null;
     if (!knowledgeAnswer && q.length >= 4) {
