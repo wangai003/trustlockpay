@@ -11,7 +11,8 @@ const VendorHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, vendor } = useVendor();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_vendor_auth");
     localStorage.removeItem("tl_vendor_network");
     navigate("/trustlock/vendor/login");

@@ -33,7 +33,8 @@ const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_vendor_auth");
     localStorage.removeItem("tl_vendor_network");
     navigate("/trustlock/vendor/login");
