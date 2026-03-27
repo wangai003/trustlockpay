@@ -433,7 +433,7 @@ export function useGetOrCreateSeedToken() {
   return useMutation({
     mutationFn: async () => {
       const session = (await supabase.auth.getSession()).data.session;
-      const userId = session?.user?.id || "testnet-demo-user";
+      const userId = session?.user?.id || "00000000-0000-0000-0000-000000000000";
       return callEdgeFunction("manage-seed-token", { action: "get_or_create_token", userId });
     },
     onError: (e: Error) => toast.error(e.message),
