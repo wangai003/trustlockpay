@@ -178,6 +178,21 @@ const PublicCheckout = () => {
               </p>
             </div>
 
+            {/* Free downloadable documents */}
+            <TransactionDocuments
+              tx={{
+                txId: refId,
+                vendorName: vendorName,
+                buyerName: "You",
+                item: linkTitle,
+                amount: invoiceData?.grandTotal ?? linkData?.grand_total ?? 0,
+                date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                status: "locked",
+                industry: linkData?.industry,
+                invoiceItems: linkData?.invoice_items,
+              }}
+            />
+
             <Badge variant="outline" className="text-xs">
               Transaction ID: {refId}
             </Badge>
