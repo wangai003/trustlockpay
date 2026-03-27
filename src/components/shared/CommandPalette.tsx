@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -12,9 +12,11 @@ import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
   ShieldCheck, FileText, BarChart3, Bot, Settings, Wallet, GitBranch,
   Banknote, Package, HelpCircle, CreditCard, Globe, DollarSign, Receipt, Link2,
-  BookOpen, Search, Loader2, Sparkles, Brain, Eye, Calendar, MapPin, Tag, TrendingUp
+  BookOpen, Search, Loader2, Sparkles, Brain, Eye, Calendar, MapPin, Tag, TrendingUp,
+  Download, ShieldX, Shield, Landmark, ClipboardCheck
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
 
@@ -81,6 +83,20 @@ const buyerItems: CommandEntry[] = [
   { label: "Industry Playbook", to: "/trustlock/buyer/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Buyer" },
 ];
 
+// Rotating search hints
+const searchHints = [
+  { text: "Search by order number...", hint: "e.g. TL-1234567890" },
+  { text: "Search by buyer or vendor name...", hint: "e.g. John Smith" },
+  { text: "Search by dispute ID...", hint: "e.g. DSP-001" },
+  { text: "Search by confirmation code...", hint: "e.g. ABC12345" },
+  { text: "Search by country for sanctions...", hint: "e.g. Nigeria" },
+  { text: "How does escrow work?", hint: "AI-powered answer" },
+  { text: "Search archived reports...", hint: "e.g. Monthly Summary" },
+  { text: "Milestone workflow", hint: "Dynamic order stages" },
+  { text: "Payout methods", hint: "Bank, M-Pesa, crypto" },
+  { text: "Fee structure", hint: "Platform & processing fees" },
+];
+
 const searchSuggestions = [
   { text: "How does escrow work?", hint: "AI-powered answer" },
   { text: "Dispute resolution process", hint: "Knowledge base" },
@@ -90,6 +106,7 @@ const searchSuggestions = [
   { text: "KYC verification", hint: "Identity documents" },
   { text: "Auto-release policy", hint: "14-day mandate" },
   { text: "Industry playbook", hint: "Mining, construction, agriculture" },
+  { text: "Sanctions screening", hint: "OFAC, EU, UN checks" },
 ];
 
 /* ─── types ─── */
@@ -100,6 +117,10 @@ interface SearchResults {
   transactions: any[];
   disputes: any[];
   orders: any[];
+  payouts: any[];
+  acknowledgement_forms: any[];
+  archived_reports: any[];
+  screening_logs: any[];
 }
 
 interface CommandPaletteProps {
@@ -113,9 +134,18 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
   const [searching, setSearching] = useState(false);
+  const [hintIndex, setHintIndex] = useState(0);
   const navigate = useNavigate();
 
-  // Open from keyboard shortcut or dispatched event
+  // Rotate search hints
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHintIndex((i) => (i + 1) % searchHints.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Open from keyboard shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -181,13 +211,19 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
     results.ai_answer ||
     results.transactions.length > 0 ||
     results.disputes.length > 0 ||
-    results.orders.length > 0
+    results.orders.length > 0 ||
+    results.payouts.length > 0 ||
+    results.acknowledgement_forms.length > 0 ||
+    results.archived_reports.length > 0 ||
+    results.screening_logs.length > 0
   );
+
+  const currentHint = searchHints[hintIndex];
 
   return (
     <CommandDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSearch(""); setResults(null); } }}>
       <CommandInput
-        placeholder="Search TrustLock — orders, disputes, documents, or ask a question…"
+        placeholder={currentHint.text}
         value={search}
         onValueChange={setSearch}
       />
@@ -239,7 +275,7 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </div>
         )}
 
-        {/* Transaction Previews */}
+        {/* ─── Transaction Results ─── */}
         {results && results.transactions.length > 0 && (
           <CommandGroup heading="📦 Transactions">
             {results.transactions.map((tx: any) => (
@@ -282,7 +318,7 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </CommandGroup>
         )}
 
-        {/* Dispute Previews */}
+        {/* ─── Dispute Results ─── */}
         {results && results.disputes.length > 0 && (
           <CommandGroup heading="⚠️ Disputes">
             {results.disputes.map((d: any) => (
@@ -321,7 +357,7 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </CommandGroup>
         )}
 
-        {/* Order Previews */}
+        {/* ─── Order Results ─── */}
         {results && results.orders.length > 0 && (
           <CommandGroup heading="🛒 Orders">
             {results.orders.map((o: any) => (
@@ -332,12 +368,13 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
                 className="gap-3 py-2.5"
               >
                 <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Package className="w-4 h-4 text-accent" />
+                  <Package className="w-4 h-4 text-accent-foreground" />
                 </div>
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Order #{o.order_number || "—"}</span>
                     <Badge variant="outline" className="text-[9px] capitalize">{o.status}</Badge>
+                    {o.confirmation_code && <Badge variant="secondary" className="text-[9px]">{o.confirmation_code}</Badge>}
                   </div>
                   <p className="text-[11px] text-muted-foreground truncate">{o.item || "Item"}</p>
                   <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -347,6 +384,175 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
                     <span>{o.buyer_name || "—"}</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />{new Date(o.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* ─── Payout Results ─── */}
+        {results && results.payouts.length > 0 && (
+          <CommandGroup heading="💸 Payouts">
+            {results.payouts.map((p: any) => (
+              <CommandItem
+                key={p.id}
+                value={`payout ${p.order_number} ${p.confirmation_code}`}
+                onSelect={() => handleSelect(`${basePath}/payout`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Banknote className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Payout {p.order_number || p.confirmation_code || "—"}</span>
+                    <Badge variant={p.status === "completed" ? "default" : "secondary"} className="text-[9px] capitalize">{p.status}</Badge>
+                    {p.mode && <Badge variant="outline" className="text-[9px] capitalize">{p.mode}</Badge>}
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />${Number(p.amount || 0).toLocaleString()}
+                    </span>
+                    {p.payment_provider && <span>{p.payment_provider}</span>}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(p.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* ─── Acknowledgement Forms ─── */}
+        {results && results.acknowledgement_forms.length > 0 && (
+          <CommandGroup heading="✍️ Acknowledgement Forms">
+            {results.acknowledgement_forms.map((f: any) => (
+              <CommandItem
+                key={f.id}
+                value={`ack ${f.title} ${f.transaction_id}`}
+                onSelect={() => handleSelect(`${basePath}/documents`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ClipboardCheck className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{f.title}</span>
+                    <Badge variant="outline" className="text-[9px] capitalize">{f.form_type?.replace(/_/g, " ")}</Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span>Buyer: {f.signed_by_buyer ? "✓ Signed" : "Pending"}</span>
+                    <span>Vendor: {f.signed_by_vendor ? "✓ Signed" : "Pending"}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(f.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                {f.pdf_url && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(f.pdf_url, "_blank");
+                    }}
+                  >
+                    <Download className="w-3.5 h-3.5 text-primary" />
+                  </Button>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* ─── Archived Reports ─── */}
+        {results && results.archived_reports.length > 0 && (
+          <CommandGroup heading="📁 Documents & Reports">
+            {results.archived_reports.map((r: any) => (
+              <CommandItem
+                key={r.id}
+                value={`report ${r.name}`}
+                onSelect={() => handleSelect(`${basePath}/documents`)}
+                className="gap-3 py-2.5"
+              >
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <span className="text-sm font-medium truncate block">{r.name}</span>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span>{r.file_type || "PDF"}</span>
+                    {r.file_size && <span>{r.file_size}</span>}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(r.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                {r.file_url && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(r.file_url, "_blank");
+                    }}
+                  >
+                    <Download className="w-3.5 h-3.5 text-primary" />
+                  </Button>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* ─── Sanctions Screening Logs (admin only) ─── */}
+        {results && results.screening_logs.length > 0 && (
+          <CommandGroup heading="🛡️ Sanctions Screening">
+            {results.screening_logs.map((s: any) => (
+              <CommandItem
+                key={s.id}
+                value={`sanctions ${s.full_name} ${s.country}`}
+                onSelect={() => handleSelect("/trustlock/admin/compliance")}
+                className="gap-3 py-2.5"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  s.result === "blocked" ? "bg-destructive/10" : s.result === "flagged" ? "bg-accent/10" : "bg-primary/10"
+                }`}>
+                  {s.result === "blocked" ? (
+                    <ShieldX className="w-4 h-4 text-destructive" />
+                  ) : s.result === "flagged" ? (
+                    <Shield className="w-4 h-4 text-accent-foreground" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{s.full_name}</span>
+                    <Badge
+                      variant={s.result === "blocked" ? "destructive" : s.result === "flagged" ? "secondary" : "default"}
+                      className="text-[9px] capitalize"
+                    >
+                      {s.result}
+                    </Badge>
+                    {s.risk_score > 0 && <Badge variant="outline" className="text-[9px]">Risk: {s.risk_score}%</Badge>}
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />{s.country}
+                    </span>
+                    <span>{s.screening_source}</span>
+                    <span>{s.user_role}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{new Date(s.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>

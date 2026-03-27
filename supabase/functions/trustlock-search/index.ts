@@ -27,6 +27,7 @@ const knowledgeBase: Record<string, string> = {
   "os-pay": "TrustLock OS Pay is the internal payment service for platform fees, refunds, and split payments. It supports direct payment, refund processing, and percentage-based splits between multiple parties.",
   "os-payout": "TrustLock OS Payout handles fund withdrawals via local bank, mobile money, or crypto. It includes country-specific field requirements, fee calculation, and confirmation tracking. Supports both local and diaspora payout modes.",
   "industry": "TrustLock supports industry-specific workflows for: Construction, Mining, Agriculture, Real Estate, Tourism & Hospitality, Retail & E-commerce, Oil & Gas, Healthcare, Automotive, and Technology. Each has pre-configured milestones, compliance requirements, and observer roles.",
+  "sanctions": "Sanctions screening checks all transaction parties against OFAC, EU, and UN consolidated lists using fuzzy matching. Results can be clear, flagged (admin review), or blocked (transaction denied). All screenings are logged for compliance audit.",
 };
 
 function findKnowledgeAnswer(query: string): string | null {
@@ -39,7 +40,6 @@ function findKnowledgeAnswer(query: string): string | null {
     for (const kw of keywords) {
       if (q.includes(kw)) score += 10;
     }
-    // Check value content for additional matches
     const qWords = q.split(/\s+/).filter(w => w.length > 2);
     for (const w of qWords) {
       if (value.toLowerCase().includes(w)) score += 1;
@@ -50,7 +50,6 @@ function findKnowledgeAnswer(query: string): string | null {
   scores.sort((a, b) => b.score - a.score);
   if (scores.length === 0) return null;
 
-  // Return top match(es)
   const topAnswers = scores.slice(0, 2).map(s => knowledgeBase[s.key]);
   return topAnswers.join("\n\n");
 }
@@ -74,36 +73,74 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // 1. Knowledge base lookup
-    const knowledgeAnswer = findKnowledgeAnswer(query);
+    const q = String(query);
 
-    // 2. DB search — transactions with preview data
+    // 1. Knowledge base lookup
+    const knowledgeAnswer = findKnowledgeAnswer(q);
+
+    // 2. Transactions
     const { data: txs } = await supabase
       .from("transactions")
       .select("id, tx_id, item, amount, status, buyer_name, vendor_name, order_number, created_at, industry, type, fee, tracking, shipped_date, delivered_date")
-      .or(`tx_id.ilike.%${query}%,item.ilike.%${query}%,buyer_name.ilike.%${query}%,vendor_name.ilike.%${query}%`)
+      .or(`tx_id.ilike.%${q}%,item.ilike.%${q}%,buyer_name.ilike.%${q}%,vendor_name.ilike.%${q}%`)
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // 3. DB search — disputes with preview
+    // 3. Disputes
     const { data: disputes } = await supabase
       .from("disputes")
       .select("id, dispute_id, reason, status, buyer_name, vendor_name, amount, tx_id, created_at, priority, ai_recommendation, description, arbitration_ruling")
-      .or(`dispute_id.ilike.%${query}%,reason.ilike.%${query}%,buyer_name.ilike.%${query}%,vendor_name.ilike.%${query}%,tx_id.ilike.%${query}%`)
+      .or(`dispute_id.ilike.%${q}%,reason.ilike.%${q}%,buyer_name.ilike.%${q}%,vendor_name.ilike.%${q}%,tx_id.ilike.%${q}%`)
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // 4. DB search — orders
+    // 4. Orders (carbon copies)
     const { data: orders } = await supabase
       .from("order_carbon_copies")
       .select("id, order_number, item, amount, status, buyer_name, vendor_name, created_at, confirmation_code, fee")
-      .or(`order_number.ilike.%${query}%,item.ilike.%${query}%,buyer_name.ilike.%${query}%,vendor_name.ilike.%${query}%,confirmation_code.ilike.%${query}%`)
+      .or(`order_number.ilike.%${q}%,item.ilike.%${q}%,buyer_name.ilike.%${q}%,vendor_name.ilike.%${q}%,confirmation_code.ilike.%${q}%`)
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // 5. AI-powered answer if knowledge base didn't match well
+    // 5. Payout requests
+    const { data: payouts } = await supabase
+      .from("payout_requests")
+      .select("id, order_number, confirmation_code, amount, fee, net_amount, status, role, payout_type, payment_provider, mode, created_at, completed_at")
+      .or(`order_number.ilike.%${q}%,confirmation_code.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // 6. Acknowledgement forms
+    const { data: ackForms } = await supabase
+      .from("acknowledgement_forms")
+      .select("id, transaction_id, title, form_type, signed_by_buyer, signed_by_vendor, created_at, pdf_url")
+      .or(`title.ilike.%${q}%,transaction_id.ilike.%${q}%,form_type.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // 7. Archived reports
+    const { data: reports } = await supabase
+      .from("archived_reports")
+      .select("id, name, file_type, file_size, file_url, owner_role, created_at")
+      .or(`name.ilike.%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // 8. Sanctions screening logs (admin only)
+    let screeningLogs: unknown[] = [];
+    if (role === "admin") {
+      const { data: logs } = await supabase
+        .from("sanctions_screening_logs")
+        .select("id, full_name, country, result, risk_score, screening_source, user_role, created_at, transaction_id")
+        .or(`full_name.ilike.%${q}%,country.ilike.%${q}%`)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      screeningLogs = logs || [];
+    }
+
+    // 9. AI-powered answer if knowledge base didn't match well
     let aiAnswer: string | null = null;
-    if (!knowledgeAnswer && query.length >= 4) {
+    if (!knowledgeAnswer && q.length >= 4) {
       try {
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
@@ -120,7 +157,7 @@ Deno.serve(async (req) => {
                   role: "system",
                   content: `You are TrustLock's internal search assistant. Answer questions about escrow payments, milestones, disputes, KYC, payouts, smart contracts, and platform features. Keep answers concise (2-3 sentences max). If the query is just a name or ID lookup, say "Searching database for matches..." instead. Do not make up transaction data.`,
                 },
-                { role: "user", content: query },
+                { role: "user", content: q },
               ],
             }),
           });
@@ -143,6 +180,10 @@ Deno.serve(async (req) => {
         transactions: txs || [],
         disputes: disputes || [],
         orders: orders || [],
+        payouts: payouts || [],
+        acknowledgement_forms: ackForms || [],
+        archived_reports: reports || [],
+        screening_logs: screeningLogs,
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
