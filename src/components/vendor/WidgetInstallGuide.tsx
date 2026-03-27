@@ -32,7 +32,7 @@ const PLATFORM_GUIDES: Record<string, PlatformGuide> = {
   },
   WooCommerce: {
     steps: [
-      { title: "Log in to your WordPress admin", detail: "Go to your-site.com/wp-admin and log in" },
+      { title: "Log in to your WordPress admin", detail: "Go to your-site.com/wp-admin and log in", link: { url: "https://wordpress.org/support/article/first-steps-with-wordpress/", label: "WordPress Admin Guide" } },
       { title: "Go to Appearance > Theme Editor", detail: "In the left sidebar, hover over Appearance and click Theme File Editor" },
       { title: "Select footer.php", detail: "On the right side, find and click on footer.php in the file list", shortcut: "Ctrl+F to search for footer.php" },
       { title: "Paste the widget code", detail: "Find the closing body tag at the bottom. Paste the TrustLock code on the line ABOVE it", shortcut: "Ctrl+End then Ctrl+V to paste" },
@@ -42,8 +42,8 @@ const PLATFORM_GUIDES: Record<string, PlatformGuide> = {
   },
   WordPress: {
     steps: [
-      { title: "Log in to WordPress admin", detail: "Go to your-site.com/wp-admin" },
-      { title: "Install WPCode plugin", detail: "Go to Plugins > Add New, search for WPCode, install and activate it" },
+      { title: "Log in to WordPress admin", detail: "Go to your-site.com/wp-admin", link: { url: "https://wordpress.org/support/article/first-steps-with-wordpress/", label: "WordPress Login Help" } },
+      { title: "Install WPCode plugin", detail: "Go to Plugins > Add New, search for WPCode, install and activate it", link: { url: "https://wordpress.org/plugins/insert-headers-and-footers/", label: "Get WPCode Plugin" } },
       { title: "Go to Code Snippets > Header and Footer", detail: "In the left sidebar, click Code Snippets then Header and Footer" },
       { title: "Paste in the Footer section", detail: "Paste the TrustLock widget code in the Footer text box", shortcut: "Ctrl+V to paste" },
       { title: "Click Save Changes", detail: "Scroll down and click Save Changes. Done!" },
