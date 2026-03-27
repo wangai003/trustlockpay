@@ -406,7 +406,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <Label className="text-xs">Your Azix Wallet Address</Label>
                 <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
               </div>
-              <p className="text-[10px] text-muted-foreground">Crypto-to-crypto · 1.0% fee · Funds route to Transaction Fee Wallet</p>
+              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet</p>
             </div>
           )}
 
