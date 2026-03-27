@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, Info, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 
 const navItems = [
@@ -85,16 +85,16 @@ const BuyerSidebar = () => {
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.label}
               </NavLink>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
                     <Info className="w-3 h-3" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                </PopoverTrigger>
+                <PopoverContent side="right" className="max-w-[200px] text-xs p-2">
                   {item.tip}
-                </TooltipContent>
-              </Tooltip>
+                </PopoverContent>
+              </Popover>
             </div>
           ))}
         </nav>
