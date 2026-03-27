@@ -108,6 +108,10 @@ function calculatePayoutFees(
 
   const totalFees = trustlockFee + processorFee + escrowFee + gasEstimate;
 
+  // Fee trickle-down: escrow service fees are forwarded to the transaction wallet
+  // EXCEPT on refunds (no fees) and the escrow wallet retains nothing — it forwards all collected fees
+  const feeTrickleToTransactionWallet = applyEscrow ? escrowFee : 0;
+
   return {
     trustlockFee,
     processorFee,
@@ -115,8 +119,9 @@ function calculatePayoutFees(
     gasFee: gasEstimate,
     totalFees,
     netAmount: amount - totalFees,
-    transactionWalletReceives: trustlockFee,  // → AZIX_TRANSACTION_WALLET
-    escrowWalletReceives: escrowFee,           // → AZIX_ESCROW_WALLET
+    transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,  // Platform fee + trickled escrow fee → AZIX_TRANSACTION_WALLET
+    escrowWalletReceives: 0,  // Escrow wallet forwards all fees — net zero retention
+    feeTrickleToTransactionWallet,  // Specifically the amount forwarded from escrow → transaction wallet
   };
 }
 
