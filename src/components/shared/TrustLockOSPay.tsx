@@ -13,9 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
-
-const TRUSTLOCK_WALLET = "0x7A3b...F92d";
-const ESCROW_WALLET = "0x4E1c...A83b";
+import { AZIX_WALLETS } from "@/lib/feeEngine";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "thirdweb" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
