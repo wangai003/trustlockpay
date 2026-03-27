@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,9 +72,10 @@ const VendorAnalytics = () => {
     size: r.file_size || "—",
   }));
 
+  const navigate = useNavigate();
+
   const handleDownloadClick = (reportName: string) => {
-    setPendingReport(reportName);
-    setPayDialogOpen(true);
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent("Data Analytics Print-out")}&amount=1.00`);
   };
 
   const handlePaymentComplete = () => {
