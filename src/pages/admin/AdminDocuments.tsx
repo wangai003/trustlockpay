@@ -80,6 +80,32 @@ const AdminDocuments = () => {
   const [previewIndustry, setPreviewIndustry] = useState("default");
   const [protectionSearch, setProtectionSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [contractSearch, setContractSearch] = useState("");
+  const [debouncedContractSearch, setDebouncedContractSearch] = useState("");
+
+  const handleContractSearchChange = (val: string) => {
+    setContractSearch(val);
+    clearTimeout((window as any).__contractSearchTimer);
+    (window as any).__contractSearchTimer = setTimeout(() => setDebouncedContractSearch(val), 300);
+  };
+
+  // Fetch pre_order_contracts
+  const { data: contractDocs, isLoading: contractsLoading } = useQuery({
+    queryKey: ["pre-order-contracts-admin", debouncedContractSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from("pre_order_contracts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (debouncedContractSearch) {
+        query = query.or(`order_number.ilike.%${debouncedContractSearch}%,buyer_typed_name.ilike.%${debouncedContractSearch}%,vendor_typed_name.ilike.%${debouncedContractSearch}%,industry.ilike.%${debouncedContractSearch}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Debounce search
   const handleSearchChange = (val: string) => {

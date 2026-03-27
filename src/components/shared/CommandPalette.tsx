@@ -579,6 +579,50 @@ const CommandPalette = ({ role }: CommandPaletteProps) => {
           </CommandGroup>
         )}
 
+        {/* ─── Pre-Order Contracts ─── */}
+        {results && results.contracts?.length > 0 && (
+          <CommandGroup heading="📝 Pre-Order Contracts">
+            {results.contracts.map((c: any) => {
+              const statusColor = c.status === "fully_signed" ? "default" : c.status === "declined" ? "destructive" : "secondary";
+              return (
+                <CommandItem
+                  key={c.id}
+                  value={`contract ${c.order_number} ${c.buyer_typed_name} ${c.vendor_typed_name} ${c.industry}`}
+                  onSelect={() => handleSelect(`${basePath}/documents`)}
+                  className="gap-3 py-2.5"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Handshake className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">Contract {c.order_number ? `#${c.order_number}` : "—"}</span>
+                      <Badge variant={statusColor} className="text-[9px] capitalize">{c.status?.replace(/_/g, " ")}</Badge>
+                      {c.is_vendor_auto_signed && <Badge variant="outline" className="text-[9px]">Auto-Signed</Badge>}
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="w-3 h-3" />${Number(c.order_amount || 0).toLocaleString()}
+                      </span>
+                      {c.buyer_typed_name && <span>Buyer: {c.buyer_typed_name}</span>}
+                      {c.vendor_typed_name && <span>Vendor: {c.vendor_typed_name}</span>}
+                      {c.industry && (
+                        <span className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />{c.industry}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />{new Date(c.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
         {/* ─── Sanctions Screening Logs (admin only) ─── */}
         {results && results.screening_logs.length > 0 && (
           <CommandGroup heading="🛡️ Sanctions Screening">
