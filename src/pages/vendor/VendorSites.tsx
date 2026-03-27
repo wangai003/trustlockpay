@@ -79,8 +79,12 @@ const VendorSites = () => {
 
   const handleAddSite = async () => {
     if (!siteName) return;
+    if (!siteIndustry) {
+      toast.error("Please select an industry for your site.");
+      return;
+    }
     await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
-    setSiteName(""); setSitePlatform(""); setSiteUrl("");
+    setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry("");
     setShowAdd(false);
   };
 
