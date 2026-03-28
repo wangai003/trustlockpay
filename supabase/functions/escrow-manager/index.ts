@@ -18,9 +18,41 @@ const FEE_RULES = {
 const PROCESSOR_RATES: Record<string, number> = {
   stripe: 2.9,
   coinbase: 1.5,
-  yellow_card: 2.0,
   transak: 1.5,
   direct: 0,
+};
+
+// ─── AML / Compliance Thresholds ──────────────────────────
+const AML_THRESHOLDS = {
+  FATF_TRAVEL_RULE_CRYPTO: 1_000,
+  EDD_THRESHOLD: 3_000,
+  CTR_REPORTING: 10_000,
+  STRUCTURING_BAND_LOW: 7_500,
+} as const;
+
+// ─── Processor Transaction Limits (by KYC tier) ──────────
+type KycTier = "none" | "basic" | "intermediate" | "full";
+
+const PROCESSOR_LIMITS: Record<string, {
+  minPerTx: number;
+  maxPerTx: Record<KycTier, number>;
+}> = {
+  stripe: {
+    minPerTx: 0.50,
+    maxPerTx: { none: 500, basic: 10_000, intermediate: 250_000, full: 999_999 },
+  },
+  coinbase: {
+    minPerTx: 1.00,
+    maxPerTx: { none: 300, basic: 7_500, intermediate: 50_000, full: 250_000 },
+  },
+  transak: {
+    minPerTx: 1.00,
+    maxPerTx: { none: 100, basic: 500, intermediate: 15_000, full: 50_000 },
+  },
+  direct: {
+    minPerTx: 0.01,
+    maxPerTx: { none: 50_000, basic: 250_000, intermediate: 1_000_000, full: 10_000_000 },
+  },
 };
 
 // ─── Helpers ───────────────────────────────────────────────
