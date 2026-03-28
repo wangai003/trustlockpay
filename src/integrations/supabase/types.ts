@@ -316,6 +316,60 @@ export type Database = {
         }
         Relationships: []
       }
+      crypto_support_queue: {
+        Row: {
+          admin_notes: string | null
+          amount_sent: number | null
+          created_at: string
+          id: string
+          network: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          sender_email: string
+          sender_name: string
+          sender_wallet: string | null
+          source: string | null
+          status: string
+          token: string | null
+          tx_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_sent?: number | null
+          created_at?: string
+          id?: string
+          network?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sender_email: string
+          sender_name: string
+          sender_wallet?: string | null
+          source?: string | null
+          status?: string
+          token?: string | null
+          tx_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_sent?: number | null
+          created_at?: string
+          id?: string
+          network?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sender_email?: string
+          sender_name?: string
+          sender_wallet?: string | null
+          source?: string | null
+          status?: string
+          token?: string | null
+          tx_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dispute_evidence: {
         Row: {
           created_at: string
