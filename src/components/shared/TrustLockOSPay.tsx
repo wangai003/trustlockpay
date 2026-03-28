@@ -658,9 +658,21 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   // Simulate on-chain verification (production: calls Polygon RPC edge function)
                   await new Promise(r => setTimeout(r, 2500));
                   const amt = parseFloat(senderAmount) || 0;
-                  if (amt > 0) {
+                  const requiredAmount = parseFloat(total) || parsedAmount;
+                  const newCumulative = cumulativeReceived + amt;
+                  if (amt > 0 && newCumulative >= requiredAmount) {
+                    setCumulativeReceived(newCumulative);
+                    setShortfallTxIds(prev => [...prev, txIdInput]);
                     setCryptoVerifyStatus("verified");
                     toast.success("✅ Payment verified on-chain! Your order is being generated.");
+                  } else if (amt > 0 && newCumulative < requiredAmount) {
+                    setCumulativeReceived(newCumulative);
+                    setShortfallTxIds(prev => [...prev, txIdInput]);
+                    setCryptoVerifyStatus("shortfall");
+                    // Reset fields for next payment
+                    setTxIdInput("");
+                    setSenderAmount("");
+                    toast.info(`Received $${amt.toFixed(2)} — $${(requiredAmount - newCumulative).toFixed(2)} remaining.`);
                   } else {
                     setCryptoVerifyStatus("failed");
                     toast.error("Could not verify transaction. Please check the details.");
@@ -669,6 +681,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               >
                 {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." :
                  cryptoVerifyStatus === "verified" ? "✅ Verified — Generating Order" :
+                 cryptoVerifyStatus === "shortfall" ? "Submit Additional Payment" :
                  "Verify & Generate Order"}
                 {cryptoVerifyStatus !== "verifying" && <ArrowRight className="w-4 h-4" />}
               </Button>
