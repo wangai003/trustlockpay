@@ -232,7 +232,7 @@ const DEFAULT_BANK_FIELDS: ProviderField[] = [
 ];
 
 function buildBankProviders(country: string, banks: string[]): PaymentProvider[] {
-  const processor: ProcessorId = "yellow_card";
+  const processor: ProcessorId = "coinbase";
   const fields = COUNTRY_BANK_FIELDS[country] || DEFAULT_BANK_FIELDS;
   return banks.map((bank) => ({
     id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
