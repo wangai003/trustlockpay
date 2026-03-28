@@ -155,7 +155,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
     name: "Thirdweb Wallet",
     category: "crypto_wallet",
     mode: "diaspora",
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "wallet_address", label: "Wallet Address", placeholder: "0x...", type: "text", required: true },
     ],
