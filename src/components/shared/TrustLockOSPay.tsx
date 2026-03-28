@@ -666,7 +666,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     <AlertTriangle className="w-4 h-4" /> Payment Pending On-Chain Confirmation
                   </p>
                   <p className="text-[10px] text-foreground">
-                    Your transaction could not be confirmed automatically. This may happen if the transfer is still processing on the blockchain. Please provide your contact details so our team can investigate and reach you.
+                    Your transaction could not be confirmed automatically. This may happen if the transfer is still processing on the blockchain.
+                  </p>
+                  <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
+                    <p className="text-[10px] font-bold text-destructive">🚫 Do NOT send a second payment. Your funds are on-chain and our team will locate them.</p>
+                  </div>
+                  <p className="text-[10px] text-foreground">
+                    Please provide your details below so our team can investigate. Once submitted, you may safely close this page — we will contact you within <strong>24–48 hours</strong>. Your order number will be retrieved from our records and shared with you once payment is confirmed.
                   </p>
                   <div>
                     <Label className="text-[10px] text-muted-foreground">Your Full Name</Label>
@@ -683,12 +689,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     className="w-full text-xs"
                     disabled={!pendingName || !pendingEmail}
                     onClick={() => {
-                      toast.success("Details submitted. A TrustLock support member will investigate and contact you shortly at " + pendingEmail);
+                      toast.success("Details submitted. TrustLock support will investigate and contact you at " + pendingEmail + " within 24–48 hours.");
+                      setCryptoVerifyStatus("idle");
                     }}
                   >
-                    Submit for TrustLock Review
+                    Submit & Close
                   </Button>
-                  <p className="text-[9px] text-muted-foreground">
+                  <p className="text-[9px] text-muted-foreground text-center">
                     You can also email <strong>support@azix.world</strong> with your TxID and wallet address for faster resolution.
                   </p>
                 </div>

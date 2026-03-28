@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -255,10 +256,25 @@ const TrustLockDualCheckout = () => {
                   {cryptoVerifyStatus === "pending" && (
                     <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
                       <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Pending On-Chain Confirmation</p>
-                      <p className="text-[9px] text-foreground">Transaction not yet confirmed. Provide your details so our team can investigate.</p>
+                      <p className="text-[9px] text-foreground">
+                        Your transaction could not be confirmed automatically. This may happen if the transfer is still processing on the blockchain.
+                      </p>
+                      <div className="p-1.5 rounded bg-destructive/10 border border-destructive/20">
+                        <p className="text-[9px] font-bold text-destructive">🚫 Do NOT send a second payment. Your funds are on-chain and our team will locate them.</p>
+                      </div>
+                      <p className="text-[9px] text-foreground">
+                        Please provide your details below so our team can investigate. Once submitted, you may close this page — we will contact you within 24–48 hours. Your order number will be retrieved from our records and shared with you once the payment is confirmed.
+                      </p>
                       <Input placeholder="Full Name" value={pendingName} onChange={e => setPendingName(e.target.value)} className="text-[10px]" />
                       <Input placeholder="Email Address" value={pendingEmail} onChange={e => setPendingEmail(e.target.value)} className="text-[10px]" />
-                      <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" disabled={!pendingName || !pendingEmail}>Submit for Review</Button>
+                      <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" disabled={!pendingName || !pendingEmail}
+                        onClick={() => {
+                          setCryptoVerifyStatus("idle");
+                          toast?.("Details submitted. TrustLock support will investigate and contact you at " + pendingEmail + " within 24–48 hours.");
+                        }}>
+                        Submit & Close
+                      </Button>
+                      <p className="text-[8px] text-muted-foreground text-center">You can also email <strong>support@azix.world</strong> with your TxID for faster resolution.</p>
                     </div>
                   )}
                   {cryptoVerifyStatus === "failed" && (
