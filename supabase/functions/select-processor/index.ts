@@ -8,6 +8,15 @@ const corsHeaders = {
 
 // ─── Types ────────────────────────────────────────────────
 type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
+type KycTier = "none" | "basic" | "intermediate" | "full";
+
+interface ProcessorLimits {
+  minPerTx: number;
+  maxPerTx: Record<KycTier, number>;
+  dailyLimit: Record<KycTier, number>;
+  monthlyLimit: Record<KycTier, number>;
+  maxDailyTxCount: number;
+}
 
 interface ProcessorInfo {
   processorId: string;
@@ -18,6 +27,7 @@ interface ProcessorInfo {
   onRamp: boolean;
   offRamp: boolean;
   supportedMethods: PaymentMethod[];
+  limits: ProcessorLimits;
 }
 
 // ─── Processor Registry (3 active + direct) ──────────────
@@ -31,6 +41,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: false,
     supportedMethods: ["card", "bank_transfer"],
+    limits: {
+      minPerTx: 0.50,
+      maxPerTx:    { none: 500, basic: 10_000, intermediate: 250_000, full: 999_999 },
+      dailyLimit:  { none: 2_000, basic: 50_000, intermediate: 500_000, full: 2_000_000 },
+      monthlyLimit:{ none: 10_000, basic: 250_000, intermediate: 2_000_000, full: 10_000_000 },
+      maxDailyTxCount: 200,
+    },
   },
   coinbase: {
     processorId: "coinbase",
@@ -41,6 +58,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 300, basic: 7_500, intermediate: 50_000, full: 250_000 },
+      dailyLimit:  { none: 500, basic: 25_000, intermediate: 100_000, full: 500_000 },
+      monthlyLimit:{ none: 5_000, basic: 100_000, intermediate: 500_000, full: 2_500_000 },
+      maxDailyTxCount: 100,
+    },
   },
   transak: {
     processorId: "transak",
@@ -51,6 +75,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 100, basic: 500, intermediate: 15_000, full: 50_000 },
+      dailyLimit:  { none: 100, basic: 1_500, intermediate: 25_000, full: 100_000 },
+      monthlyLimit:{ none: 1_000, basic: 10_000, intermediate: 100_000, full: 500_000 },
+      maxDailyTxCount: 50,
+    },
   },
   direct: {
     processorId: "direct",
@@ -61,6 +92,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: false,
     offRamp: false,
     supportedMethods: ["crypto"],
+    limits: {
+      minPerTx: 0.01,
+      maxPerTx:    { none: 50_000, basic: 250_000, intermediate: 1_000_000, full: 10_000_000 },
+      dailyLimit:  { none: 100_000, basic: 500_000, intermediate: 5_000_000, full: 50_000_000 },
+      monthlyLimit:{ none: 500_000, basic: 2_500_000, intermediate: 25_000_000, full: 100_000_000 },
+      maxDailyTxCount: 500,
+    },
   },
 };
 
@@ -252,6 +290,82 @@ async function getPayoutFields(body: Record<string, unknown>) {
   });
 }
 
+// ─── Limit Check (server-side authoritative) ─────────────
+async function checkLimits(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { user_id, amount, processor_id, kyc_tier } = body;
+
+  if (!user_id || !amount || !processor_id) {
+    return errorResponse("user_id, amount, and processor_id are required");
+  }
+
+  const parsedAmount = parseFloat(String(amount));
+  const procId = String(processor_id);
+  const tier = (String(kyc_tier || "basic")) as KycTier;
+  const proc = PROCESSORS[procId];
+
+  if (!proc) return errorResponse(`Unknown processor: ${procId}`);
+
+  const limits = proc.limits;
+
+  // Get user's rolling usage
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [dailyResult, monthlyResult] = await Promise.all([
+    supabase
+      .from("os_payments")
+      .select("amount")
+      .eq("user_id", String(user_id))
+      .gte("created_at", todayStart.toISOString()),
+    supabase
+      .from("os_payments")
+      .select("amount")
+      .eq("user_id", String(user_id))
+      .gte("created_at", monthStart.toISOString()),
+  ]);
+
+  const dailyVolume = (dailyResult.data || []).reduce((s, r) => s + (r.amount || 0), 0);
+  const dailyCount = (dailyResult.data || []).length;
+  const monthlyVolume = (monthlyResult.data || []).reduce((s, r) => s + (r.amount || 0), 0);
+
+  const errors: string[] = [];
+
+  if (parsedAmount < limits.minPerTx) {
+    errors.push(`Minimum transaction: $${limits.minPerTx.toFixed(2)}`);
+  }
+  if (parsedAmount > limits.maxPerTx[tier]) {
+    errors.push(`Max per transaction ($${tier} tier): $${limits.maxPerTx[tier].toLocaleString()}`);
+  }
+  if (dailyVolume + parsedAmount > limits.dailyLimit[tier]) {
+    errors.push(`Daily limit ($${limits.dailyLimit[tier].toLocaleString()}) would be exceeded (used: $${dailyVolume.toLocaleString()})`);
+  }
+  if (monthlyVolume + parsedAmount > limits.monthlyLimit[tier]) {
+    errors.push(`Monthly limit ($${limits.monthlyLimit[tier].toLocaleString()}) would be exceeded (used: $${monthlyVolume.toLocaleString()})`);
+  }
+  if (dailyCount >= limits.maxDailyTxCount) {
+    errors.push(`Daily transaction count limit (${limits.maxDailyTxCount}) reached`);
+  }
+
+  return jsonResponse({
+    success: true,
+    allowed: errors.length === 0,
+    errors,
+    usage: { dailyVolume, monthlyVolume, dailyCount },
+    limits: {
+      minPerTx: limits.minPerTx,
+      maxPerTx: limits.maxPerTx[tier],
+      dailyLimit: limits.dailyLimit[tier],
+      monthlyLimit: limits.monthlyLimit[tier],
+      maxDailyTxCount: limits.maxDailyTxCount,
+    },
+    tier,
+    processor: proc.processorName,
+  });
+}
+
 // ─── Main Handler ─────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -270,8 +384,12 @@ Deno.serve(async (req) => {
       return await getPayoutFields(body);
     }
 
-    // Cost-optimized processor selection
-    const { country, isCrypto, processorHint, paymentMethod, transactionType } = body;
+    if (action === "check_limits") {
+      return await checkLimits(body);
+    }
+
+    // Cost-optimized processor selection — now includes limits in response
+    const { country, isCrypto, processorHint, paymentMethod, transactionType, kyc_tier } = body;
     const result = selectProcessor(
       country ?? "",
       isCrypto ?? false,
@@ -280,7 +398,20 @@ Deno.serve(async (req) => {
       transactionType,
     );
 
-    return jsonResponse(result);
+    const tier = (String(kyc_tier || "basic")) as KycTier;
+    const procLimits = (result as ProcessorInfo).limits;
+
+    return jsonResponse({
+      ...result,
+      limits: procLimits ? {
+        minPerTx: procLimits.minPerTx,
+        maxPerTx: procLimits.maxPerTx[tier],
+        dailyLimit: procLimits.dailyLimit[tier],
+        monthlyLimit: procLimits.monthlyLimit[tier],
+        maxDailyTxCount: procLimits.maxDailyTxCount,
+      } : undefined,
+      tier,
+    });
   } catch {
     return errorResponse("Invalid request body", 400);
   }
