@@ -443,23 +443,35 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           )}
 
           {/* Summary (vendor/buyer only — admin has no fees) */}
-          {!isAdmin && amount && parsedAmount > 0 && (
+          {!isAdmin && amount && parsedAmount > 0 && feeBreakdown && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Service Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
               {taxTotal > 0 && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform Fee ({(feeRate * 100).toFixed(1)}%)</span>
+                <span className="text-muted-foreground">Platform Fee ({feeBreakdown.trustlockFee > 0 ? ((feeBreakdown.trustlockFee / parsedAmount) * 100).toFixed(1) : "0.0"}%)</span>
                 <span className="font-medium">${fee}</span>
               </div>
+              {feeBreakdown.processorFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Processor Fee ({feeBreakdown.processorUsed})</span>
+                  <span className="font-medium">${processorFeeDisplay}</span>
+                </div>
+              )}
+              {feeBreakdown.gasFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gas Fee</span>
+                  <span className="font-medium">${feeBreakdown.gasFee.toFixed(4)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border pt-1 mt-1">
                 <span className="font-bold text-sm">Total</span>
                 <span className="font-bold text-sm text-primary">${total}</span>
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
-                <span>Mode</span>
-                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"}</span>
+                <span>Mode · Processor</span>
+                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"} · {feeBreakdown.processorUsed}</span>
               </div>
             </div>
           )}

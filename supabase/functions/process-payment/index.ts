@@ -6,9 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Thirdweb Payments API (v1) ───────────────────────────
-const THIRDWEB_API = "https://api.thirdweb.com/v1";
-
 // ─── Types ────────────────────────────────────────────────
 interface ProcessPaymentRequest {
   action?: string;
@@ -22,7 +19,7 @@ interface ProcessPaymentRequest {
   refundReason?: string;
   splitRecipient?: string;
   splitPercentage?: number;
-  processor?: "stripe" | "coinbase" | "yellow_card" | "transak" | "thirdweb" | "direct";
+  processor?: "stripe" | "coinbase" | "transak" | "direct";
   direction?: "onramp" | "offramp";
   currency?: string;
   cryptoCurrency?: string;
@@ -68,29 +65,6 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function chainToId(chain: string): number {
-  const map: Record<string, number> = {
-    polygon: 137, ethereum: 1, base: 8453, arbitrum: 42161, optimism: 10,
-  };
-  return map[chain?.toLowerCase()] || 137;
-}
-
-function getUsdcAddress(chain: string): string {
-  const map: Record<string, string> = {
-    polygon: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
-    ethereum: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    arbitrum: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-  };
-  return map[chain?.toLowerCase()] || map.polygon;
-}
-
-function getThirdwebKey(): string {
-  const key = Deno.env.get("THIRDWEB_API_KEY");
-  if (!key) throw new Error("THIRDWEB_API_KEY is not configured");
-  return key;
-}
-
 // ─── Tax Calculation Engine ───────────────────────────────
 interface TaxBreakdown {
   subtotal: number;
@@ -121,27 +95,16 @@ async function calculateTax(
   const vCountry = (vendorCountry ?? "").toUpperCase().trim();
   const category = (itemCategory ?? "general").toLowerCase();
 
-  // Default: no tax if no country info
   if (!bCountry && !vCountry) {
     return {
-      subtotal: amount,
-      tax_amount: 0,
-      tax_type: "None",
-      tax_rate: 0,
-      tariff_amount: 0,
-      tariff_rate: 0,
-      total_with_tax: amount,
-      is_domestic: false,
-      is_same_bloc: false,
-      is_export: false,
-      buyer_country: bCountry,
-      vendor_country: vCountry,
-      item_category: category,
+      subtotal: amount, tax_amount: 0, tax_type: "None", tax_rate: 0,
+      tariff_amount: 0, tariff_rate: 0, total_with_tax: amount,
+      is_domestic: false, is_same_bloc: false, is_export: false,
+      buyer_country: bCountry, vendor_country: vCountry, item_category: category,
       notes: "No country information provided — tax not applied.",
     };
   }
 
-  // Fetch tax rates from DB
   const countries = [bCountry, vCountry].filter(Boolean);
   const { data: rates } = await supabase
     .from("tax_rates")
@@ -153,56 +116,38 @@ async function calculateTax(
   if (rates) {
     for (const r of rates) {
       rateMap[r.country_code] = {
-        rate: Number(r.rate_percentage),
-        type: r.tax_type,
-        bloc: r.trade_bloc,
-        tariff: Number(r.tariff_rate_percentage ?? 0),
+        rate: Number(r.rate_percentage), type: r.tax_type,
+        bloc: r.trade_bloc, tariff: Number(r.tariff_rate_percentage ?? 0),
       };
     }
   }
 
-  // Fallback to static rates
   const buyerRate = rateMap[bCountry] ?? FALLBACK_TAX_RATES[bCountry] ?? null;
   const vendorRate = rateMap[vCountry] ?? FALLBACK_TAX_RATES[vCountry] ?? null;
-
   const isDomestic = bCountry === vCountry && bCountry !== "";
   const buyerBloc = buyerRate?.bloc ?? null;
   const vendorBloc = vendorRate?.bloc ?? null;
   const isSameBloc = !!(buyerBloc && vendorBloc && buyerBloc === vendorBloc && !isDomestic);
   const isExportTx = isExport ?? (!isDomestic && !isSameBloc);
 
-  let taxAmount = 0;
-  let taxType = "None";
-  let taxRate = 0;
-  let tariffAmount = 0;
-  let tariffRate = 0;
-  let notes = "";
+  let taxAmount = 0, taxType = "None", taxRate = 0, tariffAmount = 0, tariffRate = 0, notes = "";
 
   if (isDomestic) {
-    // Domestic: apply local VAT/sales tax from buyer's country
     if (buyerRate) {
-      taxRate = buyerRate.rate;
-      taxType = buyerRate.type;
+      taxRate = buyerRate.rate; taxType = buyerRate.type;
       taxAmount = round(amount * (taxRate / 100));
       notes = `Domestic transaction in ${bCountry}. ${taxType} at ${taxRate}% applied.`;
     } else {
       notes = `Domestic transaction in ${bCountry}. No tax rate on file.`;
     }
   } else if (isSameBloc) {
-    // Same trade bloc (e.g., EU → EU): apply destination VAT
     if (buyerRate) {
-      taxRate = buyerRate.rate;
-      taxType = `${buyerRate.type} (Destination)`;
+      taxRate = buyerRate.rate; taxType = `${buyerRate.type} (Destination)`;
       taxAmount = round(amount * (taxRate / 100));
       notes = `Intra-bloc (${buyerBloc}) transaction. Destination ${buyerRate.type} at ${taxRate}% applied to buyer country ${bCountry}.`;
     }
   } else if (isExportTx) {
-    // International export: zero-rate VAT, apply tariffs
-    taxRate = 0;
-    taxType = "VAT (Zero-Rated Export)";
-    taxAmount = 0;
-
-    // Calculate tariff based on buyer's country import rate
+    taxRate = 0; taxType = "VAT (Zero-Rated Export)"; taxAmount = 0;
     if (buyerRate && buyerRate.tariff > 0) {
       const multiplier = ITEM_TARIFF_MULTIPLIERS[category] ?? 1.0;
       tariffRate = round(buyerRate.tariff * multiplier);
@@ -214,107 +159,11 @@ async function calculateTax(
   }
 
   return {
-    subtotal: amount,
-    tax_amount: taxAmount,
-    tax_type: taxType,
-    tax_rate: taxRate,
-    tariff_amount: tariffAmount,
-    tariff_rate: tariffRate,
+    subtotal: amount, tax_amount: taxAmount, tax_type: taxType, tax_rate: taxRate,
+    tariff_amount: tariffAmount, tariff_rate: tariffRate,
     total_with_tax: round(amount + taxAmount + tariffAmount),
-    is_domestic: isDomestic,
-    is_same_bloc: isSameBloc,
-    is_export: isExportTx,
-    buyer_country: bCountry,
-    vendor_country: vCountry,
-    item_category: category,
-    notes,
-  };
-}
-
-// ─── Thirdweb: On-ramp ───────────────────────────────────
-async function thirdwebOnRamp(params: {
-  amount: number;
-  currency: string;
-  chain: string;
-  receiverAddress: string;
-}): Promise<Record<string, unknown>> {
-  const secretKey = getThirdwebKey();
-  const chainId = chainToId(params.chain);
-  const tokenAddress = getUsdcAddress(params.chain);
-
-  const res = await fetch(`${THIRDWEB_API}/payments`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-secret-key": secretKey,
-    },
-    body: JSON.stringify({
-      name: "TrustLock Escrow Payment",
-      description: "Fiat on-ramp to USDC escrow via TrustLock Pay",
-      recipient: params.receiverAddress,
-      token: {
-        address: tokenAddress,
-        chainId,
-        amount: params.amount.toString(),
-      },
-    }),
-  });
-
-  const body = await res.text();
-  if (!res.ok) {
-    throw new Error(`Thirdweb on-ramp failed [${res.status}]: ${body}`);
-  }
-
-  const data = JSON.parse(body);
-  return {
-    processor: "thirdweb",
-    direction: "onramp",
-    status: "payment_created",
-    paymentId: data?.result?.id,
-    paymentLink: data?.result?.link,
-    data: data?.result,
-  };
-}
-
-// ─── Thirdweb: Off-ramp ──────────────────────────────────
-async function thirdwebOffRamp(params: {
-  amount: number;
-  currency: string;
-  chain: string;
-  walletAddress: string;
-}): Promise<Record<string, unknown>> {
-  const secretKey = getThirdwebKey();
-  const chainId = chainToId(params.chain);
-  const tokenAddress = getUsdcAddress(params.chain);
-
-  const res = await fetch(`${THIRDWEB_API}/payments/swap`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-secret-key": secretKey,
-    },
-    body: JSON.stringify({
-      from: params.walletAddress,
-      exact: "input",
-      fromToken: { chainId, tokenAddress },
-      toToken: { chainId, tokenAddress },
-      amount: params.amount.toString(),
-    }),
-  });
-
-  const body = await res.text();
-  if (!res.ok) {
-    throw new Error(`Thirdweb off-ramp failed [${res.status}]: ${body}`);
-  }
-
-  const data = JSON.parse(body);
-  return {
-    processor: "thirdweb",
-    direction: "offramp",
-    status: "swap_created",
-    swapId: data?.id,
-    steps: data?.steps,
-    data,
+    is_domestic: isDomestic, is_same_bloc: isSameBloc, is_export: isExportTx,
+    buyer_country: bCountry, vendor_country: vCountry, item_category: category, notes,
   };
 }
 
@@ -377,30 +226,11 @@ Deno.serve(async (req) => {
       const chargeAmount = taxBreakdown ? taxBreakdown.total_with_tax : amount;
 
       switch (processor) {
-        case "thirdweb": {
-          if (direction === "onramp") {
-            processorResult = await thirdwebOnRamp({
-              amount: chargeAmount,
-              currency: currency || "USD",
-              chain: chain || "polygon",
-              receiverAddress: receiverAddress || walletAddress || "",
-            });
-          } else {
-            processorResult = await thirdwebOffRamp({
-              amount: chargeAmount,
-              currency: currency || "USD",
-              chain: chain || "polygon",
-              walletAddress: walletAddress || "",
-            });
-          }
-          break;
-        }
-
         case "stripe":
           processorResult = {
             processor: "stripe", direction,
             status: "not_configured",
-            message: "Stripe integration pending API key setup",
+            message: "Stripe integration pending API key setup. Configure STRIPE_SECRET_KEY to activate.",
           };
           break;
 
@@ -408,15 +238,7 @@ Deno.serve(async (req) => {
           processorResult = {
             processor: "coinbase", direction,
             status: "not_configured",
-            message: "Coinbase integration pending API key setup",
-          };
-          break;
-
-        case "yellow_card":
-          processorResult = {
-            processor: "yellow_card", direction,
-            status: "not_configured",
-            message: "Yellow Card integration pending API key setup",
+            message: "Coinbase integration pending API key setup. Configure COINBASE_COMMERCE_API_KEY to activate.",
           };
           break;
 
@@ -424,7 +246,7 @@ Deno.serve(async (req) => {
           processorResult = {
             processor: "transak", direction,
             status: "not_configured",
-            message: "Transak integration pending API key setup",
+            message: "Transak integration pending API key setup. Configure TRANSAK_API_KEY to activate.",
           };
           break;
 
@@ -439,7 +261,7 @@ Deno.serve(async (req) => {
           break;
 
         default:
-          throw new Error(`Unknown processor: ${processor}`);
+          throw new Error(`Unknown processor: ${processor}. Supported: stripe, coinbase, transak, direct.`);
       }
 
       // Record the payment attempt
