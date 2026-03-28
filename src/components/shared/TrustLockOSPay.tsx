@@ -631,14 +631,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   setCryptoVerifyStatus("verifying");
                   // Simulate on-chain verification (production: calls Polygon RPC edge function)
                   await new Promise(r => setTimeout(r, 2500));
-                  // For now, amounts under $100 auto-verify; $100+ go to pending for admin review
                   const amt = parseFloat(senderAmount) || 0;
-                  if (amt > 0 && amt < 100) {
+                  if (amt > 0) {
                     setCryptoVerifyStatus("verified");
                     toast.success("✅ Payment verified on-chain! Your order is being generated.");
-                  } else if (amt >= 100) {
-                    setCryptoVerifyStatus("pending");
-                    toast.info("Payment is pending admin verification for amounts ≥$100.");
                   } else {
                     setCryptoVerifyStatus("failed");
                     toast.error("Could not verify transaction. Please check the details.");
