@@ -307,39 +307,74 @@ const VendorTeams = () => {
           </Card>
         )}
 
-        {/* Task Assignments */}
+        {/* Task Assignments — filtered for members, full for owner */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Task Assignments</CardTitle>
-            {selectedWs.status === "active" && (
+            <CardTitle className="text-lg">{isOwner ? "Task Assignments" : "My Tasks"}</CardTitle>
+            {isOwner && selectedWs.status === "active" && (
               <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign Task</Button>
             )}
           </CardHeader>
           <CardContent>
-            {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks assigned yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {tasks.map((t, i) => {
-                  const member = members.find((m) => m.id === t.member_id);
-                  return (
-                    <div key={t.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-muted-foreground w-6">{i + 1}</span>
-                        <div>
-                          <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
-                          <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>
-                          {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+            {(() => {
+              // Members only see their own tasks; owner sees all
+              const visibleTasks = isOwner
+                ? tasks
+                : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
+              
+              if (visibleTasks.length === 0) {
+                return <p className="text-sm text-muted-foreground">{isOwner ? "No tasks assigned yet." : "No tasks assigned to you."}</p>;
+              }
+
+              return (
+                <div className="space-y-2">
+                  {visibleTasks.map((t, i) => {
+                    const member = members.find((m) => m.id === t.member_id);
+                    const isMyTask = myMembership && t.member_id === myMembership.id;
+                    const allPriorDone = tasks
+                      .filter((pt) => pt.sort_order < t.sort_order)
+                      .every((pt) => pt.status === "completed");
+                    const canComplete = isMyTask && t.status === "pending" && allPriorDone && selectedWs.status === "active";
+
+                    return (
+                      <div key={t.id} className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border",
+                        isMyTask && t.status === "pending" ? "border-primary bg-primary/5" : "border-border"
+                      )}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-muted-foreground w-6">{isOwner ? i + 1 : ""}</span>
+                          <div>
+                            <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
+                            {isOwner && <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>}
+                            {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+                            {!isOwner && !allPriorDone && t.status === "pending" && (
+                              <p className="text-xs text-amber-600 mt-1">⏳ Waiting for previous task to complete</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canComplete && (
+                            <Button size="sm" variant="default" onClick={async () => {
+                              const { error } = await supabase.functions.invoke("manage-teams", {
+                                body: { action: "complete_task", task_id: t.id },
+                              });
+                              if (error) return toast.error("Failed to complete task");
+                              toast.success("Task completed!");
+                              fetchTasks(selectedWs.id, isOwner, myMembership);
+                            }}>
+                              <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
+                            </Button>
+                          )}
+                          <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>
+                            {t.status}
+                          </Badge>
                         </div>
                       </div>
-                      <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>
-                        {t.status}
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
