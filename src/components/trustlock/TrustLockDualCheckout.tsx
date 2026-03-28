@@ -22,6 +22,8 @@ const TrustLockDualCheckout = () => {
   const [checkoutTxId, setCheckoutTxId] = useState("");
   const [checkoutSenderWallet, setCheckoutSenderWallet] = useState("");
   const [checkoutSenderAmount, setCheckoutSenderAmount] = useState("");
+  const [checkoutPin, setCheckoutPin] = useState("");
+  const [checkoutTestVerified, setCheckoutTestVerified] = useState(false);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
