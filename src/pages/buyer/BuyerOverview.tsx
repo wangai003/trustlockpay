@@ -4,8 +4,9 @@ import { useBuyer } from "@/contexts/BuyerContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck } from "lucide-react";
+import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldCheck, Truck } from "lucide-react";
 import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
+import { useNavigate } from "react-router-dom";
 import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -18,6 +19,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 const BuyerOverview = () => {
   const { buyer } = useBuyer();
+  const navigate = useNavigate();
   const { data: transactions = [] } = useTransactions();
   const confirmDelivery = useConfirmDelivery();
 
@@ -93,7 +95,7 @@ const BuyerOverview = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs">View All →</Button>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/buyer/orders")}>View All →</Button>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

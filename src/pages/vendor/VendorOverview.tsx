@@ -19,6 +19,8 @@ import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
+  shipped: "bg-primary/15 text-primary",
+  delivered: "bg-accent text-accent-foreground",
   released: "bg-primary/15 text-primary",
   disputed: "bg-destructive/15 text-destructive",
 };
