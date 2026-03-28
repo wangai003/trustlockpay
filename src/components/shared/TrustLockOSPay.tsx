@@ -106,6 +106,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [polygonConfirmed, setPolygonConfirmed] = useState(false);
 
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
