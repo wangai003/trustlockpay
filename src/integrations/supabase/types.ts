@@ -447,11 +447,14 @@ export type Database = {
           default_milestones: Json
           description: string | null
           display_name: string
+          document_gates: Json | null
           estimated_duration_days: number | null
           id: string
           industry_key: string
+          invoice_schema: Json | null
           is_active: boolean | null
           required_observer_roles: string[] | null
+          rfq_enabled: boolean | null
           tax_rules: Json | null
         }
         Insert: {
@@ -460,11 +463,14 @@ export type Database = {
           default_milestones: Json
           description?: string | null
           display_name: string
+          document_gates?: Json | null
           estimated_duration_days?: number | null
           id?: string
           industry_key: string
+          invoice_schema?: Json | null
           is_active?: boolean | null
           required_observer_roles?: string[] | null
+          rfq_enabled?: boolean | null
           tax_rules?: Json | null
         }
         Update: {
@@ -473,11 +479,14 @@ export type Database = {
           default_milestones?: Json
           description?: string | null
           display_name?: string
+          document_gates?: Json | null
           estimated_duration_days?: number | null
           id?: string
           industry_key?: string
+          invoice_schema?: Json | null
           is_active?: boolean | null
           required_observer_roles?: string[] | null
+          rfq_enabled?: boolean | null
           tax_rules?: Json | null
         }
         Relationships: []
@@ -943,38 +952,173 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          corridor: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
           location: string | null
+          notification_channels: Json | null
+          onboarding_industry: string | null
           phone: string | null
+          phone_country_code: string | null
+          preferred_currency: string | null
+          preferred_language: string | null
           status: string
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          corridor?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
           location?: string | null
+          notification_channels?: Json | null
+          onboarding_industry?: string | null
           phone?: string | null
+          phone_country_code?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          corridor?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
           location?: string | null
+          notification_channels?: Json | null
+          onboarding_industry?: string | null
           phone?: string | null
+          phone_country_code?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      proforma_invoices: {
+        Row: {
+          accepted_at: string | null
+          buyer_id: string | null
+          commodity_quantity: number | null
+          commodity_unit: string | null
+          created_at: string
+          currency: string | null
+          delivery_terms: string | null
+          document_gates: Json | null
+          gate_status: Json | null
+          grand_total: number | null
+          id: string
+          incoterms: string | null
+          industry: string | null
+          insurance_details: Json | null
+          insurance_required: boolean | null
+          line_items: Json
+          locked_price: number | null
+          notes: string | null
+          payment_terms: string | null
+          proforma_number: string
+          rejected_at: string | null
+          rfq_id: string | null
+          shipping_method: string | null
+          status: string
+          subtotal: number | null
+          tax_items: Json | null
+          tax_total: number | null
+          transaction_id: string | null
+          updated_at: string
+          validity_days: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          buyer_id?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          created_at?: string
+          currency?: string | null
+          delivery_terms?: string | null
+          document_gates?: Json | null
+          gate_status?: Json | null
+          grand_total?: number | null
+          id?: string
+          incoterms?: string | null
+          industry?: string | null
+          insurance_details?: Json | null
+          insurance_required?: boolean | null
+          line_items?: Json
+          locked_price?: number | null
+          notes?: string | null
+          payment_terms?: string | null
+          proforma_number: string
+          rejected_at?: string | null
+          rfq_id?: string | null
+          shipping_method?: string | null
+          status?: string
+          subtotal?: number | null
+          tax_items?: Json | null
+          tax_total?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          validity_days?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          buyer_id?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          created_at?: string
+          currency?: string | null
+          delivery_terms?: string | null
+          document_gates?: Json | null
+          gate_status?: Json | null
+          grand_total?: number | null
+          id?: string
+          incoterms?: string | null
+          industry?: string | null
+          insurance_details?: Json | null
+          insurance_required?: boolean | null
+          line_items?: Json
+          locked_price?: number | null
+          notes?: string | null
+          payment_terms?: string | null
+          proforma_number?: string
+          rejected_at?: string | null
+          rfq_id?: string | null
+          shipping_method?: string | null
+          status?: string
+          subtotal?: number | null
+          tax_items?: Json | null
+          tax_total?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          validity_days?: number | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proforma_invoices_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfq_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proforma_invoices_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       protection_documents: {
         Row: {
@@ -1028,6 +1172,152 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "protection_documents_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_orders: {
+        Row: {
+          auto_renew: boolean | null
+          base_amount: number | null
+          buyer_id: string | null
+          commodity_quantity: number | null
+          commodity_unit: string | null
+          created_at: string
+          currency: string | null
+          frequency: string | null
+          id: string
+          industry: string | null
+          last_executed_at: string | null
+          next_due_at: string | null
+          status: string | null
+          template_milestones: Json | null
+          title: string
+          total_executions: number | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          base_amount?: number | null
+          buyer_id?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          created_at?: string
+          currency?: string | null
+          frequency?: string | null
+          id?: string
+          industry?: string | null
+          last_executed_at?: string | null
+          next_due_at?: string | null
+          status?: string | null
+          template_milestones?: Json | null
+          title: string
+          total_executions?: number | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          auto_renew?: boolean | null
+          base_amount?: number | null
+          buyer_id?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          created_at?: string
+          currency?: string | null
+          frequency?: string | null
+          id?: string
+          industry?: string | null
+          last_executed_at?: string | null
+          next_due_at?: string | null
+          status?: string | null
+          template_milestones?: Json | null
+          title?: string
+          total_executions?: number | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
+      rfq_requests: {
+        Row: {
+          buyer_company: string | null
+          buyer_email: string | null
+          buyer_id: string | null
+          buyer_location: string | null
+          buyer_name: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          incoterms: string | null
+          industry: string | null
+          notes: string | null
+          quantity: number | null
+          requested_delivery_date: string | null
+          required_documents: Json | null
+          rfq_number: string
+          specifications: Json | null
+          status: string
+          transaction_id: string | null
+          unit: string | null
+          updated_at: string
+          vendor_id: string | null
+          vendor_response_at: string | null
+        }
+        Insert: {
+          buyer_company?: string | null
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_location?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          incoterms?: string | null
+          industry?: string | null
+          notes?: string | null
+          quantity?: number | null
+          requested_delivery_date?: string | null
+          required_documents?: Json | null
+          rfq_number: string
+          specifications?: Json | null
+          status?: string
+          transaction_id?: string | null
+          unit?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_response_at?: string | null
+        }
+        Update: {
+          buyer_company?: string | null
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_location?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          incoterms?: string | null
+          industry?: string | null
+          notes?: string | null
+          quantity?: number | null
+          requested_delivery_date?: string | null
+          required_documents?: Json | null
+          rfq_number?: string
+          specifications?: Json | null
+          status?: string
+          transaction_id?: string | null
+          unit?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_response_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_requests_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
             referencedRelation: "transactions"
@@ -1178,6 +1468,48 @@ export type Database = {
         }
         Relationships: []
       }
+      supported_currencies: {
+        Row: {
+          country_codes: string[] | null
+          created_at: string
+          currency_code: string
+          currency_name: string
+          exchange_rate_to_usd: number | null
+          id: string
+          is_active: boolean | null
+          is_mobile_money: boolean | null
+          mobile_money_provider: string | null
+          rate_updated_at: string | null
+          symbol: string | null
+        }
+        Insert: {
+          country_codes?: string[] | null
+          created_at?: string
+          currency_code: string
+          currency_name: string
+          exchange_rate_to_usd?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mobile_money?: boolean | null
+          mobile_money_provider?: string | null
+          rate_updated_at?: string | null
+          symbol?: string | null
+        }
+        Update: {
+          country_codes?: string[] | null
+          created_at?: string
+          currency_code?: string
+          currency_name?: string
+          exchange_rate_to_usd?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mobile_money?: boolean | null
+          mobile_money_provider?: string | null
+          rate_updated_at?: string | null
+          symbol?: string | null
+        }
+        Relationships: []
+      }
       tax_rates: {
         Row: {
           country_code: string
@@ -1214,6 +1546,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_bloc_rules: {
+        Row: {
+          bloc_code: string
+          bloc_name: string
+          created_at: string
+          documentation_required: string[] | null
+          id: string
+          is_active: boolean | null
+          member_countries: string[] | null
+          preferential_rate: number | null
+          rules_of_origin: Json | null
+          standard_external_rate: number | null
+        }
+        Insert: {
+          bloc_code: string
+          bloc_name: string
+          created_at?: string
+          documentation_required?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          member_countries?: string[] | null
+          preferential_rate?: number | null
+          rules_of_origin?: Json | null
+          standard_external_rate?: number | null
+        }
+        Update: {
+          bloc_code?: string
+          bloc_name?: string
+          created_at?: string
+          documentation_required?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          member_countries?: string[] | null
+          preferential_rate?: number | null
+          rules_of_origin?: Json | null
+          standard_external_rate?: number | null
+        }
+        Relationships: []
+      }
       transaction_milestones: {
         Row: {
           assigned_to: string | null
@@ -1221,6 +1592,10 @@ export type Database = {
           completed_by: string | null
           created_at: string
           description: string | null
+          gps_accuracy: number | null
+          gps_captured_at: string | null
+          gps_latitude: number | null
+          gps_longitude: number | null
           id: string
           is_payment_milestone: boolean | null
           observer_id: string | null
@@ -1242,6 +1617,10 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          gps_accuracy?: number | null
+          gps_captured_at?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           id?: string
           is_payment_milestone?: boolean | null
           observer_id?: string | null
@@ -1263,6 +1642,10 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          gps_accuracy?: number | null
+          gps_captured_at?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
           id?: string
           is_payment_milestone?: boolean | null
           observer_id?: string | null
@@ -1348,16 +1731,24 @@ export type Database = {
           buyer_id: string | null
           buyer_location: string | null
           buyer_name: string | null
+          commodity_quantity: number | null
+          commodity_unit: string | null
+          corridor_route: string | null
           created_at: string
           delivered_date: string | null
           fee: number | null
           id: string
           industry: string | null
           item: string | null
+          locked_price: number | null
           milestone_proposed_by: string | null
           milestone_status: string | null
           order_number: number | null
+          price_currency: string | null
+          price_snapshot_at: string | null
           released_date: string | null
+          settlement_completed_at: string | null
+          settlement_currency: string | null
           shipped_date: string | null
           status: string
           tax_breakdown: Json | null
@@ -1375,16 +1766,24 @@ export type Database = {
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          corridor_route?: string | null
           created_at?: string
           delivered_date?: string | null
           fee?: number | null
           id?: string
           industry?: string | null
           item?: string | null
+          locked_price?: number | null
           milestone_proposed_by?: string | null
           milestone_status?: string | null
           order_number?: number | null
+          price_currency?: string | null
+          price_snapshot_at?: string | null
           released_date?: string | null
+          settlement_completed_at?: string | null
+          settlement_currency?: string | null
           shipped_date?: string | null
           status?: string
           tax_breakdown?: Json | null
@@ -1402,16 +1801,24 @@ export type Database = {
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          commodity_quantity?: number | null
+          commodity_unit?: string | null
+          corridor_route?: string | null
           created_at?: string
           delivered_date?: string | null
           fee?: number | null
           id?: string
           industry?: string | null
           item?: string | null
+          locked_price?: number | null
           milestone_proposed_by?: string | null
           milestone_status?: string | null
           order_number?: number | null
+          price_currency?: string | null
+          price_snapshot_at?: string | null
           released_date?: string | null
+          settlement_completed_at?: string | null
+          settlement_currency?: string | null
           shipped_date?: string | null
           status?: string
           tax_breakdown?: Json | null
@@ -1558,8 +1965,11 @@ export type Database = {
           notifications: Json | null
           pay_enabled: boolean | null
           payout_tier: string | null
+          supported_currencies: string[] | null
           updated_at: string
           vendor_id: string | null
+          widget_mode: string | null
+          widget_theme: Json | null
         }
         Insert: {
           auto_delivery?: boolean | null
@@ -1567,8 +1977,11 @@ export type Database = {
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
+          supported_currencies?: string[] | null
           updated_at?: string
           vendor_id?: string | null
+          widget_mode?: string | null
+          widget_theme?: Json | null
         }
         Update: {
           auto_delivery?: boolean | null
@@ -1576,8 +1989,11 @@ export type Database = {
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
+          supported_currencies?: string[] | null
           updated_at?: string
           vendor_id?: string | null
+          widget_mode?: string | null
+          widget_theme?: Json | null
         }
         Relationships: []
       }
