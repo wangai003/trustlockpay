@@ -109,7 +109,10 @@ const TrustLockOSPayout = ({
   const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
   const [loadingFields, setLoadingFields] = useState(false);
 
-  const getSeedToken = useGetOrCreateSeedToken();
+  // OS Payout token → hardwired to Escrow Wallet (escrow disbursement)
+  // Trickle-down: escrow service fees (stablecoins) flow from Escrow Wallet
+  // → Transaction Fee Wallet via the OS Pay token — no conversion needed
+  const getSeedToken = useGetOrCreateSeedToken("os_payout");
   const initiatePayout = useInitiatePayout();
   const cancelPayout = useCancelPayout();
 
