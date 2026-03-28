@@ -176,7 +176,7 @@ const TrustLockDualCheckout = () => {
                       <div className="p-1.5 rounded bg-muted text-[9px] font-mono space-y-0.5">
                         <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
                         <p><strong>Token:</strong> USDC only</p>
-                        <p><strong>Owner:</strong> Azix Inc.</p>
+                        <p><strong>Owner:</strong> Azix</p>
                         <p><strong>Support:</strong> support@azix.world</p>
                       </div>
                     </div>

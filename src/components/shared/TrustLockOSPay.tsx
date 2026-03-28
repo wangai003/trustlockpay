@@ -505,11 +505,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     <li>✅ The receiving wallet address for your full payment</li>
                     <li>✅ Status: <em>"Payment verified — proceed with balance"</em></li>
                   </ul>
-                  <p><strong>Step 4:</strong> Once you receive confirmation, send the remaining balance to complete your payment.</p>
+                  <p><strong>Step 4:</strong> Once you receive confirmation, return here, enter your 4-digit PIN, and tap <strong>"Bypass"</strong> to send the remaining balance. The difference (total minus $1.00 test) will auto-populate.</p>
                 </div>
                 <div className="ml-6 p-2 rounded bg-destructive/5 border border-destructive/20">
                   <p className="text-[10px] font-bold text-destructive">
                     ⛔ DO NOT send large amounts without completing verification first. Unverified transactions may be delayed or flagged for compliance review.
+                  </p>
+                </div>
+                <div className="ml-6 p-2 rounded bg-muted border border-border">
+                  <p className="text-[10px] text-muted-foreground">
+                    <strong>🔑 Lost your PIN?</strong> Email <strong>support@azix.world</strong> from your registered email address with your full name. Our team will verify your identity and issue a PIN reset within 24 hours.
                   </p>
                 </div>
               </div>
@@ -532,14 +537,19 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <p className="text-[10px] text-destructive font-medium">
                   ⚠️ Only send USDC on Polygon network. Sending on other networks (Ethereum, BSC, etc.) will result in permanent loss of funds.
                 </p>
+                <div className="p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
+                  <p><strong>Where to send from:</strong> You can send USDC from any self-custody wallet (MetaMask, Trust Wallet, Ledger, Coinbase Wallet) or directly from an exchange that supports Polygon USDC withdrawals (Coinbase, Binance, Kraken).</p>
+                  <p><strong>How to get USDC on Polygon:</strong> If your USDC is on Ethereum or another chain, use a bridge like <em>Polygon Bridge</em> or <em>Jumper Exchange</em> to move it to Polygon before sending.</p>
+                  <p><strong>Network selection:</strong> When withdrawing from an exchange, select <strong>"Polygon"</strong> or <strong>"MATIC"</strong> as the withdrawal network — NOT Ethereum mainnet.</p>
+                </div>
               </div>
 
               {/* ── Azix Receiving Wallet ── */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Azix Receiving Wallet (Owned by Azix Inc.)</Label>
+                <Label className="text-xs font-semibold">Azix Receiving Wallet (Owned by Azix)</Label>
                 <Input value={AZIX_WALLETS.transaction.publicKey} disabled className="mt-1 bg-muted font-mono text-xs" />
                 <div className="p-2 rounded bg-muted text-[10px] space-y-1">
-                  <p><strong>Owner:</strong> Azix Inc. — Parent company of TrustLock</p>
+                  <p><strong>Owner:</strong> Azix — Parent company of TrustLock</p>
                   <p><strong>Purpose:</strong> Receives platform fees and crypto payments</p>
                   <p><strong>Network:</strong> Polygon (MATIC) — USDC only</p>
                   <p><strong>Support:</strong> support@azix.world</p>
@@ -553,9 +563,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               <div>
                 <Label className="text-xs font-semibold">Your Sending Wallet Address</Label>
                 <Input placeholder="0x... (Polygon USDC wallet)" value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  This address will be verified against on-chain records during the $1 test. Ensure it matches the wallet you will use.
-                </p>
+                <div className="mt-1 p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
+                  <p>Enter the wallet address you will send USDC from. This address will be verified during the $1 test.</p>
+                  <p><strong>How to find it:</strong> Open your wallet app (MetaMask, Trust Wallet, etc.) → tap your account name → copy address. If withdrawing from an exchange, check your withdrawal history for the sending address.</p>
+                  <p><strong>Important:</strong> Use the same address for the test and all subsequent payments. Changing wallets requires a new verification.</p>
+                </div>
               </div>
 
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
