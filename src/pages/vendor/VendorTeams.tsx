@@ -301,7 +301,12 @@ const VendorTeams = () => {
           </CardContent>
         </Card>
 
-        {/* Add Member Dialog */}
+        {/* Assignment Templates */}
+        <TeamTemplateManager
+          workspaceId={selectedWs.id}
+          members={members.map((m) => ({ id: m.id, display_name: m.display_name, user_id: m.user_id }))}
+          disabled={selectedWs.status !== "active"}
+        />
         <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
           <DialogContent>
             <DialogHeader><DialogTitle>Add Team Member</DialogTitle></DialogHeader>
