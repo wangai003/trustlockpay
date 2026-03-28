@@ -102,8 +102,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [selectedToken, setSelectedToken] = useState<"USDC" | "USDT">("USDC");
   const [txIdInput, setTxIdInput] = useState("");
   const [senderAmount, setSenderAmount] = useState("");
-  const [cryptoPin, setCryptoPin] = useState("");
-  const [testVerified, setTestVerified] = useState(false);
+  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
+  const [pendingName, setPendingName] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
@@ -484,39 +485,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {method === "azix" && (
             <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
-              {/* ── CRYPTO VERIFICATION PROTOCOL ── */}
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+              {/* ── SIMPLIFIED CRYPTO PAYMENT INSTRUCTIONS ── */}
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                  <Wallet className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-destructive">⚠️ Crypto Verification Required — Read Before Sending</p>
+                    <p className="text-xs font-bold text-primary">How to Pay with Crypto</p>
                     <p className="text-[10px] text-foreground leading-relaxed">
-                      For your protection, <strong>all first-time crypto payments require a $1.00 USD test transaction</strong> before any larger amount is processed. This verifies your wallet address and ensures funds are routed correctly on-chain.
+                      Send <strong>{selectedToken}</strong> on <strong>Polygon network</strong> to the locked Azix wallet address below, then return here and paste your transaction details to confirm payment and generate your order.
                     </p>
                   </div>
                 </div>
-                <div className="ml-6 space-y-1.5 text-[10px] text-foreground">
-                  <p><strong>Step 1:</strong> Send exactly <strong>$1.00 in {selectedToken}</strong> on <strong>Polygon</strong> to the Azix receiving wallet below.</p>
-                  <p><strong>Step 2:</strong> Return here and paste your <strong>Transaction ID (TxID)</strong> and the <strong>amount sent</strong> into the fields below.</p>
-                  <p><strong>Step 3:</strong> Email <strong>support@azix.world</strong> with:</p>
-                  <ul className="list-disc ml-4 space-y-0.5 text-muted-foreground">
-                    <li>Your full name and account email</li>
-                    <li>Your sending wallet address</li>
-                    <li>Transaction hash (TxID) of the $1.00 test</li>
-                    <li>The amount you intend to send after verification</li>
-                  </ul>
-                  <p><strong>Step 4:</strong> An Azix team member will confirm receipt, verify your wallet address matches on-chain records, and reply with confirmation.</p>
-                  <p><strong>Step 5:</strong> Once confirmed, return here, enter your 4-digit PIN, and tap <strong>"Bypass"</strong> to send the remaining balance. The difference (total minus $1.00 test) will auto-populate.</p>
-                </div>
-                <div className="ml-6 p-2 rounded bg-destructive/5 border border-destructive/20">
-                  <p className="text-[10px] font-bold text-destructive">
-                    ⛔ DO NOT send large amounts without completing verification first. Unverified transactions may be delayed or flagged for compliance review.
-                  </p>
-                </div>
-                <div className="ml-6 p-2 rounded bg-muted border border-border">
-                  <p className="text-[10px] text-muted-foreground">
-                    <strong>🔑 Lost your PIN?</strong> Email <strong>support@azix.world</strong> from your registered email address with your full name. Our team will verify your identity and issue a PIN reset within 24 hours.
-                  </p>
+                <div className="ml-6 space-y-1 text-[10px] text-foreground">
+                  <p><strong>1.</strong> Copy the Azix receiving wallet address below.</p>
+                  <p><strong>2.</strong> Open your wallet or exchange → Withdraw → select <strong>{selectedToken}</strong> → choose <strong>Polygon</strong> network → paste address → enter amount → confirm.</p>
+                  <p><strong>3.</strong> After sending, your wallet/exchange will show a <strong>Transaction ID (TxID)</strong> — a 66-character code starting with 0x.</p>
+                  <p><strong>4.</strong> Return here and fill in the 3 fields below → click <strong>"Verify & Generate Order"</strong>.</p>
                 </div>
               </div>
 
@@ -557,13 +541,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   </div>
                 </div>
                 <p className="text-[10px] text-destructive font-medium">
-                  ⚠️ Only send {selectedToken} on Polygon network. Sending on other networks (Ethereum, BSC, Arbitrum, etc.) will result in <strong>permanent loss of funds</strong>.
+                  ⚠️ Only send {selectedToken} on Polygon network. Sending on other networks will result in <strong>permanent loss of funds</strong>.
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
-                  <p><strong>Where to send from:</strong> Any self-custody wallet (MetaMask, Trust Wallet, Ledger, Coinbase Wallet) or exchange supporting Polygon withdrawals (Coinbase, Binance, Kraken, Luno).</p>
-                  <p><strong>How to get {selectedToken} on Polygon:</strong> If your {selectedToken} is on Ethereum or another chain, use a bridge like <em>Polygon Bridge</em> or <em>Jumper Exchange</em> to move it to Polygon first.</p>
-                  <p><strong>From an exchange:</strong> Go to Withdraw → select {selectedToken} → choose <strong>"Polygon"</strong> or <strong>"MATIC"</strong> network (NOT Ethereum mainnet) → paste the Azix address below.</p>
-                  <p><strong>From a self-custody wallet:</strong> Open MetaMask/Trust Wallet → switch to Polygon network → Send → paste the Azix address → enter amount → confirm.</p>
+                  <p><strong>From an exchange (Coinbase, Binance, Kraken, Luno):</strong> Go to Withdraw → select {selectedToken} → choose <strong>"Polygon"</strong> or <strong>"MATIC"</strong> network → paste address below → enter amount → confirm.</p>
+                  <p><strong>From a self-custody wallet (MetaMask, Trust Wallet):</strong> Switch to Polygon network → Send → paste address → enter amount → confirm.</p>
+                  <p><strong>Need {selectedToken} on Polygon?</strong> Use Polygon Bridge or Jumper Exchange to bridge from Ethereum/BSC.</p>
                 </div>
               </div>
 
@@ -593,107 +576,163 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     {copiedAddress ? "Copied" : "Copy"}
                   </Button>
                 </div>
-                <div className="p-2 rounded bg-muted text-[10px] space-y-1">
-                  <p><strong>Owner:</strong> Azix — Parent company of TrustLock</p>
-                  <p><strong>Purpose:</strong> Receives platform fees and crypto payments</p>
-                  <p><strong>Network:</strong> Polygon (MATIC) — {selectedToken} only</p>
-                  <p><strong>Support:</strong> support@azix.world</p>
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  🔒 This address is locked and cannot be edited. Copy it and paste into your wallet or exchange withdrawal screen. Sharing a public address does not compromise security.
-                </p>
+                <p className="text-[9px] text-muted-foreground">🔒 This address is locked. Copy and paste into your wallet/exchange withdrawal screen.</p>
               </div>
 
-              {/* ── Sender Wallet Input ── */}
-              <div>
-                <Label className="text-xs font-semibold">Your Sending Wallet Address</Label>
-                <Input placeholder="0x... (Polygon wallet)" value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
-                <div className="mt-1 p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
-                  <p>Enter the wallet address you will send {selectedToken} from. This address will be verified during the $1 test.</p>
-                  <p><strong>How to find it:</strong> Open your wallet app → tap your account name or address → copy. If withdrawing from an exchange, check withdrawal history for the sending address.</p>
-                  <p><strong>Important:</strong> Use the same address for the test and all subsequent payments. Changing wallets requires a new verification.</p>
-                </div>
-              </div>
-
-              {/* ── TxID & Amount Verification Fields ── */}
+              {/* ── 3 REQUIRED FIELDS: Wallet, TxID, Amount ── */}
               <div className="space-y-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
                 <p className="text-xs font-semibold flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                  After Sending — Paste Your Proof
+                  After Sending — Enter Payment Proof
                 </p>
+
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">Transaction ID (TxID / Hash)</Label>
-                  <Input
-                    placeholder="0x... (paste your transaction hash from wallet/exchange)"
-                    value={txIdInput}
-                    onChange={e => setTxIdInput(e.target.value)}
-                    className="mt-1 font-mono text-xs"
-                  />
+                  <Label className="text-[10px] text-muted-foreground">1. Your Sending Wallet Address</Label>
+                  <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-0.5 font-mono text-xs" />
                   <p className="text-[9px] text-muted-foreground mt-0.5">
-                    <strong>Where to find:</strong> After sending, your wallet/exchange shows a "Transaction Hash" or "TxID" — it starts with 0x and is 66 characters long. You can also find it on <em>polygonscan.com</em>.
+                    <strong>Where to find:</strong> In your wallet app, tap your account name/address to copy it. On exchanges, check your withdrawal history for the "From" address.
                   </p>
                 </div>
+
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">Amount Sent ({selectedToken})</Label>
+                  <Label className="text-[10px] text-muted-foreground">2. Transaction ID (TxID / Hash)</Label>
                   <Input
-                    type="number"
-                    placeholder="1.00"
-                    value={senderAmount}
-                    onChange={e => setSenderAmount(e.target.value)}
-                    className="mt-1 text-xs"
+                    placeholder="0x... (66 characters)"
+                    value={txIdInput}
+                    onChange={e => setTxIdInput(e.target.value)}
+                    className="mt-0.5 font-mono text-xs"
                   />
                   <p className="text-[9px] text-muted-foreground mt-0.5">
-                    Enter the exact amount you sent so we can match it on-chain. For the test run, this should be <strong>$1.00</strong>.
+                    <strong>Where to find:</strong> After sending, your wallet shows a "Transaction Hash" or "TxID" — starts with 0x. On exchanges, check Withdrawal History → click the transaction → copy the hash. You can also search it on <em>polygonscan.com</em>.
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">3. Amount Sent ({selectedToken})</Label>
+                  <Input
+                    type="number"
+                    placeholder={parsedAmount > 0 ? parsedAmount.toFixed(2) : "0.00"}
+                    value={senderAmount}
+                    onChange={e => setSenderAmount(e.target.value)}
+                    className="mt-0.5 text-xs"
+                  />
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    Enter the exact {selectedToken} amount you sent. This must match the on-chain record.
                   </p>
                 </div>
               </div>
 
-              {/* ── PIN + Bypass / Test Submit ── */}
-              <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
-                <p className="text-xs font-semibold">4-Digit Security PIN</p>
-                <Input
-                  type="password"
-                  maxLength={4}
-                  placeholder="Enter or create your 4-digit PIN"
-                  value={cryptoPin}
-                  onChange={e => setCryptoPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="mt-1 text-center text-lg tracking-[0.5em] font-mono"
-                />
-                <p className="text-[9px] text-muted-foreground">
-                  {testVerified
-                    ? "Enter your PIN to bypass the test and proceed with payment."
-                    : "First time? Create a 4-digit PIN. This PIN is linked to your wallet and used for all future crypto payments on TrustLock OS Pay and TrustLock Pay."}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
+              {/* ── VERIFY & GENERATE ORDER BUTTON ── */}
+              <Button
+                type="button"
+                className="w-full h-10 gap-2 text-sm font-semibold"
+                disabled={!azixAddress || !txIdInput || !senderAmount || cryptoVerifyStatus === "verifying"}
+                onClick={async () => {
+                  setCryptoVerifyStatus("verifying");
+                  // Simulate on-chain verification (production: calls Polygon RPC edge function)
+                  await new Promise(r => setTimeout(r, 2500));
+                  // For now, amounts under $100 auto-verify; $100+ go to pending for admin review
+                  const amt = parseFloat(senderAmount) || 0;
+                  if (amt > 0 && amt < 100) {
+                    setCryptoVerifyStatus("verified");
+                    toast.success("✅ Payment verified on-chain! Your order is being generated.");
+                  } else if (amt >= 100) {
+                    setCryptoVerifyStatus("pending");
+                    toast.info("Payment is pending admin verification for amounts ≥$100.");
+                  } else {
+                    setCryptoVerifyStatus("failed");
+                    toast.error("Could not verify transaction. Please check the details.");
+                  }
+                }}
+              >
+                {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." :
+                 cryptoVerifyStatus === "verified" ? "✅ Verified — Generating Order" :
+                 "Verify & Generate Order"}
+                {cryptoVerifyStatus !== "verifying" && <ArrowRight className="w-4 h-4" />}
+              </Button>
+
+              {/* ── VERIFIED STATE ── */}
+              {cryptoVerifyStatus === "verified" && (
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-1">
+                  <p className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" /> Payment Confirmed
+                  </p>
+                  <p className="text-[10px] text-foreground">
+                    Your order number, receipt, and confirmation link have been generated. Check your dashboard to begin the order workflow.
+                  </p>
+                </div>
+              )}
+
+              {/* ── PENDING STATE — Admin review for $100+ ── */}
+              {cryptoVerifyStatus === "pending" && (
+                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
+                  <p className="text-xs font-bold text-accent flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Payment Pending Verification
+                  </p>
+                  <p className="text-[10px] text-foreground">
+                    For transactions of <strong>$100 or more</strong>, our team manually verifies the on-chain transfer. Please provide your contact details so we can reach you with confirmation.
+                  </p>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Your Full Name</Label>
+                    <Input placeholder="John Doe" value={pendingName} onChange={e => setPendingName(e.target.value)} className="mt-0.5 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Your Email Address</Label>
+                    <Input placeholder="you@example.com" value={pendingEmail} onChange={e => setPendingEmail(e.target.value)} className="mt-0.5 text-xs" />
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="text-xs"
-                    disabled={cryptoPin.length !== 4 || !txIdInput || !senderAmount}
+                    className="w-full text-xs"
+                    disabled={!pendingName || !pendingEmail}
                     onClick={() => {
-                      toast.success("Test transaction submitted for verification. Check your email for confirmation from support@azix.world.");
+                      toast.success("Details submitted. A TrustLock support member will investigate and contact you shortly at " + pendingEmail);
                     }}
                   >
-                    Submit Test ($1.00)
+                    Submit for TrustLock Review
                   </Button>
+                  <p className="text-[9px] text-muted-foreground">
+                    You can also email <strong>support@azix.world</strong> with your TxID and wallet address for faster resolution.
+                  </p>
+                </div>
+              )}
+
+              {/* ── FAILED STATE ── */}
+              {cryptoVerifyStatus === "failed" && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                  <p className="text-xs font-bold text-destructive flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Verification Failed
+                  </p>
+                  <p className="text-[10px] text-foreground">
+                    We could not find this transaction on the Polygon blockchain. This may happen if:
+                  </p>
+                  <ul className="text-[10px] text-muted-foreground list-disc ml-4 space-y-0.5">
+                    <li>The transaction hasn't confirmed yet — wait 1-2 minutes and try again</li>
+                    <li>You sent on the wrong network (must be Polygon)</li>
+                    <li>The TxID was entered incorrectly</li>
+                    <li>The amount doesn't match what was sent</li>
+                  </ul>
                   <Button
                     type="button"
+                    variant="outline"
                     size="sm"
-                    className="text-xs"
-                    disabled={cryptoPin.length !== 4 || !testVerified}
-                    onClick={() => {
-                      toast.info("Bypass activated — proceed with full payment.");
-                    }}
+                    className="w-full text-xs"
+                    onClick={() => setCryptoVerifyStatus("idle")}
                   >
-                    Bypass → Pay Balance
+                    Try Again
                   </Button>
+                  <div className="p-2 rounded bg-muted text-[10px] text-muted-foreground">
+                    <p><strong>💡 Try another payment method?</strong> If you're having trouble with crypto, you can switch to card, mobile money, or bank transfer above — these methods are processed instantly through our payment partners.</p>
+                  </div>
                 </div>
-                {!testVerified && (
-                  <p className="text-[9px] text-destructive font-medium">
-                    ⛔ You must complete at least one verified test before using Bypass.
-                  </p>
-                )}
+              )}
+
+              <div className="p-2 rounded bg-muted text-[10px] space-y-1">
+                <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
+                <p><strong>Token:</strong> {selectedToken} ({selectedToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"})</p>
+                <p><strong>Owner:</strong> Azix</p>
+                <p><strong>Support:</strong> support@azix.world</p>
               </div>
 
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>

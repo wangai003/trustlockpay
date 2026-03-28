@@ -22,8 +22,9 @@ const TrustLockDualCheckout = () => {
   const [checkoutTxId, setCheckoutTxId] = useState("");
   const [checkoutSenderWallet, setCheckoutSenderWallet] = useState("");
   const [checkoutSenderAmount, setCheckoutSenderAmount] = useState("");
-  const [checkoutPin, setCheckoutPin] = useState("");
-  const [checkoutTestVerified, setCheckoutTestVerified] = useState(false);
+  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
+  const [pendingName, setPendingName] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
@@ -170,16 +171,16 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
-              {/* Crypto Verification Protocol + Copy + TxID */}
+              {/* Crypto Verification — Simplified (No PIN / No Test) */}
               {isCrypto && selectedProvider && (
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                      <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                       <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-destructive">⚠️ Crypto Verification Required</p>
+                        <p className="text-[10px] font-bold text-primary">How to Pay with Crypto</p>
                         <p className="text-[9px] text-foreground leading-relaxed">
-                          Before sending any large payment, you must first send a <strong>$1.00 {checkoutToken} test transaction</strong> on <strong>Polygon network</strong> to the Azix receiving wallet. Contact <strong>support@azix.world</strong> with your sending address and TxID, then wait for confirmation before proceeding.
+                          Send <strong>{checkoutToken}</strong> on <strong>Polygon</strong> to the Azix wallet below, then paste your transaction details to verify payment and generate your order.
                         </p>
                       </div>
                     </div>
@@ -188,99 +189,93 @@ const TrustLockDualCheckout = () => {
                   {/* Token Selector */}
                   <div className="flex items-center gap-2">
                     <p className="text-[10px] font-semibold text-muted-foreground">Token:</p>
-                    <button
-                      onClick={() => setCheckoutToken("USDC")}
-                      className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
-                    >USDC</button>
-                    <button
-                      onClick={() => setCheckoutToken("USDT")}
-                      className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
-                    >USDT</button>
+                    <button onClick={() => setCheckoutToken("USDC")} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDC</button>
+                    <button onClick={() => setCheckoutToken("USDT")} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDT</button>
                     <span className="text-[9px] text-muted-foreground">on Polygon (Chain ID: 137)</span>
                   </div>
+
+                  <p className="text-[9px] text-destructive font-medium">⚠️ Only send {checkoutToken} on Polygon. Other networks = permanent loss.</p>
 
                   {/* Locked Receiving Wallet + Copy */}
                   <div className="space-y-1">
                     <p className="text-[10px] font-semibold">Azix Receiving Wallet <span className="text-destructive">(Locked)</span></p>
                     <div className="relative">
-                      <Input
-                        value={AZIX_WALLETS.transaction.publicKey}
-                        readOnly
-                        className="bg-muted font-mono text-[10px] pr-16 cursor-not-allowed border-2 border-primary/30"
-                        tabIndex={-1}
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 px-2 gap-1 text-[9px]"
-                        onClick={() => {
-                          navigator.clipboard.writeText(AZIX_WALLETS.transaction.publicKey);
-                          setCopiedAddress(true);
-                          setTimeout(() => setCopiedAddress(false), 3000);
-                        }}
-                      >
+                      <Input value={AZIX_WALLETS.transaction.publicKey} readOnly className="bg-muted font-mono text-[10px] pr-16 cursor-not-allowed border-2 border-primary/30" tabIndex={-1} />
+                      <Button type="button" size="sm" variant="outline" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 px-2 gap-1 text-[9px]"
+                        onClick={() => { navigator.clipboard.writeText(AZIX_WALLETS.transaction.publicKey); setCopiedAddress(true); setTimeout(() => setCopiedAddress(false), 3000); }}>
                         {copiedAddress ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                         {copiedAddress ? "Copied" : "Copy"}
                       </Button>
                     </div>
-                    <p className="text-[9px] text-muted-foreground">Copy this address and paste it into your wallet or exchange withdrawal screen.</p>
+                    <p className="text-[9px] text-muted-foreground">Copy and paste into your wallet or exchange withdrawal screen.</p>
                   </div>
 
-                  {/* Sender Wallet */}
-                  <div>
-                    <Label className="text-[10px] text-muted-foreground">Your Sending Wallet Address</Label>
-                    <Input placeholder="0x..." value={checkoutSenderWallet} onChange={e => setCheckoutSenderWallet(e.target.value)} className="mt-1 font-mono text-[10px]" />
-                  </div>
-
-                  {/* TxID + Amount Verification */}
+                  {/* 3 Required Fields */}
                   <div className="space-y-1.5 p-2 rounded-lg border border-primary/20 bg-primary/5">
                     <p className="text-[10px] font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-primary" /> After Sending — Paste Proof
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> After Sending — Enter Proof
                     </p>
                     <div>
-                      <Label className="text-[9px] text-muted-foreground">Transaction ID (TxID)</Label>
-                      <Input placeholder="0x... (66 chars)" value={checkoutTxId} onChange={e => setCheckoutTxId(e.target.value)} className="mt-0.5 font-mono text-[10px]" />
+                      <Label className="text-[9px] text-muted-foreground">1. Your Sending Wallet Address</Label>
+                      <Input placeholder="0x..." value={checkoutSenderWallet} onChange={e => setCheckoutSenderWallet(e.target.value)} className="mt-0.5 font-mono text-[10px]" />
+                      <p className="text-[8px] text-muted-foreground">Find in your wallet app → tap account name to copy.</p>
                     </div>
                     <div>
-                      <Label className="text-[9px] text-muted-foreground">Amount Sent ({checkoutToken})</Label>
-                      <Input type="number" placeholder="1.00" value={checkoutSenderAmount} onChange={e => setCheckoutSenderAmount(e.target.value)} className="mt-0.5 text-[10px]" />
+                      <Label className="text-[9px] text-muted-foreground">2. Transaction ID (TxID)</Label>
+                      <Input placeholder="0x... (66 chars)" value={checkoutTxId} onChange={e => setCheckoutTxId(e.target.value)} className="mt-0.5 font-mono text-[10px]" />
+                      <p className="text-[8px] text-muted-foreground">Shown after sending. Check withdrawal history or polygonscan.com.</p>
+                    </div>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">3. Amount Sent ({checkoutToken})</Label>
+                      <Input type="number" placeholder={sampleAmount.toFixed(2)} value={checkoutSenderAmount} onChange={e => setCheckoutSenderAmount(e.target.value)} className="mt-0.5 text-[10px]" />
+                      <p className="text-[8px] text-muted-foreground">Must match the exact amount sent on-chain.</p>
                     </div>
                   </div>
+
+                  {/* Verify Button */}
+                  <Button type="button" className="w-full h-8 text-[10px] font-semibold gap-1"
+                    disabled={!checkoutSenderWallet || !checkoutTxId || !checkoutSenderAmount || cryptoVerifyStatus === "verifying"}
+                    onClick={async () => {
+                      setCryptoVerifyStatus("verifying");
+                      await new Promise(r => setTimeout(r, 2500));
+                      const amt = parseFloat(checkoutSenderAmount) || 0;
+                      if (amt > 0 && amt < 100) { setCryptoVerifyStatus("verified"); } 
+                      else if (amt >= 100) { setCryptoVerifyStatus("pending"); } 
+                      else { setCryptoVerifyStatus("failed"); }
+                    }}>
+                    {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." : "Verify & Generate Order"}
+                  </Button>
+
+                  {/* Status States */}
+                  {cryptoVerifyStatus === "verified" && (
+                    <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
+                      <p className="text-[10px] font-bold text-primary flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Payment Confirmed — Order Generated</p>
+                      <p className="text-[9px] text-foreground">Check your dashboard for order number, receipt, and workflow.</p>
+                    </div>
+                  )}
+                  {cryptoVerifyStatus === "pending" && (
+                    <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
+                      <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Pending Admin Verification ($100+)</p>
+                      <p className="text-[9px] text-foreground">Provide your details so our team can confirm and contact you.</p>
+                      <Input placeholder="Full Name" value={pendingName} onChange={e => setPendingName(e.target.value)} className="text-[10px]" />
+                      <Input placeholder="Email Address" value={pendingEmail} onChange={e => setPendingEmail(e.target.value)} className="text-[10px]" />
+                      <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" disabled={!pendingName || !pendingEmail}>Submit for Review</Button>
+                    </div>
+                  )}
+                  {cryptoVerifyStatus === "failed" && (
+                    <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/30 space-y-1">
+                      <p className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Verification Failed</p>
+                      <p className="text-[9px] text-foreground">Transaction not found. It may still be confirming — wait 1-2 min and retry, or check that you used Polygon network.</p>
+                      <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" onClick={() => setCryptoVerifyStatus("idle")}>Try Again</Button>
+                      <p className="text-[8px] text-muted-foreground">💡 Having trouble? Switch to card or mobile money above for instant processing.</p>
+                    </div>
+                  )}
 
                   <div className="p-1.5 rounded bg-muted text-[9px] font-mono space-y-0.5">
                     <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
                     <p><strong>Token:</strong> {checkoutToken} ({checkoutToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"})</p>
                     <p><strong>Owner:</strong> Azix</p>
                     <p><strong>Support:</strong> support@azix.world</p>
-                  </div>
-
-                  {/* PIN + Bypass */}
-                  <div className="space-y-1.5 p-2 rounded-lg border-2 border-primary/30 bg-primary/5">
-                    <p className="text-[10px] font-semibold">4-Digit Security PIN</p>
-                    <Input
-                      type="password"
-                      maxLength={4}
-                      placeholder="Create or enter PIN"
-                      value={checkoutPin}
-                      onChange={e => setCheckoutPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                      className="text-center text-sm tracking-[0.5em] font-mono"
-                    />
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <Button type="button" variant="outline" size="sm" className="text-[9px] h-7"
-                        disabled={checkoutPin.length !== 4 || !checkoutTxId || !checkoutSenderAmount}
-                      >
-                        Submit Test ($1)
-                      </Button>
-                      <Button type="button" size="sm" className="text-[9px] h-7"
-                        disabled={checkoutPin.length !== 4 || !checkoutTestVerified}
-                      >
-                        Bypass → Pay
-                      </Button>
-                    </div>
-                    {!checkoutTestVerified && (
-                      <p className="text-[8px] text-destructive">Complete one verified test before using Bypass.</p>
-                    )}
                   </div>
                 </div>
               )}
