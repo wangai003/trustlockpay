@@ -97,40 +97,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const [seedToken, setSeedToken] = useState("");
   const [seedTokenLinked, setSeedTokenLinked] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("");
 
   const processPayment = useProcessPayment();
   const getSeedToken = useGetOrCreateSeedToken();
 
-  const parsedAmount = amount ? parseFloat(amount) : 0;
-  const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-
-  // Dynamic fee calculation using the cost-optimization engine
-  const isCryptoMethod = method === "azix";
-  const feePaymentMethod: FeePaymentMethod = method === "mobile_money" ? "mobile_money"
-    : method === "bank_transfer" ? "bank_transfer"
-    : method === "azix" ? "crypto"
-    : "card";
-  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
-  const feeBreakdown = parsedAmount > 0 && !isAdmin
-    ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
-    : null;
-  const feeRate = feeBreakdown ? feeBreakdown.feePercentage / 100 : 0;
-  const fee = isAdmin ? "0.00" : feeBreakdown ? feeBreakdown.trustlockFee.toFixed(2) : "0.00";
-  const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
-  const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
-
-  const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
-
-  const handleLinkSeedToken = async () => {
-    try {
-      const result = await getSeedToken.mutateAsync();
-      setSeedToken(result.token || result.seed_token || "");
-      setSeedTokenLinked(true);
-      toast.success("Seed token linked to custodian wallet");
-    } catch {
-      toast.error("Failed to link seed token");
+  // Auto-link seed token on mount — no manual button needed
+  useEffect(() => {
+    if (!isAdmin && !seedTokenLinked) {
+      getSeedToken.mutate(undefined, {
+        onSuccess: (result) => {
+          setSeedToken(result?.token?.token || result?.token || result?.seed_token || "");
+          setSeedTokenLinked(true);
+        },
+      });
     }
-  };
+  }, [isAdmin]);
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
