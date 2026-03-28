@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import { supabase } from "@/integrations/supabase/client";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
