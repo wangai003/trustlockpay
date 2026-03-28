@@ -35,11 +35,18 @@ function generateConfirmationCode(): string {
   return code;
 }
 
-// ─── Fee Calculation with Dual Wallet Routing ──────────────
+// ─── Fee Calculation with Dual Wallet + Dual Token Routing ─
+// DUAL SEED TOKEN ARCHITECTURE:
+//   OS Pay token  → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
+//   OS Payout token → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
+//
 // Fee trickle-down logic:
-//   RELEASE: Escrow deducts 1% → vendor gets net → 1% fee forwarded to Transaction Wallet
-//   REFUND:  Escrow returns full principal → buyer gets 100% → NO fees to Transaction Wallet
-//   SPLIT:   Both parties paid equally → 1% fee from VENDOR share only → forwarded to Transaction Wallet
+//   RELEASE: Escrow deducts 1% → trickles USDC (stablecoins) to Transaction Wallet
+//            → NO conversion needed, Transaction Wallet accepts USDC natively
+//            → this transfer follows the OS Pay token's hardwire route
+//   REFUND:  Escrow returns full principal → buyer gets 100% → NO fees → NO trickle-down
+//   SPLIT:   1% fee from VENDOR share only → trickles to Transaction Wallet
+//            → buyer receives full split amount with zero fee deduction
 interface FeeResult {
   trustlockFee: number;
   processorFee: number;
@@ -49,7 +56,7 @@ interface FeeResult {
   netAmount: number;
   transactionWalletReceives: number;
   escrowWalletReceives: number;
-  feeTrickleToTransactionWallet: number; // Amount forwarded from escrow → transaction wallet
+  feeTrickleToTransactionWallet: number; // USDC amount forwarded from escrow → transaction wallet (no conversion)
 }
 
 function calculatePayoutFees(
