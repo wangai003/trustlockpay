@@ -104,10 +104,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [selectedToken, setSelectedToken] = useState<"USDC" | "USDT">("USDC");
   const [txIdInput, setTxIdInput] = useState("");
   const [senderAmount, setSenderAmount] = useState("");
-  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
+  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed" | "shortfall">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
+  const [cumulativeReceived, setCumulativeReceived] = useState(0);
+  const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
@@ -656,9 +658,21 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   // Simulate on-chain verification (production: calls Polygon RPC edge function)
                   await new Promise(r => setTimeout(r, 2500));
                   const amt = parseFloat(senderAmount) || 0;
-                  if (amt > 0) {
+                  const requiredAmount = parseFloat(total) || parsedAmount;
+                  const newCumulative = cumulativeReceived + amt;
+                  if (amt > 0 && newCumulative >= requiredAmount) {
+                    setCumulativeReceived(newCumulative);
+                    setShortfallTxIds(prev => [...prev, txIdInput]);
                     setCryptoVerifyStatus("verified");
                     toast.success("✅ Payment verified on-chain! Your order is being generated.");
+                  } else if (amt > 0 && newCumulative < requiredAmount) {
+                    setCumulativeReceived(newCumulative);
+                    setShortfallTxIds(prev => [...prev, txIdInput]);
+                    setCryptoVerifyStatus("shortfall");
+                    // Reset fields for next payment
+                    setTxIdInput("");
+                    setSenderAmount("");
+                    toast.info(`Received $${amt.toFixed(2)} — $${(requiredAmount - newCumulative).toFixed(2)} remaining.`);
                   } else {
                     setCryptoVerifyStatus("failed");
                     toast.error("Could not verify transaction. Please check the details.");
@@ -667,6 +681,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               >
                 {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." :
                  cryptoVerifyStatus === "verified" ? "✅ Verified — Generating Order" :
+                 cryptoVerifyStatus === "shortfall" ? "Submit Additional Payment" :
                  "Verify & Generate Order"}
                 {cryptoVerifyStatus !== "verifying" && <ArrowRight className="w-4 h-4" />}
               </Button>
@@ -680,6 +695,41 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   <p className="text-[10px] text-foreground">
                     Your order number, receipt, and confirmation link have been generated. Check your dashboard to begin the order workflow.
                   </p>
+                </div>
+              )}
+
+              {/* ── SHORTFALL STATE — Partial payment received ── */}
+              {cryptoVerifyStatus === "shortfall" && (
+                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
+                  <p className="text-xs font-bold text-accent flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Partial Payment Received
+                  </p>
+                  <div className="p-2 rounded-lg bg-muted/50 space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Required Total</span>
+                      <span className="font-semibold">${(parseFloat(total) || parsedAmount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Received So Far</span>
+                      <span className="font-semibold text-primary">${cumulativeReceived.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] border-t border-border pt-1">
+                      <span className="font-bold text-destructive">Remaining Balance</span>
+                      <span className="font-bold text-destructive">${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-foreground">
+                    Your payment was received but does not cover the full amount. This is likely due to a network or withdrawal fee deducted by your exchange or wallet.
+                  </p>
+                  <p className="text-[10px] text-foreground font-semibold">
+                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same Azix wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
+                  </p>
+                  {shortfallTxIds.length > 0 && (
+                    <div className="p-1.5 rounded bg-muted text-[9px] text-muted-foreground">
+                      <p className="font-semibold">Previous TxIDs recorded:</p>
+                      {shortfallTxIds.map((id, i) => <p key={i} className="font-mono truncate">#{i+1}: {id}</p>)}
+                    </div>
+                  )}
                 </div>
               )}
 

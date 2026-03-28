@@ -25,10 +25,12 @@ const TrustLockDualCheckout = () => {
   const [checkoutTxId, setCheckoutTxId] = useState("");
   const [checkoutSenderWallet, setCheckoutSenderWallet] = useState("");
   const [checkoutSenderAmount, setCheckoutSenderAmount] = useState("");
-  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
+  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed" | "shortfall">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
+  const [cumulativeReceived, setCumulativeReceived] = useState(0);
+  const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
@@ -267,10 +269,26 @@ const TrustLockDualCheckout = () => {
                       setCryptoVerifyStatus("verifying");
                       await new Promise(r => setTimeout(r, 2500));
                       const amt = parseFloat(checkoutSenderAmount) || 0;
-                      if (amt > 0) { setCryptoVerifyStatus("verified"); } 
-                      else { setCryptoVerifyStatus("failed"); }
+                      const requiredAmount = sampleAmount;
+                      const newCumulative = cumulativeReceived + amt;
+                      if (amt > 0 && newCumulative >= requiredAmount) {
+                        setCumulativeReceived(newCumulative);
+                        setShortfallTxIds(prev => [...prev, checkoutTxId]);
+                        setCryptoVerifyStatus("verified");
+                      } else if (amt > 0 && newCumulative < requiredAmount) {
+                        setCumulativeReceived(newCumulative);
+                        setShortfallTxIds(prev => [...prev, checkoutTxId]);
+                        setCryptoVerifyStatus("shortfall");
+                        setCheckoutTxId("");
+                        setCheckoutSenderAmount("");
+                        toast.info(`Received $${amt.toFixed(2)} — $${(requiredAmount - newCumulative).toFixed(2)} remaining.`);
+                      } else {
+                        setCryptoVerifyStatus("failed");
+                      }
                     }}>
-                    {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." : "Verify & Generate Order"}
+                    {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." :
+                     cryptoVerifyStatus === "shortfall" ? "Submit Additional Payment" :
+                     "Verify & Generate Order"}
                   </Button>
 
                   {/* Status States */}
@@ -278,6 +296,26 @@ const TrustLockDualCheckout = () => {
                     <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
                       <p className="text-[10px] font-bold text-primary flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Payment Confirmed — Order Generated</p>
                       <p className="text-[9px] text-foreground">Check your dashboard for order number, receipt, and workflow.</p>
+                    </div>
+                  )}
+                  {/* Shortfall State */}
+                  {cryptoVerifyStatus === "shortfall" && (
+                    <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
+                      <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Partial Payment Received</p>
+                      <div className="p-1.5 rounded bg-muted/50 space-y-0.5 text-[9px]">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Required</span><span className="font-semibold">${sampleAmount.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Received</span><span className="font-semibold text-primary">${cumulativeReceived.toFixed(2)}</span></div>
+                        <div className="flex justify-between border-t border-border pt-0.5"><span className="font-bold text-destructive">Remaining</span><span className="font-bold text-destructive">${(sampleAmount - cumulativeReceived).toFixed(2)}</span></div>
+                      </div>
+                      <p className="text-[9px] text-foreground">
+                        Send the remaining <strong>${(sampleAmount - cumulativeReceived).toFixed(2)} {checkoutToken}</strong> to the same wallet above via Polygon, then enter your new TxID and amount below.
+                      </p>
+                      {shortfallTxIds.length > 0 && (
+                        <div className="p-1 rounded bg-muted text-[8px] text-muted-foreground">
+                          <p className="font-semibold">Previous TxIDs:</p>
+                          {shortfallTxIds.map((id, i) => <p key={i} className="font-mono truncate">#{i+1}: {id}</p>)}
+                        </div>
+                      )}
                     </div>
                   )}
                   {cryptoVerifyStatus === "pending" && (
