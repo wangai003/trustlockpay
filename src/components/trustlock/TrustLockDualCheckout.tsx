@@ -17,6 +17,11 @@ const TrustLockDualCheckout = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [checkoutToken, setCheckoutToken] = useState<"USDC" | "USDT">("USDC");
+  const [checkoutTxId, setCheckoutTxId] = useState("");
+  const [checkoutSenderWallet, setCheckoutSenderWallet] = useState("");
+  const [checkoutSenderAmount, setCheckoutSenderAmount] = useState("");
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
