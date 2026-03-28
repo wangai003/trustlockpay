@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import { supabase } from "@/integrations/supabase/client";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
@@ -688,7 +689,31 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     size="sm"
                     className="w-full text-xs"
                     disabled={!pendingName || !pendingEmail}
-                    onClick={() => {
+                    onClick={async () => {
+                      // Persist to crypto support queue
+                      await supabase.from("crypto_support_queue" as any).insert({
+                        sender_name: pendingName,
+                        sender_email: pendingEmail,
+                        sender_wallet: azixAddress,
+                        tx_id: txIdInput,
+                        amount_sent: parseFloat(senderAmount) || 0,
+                        token: selectedToken,
+                        network: "Polygon",
+                        source: "os_pay",
+                      });
+                      // Notify admins
+                      const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+                      if (admins?.length) {
+                        await supabase.from("notifications").insert(
+                          admins.map((a: any) => ({
+                            user_id: a.user_id,
+                            title: "🔎 Crypto Payment Pending Investigation",
+                            message: `${pendingName} (${pendingEmail}) submitted a pending ${selectedToken} payment of $${senderAmount}. TxID: ${txIdInput || "N/A"}. Wallet: ${azixAddress || "N/A"}. Source: OS Pay.`,
+                            type: "critical",
+                            related_entity_type: "crypto_support",
+                          }))
+                        );
+                      }
                       toast.success("Details submitted. TrustLock support will investigate and contact you at " + pendingEmail + " within 24–48 hours.");
                       setCryptoVerifyStatus("idle");
                     }}
