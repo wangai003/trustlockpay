@@ -42,6 +42,7 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
+  const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
