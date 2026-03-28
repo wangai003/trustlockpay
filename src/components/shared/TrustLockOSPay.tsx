@@ -9,6 +9,7 @@ import {
   Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
   Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
