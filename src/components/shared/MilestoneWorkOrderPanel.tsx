@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Copy, FileText, Loader2, StickyNote, UserPlus } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import {
   useAddTransactionObserver,
   useCreateMilestones,
@@ -41,6 +42,7 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
+  const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
@@ -81,6 +83,20 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   const handleMarkFulfilled = async (milestoneId: string) => {
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
+
+    // Phase 1: Capture GPS coordinates on milestone completion
+    const geo = await capturePosition();
+
+    if (geo) {
+      await supabase.from("transaction_milestones").update({
+        gps_latitude: geo.latitude,
+        gps_longitude: geo.longitude,
+        gps_accuracy: geo.accuracy,
+        gps_captured_at: geo.capturedAt,
+      } as any).eq("id", milestoneId);
+      toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+    }
+
     await updateMilestone.mutateAsync({
       milestoneId,
       userId,
@@ -171,6 +187,12 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
 
               <div className="text-[11px] text-muted-foreground">
                 Amount: ${Number(ms.payment_amount || 0).toLocaleString()} · Uploaded docs: {(ms.uploaded_documents || []).length}
+                {ms.gps_latitude && (
+                  <span className="ml-2 inline-flex items-center gap-0.5">
+                    <MapPin className="w-3 h-3 text-primary" />
+                    {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
+                  </span>
+                )}
               </div>
 
               {role === "vendor" && !ms.observer_id && (
