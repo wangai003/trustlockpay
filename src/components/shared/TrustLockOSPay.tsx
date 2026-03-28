@@ -100,7 +100,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [selectedCountry, setSelectedCountry] = useState("");
 
   const processPayment = useProcessPayment();
-  const getSeedToken = useGetOrCreateSeedToken();
+  // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
+  const getSeedToken = useGetOrCreateSeedToken("os_pay");
 
   // Auto-link seed token on mount — no manual button needed
   useEffect(() => {

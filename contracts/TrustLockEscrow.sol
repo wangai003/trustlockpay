@@ -258,9 +258,12 @@ contract TrustLockEscrow is ReentrancyGuard {
 
     /**
      * @notice Split payout for atomic dispute arbitration.
+     * @dev Escrow service fee (1%) is deducted from VENDOR's share only,
+     *      then trickled to transactionFeeWallet in USDC (no conversion).
+     *      Buyer receives full split amount with zero fee deduction.
      * @param escrowId     The escrow to split
-     * @param buyerAmount  Amount returned to buyer
-     * @param vendorAmount Amount sent to vendor
+     * @param buyerAmount  Amount returned to buyer (no fees deducted)
+     * @param vendorAmount Amount sent to vendor (before 1% escrow fee deduction)
      */
     function splitPayout(
         bytes32 escrowId,
@@ -274,14 +277,21 @@ contract TrustLockEscrow is ReentrancyGuard {
 
         e.status = EscrowStatus.DISPUTED;
 
+        // TRICKLE-DOWN on split: 1% fee from vendor's share only → transactionFeeWallet
+        uint256 vendorServiceFee = (vendorAmount * ESCROW_SERVICE_FEE_BPS) / 10000;
+        uint256 vendorNet = vendorAmount - vendorServiceFee;
+
         if (buyerAmount > 0) {
             require(usdc.transfer(e.buyer, buyerAmount), "TL: buyer split failed");
         }
-        if (vendorAmount > 0) {
-            require(usdc.transfer(e.vendor, vendorAmount), "TL: vendor split failed");
+        if (vendorServiceFee > 0) {
+            require(usdc.transfer(transactionFeeWallet, vendorServiceFee), "TL: split trickle-down failed");
+        }
+        if (vendorNet > 0) {
+            require(usdc.transfer(e.vendor, vendorNet), "TL: vendor split failed");
         }
 
-        emit PayoutSplit(escrowId, buyerAmount, vendorAmount);
+        emit PayoutSplit(escrowId, buyerAmount, vendorNet);
     }
 
     // ══════════════════════════════════════════════

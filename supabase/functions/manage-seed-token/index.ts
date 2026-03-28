@@ -150,21 +150,32 @@ Deno.serve(async (req) => {
     }
 
     switch (action) {
-      // ─── Generate or retrieve seed token ─────────────────────
+      // ─── Generate or retrieve seed token (dual-token architecture) ─────
+      // OS Pay token  → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
+      // OS Payout token → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
+      // Trickle-down: escrow fees (stablecoins) flow from Escrow → Transaction
+      //               wallet via the OS Pay token — no conversion needed
       case "get_or_create_token": {
         const targetUserId = params.userId || userId;
         if (!targetUserId) throw new Error("User ID required");
+
+        // Purpose determines which wallet this token is hardwired to
+        const purpose: string = params.purpose || "os_pay";
+        const walletAddress = purpose === "os_payout"
+          ? AZIX_ESCROW_WALLET       // Escrow disbursement wallet
+          : AZIX_TRANSACTION_WALLET; // Revenue & fees collection wallet
 
         const { data: existing } = await supabase
           .from("seed_tokens")
           .select("*")
           .eq("user_id", targetUserId)
+          .eq("purpose", purpose)
           .eq("is_active", true)
           .maybeSingle();
 
         if (existing) {
           return new Response(
-            JSON.stringify({ success: true, token: existing }),
+            JSON.stringify({ success: true, token: existing, purpose }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -175,7 +186,8 @@ Deno.serve(async (req) => {
           .insert({
             user_id: targetUserId,
             token,
-            wallet_public_key: AZIX_TRANSACTION_WALLET,
+            wallet_public_key: walletAddress,
+            purpose,
           })
           .select()
           .single();
@@ -183,7 +195,7 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         return new Response(
-          JSON.stringify({ success: true, token: newToken }),
+          JSON.stringify({ success: true, token: newToken, purpose }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

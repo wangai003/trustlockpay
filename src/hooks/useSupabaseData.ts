@@ -575,13 +575,15 @@ export function useArchivedReports(role: string) {
   });
 }
 
-// ─── Seed Tokens ────────────────────────────────────────────
-export function useGetOrCreateSeedToken() {
+// ─── Seed Tokens (Dual-Token Architecture) ─────────────────
+// OS Pay  → purpose: "os_pay"   → hardwired to Transaction Fee Wallet (revenue collection)
+// OS Payout → purpose: "os_payout" → hardwired to Escrow Wallet (escrow disbursement)
+export function useGetOrCreateSeedToken(purpose: "os_pay" | "os_payout" = "os_pay") {
   return useMutation({
     mutationFn: async () => {
       const session = (await supabase.auth.getSession()).data.session;
       const userId = session?.user?.id || "00000000-0000-0000-0000-000000000000";
-      return callEdgeFunction("manage-seed-token", { action: "get_or_create_token", userId });
+      return callEdgeFunction("manage-seed-token", { action: "get_or_create_token", userId, purpose });
     },
     onError: (e: Error) => toast.error(e.message),
   });
