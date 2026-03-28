@@ -401,7 +401,7 @@ Deno.serve(async (req) => {
                 purpose: "Collects escrow service fees upon fund release",
               },
             },
-            processors: ["stripe", "coinbase", "yellow_card", "transak", "direct"],
+            processors: ["stripe", "coinbase", "transak", "direct"],
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

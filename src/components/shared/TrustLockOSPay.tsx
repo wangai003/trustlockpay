@@ -414,25 +414,64 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {method === "mobile_money" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
+              {!selectedCountry && (
+                <p className="text-[10px] text-destructive">↑ Please select your country above to see available providers</p>
+              )}
               <div>
                 <Label className="text-xs">Mobile Money Provider</Label>
                 <select value={mobileProvider} onChange={e => setMobileProvider(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Select provider...</option>
-                  <option value="mpesa">M-Pesa</option>
-                  <option value="mtn">MTN Mobile Money</option>
-                  <option value="airtel">Airtel Money</option>
-                  <option value="orange">Orange Money</option>
-                  <option value="vodafone">Vodafone Cash</option>
+                  {mobileList.length > 0
+                    ? mobileList.map(p => <option key={p} value={p}>{p}</option>)
+                    : <>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="mtn">MTN Mobile Money</option>
+                        <option value="airtel">Airtel Money</option>
+                        <option value="orange">Orange Money</option>
+                      </>
+                  }
                 </select>
               </div>
               <div><Label className="text-xs">Phone Number</Label><Input placeholder="+254 7XX XXX XXX" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className="mt-1" /></div>
+              {selectedCountry && (
+                <p className="text-[10px] text-muted-foreground">
+                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
+                </p>
+              )}
             </div>
           )}
 
           {method === "bank_transfer" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div><Label className="text-xs">Bank Name</Label><Input placeholder="e.g. GTBank, KCB, Standard Bank" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" /></div>
-              <div><Label className="text-xs">Account Number</Label><Input placeholder="Account / NUBAN number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" /></div>
+              {!selectedCountry && (
+                <p className="text-[10px] text-destructive">↑ Please select your country above to see available banks</p>
+              )}
+              <div>
+                <Label className="text-xs">Bank Name</Label>
+                {bankList.length > 0 ? (
+                  <select value={bankName} onChange={e => setBankName(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">Select your bank...</option>
+                    {bankList.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                ) : (
+                  <Input placeholder="Enter bank name" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" />
+                )}
+              </div>
+              <div>
+                <Label className="text-xs">Account Number{selectedCountry === "NG" ? " (NUBAN)" : selectedCountry === "ZA" ? " (Branch Code + Account)" : ""}</Label>
+                <Input placeholder={selectedCountry === "NG" ? "10-digit NUBAN" : selectedCountry === "KE" ? "Branch + Account" : "Account number"} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" />
+              </div>
+              {selectedCountry === "NG" && (
+                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" className="mt-1" /></div>
+              )}
+              {(selectedCountry === "ZA" || selectedCountry === "KE") && (
+                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+              )}
+              {selectedCountry && (
+                <p className="text-[10px] text-muted-foreground">
+                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
+                </p>
+              )}
             </div>
           )}
 
