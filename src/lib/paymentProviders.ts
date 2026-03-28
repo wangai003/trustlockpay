@@ -1,7 +1,7 @@
-// Payment provider registry — all 4 processors: Stripe, Coinbase, Yellow Card, Transak
-// Covers diaspora and local African payment methods with formatted fields per provider
+// Payment provider registry — 3 active processors: Stripe, Coinbase, Transak + Direct
+// Covers diaspora and local African payment methods with dynamic cost-optimized routing
 
-import { type ProcessorId } from "./feeEngine";
+import { type ProcessorId, getEligibleProcessors, type PaymentMethod } from "./feeEngine";
 
 export type PaymentCategory = "card" | "bank_account" | "mobile_money" | "crypto_wallet" | "digital_wallet";
 
@@ -31,7 +31,6 @@ export type { FeeBreakdown, TransactionType } from "./feeEngine";
 
 // Legacy calculateFees — keeps the old signature for existing consumers
 export function calculateFees(amount: number, type: string): { trustlock: number; processor: number; escrow: number; gas: number; total: number; net: number } {
-  // Map old type strings to rough rates
   const rates: Record<string, { tl: number; proc: number; esc: number; gas: number }> = {
     crypto_to_crypto: { tl: 1.0, proc: 0, esc: 0.5, gas: 0.02 },
     fiat_to_crypto: { tl: 1.5, proc: 1.5, esc: 0.5, gas: 0.02 },
@@ -49,9 +48,16 @@ export function calculateFees(amount: number, type: string): { trustlock: number
   return { trustlock, processor, escrow, gas, total, net: amount - total };
 }
 
-// Legacy getFeeRange — now uses canonical constants
+// Legacy getFeeRange
 export function getFeeRange(): string {
   return "2.5% – 5.9%";
+}
+
+// ─── Dynamic Processor Selection Helper ───────────────────
+// Picks the cheapest processor for a given country and payment method
+function cheapestProcessor(country: string, method: PaymentMethod): ProcessorId {
+  const eligible = getEligibleProcessors(country, method, "checkout_fiat");
+  return eligible.length > 0 ? eligible[0].id : "stripe";
 }
 
 // ─── DIASPORA PROVIDERS ────────────────────────────────────
@@ -137,29 +143,6 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
     ],
   },
-  {
-    id: "thirdweb_fiat",
-    name: "Buy with Card (Thirdweb)",
-    category: "card",
-    mode: "diaspora",
-    processor: "transak",
-    fields: [
-      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
-      { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
-      { key: "cvv", label: "CVV", placeholder: "123", type: "text", required: true },
-      { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
-    ],
-  },
-  {
-    id: "thirdweb_wallet",
-    name: "Thirdweb Wallet",
-    category: "crypto_wallet",
-    mode: "diaspora",
-    processor: "transak",
-    fields: [
-      { key: "wallet_address", label: "Wallet Address", placeholder: "0x...", type: "text", required: true },
-    ],
-  },
 ];
 
 // ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
@@ -231,8 +214,9 @@ const DEFAULT_BANK_FIELDS: ProviderField[] = [
   { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text", required: false },
 ];
 
+// Dynamically assigns cheapest bank_transfer processor per country
 function buildBankProviders(country: string, banks: string[]): PaymentProvider[] {
-  const processor: ProcessorId = "coinbase";
+  const processor = cheapestProcessor(country, "bank_transfer");
   const fields = COUNTRY_BANK_FIELDS[country] || DEFAULT_BANK_FIELDS;
   return banks.map((bank) => ({
     id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
@@ -245,22 +229,27 @@ function buildBankProviders(country: string, banks: string[]): PaymentProvider[]
   }));
 }
 
+// Dynamically assigns cheapest mobile_money processor per operator's primary country
 function buildMobileMoneyProviders(): PaymentProvider[] {
-  return MOBILE_MONEY_OPERATORS.map((op) => ({
-    id: op.id,
-    name: op.name,
-    category: "mobile_money" as PaymentCategory,
-    mode: "local" as const,
-    countries: op.countries,
-    processor: "yellow_card" as ProcessorId,
-    fields: [
-      { key: "phone_number", label: "Mobile Number", placeholder: "+234 800 000 0000", type: "text" as const, required: true },
-      { key: "account_name", label: "Registered Name", placeholder: "Name on mobile money account", type: "text" as const, required: true },
-    ],
-  }));
+  return MOBILE_MONEY_OPERATORS.map((op) => {
+    const primaryCountry = op.countries[0] || "Nigeria";
+    const processor = cheapestProcessor(primaryCountry, "mobile_money");
+    return {
+      id: op.id,
+      name: op.name,
+      category: "mobile_money" as PaymentCategory,
+      mode: "local" as const,
+      countries: op.countries,
+      processor,
+      fields: [
+        { key: "phone_number", label: "Mobile Number", placeholder: "+234 800 000 0000", type: "text" as const, required: true },
+        { key: "account_name", label: "Registered Name", placeholder: "Name on mobile money account", type: "text" as const, required: true },
+      ],
+    };
+  });
 }
 
-// Local crypto options — Coinbase off-ramp + direct
+// Local crypto options — Direct + cheapest off-ramp processors
 const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
   {
     id: "crypto_wallet_local",
@@ -292,28 +281,6 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     processor: "transak",
     fields: [
       { key: "email", label: "Transak Email", placeholder: "your@email.com", type: "text", required: true },
-    ],
-  },
-  {
-    id: "thirdweb_onramp_local",
-    name: "Thirdweb On-Ramp",
-    category: "crypto_wallet",
-    mode: "local",
-    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
-    processor: "transak",
-    fields: [
-      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
-    ],
-  },
-  {
-    id: "thirdweb_offramp_local",
-    name: "Thirdweb Off-Ramp",
-    category: "crypto_wallet",
-    mode: "local",
-    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
-    processor: "transak",
-    fields: [
-      { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
     ],
   },
 ];
@@ -380,6 +347,6 @@ export const SUPPORTED_COUNTRIES = [
   "Angola", "Cape Verde", "Djibouti", "Gabon", "Mauritius", "Namibia", "Tunisia",
 ];
 
-export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Yellow Card, Transak, Thirdweb) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
+export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
 
-export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.0%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (0.5% at deposit, 1.0% at release) for smart contract custody — fully waived on refunds. Gas fees (~$0.02–$0.05) cover Polygon L2 network costs. All-in: 1.5%–2.5% crypto direct, 3.0%–5.9% fiat. All fees displayed before confirmation.`;
+export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.5%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (0.5% at deposit, 1.0% at release) for smart contract custody — fully waived on refunds. Gas fees (~$0.02–$0.05) cover Polygon L2 network costs. All-in: 1.5%–2.5% crypto direct, 3.0%–5.9% fiat. All fees displayed before confirmation.`;
