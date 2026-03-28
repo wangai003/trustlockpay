@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -5,78 +6,86 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import Index from "./pages/Index.tsx";
-import TrustLock from "./pages/TrustLock.tsx";
-import NotFound from "./pages/NotFound.tsx";
+
+// Lazy-loaded pages
+const Index = lazy(() => import("./pages/Index"));
+const TrustLock = lazy(() => import("./pages/TrustLock"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin
-import AdminLogin from "./pages/admin/AdminLogin.tsx";
-import AdminSetup from "./pages/admin/AdminSetup.tsx";
-import AdminResetPassword from "./pages/admin/AdminResetPassword.tsx";
-import AdminLayout from "./pages/admin/AdminLayout.tsx";
-import AdminOverview from "./pages/admin/AdminOverview.tsx";
-import AdminTransactions from "./pages/admin/AdminTransactions.tsx";
-import AdminDisputes from "./pages/admin/AdminDisputes.tsx";
-import AdminEmmanuel from "./pages/admin/AdminEmmanuel.tsx";
-import AdminVendors from "./pages/admin/AdminVendors.tsx";
-import AdminBuyers from "./pages/admin/AdminBuyers.tsx";
-import AdminCompliance from "./pages/admin/AdminCompliance.tsx";
-import AdminAnalytics from "./pages/admin/AdminAnalytics.tsx";
-import AdminReports from "./pages/admin/AdminReports.tsx";
-import AdminDocuments from "./pages/admin/AdminDocuments.tsx";
-import AdminSettings from "./pages/admin/AdminSettings.tsx";
-import AdminOSPay from "./pages/admin/AdminOSPay.tsx";
-import AdminWorkflow from "./pages/admin/AdminWorkflow.tsx";
-import AdminPayout from "./pages/admin/AdminPayout.tsx";
-import AdminAudit from "./pages/admin/AdminAudit.tsx";
-import AdminIndustryPlaybook from "./pages/admin/AdminIndustryPlaybook.tsx";
-import AuditPortal from "./pages/audit/AuditPortal.tsx";
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
+const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminTransactions = lazy(() => import("./pages/admin/AdminTransactions"));
+const AdminDisputes = lazy(() => import("./pages/admin/AdminDisputes"));
+const AdminEmmanuel = lazy(() => import("./pages/admin/AdminEmmanuel"));
+const AdminVendors = lazy(() => import("./pages/admin/AdminVendors"));
+const AdminBuyers = lazy(() => import("./pages/admin/AdminBuyers"));
+const AdminCompliance = lazy(() => import("./pages/admin/AdminCompliance"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminOSPay = lazy(() => import("./pages/admin/AdminOSPay"));
+const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
+const AdminPayout = lazy(() => import("./pages/admin/AdminPayout"));
+const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
+const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlaybook"));
+const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
-import BuyerLogin from "./pages/buyer/BuyerLogin.tsx";
-import BuyerSignup from "./pages/buyer/BuyerSignup.tsx";
-import BuyerLayout from "./pages/buyer/BuyerLayout.tsx";
-import BuyerOverview from "./pages/buyer/BuyerOverview.tsx";
-import BuyerOrders from "./pages/buyer/BuyerOrders.tsx";
-import BuyerDisputes from "./pages/buyer/BuyerDisputes.tsx";
-import BuyerDocuments from "./pages/buyer/BuyerDocuments.tsx";
-import BuyerSettings from "./pages/buyer/BuyerSettings.tsx";
-import BuyerConfirmation from "./pages/buyer/BuyerConfirmation.tsx";
-import BuyerAssistant from "./pages/buyer/BuyerAssistant.tsx";
-import BuyerHelpCenter from "./pages/buyer/BuyerHelpCenter.tsx";
-import BuyerAnalytics from "./pages/buyer/BuyerAnalytics.tsx";
-import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
-import BuyerPayout from "./pages/buyer/BuyerPayout.tsx";
-import BuyerBillPayments from "./pages/buyer/BuyerBillPayments.tsx";
-import BuyerIndustryPlaybook from "./pages/buyer/BuyerIndustryPlaybook.tsx";
-import BuyerTeams from "./pages/buyer/BuyerTeams.tsx";
+const BuyerLogin = lazy(() => import("./pages/buyer/BuyerLogin"));
+const BuyerSignup = lazy(() => import("./pages/buyer/BuyerSignup"));
+const BuyerLayout = lazy(() => import("./pages/buyer/BuyerLayout"));
+const BuyerOverview = lazy(() => import("./pages/buyer/BuyerOverview"));
+const BuyerOrders = lazy(() => import("./pages/buyer/BuyerOrders"));
+const BuyerDisputes = lazy(() => import("./pages/buyer/BuyerDisputes"));
+const BuyerDocuments = lazy(() => import("./pages/buyer/BuyerDocuments"));
+const BuyerSettings = lazy(() => import("./pages/buyer/BuyerSettings"));
+const BuyerConfirmation = lazy(() => import("./pages/buyer/BuyerConfirmation"));
+const BuyerAssistant = lazy(() => import("./pages/buyer/BuyerAssistant"));
+const BuyerHelpCenter = lazy(() => import("./pages/buyer/BuyerHelpCenter"));
+const BuyerAnalytics = lazy(() => import("./pages/buyer/BuyerAnalytics"));
+const BuyerOSPay = lazy(() => import("./pages/buyer/BuyerOSPay"));
+const BuyerPayout = lazy(() => import("./pages/buyer/BuyerPayout"));
+const BuyerBillPayments = lazy(() => import("./pages/buyer/BuyerBillPayments"));
+const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlaybook"));
+const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
 
 // Vendor
-import VendorLogin from "./pages/vendor/VendorLogin.tsx";
-import VendorSignup from "./pages/vendor/VendorSignup.tsx";
-import VendorOnboarding from "./pages/vendor/VendorOnboarding.tsx";
-import VendorLayout from "./pages/vendor/VendorLayout.tsx";
-import VendorOverview from "./pages/vendor/VendorOverview.tsx";
-import VendorTransactions from "./pages/vendor/VendorTransactions.tsx";
-import VendorPayouts from "./pages/vendor/VendorPayouts.tsx";
-import VendorSites from "./pages/vendor/VendorSites.tsx";
-import VendorKYC from "./pages/vendor/VendorKYC.tsx";
-import VendorDocuments from "./pages/vendor/VendorDocuments.tsx";
-import VendorSettings from "./pages/vendor/VendorSettings.tsx";
-import VendorAssistant from "./pages/vendor/VendorAssistant.tsx";
-import VendorHelpCenter from "./pages/vendor/VendorHelpCenter.tsx";
-import VendorPricing from "./pages/vendor/VendorPricing.tsx";
-import VendorCheckout from "./pages/vendor/VendorCheckout.tsx";
-import VendorAnalytics from "./pages/vendor/VendorAnalytics.tsx";
-import VendorOSPay from "./pages/vendor/VendorOSPay.tsx";
-import VendorPayout from "./pages/vendor/VendorPayout.tsx";
-import VendorBillPayments from "./pages/vendor/VendorBillPayments.tsx";
-import VendorStandaloneLinks from "./pages/vendor/VendorStandaloneLinks.tsx";
-import VendorIndustryPlaybook from "./pages/vendor/VendorIndustryPlaybook.tsx";
-import VendorTeams from "./pages/vendor/VendorTeams.tsx";
-import PublicCheckout from "./pages/public/PublicCheckout.tsx";
+const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
+const VendorSignup = lazy(() => import("./pages/vendor/VendorSignup"));
+const VendorOnboarding = lazy(() => import("./pages/vendor/VendorOnboarding"));
+const VendorLayout = lazy(() => import("./pages/vendor/VendorLayout"));
+const VendorOverview = lazy(() => import("./pages/vendor/VendorOverview"));
+const VendorTransactions = lazy(() => import("./pages/vendor/VendorTransactions"));
+const VendorPayouts = lazy(() => import("./pages/vendor/VendorPayouts"));
+const VendorSites = lazy(() => import("./pages/vendor/VendorSites"));
+const VendorKYC = lazy(() => import("./pages/vendor/VendorKYC"));
+const VendorDocuments = lazy(() => import("./pages/vendor/VendorDocuments"));
+const VendorSettings = lazy(() => import("./pages/vendor/VendorSettings"));
+const VendorAssistant = lazy(() => import("./pages/vendor/VendorAssistant"));
+const VendorHelpCenter = lazy(() => import("./pages/vendor/VendorHelpCenter"));
+const VendorPricing = lazy(() => import("./pages/vendor/VendorPricing"));
+const VendorCheckout = lazy(() => import("./pages/vendor/VendorCheckout"));
+const VendorAnalytics = lazy(() => import("./pages/vendor/VendorAnalytics"));
+const VendorOSPay = lazy(() => import("./pages/vendor/VendorOSPay"));
+const VendorPayout = lazy(() => import("./pages/vendor/VendorPayout"));
+const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"));
+const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
+const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
+const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
+const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 
 const queryClient = new QueryClient();
+
+const Loading = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -85,100 +94,95 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<TrustLock />} />
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<TrustLock />} />
 
-            {/* Admin Dashboard */}
-            <Route path="/trustlock/admin/login" element={<AdminLogin />} />
-            <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
-            <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
-            <Route path="/trustlock/admin" element={
-              <ProtectedRoute loginPath="/trustlock/admin/login" allowTestnet testnetKey="tl_admin_auth">
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdminOverview />} />
-              <Route path="transactions" element={<AdminTransactions />} />
-              <Route path="disputes" element={<AdminDisputes />} />
-              <Route path="emmanuel" element={<AdminEmmanuel />} />
-              <Route path="vendors" element={<AdminVendors />} />
-              <Route path="buyers" element={<AdminBuyers />} />
-              <Route path="compliance" element={<AdminCompliance />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="documents" element={<AdminDocuments />} />
-              <Route path="workflow" element={<AdminWorkflow />} />
-              <Route path="os-pay" element={<AdminOSPay />} />
-              <Route path="payout" element={<AdminPayout />} />
-              <Route path="audit" element={<AdminAudit />} />
-              <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
+              {/* Admin Dashboard */}
+              <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+              <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
+              <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
+              <Route path="/trustlock/admin" element={
+                <ProtectedRoute loginPath="/trustlock/admin/login" allowTestnet testnetKey="tl_admin_auth">
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<AdminOverview />} />
+                <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="disputes" element={<AdminDisputes />} />
+                <Route path="emmanuel" element={<AdminEmmanuel />} />
+                <Route path="vendors" element={<AdminVendors />} />
+                <Route path="buyers" element={<AdminBuyers />} />
+                <Route path="compliance" element={<AdminCompliance />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="documents" element={<AdminDocuments />} />
+                <Route path="workflow" element={<AdminWorkflow />} />
+                <Route path="os-pay" element={<AdminOSPay />} />
+                <Route path="payout" element={<AdminPayout />} />
+                <Route path="audit" element={<AdminAudit />} />
+                <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
 
-            {/* Vendor Dashboard */}
-            <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
-            <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
-            <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
-            <Route path="/trustlock/vendor" element={
-              <ProtectedRoute loginPath="/trustlock/vendor/login" allowTestnet testnetKey="tl_vendor_auth">
-                <VendorLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<VendorOverview />} />
-              <Route path="bill-payments" element={<VendorBillPayments />} />
-              <Route path="transactions" element={<VendorTransactions />} />
-              <Route path="payouts" element={<VendorPayouts />} />
-              <Route path="sites" element={<VendorSites />} />
-              <Route path="kyc" element={<VendorKYC />} />
-              <Route path="assistant" element={<VendorAssistant />} />
-              <Route path="documents" element={<VendorDocuments />} />
-              <Route path="help" element={<VendorHelpCenter />} />
-              <Route path="pricing" element={<VendorPricing />} />
-              <Route path="checkout" element={<VendorCheckout />} />
-              <Route path="analytics" element={<VendorAnalytics />} />
-              <Route path="os-pay" element={<VendorOSPay />} />
-              <Route path="payout" element={<VendorPayout />} />
-              <Route path="standalone-links" element={<VendorStandaloneLinks />} />
-              <Route path="teams" element={<VendorTeams />} />
-              <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
-              <Route path="settings" element={<VendorSettings />} />
-            </Route>
+              {/* Vendor Dashboard */}
+              <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
+              <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
+              <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
+              <Route path="/trustlock/vendor" element={
+                <ProtectedRoute loginPath="/trustlock/vendor/login" allowTestnet testnetKey="tl_vendor_auth">
+                  <VendorLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<VendorOverview />} />
+                <Route path="bill-payments" element={<VendorBillPayments />} />
+                <Route path="transactions" element={<VendorTransactions />} />
+                <Route path="payouts" element={<VendorPayouts />} />
+                <Route path="sites" element={<VendorSites />} />
+                <Route path="kyc" element={<VendorKYC />} />
+                <Route path="assistant" element={<VendorAssistant />} />
+                <Route path="documents" element={<VendorDocuments />} />
+                <Route path="help" element={<VendorHelpCenter />} />
+                <Route path="pricing" element={<VendorPricing />} />
+                <Route path="checkout" element={<VendorCheckout />} />
+                <Route path="analytics" element={<VendorAnalytics />} />
+                <Route path="os-pay" element={<VendorOSPay />} />
+                <Route path="payout" element={<VendorPayout />} />
+                <Route path="standalone-links" element={<VendorStandaloneLinks />} />
+                <Route path="teams" element={<VendorTeams />} />
+                <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
+                <Route path="settings" element={<VendorSettings />} />
+              </Route>
 
-            {/* Buyer Dashboard */}
-            <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
-            <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
-            <Route path="/trustlock/buyer" element={
-              <ProtectedRoute loginPath="/trustlock/buyer/login" allowTestnet testnetKey="tl_buyer_auth">
-                <BuyerLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<BuyerOverview />} />
-              <Route path="bill-payments" element={<BuyerBillPayments />} />
-              <Route path="orders" element={<BuyerOrders />} />
-              <Route path="disputes" element={<BuyerDisputes />} />
-              <Route path="assistant" element={<BuyerAssistant />} />
-              <Route path="documents" element={<BuyerDocuments />} />
-              <Route path="help" element={<BuyerHelpCenter />} />
-              <Route path="analytics" element={<BuyerAnalytics />} />
-              <Route path="os-pay" element={<BuyerOSPay />} />
-              <Route path="payout" element={<BuyerPayout />} />
-              <Route path="teams" element={<BuyerTeams />} />
-              <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
-              <Route path="settings" element={<BuyerSettings />} />
-            </Route>
+              {/* Buyer Dashboard */}
+              <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+              <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
+              <Route path="/trustlock/buyer" element={
+                <ProtectedRoute loginPath="/trustlock/buyer/login" allowTestnet testnetKey="tl_buyer_auth">
+                  <BuyerLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<BuyerOverview />} />
+                <Route path="bill-payments" element={<BuyerBillPayments />} />
+                <Route path="orders" element={<BuyerOrders />} />
+                <Route path="disputes" element={<BuyerDisputes />} />
+                <Route path="assistant" element={<BuyerAssistant />} />
+                <Route path="documents" element={<BuyerDocuments />} />
+                <Route path="help" element={<BuyerHelpCenter />} />
+                <Route path="analytics" element={<BuyerAnalytics />} />
+                <Route path="os-pay" element={<BuyerOSPay />} />
+                <Route path="payout" element={<BuyerPayout />} />
+                <Route path="teams" element={<BuyerTeams />} />
+                <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
+                <Route path="settings" element={<BuyerSettings />} />
+              </Route>
 
-            {/* Standalone Confirmation Page (no login required) */}
-            <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
-
-            {/* P2P Public Checkout Page (no login required) */}
-            <Route path="/pay/:linkId" element={<PublicCheckout />} />
-
-            {/* Read-Only Audit Portal (token-based access) */}
-            <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
-
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+              <Route path="/pay/:linkId" element={<PublicCheckout />} />
+              <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
