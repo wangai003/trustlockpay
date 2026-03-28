@@ -154,6 +154,9 @@ const VendorDocuments = () => {
           )}
         </Card>
 
+        {/* ── My Protection Documents ─── */}
+        <VendorProtectionDocsSection />
+
         {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Vendor Reference Library</h2>
