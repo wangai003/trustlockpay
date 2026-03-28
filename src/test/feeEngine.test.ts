@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateFeesV2,
   selectProcessor,
+  getEligibleProcessors,
   PROCESSORS,
   AZIX_WALLETS,
   getFeeRangeForType,
@@ -10,42 +11,79 @@ import {
 } from "@/lib/feeEngine";
 
 describe("Fee Engine V2", () => {
-  describe("selectProcessor", () => {
+  describe("selectProcessor (cost-optimized)", () => {
     it("returns direct for crypto transactions", () => {
       expect(selectProcessor("US", true)).toBe("direct");
     });
 
-    it("returns yellow_card for African countries", () => {
-      expect(selectProcessor("Nigeria", false)).toBe("yellow_card");
-      expect(selectProcessor("Kenya", false)).toBe("yellow_card");
-      expect(selectProcessor("Ghana", false)).toBe("yellow_card");
+    it("picks cheapest processor for African countries (coinbase/transak at 1.5%)", () => {
+      const result = selectProcessor("Nigeria", false);
+      // Both coinbase and transak are 1.5% — either is valid
+      expect(["coinbase", "transak"]).toContain(result);
     });
 
-    it("returns coinbase for supported non-African regions", () => {
-      expect(selectProcessor("US", false)).toBe("coinbase");
-      expect(selectProcessor("EU", false)).toBe("coinbase");
+    it("picks cheapest for US (coinbase/transak at 1.5% beats stripe at 2.9%)", () => {
+      const result = selectProcessor("US", false);
+      expect(["coinbase", "transak"]).toContain(result);
     });
 
-    it("returns stripe for unsupported regions", () => {
-      expect(selectProcessor("Japan", false)).toBe("stripe");
+    it("falls back to stripe for regions only stripe covers", () => {
+      // Japan is only in stripe's region list
+      expect(selectProcessor("JP", false)).toBe("stripe");
     });
 
     it("respects processorHint override", () => {
       expect(selectProcessor("Nigeria", false, "stripe")).toBe("stripe");
+    });
+
+    it("selects by payment method — mobile_money excludes stripe", () => {
+      const result = selectProcessor("Kenya", false, undefined, "mobile_money");
+      expect(["coinbase", "transak"]).toContain(result);
+    });
+
+    it("selects crypto method → direct", () => {
+      const result = selectProcessor("US", false, undefined, "crypto");
+      expect(result).toBe("direct");
+    });
+  });
+
+  describe("getEligibleProcessors", () => {
+    it("returns multiple candidates sorted by combined rate", () => {
+      const eligible = getEligibleProcessors("US", "card", "checkout_fiat");
+      expect(eligible.length).toBeGreaterThan(1);
+      // Should be sorted ascending
+      for (let i = 1; i < eligible.length; i++) {
+        expect(eligible[i].combinedRate).toBeGreaterThanOrEqual(eligible[i - 1].combinedRate);
+      }
+    });
+
+    it("excludes stripe for mobile_money", () => {
+      const eligible = getEligibleProcessors("Nigeria", "mobile_money", "checkout_fiat");
+      const ids = eligible.map(e => e.id);
+      expect(ids).not.toContain("stripe");
+      expect(ids.length).toBeGreaterThan(0);
+    });
+
+    it("returns only direct for crypto method", () => {
+      const eligible = getEligibleProcessors("US", "crypto", "checkout_crypto");
+      const ids = eligible.map(e => e.id);
+      expect(ids).toContain("direct");
+      // direct should be cheapest
+      expect(eligible[0].id).toBe("direct");
     });
   });
 
   describe("calculateFeesV2", () => {
     it("calculates checkout_fiat fees correctly", () => {
       const result = calculateFeesV2(100, "checkout_fiat", "stripe");
-      expect(result.trustlockFee).toBe(1.5);        // 1.5%
-      expect(result.processorFee).toBe(2.9);         // Stripe 2.9%
-      expect(result.escrowFee).toBe(0.5);            // 0.5%
+      expect(result.trustlockFee).toBe(1.5);
+      expect(result.processorFee).toBe(2.9);
+      expect(result.escrowFee).toBe(0.5);
       expect(result.gasFee).toBe(0.02);
       expect(result.totalFees).toBeCloseTo(4.92, 2);
       expect(result.netAmount).toBeCloseTo(95.08, 2);
-      expect(result.transactionWalletReceives).toBe(2); // 1.5 platform + 0.5 trickled escrow
-      expect(result.escrowWalletReceives).toBe(0); // Escrow forwards all fees
+      expect(result.transactionWalletReceives).toBe(2);
+      expect(result.escrowWalletReceives).toBe(0);
       expect(result.feeTrickleToTransactionWallet).toBe(0.5);
     });
 
@@ -71,9 +109,8 @@ describe("Fee Engine V2", () => {
       const result = calculateFeesV2(1000, "split_payout", "coinbase", {
         splitVendorShare: 0.6,
       });
-      // Escrow 1% on vendor's $600 = $6
       expect(result.escrowFee).toBe(6);
-      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.escrowWalletReceives).toBe(0);
       expect(result.feeTrickleToTransactionWallet).toBe(6);
       expect(result.trickleRule).toBe("vendor_share_only");
     });
@@ -81,23 +118,23 @@ describe("Fee Engine V2", () => {
     it("handles zero amount without division errors", () => {
       const result = calculateFeesV2(0, "checkout_fiat", "stripe");
       expect(result.feePercentage).toBe(0);
-      expect(result.totalFees).toBeCloseTo(0.02); // gas only
+      expect(result.totalFees).toBeCloseTo(0.02);
     });
 
     it("os_payment has no escrow fee", () => {
       const result = calculateFeesV2(50, "os_payment", "stripe");
       expect(result.escrowFee).toBe(0);
-      expect(result.trustlockFee).toBe(0.75); // 1.5%
+      expect(result.trustlockFee).toBe(0.75);
     });
 
     it("release_to_vendor charges only escrow fee", () => {
       const result = calculateFeesV2(500, "release_to_vendor", "direct");
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
-      expect(result.escrowFee).toBe(5); // 1%
-      expect(result.escrowWalletReceives).toBe(0); // Forwarded to transaction wallet
+      expect(result.escrowFee).toBe(5);
+      expect(result.escrowWalletReceives).toBe(0);
       expect(result.feeTrickleToTransactionWallet).toBe(5);
-      expect(result.transactionWalletReceives).toBe(5); // 0 platform + 5 trickled
+      expect(result.transactionWalletReceives).toBe(5);
     });
   });
 
@@ -119,12 +156,22 @@ describe("Fee Engine V2", () => {
         expect(typeof config.feeRate).toBe("number");
         expect(config.feeRate).toBeGreaterThanOrEqual(0);
         expect(config.regions.length).toBeGreaterThan(0);
+        expect(config.supportedMethods.length).toBeGreaterThan(0);
       }
     });
 
     it("direct processor has 0% fee", () => {
       expect(PROCESSORS.direct.feeRate).toBe(0);
       expect(PROCESSORS.direct.supportsFiat).toBe(false);
+    });
+
+    it("only 3 active processors plus direct", () => {
+      const ids = Object.keys(PROCESSORS);
+      expect(ids).toContain("stripe");
+      expect(ids).toContain("coinbase");
+      expect(ids).toContain("transak");
+      expect(ids).toContain("direct");
+      expect(ids.length).toBe(4);
     });
   });
 
