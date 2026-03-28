@@ -226,7 +226,7 @@ const VendorTeams = () => {
     setTaskKey("");
     setTaskLabel("");
     setTaskInstructions("");
-    fetchTasks(selectedWs.id);
+    fetchTasks(selectedWs.id, isOwner, myMembership);
   };
 
   const updateWorkspaceStatus = async (status: string) => {
