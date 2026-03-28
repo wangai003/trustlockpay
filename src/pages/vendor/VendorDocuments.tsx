@@ -4,12 +4,15 @@ import VendorHeader from "@/components/vendor/VendorHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, ExternalLink, Clock, Eye, Shield, PenLine, Handshake } from "lucide-react";
+import { FileText, Download, ExternalLink, Clock, Eye, Shield, PenLine, Handshake, FolderArchive, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import DocumentUpload from "@/components/shared/DocumentUpload";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const docs = [
   { title: "Vendor Terms of Service", desc: "Your agreement with TrustLock — escrow rules, fee schedule, dispute procedures.", updated: "Mar 2026" },
