@@ -270,43 +270,51 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
           </div>
 
-          {/* ─── SEED TOKEN + WALLET LINK (vendor/buyer only) ─── */}
+          {/* ─── SEED TOKEN (auto-linked, read-only) ─── */}
           {!isAdmin && (
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
-              <p className="text-xs font-semibold">Transaction Fee Wallet Link</p>
+              <p className="text-xs font-semibold">Transaction Fee Wallet</p>
+              {seedTokenLinked && <Badge className="text-[10px] bg-primary/20 text-primary border-0 ml-auto">✓ Auto-Linked</Badge>}
+              {!seedTokenLinked && <Badge variant="outline" className="text-[10px] ml-auto animate-pulse">Linking...</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Platform service payments route to the Azix Transaction Fee Wallet. This is separate from the Escrow Wallet used for payouts.
+              Your seed token is automatically generated and linked to the Azix Transaction Fee Wallet. No action needed.
             </p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Pay seed token (auto-generated)"
-                value={seedToken}
-                readOnly
-                className="font-mono text-xs bg-muted flex-1"
-              />
-              <Button
-                size="sm"
-                variant={seedTokenLinked ? "outline" : "default"}
-                onClick={handleLinkSeedToken}
-                disabled={seedTokenLinked || getSeedToken.isPending}
-                className="shrink-0 text-xs"
-              >
-                {getSeedToken.isPending ? "Linking..." : seedTokenLinked ? "✓ Linked" : "Link Token"}
-              </Button>
+            <Input
+              value={seedToken || "Generating..."}
+              readOnly
+              className="font-mono text-xs bg-muted"
+            />
+            <div className="p-2 rounded bg-muted text-[10px]">
+              <p className="text-muted-foreground">Routing to → <span className="font-semibold text-foreground">{AZIX_WALLETS.transaction.label}</span></p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
             </div>
-            {seedTokenLinked && (
-              <div className="text-[10px]">
-                <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Routing to → Azix Transaction Fee Wallet</p>
-                  <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
-                  <p className="text-muted-foreground mt-1">{AZIX_WALLETS.transaction.purpose}</p>
-                </div>
-              </div>
-            )}
           </div>
+          )}
+
+          {/* ─── COUNTRY SELECTOR (for local mode bank/mobile) ─── */}
+          {!isAdmin && payMode === "local" && (method === "bank_transfer" || method === "mobile_money") && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Your Country</Label>
+              <select
+                value={selectedCountry}
+                onChange={e => { setSelectedCountry(e.target.value); setBankName(""); setMobileProvider(""); }}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select country...</option>
+                <option value="NG">Nigeria</option>
+                <option value="KE">Kenya</option>
+                <option value="GH">Ghana</option>
+                <option value="ZA">South Africa</option>
+                <option value="CM">Cameroon</option>
+                <option value="EG">Egypt</option>
+                <option value="UG">Uganda</option>
+                <option value="TZ">Tanzania</option>
+                <option value="RW">Rwanda</option>
+              </select>
+            </div>
           )}
 
           {/* ─── ADMIN ACTIONS ─── */}
