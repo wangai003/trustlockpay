@@ -268,42 +268,44 @@ const VendorTeams = () => {
           )}
         </div>
 
-        {/* Members Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Team Members</CardTitle>
-            {selectedWs.status === "active" && (
-              <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No members added yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {members.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Finalizer</Label>
-                        <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+        {/* Members Section — only visible to Team Lead */}
+        {isOwner && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Team Members</CardTitle>
+              {selectedWs.status === "active" && (
+                <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {members.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No members added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                      <div>
+                        <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
                       </div>
-                      {selectedWs.status === "active" && (
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Finalizer</Label>
+                          <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+                        </div>
+                        {selectedWs.status === "active" && (
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Task Assignments */}
         <Card>
