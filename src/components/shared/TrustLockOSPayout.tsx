@@ -23,11 +23,10 @@ import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import {
   type PaymentProvider,
-  calculateFees,
   PRIVACY_DISCLAIMER,
   FEE_DISCLOSURE,
 } from "@/lib/paymentProviders";
-import { AZIX_WALLETS } from "@/lib/feeEngine";
+import { AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import {
   useGetOrCreateSeedToken,
   useInitiatePayout,
