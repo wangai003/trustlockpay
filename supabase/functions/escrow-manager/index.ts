@@ -206,6 +206,8 @@ async function lockFunds(body: Record<string, unknown>) {
     buyer_id, vendor_id, amount, item,
     buyer_name, vendor_name, buyer_location, vendor_location,
     industry, processor = "direct", payment_type = "checkout_crypto",
+    locked_price, price_currency, commodity_unit, commodity_quantity,
+    corridor_route, settlement_currency,
   } = body;
 
   if (!buyer_id || !vendor_id || !amount) {
@@ -237,6 +239,15 @@ async function lockFunds(body: Record<string, unknown>) {
       status: "locked",
       type: "product",
       auto_release_date: autoRelease,
+      // Phase 1: Commodity price snapshot at order creation
+      locked_price: locked_price ? Number(locked_price) : numAmount,
+      price_currency: price_currency ? String(price_currency) : "USD",
+      price_snapshot_at: new Date().toISOString(),
+      commodity_unit: commodity_unit ? String(commodity_unit) : null,
+      commodity_quantity: commodity_quantity ? Number(commodity_quantity) : null,
+      // Corridor analytics
+      corridor_route: corridor_route ? String(corridor_route) : null,
+      settlement_currency: settlement_currency ? String(settlement_currency) : "USD",
     })
     .select()
     .single();
