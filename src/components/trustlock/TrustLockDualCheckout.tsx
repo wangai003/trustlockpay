@@ -239,8 +239,7 @@ const TrustLockDualCheckout = () => {
                       setCryptoVerifyStatus("verifying");
                       await new Promise(r => setTimeout(r, 2500));
                       const amt = parseFloat(checkoutSenderAmount) || 0;
-                      if (amt > 0 && amt < 100) { setCryptoVerifyStatus("verified"); } 
-                      else if (amt >= 100) { setCryptoVerifyStatus("pending"); } 
+                      if (amt > 0) { setCryptoVerifyStatus("verified"); } 
                       else { setCryptoVerifyStatus("failed"); }
                     }}>
                     {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." : "Verify & Generate Order"}
