@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Shield, CreditCard, Smartphone, Building2, Globe, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ProviderSearch from "@/components/shared/ProviderSearch";
@@ -27,6 +28,7 @@ const TrustLockDualCheckout = () => {
   const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [polygonConfirmed, setPolygonConfirmed] = useState(false);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
@@ -188,19 +190,43 @@ const TrustLockDualCheckout = () => {
                     </div>
                   </div>
 
-                  {/* Token Selector */}
-                  <div className="flex items-center gap-2">
-                    <p className="text-[10px] font-semibold text-muted-foreground">Token:</p>
-                    <button onClick={() => setCheckoutToken("USDC")} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDC</button>
-                    <button onClick={() => setCheckoutToken("USDT")} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDT</button>
-                    <span className="text-[9px] text-muted-foreground">on Polygon (Chain ID: 137)</span>
+                  {/* Step 1: Token Selector */}
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-semibold text-muted-foreground">Step 1 — Select Stablecoin:</p>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { setCheckoutToken("USDC"); setPolygonConfirmed(false); }} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDC</button>
+                      <button onClick={() => { setCheckoutToken("USDT"); setPolygonConfirmed(false); }} className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>USDT</button>
+                      <span className="text-[9px] text-muted-foreground">on Polygon (Chain ID: 137)</span>
+                    </div>
                   </div>
 
-                  <p className="text-[9px] text-destructive font-medium">⚠️ Only send {checkoutToken} on Polygon. Other networks = permanent loss.</p>
+                  {/* Step 2: Polygon Confirmation Gate */}
+                  <div className="p-2 rounded-lg border-2 border-destructive/30 bg-destructive/5 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground">Step 2 — Confirm Network</p>
+                    <p className="text-[9px] text-destructive font-medium">⚠️ Sending {checkoutToken} on any other network (Ethereum, BSC, Arbitrum, Solana, etc.) may result in permanent loss. TrustLock is not responsible for recovery.</p>
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="polygon-confirm-checkout"
+                        checked={polygonConfirmed}
+                        onCheckedChange={(v) => setPolygonConfirmed(v === true)}
+                        className="mt-0.5"
+                      />
+                      <label htmlFor="polygon-confirm-checkout" className="text-[9px] font-semibold text-foreground leading-tight cursor-pointer">
+                        I confirm I am sending <strong>{checkoutToken}</strong> on the <strong>Polygon (MATIC)</strong> network.
+                      </label>
+                    </div>
+                  </div>
 
+                  {!polygonConfirmed && (
+                    <div className="p-1.5 rounded bg-muted text-center">
+                      <p className="text-[9px] text-muted-foreground">✋ Confirm Polygon network above to reveal the wallet address.</p>
+                    </div>
+                  )}
+
+                  {polygonConfirmed && (<>
                   {/* Locked Receiving Wallet + Copy */}
                   <div className="space-y-1">
-                    <p className="text-[10px] font-semibold">Azix Receiving Wallet <span className="text-destructive">(Locked)</span></p>
+                    <p className="text-[10px] font-semibold">Step 3 — Send to Azix Wallet <span className="text-destructive">(Locked)</span></p>
                     <div className="relative">
                       <Input value={AZIX_WALLETS.transaction.publicKey} readOnly className="bg-muted font-mono text-[10px] pr-16 cursor-not-allowed border-2 border-primary/30" tabIndex={-1} />
                       <Button type="button" size="sm" variant="outline" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 px-2 gap-1 text-[9px]"
@@ -323,6 +349,7 @@ const TrustLockDualCheckout = () => {
                       <strong>⚠️ Important:</strong> Your exchange or self-custody wallet may charge a network/withdrawal fee that is <strong>deducted from the amount you send</strong>. If this happens, the full escrow obligation may not be met. Consider sending slightly more than the required total to ensure the exact amount arrives.
                     </p>
                   </div>
+                  </>)}
                 </div>
               )}
 

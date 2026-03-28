@@ -9,6 +9,7 @@ import {
   Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
   Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
@@ -106,6 +107,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [polygonConfirmed, setPolygonConfirmed] = useState(false);
 
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
@@ -505,51 +507,72 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 </div>
               </div>
 
-              {/* ── Network & Token Selection ── */}
+              {/* ── Step 1: Select Token ── */}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">Network & Token</Label>
+                <Label className="text-xs font-semibold">Step 1 — Select Your Stablecoin</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
-                    <p className="text-[10px] font-bold text-primary">Network</p>
-                    <p className="text-xs font-semibold">Polygon (MATIC)</p>
-                    <p className="text-[10px] text-muted-foreground">Chain ID: 137</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-primary text-center">Select Token</p>
-                    <div className="grid grid-cols-2 gap-1">
-                      <button
-                        onClick={() => setSelectedToken("USDC")}
-                        className={cn(
-                          "p-1.5 rounded-lg border-2 text-center text-[10px] font-semibold transition-all",
-                          selectedToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-muted-foreground/40"
-                        )}
-                      >
-                        USDC
-                      </button>
-                      <button
-                        onClick={() => setSelectedToken("USDT")}
-                        className={cn(
-                          "p-1.5 rounded-lg border-2 text-center text-[10px] font-semibold transition-all",
-                          selectedToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-muted-foreground/40"
-                        )}
-                      >
-                        USDT
-                      </button>
-                    </div>
-                    <p className="text-[9px] text-muted-foreground font-mono text-center">
-                      {selectedToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-[10px] text-destructive font-medium">
-                  ⚠️ Only send {selectedToken} on Polygon network. Sending on other networks will result in <strong>permanent loss of funds</strong>.
-                </p>
-                <div className="p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
-                  <p><strong>From an exchange (Coinbase, Binance, Kraken, Luno):</strong> Go to Withdraw → select {selectedToken} → choose <strong>"Polygon"</strong> or <strong>"MATIC"</strong> network → paste address below → enter amount → confirm.</p>
-                  <p><strong>From a self-custody wallet (MetaMask, Trust Wallet):</strong> Switch to Polygon network → Send → paste address → enter amount → confirm.</p>
-                  <p><strong>Need {selectedToken} on Polygon?</strong> Use Polygon Bridge or Jumper Exchange to bridge from Ethereum/BSC.</p>
+                  <button
+                    onClick={() => { setSelectedToken("USDC"); setPolygonConfirmed(false); }}
+                    className={cn(
+                      "p-2.5 rounded-lg border-2 text-center transition-all",
+                      selectedToken === "USDC" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/40"
+                    )}
+                  >
+                    <p className="text-xs font-bold">USDC</p>
+                    <p className="text-[9px] text-muted-foreground font-mono">0x3c499...b8f0</p>
+                  </button>
+                  <button
+                    onClick={() => { setSelectedToken("USDT"); setPolygonConfirmed(false); }}
+                    className={cn(
+                      "p-2.5 rounded-lg border-2 text-center transition-all",
+                      selectedToken === "USDT" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/40"
+                    )}
+                  >
+                    <p className="text-xs font-bold">USDT</p>
+                    <p className="text-[9px] text-muted-foreground font-mono">0xc2132...1eFB</p>
+                  </button>
                 </div>
               </div>
+
+              {/* ── Step 2: Confirm Polygon Network ── */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Step 2 — Confirm Network</Label>
+                <div className="p-3 rounded-lg border-2 border-destructive/40 bg-destructive/5 space-y-2">
+                  <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
+                    <p className="text-[10px] font-bold text-primary">Required Network</p>
+                    <p className="text-sm font-bold">Polygon (MATIC)</p>
+                    <p className="text-[10px] text-muted-foreground">Chain ID: 137</p>
+                  </div>
+                  <p className="text-[10px] text-destructive font-semibold">
+                    ⚠️ Sending {selectedToken} on any other network (Ethereum, BSC, Arbitrum, Solana, Tron, etc.) may result in permanent loss of funds. TrustLock is not responsible for recovery.
+                  </p>
+                  <div className="p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
+                    <p><strong>From an exchange (Coinbase, Binance, Kraken, Luno):</strong> Go to Withdraw → select <strong>{selectedToken}</strong> → choose <strong>"Polygon"</strong> or <strong>"MATIC"</strong> network → paste address → enter amount → confirm.</p>
+                    <p><strong>From a self-custody wallet (MetaMask, Trust Wallet):</strong> Switch to Polygon network → Send → paste address → enter amount → confirm.</p>
+                    <p><strong>Need {selectedToken} on Polygon?</strong> Use Polygon Bridge or Jumper Exchange to bridge from Ethereum/BSC.</p>
+                  </div>
+                  <div className="flex items-start gap-2 pt-1">
+                    <Checkbox
+                      id="polygon-confirm-ospay"
+                      checked={polygonConfirmed}
+                      onCheckedChange={(v) => setPolygonConfirmed(v === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="polygon-confirm-ospay" className="text-[10px] font-semibold text-foreground leading-tight cursor-pointer">
+                      I confirm I am sending <strong>{selectedToken}</strong> on the <strong>Polygon (MATIC)</strong> network. I understand sending on other networks may result in permanent loss of funds.
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {!polygonConfirmed && (
+                <div className="p-2 rounded-lg bg-muted text-center">
+                  <p className="text-[10px] text-muted-foreground">✋ Confirm Polygon network above to reveal the receiving wallet address and payment fields.</p>
+                </div>
+              )}
+
+              {polygonConfirmed && (<>
+              {/* Step 3 content continues below */}
 
               {/* ── Azix Receiving Wallet (LOCKED + COPY) ── */}
               <div className="space-y-1">
@@ -770,6 +793,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
 
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
+              </>)}
             </div>
           )}
 
