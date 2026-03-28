@@ -29,7 +29,9 @@ export type TransactionType =
   | "os_payment";          // Internal OS service payment (plans, reports, AI)
 
 // ─── Processor Configuration ──────────────────────────────
-export type ProcessorId = "stripe" | "coinbase" | "yellow_card" | "transak" | "thirdweb" | "direct";
+export type ProcessorId = "stripe" | "coinbase" | "transak" | "direct";
+
+export type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
 
 export interface ProcessorConfig {
   name: string;
@@ -39,6 +41,7 @@ export interface ProcessorConfig {
   regions: string[];        // primary operating regions
   onRamp: boolean;          // fiat → crypto
   offRamp: boolean;         // crypto → fiat
+  supportedMethods: PaymentMethod[];  // what payment methods this processor handles
 }
 
 export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
@@ -47,32 +50,24 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     feeRate: 2.9,
     supportsFiat: true,
     supportsCrypto: false,
-    regions: ["US", "EU", "UK", "CA", "AU", "global"],
+    regions: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"],
     onRamp: true,
     offRamp: false,
+    supportedMethods: ["card", "bank_transfer"],
   },
   coinbase: {
     name: "Coinbase",
     feeRate: 1.5,
     supportsFiat: true,
     supportsCrypto: true,
-    regions: ["US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa", "global"],
-    onRamp: true,
-    offRamp: true,
-  },
-  yellow_card: {
-    name: "Yellow Card",
-    feeRate: 2.0,
-    supportsFiat: true,
-    supportsCrypto: true,
     regions: [
+      "US", "EU", "UK",
       "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
-      "Senegal", "Mali", "Cote d'Ivoire", "Burkina Faso", "Benin", "Togo",
-      "DR Congo", "Uganda", "Tanzania", "Rwanda", "Mozambique", "Malawi",
-      "Niger", "Chad", "Guinea", "Madagascar", "Botswana", "Gambia", "Zambia",
+      "Uganda", "Tanzania", "Rwanda",
     ],
     onRamp: true,
     offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   transak: {
     name: "Transak",
@@ -80,23 +75,13 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     supportsFiat: true,
     supportsCrypto: true,
     regions: [
+      "US", "EU", "UK", "IN", "BR", "MX",
       "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt",
-      "US", "EU", "UK", "India", "global",
+      "global",
     ],
     onRamp: true,
     offRamp: true,
-  },
-  thirdweb: {
-    name: "Thirdweb",
-    feeRate: 1.0,
-    supportsFiat: true,
-    supportsCrypto: true,
-    regions: [
-      "US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa",
-      "India", "Brazil", "Mexico", "Argentina", "Colombia", "global",
-    ],
-    onRamp: true,
-    offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   direct: {
     name: "Direct (On-chain)",
@@ -106,6 +91,7 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     regions: ["global"],
     onRamp: false,
     offRamp: false,
+    supportedMethods: ["crypto"],
   },
 };
 
