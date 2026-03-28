@@ -168,23 +168,89 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
-              {/* Crypto Verification Protocol Alert */}
+              {/* Crypto Verification Protocol + Copy + TxID */}
               {isCrypto && selectedProvider && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-destructive">⚠️ Crypto Verification Required</p>
-                      <p className="text-[9px] text-foreground leading-relaxed">
-                        Before sending any large payment, you must first send a <strong>$1.00 USDC test transaction</strong> on <strong>Polygon network</strong> to the Azix receiving wallet. Contact <strong>support@azix.world</strong> with your sending address and TxID, then wait for confirmation before proceeding.
-                      </p>
-                      <div className="p-1.5 rounded bg-muted text-[9px] font-mono space-y-0.5">
-                        <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
-                        <p><strong>Token:</strong> USDC only</p>
-                        <p><strong>Owner:</strong> Azix</p>
-                        <p><strong>Support:</strong> support@azix.world</p>
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-destructive">⚠️ Crypto Verification Required</p>
+                        <p className="text-[9px] text-foreground leading-relaxed">
+                          Before sending any large payment, you must first send a <strong>$1.00 {checkoutToken} test transaction</strong> on <strong>Polygon network</strong> to the Azix receiving wallet. Contact <strong>support@azix.world</strong> with your sending address and TxID, then wait for confirmation before proceeding.
+                        </p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Token Selector */}
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] font-semibold text-muted-foreground">Token:</p>
+                    <button
+                      onClick={() => setCheckoutToken("USDC")}
+                      className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+                    >USDC</button>
+                    <button
+                      onClick={() => setCheckoutToken("USDT")}
+                      className={`px-2 py-1 rounded text-[10px] font-semibold border ${checkoutToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+                    >USDT</button>
+                    <span className="text-[9px] text-muted-foreground">on Polygon (Chain ID: 137)</span>
+                  </div>
+
+                  {/* Locked Receiving Wallet + Copy */}
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-semibold">Azix Receiving Wallet <span className="text-destructive">(Locked)</span></p>
+                    <div className="relative">
+                      <Input
+                        value={AZIX_WALLETS.transaction.publicKey}
+                        readOnly
+                        className="bg-muted font-mono text-[10px] pr-16 cursor-not-allowed border-2 border-primary/30"
+                        tabIndex={-1}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 px-2 gap-1 text-[9px]"
+                        onClick={() => {
+                          navigator.clipboard.writeText(AZIX_WALLETS.transaction.publicKey);
+                          setCopiedAddress(true);
+                          setTimeout(() => setCopiedAddress(false), 3000);
+                        }}
+                      >
+                        {copiedAddress ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                        {copiedAddress ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">Copy this address and paste it into your wallet or exchange withdrawal screen.</p>
+                  </div>
+
+                  {/* Sender Wallet */}
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Your Sending Wallet Address</Label>
+                    <Input placeholder="0x..." value={checkoutSenderWallet} onChange={e => setCheckoutSenderWallet(e.target.value)} className="mt-1 font-mono text-[10px]" />
+                  </div>
+
+                  {/* TxID + Amount Verification */}
+                  <div className="space-y-1.5 p-2 rounded-lg border border-primary/20 bg-primary/5">
+                    <p className="text-[10px] font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> After Sending — Paste Proof
+                    </p>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Transaction ID (TxID)</Label>
+                      <Input placeholder="0x... (66 chars)" value={checkoutTxId} onChange={e => setCheckoutTxId(e.target.value)} className="mt-0.5 font-mono text-[10px]" />
+                    </div>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Amount Sent ({checkoutToken})</Label>
+                      <Input type="number" placeholder="1.00" value={checkoutSenderAmount} onChange={e => setCheckoutSenderAmount(e.target.value)} className="mt-0.5 text-[10px]" />
+                    </div>
+                  </div>
+
+                  <div className="p-1.5 rounded bg-muted text-[9px] font-mono space-y-0.5">
+                    <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
+                    <p><strong>Token:</strong> {checkoutToken} ({checkoutToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"})</p>
+                    <p><strong>Owner:</strong> Azix</p>
+                    <p><strong>Support:</strong> support@azix.world</p>
                   </div>
                 </div>
               )}
