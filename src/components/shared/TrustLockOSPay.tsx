@@ -114,6 +114,49 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   }, [isAdmin]);
 
+  const parsedAmount = amount ? parseFloat(amount) : 0;
+  const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
+
+  // Dynamic fee calculation using the cost-optimization engine
+  const isCryptoMethod = method === "azix";
+  const feePaymentMethod: FeePaymentMethod = method === "mobile_money" ? "mobile_money"
+    : method === "bank_transfer" ? "bank_transfer"
+    : method === "azix" ? "crypto"
+    : "card";
+  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
+  const feeBreakdown = parsedAmount > 0 && !isAdmin
+    ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
+    : null;
+  const fee = isAdmin ? "0.00" : feeBreakdown ? feeBreakdown.trustlockFee.toFixed(2) : "0.00";
+  const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
+  const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
+
+  const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
+
+  /* ── Country-specific bank & mobile lists ── */
+  const COUNTRY_BANKS: Record<string, string[]> = {
+    NG: ["GTBank", "First Bank", "Zenith Bank", "Access Bank", "UBA", "Stanbic IBTC", "Fidelity Bank", "Sterling Bank", "Wema Bank", "Polaris Bank"],
+    KE: ["KCB Bank", "Equity Bank", "Co-operative Bank", "NCBA", "Absa Kenya", "Standard Chartered Kenya", "I&M Bank", "DTB Kenya"],
+    GH: ["GCB Bank", "Ecobank Ghana", "Stanbic Bank Ghana", "Fidelity Bank Ghana", "CalBank", "ADB Ghana", "Absa Ghana"],
+    ZA: ["Standard Bank", "FNB", "Absa", "Nedbank", "Capitec", "Investec", "African Bank"],
+    CM: ["Afriland First Bank", "Ecobank Cameroon", "Société Générale Cameroon", "UBA Cameroon", "BICEC"],
+    EG: ["National Bank of Egypt", "Banque Misr", "CIB Egypt", "QNB Alahli", "Banque du Caire"],
+  };
+
+  const COUNTRY_MOBILE: Record<string, string[]> = {
+    KE: ["M-Pesa (Safaricom)", "Airtel Money"],
+    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money"],
+    NG: ["OPay", "PalmPay", "Kuda"],
+    ZA: ["FNB eWallet", "Standard Bank Instant Money"],
+    UG: ["MTN Mobile Money", "Airtel Money"],
+    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money"],
+    CM: ["Orange Money", "MTN Mobile Money"],
+    RW: ["MTN Mobile Money", "Airtel Money"],
+  };
+
+  const bankList = COUNTRY_BANKS[selectedCountry] || [];
+  const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
+
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
