@@ -63,8 +63,17 @@ const BuyerTeams = () => {
 
   const fetchWorkspaces = async () => {
     setLoading(true);
-    const { data } = await supabase.from("team_workspaces").select("*").eq("owner_id", user!.id).eq("role", "buyer").order("created_at", { ascending: false });
-    setWorkspaces((data as any[]) || []);
+    const { data: owned } = await supabase.from("team_workspaces").select("*").eq("owner_id", user!.id).eq("role", "buyer").order("created_at", { ascending: false });
+    const { data: memberOf } = await supabase.from("team_members").select("workspace_id").eq("user_id", user!.id).is("removed_at", null);
+    const memberWsIds = (memberOf || []).map((m: any) => m.workspace_id);
+    const ownedIds = (owned || []).map((w: any) => w.id);
+    const missingIds = memberWsIds.filter((id: string) => !ownedIds.includes(id));
+    let allWorkspaces = [...(owned || [])] as Workspace[];
+    if (missingIds.length > 0) {
+      const { data: extra } = await supabase.from("team_workspaces").select("*").in("id", missingIds);
+      allWorkspaces = [...allWorkspaces, ...((extra || []) as Workspace[])];
+    }
+    setWorkspaces(allWorkspaces);
     setLoading(false);
   };
 
@@ -78,7 +87,17 @@ const BuyerTeams = () => {
     setTasks((data as any[]) || []);
   };
 
-  const openWorkspace = (ws: Workspace) => { setSelectedWs(ws); fetchMembers(ws.id); fetchTasks(ws.id); };
+  const openWorkspace = async (ws: Workspace) => {
+    setSelectedWs(ws);
+    const owner = ws.owner_id === user!.id;
+    setIsOwner(owner);
+    const { data: memberData } = await supabase.from("team_members").select("*").eq("workspace_id", ws.id).is("removed_at", null);
+    const mems = (memberData as any[]) || [];
+    setMembers(mems);
+    const myMem = mems.find((m: Member) => m.user_id === user!.id) || null;
+    setMyMembership(myMem);
+    fetchTasks(ws.id);
+  };
 
   const createWorkspace = async () => {
     if (!newTitle.trim()) return toast.error("Title is required");
