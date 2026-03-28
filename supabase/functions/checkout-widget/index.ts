@@ -243,6 +243,37 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     if (s && s.status === "pending") sessions.delete(sessionId);
   }, 30 * 60 * 1000);
 
+  // ── Crypto verification protocol ──
+  const cryptoVerification = isCrypto ? {
+    required: true,
+    testAmount: 1.00,
+    network: "Polygon (MATIC)",
+    chainId: 137,
+    token: "USDC",
+    tokenContract: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+    receivingWallet: AZIX_TRANSACTION_WALLET,
+    owner: "Azix Inc.",
+    supportEmail: "support@azix.world",
+    instructions: [
+      "Send exactly $1.00 in USDC on Polygon to the receiving wallet.",
+      "Email support@azix.world with your name, sending wallet address, and TxID.",
+      "Wait for Azix confirmation before sending the remaining balance.",
+      "Only send USDC on Polygon network — other networks will result in loss.",
+    ],
+  } : null;
+
+  // ── Notify admin of crypto checkout initiation ──
+  if (isCrypto) {
+    await supabase.from("notifications").insert({
+      user_id: String(vendorId),
+      type: "crypto_checkout",
+      title: `Crypto Checkout Initiated — $${numAmount.toLocaleString()}`,
+      message: `Buyer ${buyerName} (${buyerEmail}) initiated a crypto payment of $${numAmount.toLocaleString()} for "${item}". Verification protocol active — awaiting $1 test transaction confirmation via support@azix.world.`,
+      related_entity_type: "checkout_session",
+      related_entity_id: sessionId,
+    });
+  }
+
   return jsonResponse({
     success: true,
     checkoutSession: {
@@ -264,6 +295,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         autoSigned: contractResult.auto_signed || false,
         route: contractResult.route || null,
       } : null,
+      cryptoVerification,
     },
   });
 }
