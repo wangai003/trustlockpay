@@ -94,7 +94,6 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
     };
 
     if (geo) {
-      // Store GPS data via direct update since hook may not support new cols
       await supabase.from("transaction_milestones").update({
         gps_latitude: geo.latitude,
         gps_longitude: geo.longitude,
@@ -104,7 +103,11 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
       toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
     }
 
-    await updateMilestone.mutateAsync(updatePayload);
+    await updateMilestone.mutateAsync({
+      milestoneId,
+      userId,
+      status: "completed",
+    });
   };
 
   const handleReleaseMilestone = async (milestoneId: string) => {
