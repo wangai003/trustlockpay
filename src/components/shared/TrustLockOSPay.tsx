@@ -659,14 +659,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 </div>
               )}
 
-              {/* ── PENDING STATE — Admin review for $100+ ── */}
+              {/* ── PENDING STATE — Verification not yet confirmed on-chain ── */}
               {cryptoVerifyStatus === "pending" && (
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
                   <p className="text-xs font-bold text-accent flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4" /> Payment Pending Verification
+                    <AlertTriangle className="w-4 h-4" /> Payment Pending On-Chain Confirmation
                   </p>
                   <p className="text-[10px] text-foreground">
-                    For transactions of <strong>$100 or more</strong>, our team manually verifies the on-chain transfer. Please provide your contact details so we can reach you with confirmation.
+                    Your transaction could not be confirmed automatically. This may happen if the transfer is still processing on the blockchain. Please provide your contact details so our team can investigate and reach you.
                   </p>
                   <div>
                     <Label className="text-[10px] text-muted-foreground">Your Full Name</Label>
