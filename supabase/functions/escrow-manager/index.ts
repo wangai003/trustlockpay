@@ -18,9 +18,41 @@ const FEE_RULES = {
 const PROCESSOR_RATES: Record<string, number> = {
   stripe: 2.9,
   coinbase: 1.5,
-  yellow_card: 2.0,
   transak: 1.5,
   direct: 0,
+};
+
+// ─── AML / Compliance Thresholds ──────────────────────────
+const AML_THRESHOLDS = {
+  FATF_TRAVEL_RULE_CRYPTO: 1_000,
+  EDD_THRESHOLD: 3_000,
+  CTR_REPORTING: 10_000,
+  STRUCTURING_BAND_LOW: 7_500,
+} as const;
+
+// ─── Processor Transaction Limits (by KYC tier) ──────────
+type KycTier = "none" | "basic" | "intermediate" | "full";
+
+const PROCESSOR_LIMITS: Record<string, {
+  minPerTx: number;
+  maxPerTx: Record<KycTier, number>;
+}> = {
+  stripe: {
+    minPerTx: 0.50,
+    maxPerTx: { none: 500, basic: 10_000, intermediate: 250_000, full: 999_999 },
+  },
+  coinbase: {
+    minPerTx: 1.00,
+    maxPerTx: { none: 300, basic: 7_500, intermediate: 50_000, full: 250_000 },
+  },
+  transak: {
+    minPerTx: 1.00,
+    maxPerTx: { none: 100, basic: 500, intermediate: 15_000, full: 50_000 },
+  },
+  direct: {
+    minPerTx: 0.01,
+    maxPerTx: { none: 50_000, basic: 250_000, intermediate: 1_000_000, full: 10_000_000 },
+  },
 };
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -198,6 +230,88 @@ async function logAuditAction(
   );
 }
 
+// ─── Compliance Pre-Check (runs before lockFunds/releaseFunds) ──
+async function runCompliancePreCheck(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  userId: string,
+  amount: number,
+  processorId: string,
+  paymentType: string,
+): Promise<{ allowed: boolean; errors: string[]; amlFlags: string[] }> {
+  const errors: string[] = [];
+  const amlFlags: string[] = [];
+
+  // 1) Processor transaction limit check
+  const limits = PROCESSOR_LIMITS[processorId] || PROCESSOR_LIMITS.direct;
+  const kycTier: KycTier = await getUserKycTier(supabase, userId);
+
+  if (amount < limits.minPerTx) {
+    errors.push(`Amount $${amount} below ${processorId} minimum of $${limits.minPerTx}`);
+  }
+  if (amount > limits.maxPerTx[kycTier]) {
+    errors.push(`Amount $${amount.toLocaleString()} exceeds ${processorId} per-transaction limit of $${limits.maxPerTx[kycTier].toLocaleString()} for ${kycTier} KYC tier`);
+  }
+
+  // 2) AML threshold flags
+  const isCrypto = paymentType.includes("crypto") || processorId === "direct";
+  if (isCrypto && amount >= AML_THRESHOLDS.FATF_TRAVEL_RULE_CRYPTO) {
+    amlFlags.push("FATF_TRAVEL_RULE: Crypto ≥$1,000 — originator/beneficiary ID required");
+  }
+  if (amount >= AML_THRESHOLDS.EDD_THRESHOLD) {
+    amlFlags.push("EDD_REQUIRED: Transaction ≥$3,000 — enhanced due diligence applies");
+  }
+  if (amount >= AML_THRESHOLDS.CTR_REPORTING) {
+    amlFlags.push("CTR_REPORTING: Transaction ≥$10,000 — mandatory currency transaction report");
+  }
+
+  // 3) Velocity check — call compliance-velocity if amount is significant
+  if (amount >= AML_THRESHOLDS.EDD_THRESHOLD) {
+    try {
+      const velocityUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/compliance-velocity`;
+      const vRes = await fetch(velocityUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ action: "check", user_id: userId, amount }),
+      });
+      const vData = await vRes.json();
+      if (vData.severity === "critical") {
+        errors.push(`Anti-structuring block: ${vData.flags?.[0]?.detail || "Suspicious pattern detected"}`);
+      } else if (vData.flags?.length > 0) {
+        for (const f of vData.flags) {
+          amlFlags.push(`${f.type}: ${f.detail}`);
+        }
+      }
+    } catch (e) {
+      console.error("Velocity check error:", e);
+      // Fail-open but flag
+      amlFlags.push("VELOCITY_CHECK_UNAVAILABLE: Manual review recommended");
+    }
+  }
+
+  return { allowed: errors.length === 0, errors, amlFlags };
+}
+
+async function getUserKycTier(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  userId: string
+): Promise<KycTier> {
+  // Determine tier from kyc_documents status
+  const { data: docs } = await supabase
+    .from("kyc_documents")
+    .select("status")
+    .eq("vendor_id", userId);
+
+  if (!docs || docs.length === 0) return "none";
+  const approved = docs.filter(d => d.status === "approved").length;
+  if (approved >= 4) return "full";
+  if (approved >= 2) return "intermediate";
+  if (approved >= 1) return "basic";
+  return "none";
+}
+
 // ─── Original Action Handlers ──────────────────────────────
 
 async function lockFunds(body: Record<string, unknown>) {
@@ -215,6 +329,42 @@ async function lockFunds(body: Record<string, unknown>) {
   }
 
   const numAmount = Number(amount);
+
+  // ── Compliance Pre-Check (processor limits + AML + velocity) ──
+  const compliance = await runCompliancePreCheck(
+    supabase,
+    String(buyer_id),
+    numAmount,
+    String(processor),
+    String(payment_type),
+  );
+
+  if (!compliance.allowed) {
+    return jsonResponse({
+      success: false,
+      blocked: true,
+      errors: compliance.errors,
+      amlFlags: compliance.amlFlags,
+      message: "Transaction blocked by compliance checks",
+    }, 403);
+  }
+
+  // Log AML flags (non-blocking) for audit trail
+  if (compliance.amlFlags.length > 0) {
+    for (const flag of compliance.amlFlags) {
+      const flagId = `ESC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      await supabase.from("compliance_flags").insert({
+        flag_id: flagId,
+        type: flag.split(":")[0]?.trim() || "aml_flag",
+        description: `Escrow lockFunds: ${flag}`,
+        severity: flag.includes("CTR") ? "high" : "medium",
+        status: "open",
+        related_buyer_id: String(buyer_id),
+        related_vendor_id: String(vendor_id),
+      });
+    }
+  }
+
   const feeType = payment_type === "checkout_fiat" ? "checkout_fiat" : "checkout_crypto";
   const fees = calculateFees(numAmount, feeType, String(processor));
   const txId = generateTxId();
@@ -304,6 +454,19 @@ async function releaseFunds(body: Record<string, unknown>) {
 
   if (fetchErr || !tx) return errorResponse("Transaction not found", 404);
   if (tx.status === "released") return errorResponse("Already released", 400);
+
+  // ── Compliance: log high-value releases for CTR ──
+  if (tx.amount >= AML_THRESHOLDS.CTR_REPORTING) {
+    await supabase.from("compliance_flags").insert({
+      flag_id: `REL-${Date.now()}`,
+      type: "CTR_RELEASE",
+      description: `Escrow release of $${tx.amount.toLocaleString()} for ${tx.tx_id}. Mandatory CTR reporting threshold exceeded.`,
+      severity: "high",
+      status: "open",
+      related_buyer_id: tx.buyer_id,
+      related_vendor_id: tx.vendor_id,
+    });
+  }
 
   const fees = calculateFees(tx.amount, "release");
   const wallets = getWalletAddresses();

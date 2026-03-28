@@ -155,11 +155,48 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
   const isCrypto = paymentMethod === "crypto";
   const country = String(buyerLocation || "US");
 
-  // Call select-processor
+  // Call select-processor (now returns limits)
   const processor = (await callEdgeFunction("select-processor", {
     country,
     isCrypto,
-  })) as ProcessorResult;
+    kyc_tier: params.kyc_tier || "basic",
+  })) as ProcessorResult & { limits?: Record<string, unknown> };
+
+  // ── Enforce processor transaction limits ──
+  const procLimits = processor.limits as { minPerTx?: number; maxPerTx?: number } | undefined;
+  if (procLimits) {
+    if (procLimits.minPerTx && numAmount < procLimits.minPerTx) {
+      return errorResponse(
+        `Amount $${numAmount} is below the minimum of $${procLimits.minPerTx} for ${processor.processorName}`,
+        400
+      );
+    }
+    if (procLimits.maxPerTx && numAmount > procLimits.maxPerTx) {
+      return errorResponse(
+        `Amount $${numAmount.toLocaleString()} exceeds the per-transaction limit of $${(procLimits.maxPerTx as number).toLocaleString()} for ${processor.processorName} at your verification level. Upgrade KYC to increase limits.`,
+        403
+      );
+    }
+  }
+
+  // ── AML threshold logging ──
+  const amlFlags: string[] = [];
+  if (isCrypto && numAmount >= 1000) amlFlags.push("FATF Travel Rule (crypto ≥$1,000)");
+  if (numAmount >= 3000) amlFlags.push("Enhanced Due Diligence (≥$3,000)");
+  if (numAmount >= 10000) amlFlags.push("CTR Reporting (≥$10,000)");
+
+  if (amlFlags.length > 0) {
+    for (const flag of amlFlags) {
+      await supabase.from("compliance_flags").insert({
+        flag_id: `CHK-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: flag.split(" ")[0] || "checkout_aml",
+        description: `Checkout initiation: ${flag} — Amount: $${numAmount.toLocaleString()}, Buyer: ${buyerName}`,
+        severity: numAmount >= 10000 ? "high" : "medium",
+        status: "open",
+        related_vendor_id: String(vendorId),
+      });
+    }
+  }
 
   // Calculate fees
   const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto);
