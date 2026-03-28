@@ -32,10 +32,15 @@ type Workspace = {
   id: string;
   title: string;
   description: string | null;
+type Workspace = {
+  id: string;
+  title: string;
+  description: string | null;
   industry: string;
   status: string;
   created_at: string;
   transaction_id: string | null;
+  owner_id: string;
 };
 
 type Member = {
