@@ -127,7 +127,8 @@ const VendorTeams = () => {
     setMembers((data as any[]) || []);
   };
 
-  const fetchTasks = async (wsId: string) => {
+  const fetchTasks = async (wsId: string, ownerCheck: boolean, membership: Member | null) => {
+    // RLS already filters: owners see all, members see only their assigned tasks
     const { data } = await supabase
       .from("team_task_assignments")
       .select("*")
@@ -136,10 +137,25 @@ const VendorTeams = () => {
     setTasks((data as any[]) || []);
   };
 
-  const openWorkspace = (ws: Workspace) => {
+  const openWorkspace = async (ws: Workspace) => {
     setSelectedWs(ws);
-    fetchMembers(ws.id);
-    fetchTasks(ws.id);
+    const owner = ws.owner_id === user!.id;
+    setIsOwner(owner);
+    
+    // Fetch members
+    const { data: memberData } = await supabase
+      .from("team_members")
+      .select("*")
+      .eq("workspace_id", ws.id)
+      .is("removed_at", null);
+    const mems = (memberData as any[]) || [];
+    setMembers(mems);
+    
+    // Find current user's membership
+    const myMem = mems.find((m: Member) => m.user_id === user!.id) || null;
+    setMyMembership(myMem);
+    
+    fetchTasks(ws.id, owner, myMem);
   };
 
   const createWorkspace = async () => {
