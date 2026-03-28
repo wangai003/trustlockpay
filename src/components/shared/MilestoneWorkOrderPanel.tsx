@@ -86,12 +86,6 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
 
     // Phase 1: Capture GPS coordinates on milestone completion
     const geo = await capturePosition();
-    
-    const updatePayload: Record<string, any> = {
-      milestoneId,
-      userId,
-      status: "completed",
-    };
 
     if (geo) {
       await supabase.from("transaction_milestones").update({
