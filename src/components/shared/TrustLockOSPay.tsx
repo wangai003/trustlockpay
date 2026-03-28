@@ -98,6 +98,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [seedToken, setSeedToken] = useState("");
   const [seedTokenLinked, setSeedTokenLinked] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<"USDC" | "USDT">("USDC");
+  const [txIdInput, setTxIdInput] = useState("");
+  const [senderAmount, setSenderAmount] = useState("");
 
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
