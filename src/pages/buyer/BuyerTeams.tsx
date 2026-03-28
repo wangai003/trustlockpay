@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import TeamTemplateManager from "@/components/shared/TeamTemplateManager";
 import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [
   { key: "mining", label: "Mining" },
