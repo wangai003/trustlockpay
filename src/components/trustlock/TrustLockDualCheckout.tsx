@@ -254,6 +254,34 @@ const TrustLockDualCheckout = () => {
                     <p><strong>Owner:</strong> Azix</p>
                     <p><strong>Support:</strong> support@azix.world</p>
                   </div>
+
+                  {/* PIN + Bypass */}
+                  <div className="space-y-1.5 p-2 rounded-lg border-2 border-primary/30 bg-primary/5">
+                    <p className="text-[10px] font-semibold">4-Digit Security PIN</p>
+                    <Input
+                      type="password"
+                      maxLength={4}
+                      placeholder="Create or enter PIN"
+                      value={checkoutPin}
+                      onChange={e => setCheckoutPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      className="text-center text-sm tracking-[0.5em] font-mono"
+                    />
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <Button type="button" variant="outline" size="sm" className="text-[9px] h-7"
+                        disabled={checkoutPin.length !== 4 || !checkoutTxId || !checkoutSenderAmount}
+                      >
+                        Submit Test ($1)
+                      </Button>
+                      <Button type="button" size="sm" className="text-[9px] h-7"
+                        disabled={checkoutPin.length !== 4 || !checkoutTestVerified}
+                      >
+                        Bypass → Pay
+                      </Button>
+                    </div>
+                    {!checkoutTestVerified && (
+                      <p className="text-[8px] text-destructive">Complete one verified test before using Bypass.</p>
+                    )}
+                  </div>
                 </div>
               )}
 
