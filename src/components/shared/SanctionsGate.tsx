@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Shield, ShieldCheck, ShieldX, Loader2, Info, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Enhanced due diligence thresholds
-const EDD_THRESHOLD = 3000;
-const HIGH_RISK_THRESHOLD = 10000;
+// Enhanced due diligence thresholds (FATF / FinCEN aligned)
+const TRAVEL_RULE_CRYPTO_THRESHOLD = 1000; // FATF R.16 — crypto originator/beneficiary info
+const EDD_THRESHOLD = 3000;               // Enhanced Due Diligence — source of funds
+const HIGH_RISK_THRESHOLD = 10000;        // CTR reporting — mandatory currency transaction report
 
 type ScreeningResult = "clear" | "flagged" | "blocked" | "edd_required" | "pending";
 
