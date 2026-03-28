@@ -40,7 +40,6 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
   { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
-  { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp · 1.5% platform + 1.0% processor" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
   { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC · 1.0% platform fee · no processor fee" },
 ];
