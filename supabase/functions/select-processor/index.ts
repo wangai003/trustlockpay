@@ -8,6 +8,15 @@ const corsHeaders = {
 
 // ─── Types ────────────────────────────────────────────────
 type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
+type KycTier = "none" | "basic" | "intermediate" | "full";
+
+interface ProcessorLimits {
+  minPerTx: number;
+  maxPerTx: Record<KycTier, number>;
+  dailyLimit: Record<KycTier, number>;
+  monthlyLimit: Record<KycTier, number>;
+  maxDailyTxCount: number;
+}
 
 interface ProcessorInfo {
   processorId: string;
@@ -18,6 +27,7 @@ interface ProcessorInfo {
   onRamp: boolean;
   offRamp: boolean;
   supportedMethods: PaymentMethod[];
+  limits: ProcessorLimits;
 }
 
 // ─── Processor Registry (3 active + direct) ──────────────
@@ -31,6 +41,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: false,
     supportedMethods: ["card", "bank_transfer"],
+    limits: {
+      minPerTx: 0.50,
+      maxPerTx:    { none: 500, basic: 10_000, intermediate: 250_000, full: 999_999 },
+      dailyLimit:  { none: 2_000, basic: 50_000, intermediate: 500_000, full: 2_000_000 },
+      monthlyLimit:{ none: 10_000, basic: 250_000, intermediate: 2_000_000, full: 10_000_000 },
+      maxDailyTxCount: 200,
+    },
   },
   coinbase: {
     processorId: "coinbase",
@@ -41,6 +58,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 300, basic: 7_500, intermediate: 50_000, full: 250_000 },
+      dailyLimit:  { none: 500, basic: 25_000, intermediate: 100_000, full: 500_000 },
+      monthlyLimit:{ none: 5_000, basic: 100_000, intermediate: 500_000, full: 2_500_000 },
+      maxDailyTxCount: 100,
+    },
   },
   transak: {
     processorId: "transak",
@@ -51,6 +75,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 100, basic: 500, intermediate: 15_000, full: 50_000 },
+      dailyLimit:  { none: 100, basic: 1_500, intermediate: 25_000, full: 100_000 },
+      monthlyLimit:{ none: 1_000, basic: 10_000, intermediate: 100_000, full: 500_000 },
+      maxDailyTxCount: 50,
+    },
   },
   direct: {
     processorId: "direct",
@@ -61,6 +92,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     onRamp: false,
     offRamp: false,
     supportedMethods: ["crypto"],
+    limits: {
+      minPerTx: 0.01,
+      maxPerTx:    { none: 50_000, basic: 250_000, intermediate: 1_000_000, full: 10_000_000 },
+      dailyLimit:  { none: 100_000, basic: 500_000, intermediate: 5_000_000, full: 50_000_000 },
+      monthlyLimit:{ none: 500_000, basic: 2_500_000, intermediate: 25_000_000, full: 100_000_000 },
+      maxDailyTxCount: 500,
+    },
   },
 };
 
