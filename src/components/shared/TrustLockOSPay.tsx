@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
-  Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone
+  Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
