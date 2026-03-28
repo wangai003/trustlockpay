@@ -90,13 +90,31 @@ const VendorTeams = () => {
 
   const fetchWorkspaces = async () => {
     setLoading(true);
-    const { data } = await supabase
+    // Fetch owned workspaces
+    const { data: owned } = await supabase
       .from("team_workspaces")
       .select("*")
       .eq("owner_id", user!.id)
       .eq("role", "vendor")
       .order("created_at", { ascending: false });
-    setWorkspaces((data as any[]) || []);
+    // Also fetch workspaces where user is a member (RLS handles this)
+    const { data: memberOf } = await supabase
+      .from("team_members")
+      .select("workspace_id")
+      .eq("user_id", user!.id)
+      .is("removed_at", null);
+    const memberWsIds = (memberOf || []).map((m: any) => m.workspace_id);
+    const ownedIds = (owned || []).map((w: any) => w.id);
+    const missingIds = memberWsIds.filter((id: string) => !ownedIds.includes(id));
+    let allWorkspaces = [...(owned || [])] as Workspace[];
+    if (missingIds.length > 0) {
+      const { data: extra } = await supabase
+        .from("team_workspaces")
+        .select("*")
+        .in("id", missingIds);
+      allWorkspaces = [...allWorkspaces, ...((extra || []) as Workspace[])];
+    }
+    setWorkspaces(allWorkspaces);
     setLoading(false);
   };
 
