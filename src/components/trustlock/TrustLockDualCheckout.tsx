@@ -10,6 +10,7 @@ import { FEE_DISCLOSURE_SHORT, AZIX_WALLETS } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
+import { supabase } from "@/integrations/supabase/client";
 
 const TrustLockDualCheckout = () => {
   const [mode, setMode] = useState<"diaspora" | "local">("diaspora");
