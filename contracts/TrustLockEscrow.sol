@@ -191,7 +191,32 @@ contract TrustLockEscrow is ReentrancyGuard {
 
     /**
      * @notice Release full funds to vendor for an atomic escrow.
-     * @dev Deducts 1% escrow service fee and sends to transactionFeeWallet.
+     * @dev Deducts 1% escrow service fee and routes it via the TRICKLE-DOWN mechanism:
+     *
+     *      DUAL SEED TOKEN ARCHITECTURE:
+     *      ─────────────────────────────
+     *      • OS Pay seed token  → hardwired to transactionFeeWallet (0x7A3b...F92d)
+     *        Purpose: Collects platform revenue, processor fees, taxes
+     *        Accepts: Fiat via processor APIs + stablecoins (USDC) directly
+     *
+     *      • OS Payout seed token → hardwired to escrowFeeWallet (0x4E1c...A83b)
+     *        Purpose: Holds escrowed principal during transaction lifecycle
+     *        Accepts: USDC locked from buyer at checkout
+     *
+     *      TRICKLE-DOWN FEE FLOW:
+     *      ─────────────────────
+     *      On RELEASE: escrowFeeWallet deducts 1% service fee from principal
+     *                  → transfers fee (stablecoins/USDC) to transactionFeeWallet
+     *                  → NO conversion needed — both wallets accept USDC natively
+     *                  → this transfer follows the OS Pay token's hardwire route
+     *
+     *      On REFUND:  escrowFeeWallet returns 100% principal to buyer
+     *                  → 0% fee → NO trickle-down to transactionFeeWallet
+     *
+     *      On SPLIT:   1% fee deducted from VENDOR's share only
+     *                  → fee trickles to transactionFeeWallet
+     *                  → buyer receives full split amount
+     *
      * @param escrowId The escrow to release
      */
     function releaseFunds(bytes32 escrowId) external onlyOperator nonReentrant {
@@ -204,9 +229,11 @@ contract TrustLockEscrow is ReentrancyGuard {
 
         e.status = EscrowStatus.RELEASED;
 
-        // Trickle-down: service fee → transaction wallet
+        // TRICKLE-DOWN: escrow service fee (stablecoins) → transactionFeeWallet
+        // This is a direct USDC transfer — no conversion required because
+        // the transactionFeeWallet (OS Pay token hardwire) accepts stablecoins natively
         if (serviceFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: fee transfer failed");
+            require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: trickle-down fee transfer failed");
         }
         require(usdc.transfer(e.vendor, vendorPayout), "TL: vendor transfer failed");
 
