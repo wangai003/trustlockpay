@@ -298,6 +298,26 @@ const TrustLockDualCheckout = () => {
                       <p className="text-[9px] text-foreground">Check your dashboard for order number, receipt, and workflow.</p>
                     </div>
                   )}
+                  {/* Shortfall State */}
+                  {cryptoVerifyStatus === "shortfall" && (
+                    <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
+                      <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Partial Payment Received</p>
+                      <div className="p-1.5 rounded bg-muted/50 space-y-0.5 text-[9px]">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Required</span><span className="font-semibold">${sampleAmount.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Received</span><span className="font-semibold text-primary">${cumulativeReceived.toFixed(2)}</span></div>
+                        <div className="flex justify-between border-t border-border pt-0.5"><span className="font-bold text-destructive">Remaining</span><span className="font-bold text-destructive">${(sampleAmount - cumulativeReceived).toFixed(2)}</span></div>
+                      </div>
+                      <p className="text-[9px] text-foreground">
+                        Send the remaining <strong>${(sampleAmount - cumulativeReceived).toFixed(2)} {checkoutToken}</strong> to the same wallet above via Polygon, then enter your new TxID and amount below.
+                      </p>
+                      {shortfallTxIds.length > 0 && (
+                        <div className="p-1 rounded bg-muted text-[8px] text-muted-foreground">
+                          <p className="font-semibold">Previous TxIDs:</p>
+                          {shortfallTxIds.map((id, i) => <p key={i} className="font-mono truncate">#{i+1}: {id}</p>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {cryptoVerifyStatus === "pending" && (
                     <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
                       <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Pending On-Chain Confirmation</p>
