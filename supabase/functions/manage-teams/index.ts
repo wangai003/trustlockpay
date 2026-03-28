@@ -88,9 +88,11 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      const updatePayload: any = { status: "completed", completed_at: new Date().toISOString() };
+      if (body.evidence_url) updatePayload.evidence_url = body.evidence_url;
       await supabase
         .from("team_task_assignments")
-        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq("id", task_id);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
