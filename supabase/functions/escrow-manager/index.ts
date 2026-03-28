@@ -329,6 +329,42 @@ async function lockFunds(body: Record<string, unknown>) {
   }
 
   const numAmount = Number(amount);
+
+  // ── Compliance Pre-Check (processor limits + AML + velocity) ──
+  const compliance = await runCompliancePreCheck(
+    supabase,
+    String(buyer_id),
+    numAmount,
+    String(processor),
+    String(payment_type),
+  );
+
+  if (!compliance.allowed) {
+    return jsonResponse({
+      success: false,
+      blocked: true,
+      errors: compliance.errors,
+      amlFlags: compliance.amlFlags,
+      message: "Transaction blocked by compliance checks",
+    }, 403);
+  }
+
+  // Log AML flags (non-blocking) for audit trail
+  if (compliance.amlFlags.length > 0) {
+    for (const flag of compliance.amlFlags) {
+      const flagId = `ESC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      await supabase.from("compliance_flags").insert({
+        flag_id: flagId,
+        type: flag.split(":")[0]?.trim() || "aml_flag",
+        description: `Escrow lockFunds: ${flag}`,
+        severity: flag.includes("CTR") ? "high" : "medium",
+        status: "open",
+        related_buyer_id: String(buyer_id),
+        related_vendor_id: String(vendor_id),
+      });
+    }
+  }
+
   const feeType = payment_type === "checkout_fiat" ? "checkout_fiat" : "checkout_crypto";
   const fees = calculateFees(numAmount, feeType, String(processor));
   const txId = generateTxId();
