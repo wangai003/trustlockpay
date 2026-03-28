@@ -142,7 +142,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
     name: "Buy with Card (Thirdweb)",
     category: "card",
     mode: "diaspora",
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
       { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
@@ -155,7 +155,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
     name: "Thirdweb Wallet",
     category: "crypto_wallet",
     mode: "diaspora",
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "wallet_address", label: "Wallet Address", placeholder: "0x...", type: "text", required: true },
     ],
@@ -232,7 +232,7 @@ const DEFAULT_BANK_FIELDS: ProviderField[] = [
 ];
 
 function buildBankProviders(country: string, banks: string[]): PaymentProvider[] {
-  const processor: ProcessorId = "yellow_card";
+  const processor: ProcessorId = "coinbase";
   const fields = COUNTRY_BANK_FIELDS[country] || DEFAULT_BANK_FIELDS;
   return banks.map((bank) => ({
     id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
@@ -300,7 +300,7 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     category: "crypto_wallet",
     mode: "local",
     countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
     ],
@@ -311,7 +311,7 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     category: "crypto_wallet",
     mode: "local",
     countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
     ],

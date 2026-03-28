@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Types ────────────────────────────────────────────────
+type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
+
 interface ProcessorInfo {
   processorId: string;
   processorName: string;
@@ -14,8 +17,10 @@ interface ProcessorInfo {
   supportsCrypto: boolean;
   onRamp: boolean;
   offRamp: boolean;
+  supportedMethods: PaymentMethod[];
 }
 
+// ─── Processor Registry (3 active + direct) ──────────────
 const PROCESSORS: Record<string, ProcessorInfo> = {
   stripe: {
     processorId: "stripe",
@@ -25,6 +30,7 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     supportsCrypto: false,
     onRamp: true,
     offRamp: false,
+    supportedMethods: ["card", "bank_transfer"],
   },
   coinbase: {
     processorId: "coinbase",
@@ -34,15 +40,7 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     supportsCrypto: true,
     onRamp: true,
     offRamp: true,
-  },
-  yellow_card: {
-    processorId: "yellow_card",
-    processorName: "Yellow Card",
-    feeRate: 2.0,
-    supportsFiat: true,
-    supportsCrypto: true,
-    onRamp: true,
-    offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   transak: {
     processorId: "transak",
@@ -52,15 +50,7 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     supportsCrypto: true,
     onRamp: true,
     offRamp: true,
-  },
-  thirdweb: {
-    processorId: "thirdweb",
-    processorName: "Thirdweb",
-    feeRate: 1.0,
-    supportsFiat: true,
-    supportsCrypto: true,
-    onRamp: true,
-    offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   direct: {
     processorId: "direct",
@@ -70,17 +60,25 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
     supportsCrypto: true,
     onRamp: false,
     offRamp: false,
+    supportedMethods: ["crypto"],
   },
 };
 
-const AFRICAN_COUNTRIES = [
-  "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
-  "Senegal", "Mali", "Cote d'Ivoire", "Burkina Faso", "Benin", "Togo",
-  "DR Congo", "Uganda", "Tanzania", "Rwanda", "Mozambique", "Malawi",
-  "Niger", "Chad", "Guinea", "Madagascar", "Botswana", "Gambia", "Zambia",
-];
-
-const COINBASE_REGIONS = ["US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa"];
+// ─── Region Coverage ──────────────────────────────────────
+const PROCESSOR_REGIONS: Record<string, string[]> = {
+  stripe: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"],
+  coinbase: [
+    "US", "EU", "UK",
+    "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
+    "Uganda", "Tanzania", "Rwanda",
+  ],
+  transak: [
+    "US", "EU", "UK", "IN", "BR", "MX",
+    "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt",
+    "global",
+  ],
+  direct: ["global"],
+};
 
 // Country name → code mapping for payout field lookups
 const COUNTRY_CODE_MAP: Record<string, string> = {
@@ -94,6 +92,18 @@ const COUNTRY_CODE_MAP: Record<string, string> = {
   "GB": "GB", "DE": "DE", "FR": "FR", "AE": "AE",
 };
 
+// TrustLock platform fee rates by transaction type
+const TRUSTLOCK_RATES: Record<string, number> = {
+  checkout_fiat: 1.5,
+  checkout_crypto: 1.0,
+  release_to_vendor: 0,
+  refund_crypto: 0,
+  refund_fiat: 0,
+  split_payout: 0,
+  os_payment: 1.5,
+};
+
+// ─── Helpers ──────────────────────────────────────────────
 function getSupabaseAdmin() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -115,14 +125,69 @@ function errorResponse(message: string, status = 400) {
   });
 }
 
-// ─── Select Processor (original logic) ────────────────────
-function selectProcessor(country: string, isCrypto: boolean, processorHint?: string): ProcessorInfo {
+// ─── Cost-Optimized Processor Selection ───────────────────
+interface ProcessorCandidate {
+  processor: ProcessorInfo;
+  combinedRate: number;
+  eligible: boolean;
+}
+
+function getEligibleProcessors(
+  country: string,
+  paymentMethod: PaymentMethod,
+  transactionType: string,
+): ProcessorCandidate[] {
+  const trustlockRate = TRUSTLOCK_RATES[transactionType] ?? 1.5;
+  const candidates: ProcessorCandidate[] = [];
+
+  for (const [id, proc] of Object.entries(PROCESSORS)) {
+    // Skip direct for non-crypto
+    if (id === "direct" && paymentMethod !== "crypto") continue;
+    // Skip non-crypto processors for crypto method
+    if (paymentMethod === "crypto" && !proc.supportsCrypto) continue;
+    // Check payment method support
+    if (!proc.supportedMethods.includes(paymentMethod)) continue;
+    // Check region
+    const regions = PROCESSOR_REGIONS[id] ?? [];
+    const regionMatch = regions.includes(country) || regions.includes("global");
+    if (!regionMatch) continue;
+
+    candidates.push({
+      processor: proc,
+      combinedRate: trustlockRate + proc.feeRate,
+      eligible: true,
+    });
+  }
+
+  // Sort by combined rate ascending (cheapest first)
+  candidates.sort((a, b) => a.combinedRate - b.combinedRate);
+  return candidates;
+}
+
+function selectProcessor(
+  country: string,
+  isCrypto: boolean,
+  processorHint?: string,
+  paymentMethod?: PaymentMethod,
+  transactionType?: string,
+): ProcessorInfo & { allEligible?: ProcessorCandidate[] } {
   if (processorHint && PROCESSORS[processorHint]) {
     return PROCESSORS[processorHint];
   }
   if (isCrypto) return PROCESSORS.direct;
-  if (AFRICAN_COUNTRIES.includes(country)) return PROCESSORS.yellow_card;
-  if (COINBASE_REGIONS.includes(country)) return PROCESSORS.coinbase;
+
+  const method = paymentMethod ?? "card";
+  const txType = transactionType ?? "checkout_fiat";
+  const eligible = getEligibleProcessors(country, method, txType);
+
+  if (eligible.length > 0) {
+    return {
+      ...eligible[0].processor,
+      allEligible: eligible,
+    };
+  }
+
+  // Ultimate fallback
   return PROCESSORS.stripe;
 }
 
@@ -131,14 +196,12 @@ async function getPayoutFields(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
   const { country_code, country, payout_method } = body;
 
-  // Resolve country code
   let code = country_code
     ? String(country_code).toUpperCase()
     : COUNTRY_CODE_MAP[String(country ?? "")] ?? String(country ?? "").toUpperCase();
 
   if (!code) return errorResponse("country_code or country is required", 400);
 
-  // Build query
   let query = supabase
     .from("payout_field_configs")
     .select("*")
@@ -147,7 +210,6 @@ async function getPayoutFields(body: Record<string, unknown>) {
   if (payout_method) {
     query = query.eq("country_code", code).eq("payout_method", String(payout_method));
   } else {
-    // Return all methods for this country + universal crypto
     query = query.or(`country_code.eq.${code},country_code.eq.GLOBAL`);
   }
 
@@ -155,9 +217,7 @@ async function getPayoutFields(body: Record<string, unknown>) {
 
   if (error) return errorResponse(error.message, 500);
 
-  // If no country-specific configs found, check if EU applies
   if ((!configs || configs.length === 0) && !payout_method) {
-    // Check for EU fallback (any European country without specific config)
     const { data: euConfigs } = await supabase
       .from("payout_field_configs")
       .select("*")
@@ -175,7 +235,6 @@ async function getPayoutFields(body: Record<string, unknown>) {
     }
   }
 
-  // Group by payout method
   const grouped: Record<string, unknown[]> = {};
   for (const cfg of configs ?? []) {
     const method = cfg.payout_method;
@@ -207,16 +266,21 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // New action: get_payout_fields
     if (action === "get_payout_fields") {
       return await getPayoutFields(body);
     }
 
-    // Original processor selection (default action)
-    const { country, isCrypto, processorHint } = body;
-    const processor = selectProcessor(country ?? "", isCrypto ?? false, processorHint);
+    // Cost-optimized processor selection
+    const { country, isCrypto, processorHint, paymentMethod, transactionType } = body;
+    const result = selectProcessor(
+      country ?? "",
+      isCrypto ?? false,
+      processorHint,
+      paymentMethod,
+      transactionType,
+    );
 
-    return jsonResponse(processor);
+    return jsonResponse(result);
   } catch {
     return errorResponse("Invalid request body", 400);
   }

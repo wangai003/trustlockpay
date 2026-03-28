@@ -29,7 +29,9 @@ export type TransactionType =
   | "os_payment";          // Internal OS service payment (plans, reports, AI)
 
 // ─── Processor Configuration ──────────────────────────────
-export type ProcessorId = "stripe" | "coinbase" | "yellow_card" | "transak" | "thirdweb" | "direct";
+export type ProcessorId = "stripe" | "coinbase" | "transak" | "direct";
+
+export type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
 
 export interface ProcessorConfig {
   name: string;
@@ -39,6 +41,7 @@ export interface ProcessorConfig {
   regions: string[];        // primary operating regions
   onRamp: boolean;          // fiat → crypto
   offRamp: boolean;         // crypto → fiat
+  supportedMethods: PaymentMethod[];  // what payment methods this processor handles
 }
 
 export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
@@ -47,32 +50,24 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     feeRate: 2.9,
     supportsFiat: true,
     supportsCrypto: false,
-    regions: ["US", "EU", "UK", "CA", "AU", "global"],
+    regions: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"],
     onRamp: true,
     offRamp: false,
+    supportedMethods: ["card", "bank_transfer"],
   },
   coinbase: {
     name: "Coinbase",
     feeRate: 1.5,
     supportsFiat: true,
     supportsCrypto: true,
-    regions: ["US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa", "global"],
-    onRamp: true,
-    offRamp: true,
-  },
-  yellow_card: {
-    name: "Yellow Card",
-    feeRate: 2.0,
-    supportsFiat: true,
-    supportsCrypto: true,
     regions: [
+      "US", "EU", "UK",
       "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
-      "Senegal", "Mali", "Cote d'Ivoire", "Burkina Faso", "Benin", "Togo",
-      "DR Congo", "Uganda", "Tanzania", "Rwanda", "Mozambique", "Malawi",
-      "Niger", "Chad", "Guinea", "Madagascar", "Botswana", "Gambia", "Zambia",
+      "Uganda", "Tanzania", "Rwanda",
     ],
     onRamp: true,
     offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   transak: {
     name: "Transak",
@@ -80,23 +75,13 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     supportsFiat: true,
     supportsCrypto: true,
     regions: [
+      "US", "EU", "UK", "IN", "BR", "MX",
       "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt",
-      "US", "EU", "UK", "India", "global",
+      "global",
     ],
     onRamp: true,
     offRamp: true,
-  },
-  thirdweb: {
-    name: "Thirdweb",
-    feeRate: 1.0,
-    supportsFiat: true,
-    supportsCrypto: true,
-    regions: [
-      "US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa",
-      "India", "Brazil", "Mexico", "Argentina", "Colombia", "global",
-    ],
-    onRamp: true,
-    offRamp: true,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
   },
   direct: {
     name: "Direct (On-chain)",
@@ -106,6 +91,7 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     regions: ["global"],
     onRamp: false,
     offRamp: false,
+    supportedMethods: ["crypto"],
   },
 };
 
@@ -193,11 +179,62 @@ const FEE_RULES: Record<TransactionType, FeeRule> = {
 };
 
 // ─── Processor Selection Logic ─────────────────────────────
-// Selects best processor based on region and transaction type
+// Cost-optimized: finds all eligible processors for a region+method,
+// ranks by combined fee (TrustLock + processor), picks cheapest.
+
+export interface ProcessorMatch {
+  id: ProcessorId;
+  config: ProcessorConfig;
+  combinedRate: number; // trustlock rate + processor rate
+}
+
+/**
+ * Returns all processors eligible for a given country and payment method,
+ * sorted by fee rate ascending (cheapest first).
+ */
+export function getEligibleProcessors(
+  country: string,
+  paymentMethod: PaymentMethod = "card",
+  transactionType: TransactionType = "checkout_fiat"
+): ProcessorMatch[] {
+  const trustlockRate = FEE_RULES[transactionType]?.trustlockRate ?? 1.5;
+
+  const eligible: ProcessorMatch[] = [];
+
+  for (const [id, config] of Object.entries(PROCESSORS) as [ProcessorId, ProcessorConfig][]) {
+    // Skip direct for non-crypto methods
+    if (id === "direct" && paymentMethod !== "crypto") continue;
+    // Skip non-crypto processors for crypto method
+    if (paymentMethod === "crypto" && !config.supportsCrypto) continue;
+    // Check region match
+    const regionMatch = config.regions.includes(country) || config.regions.includes("global");
+    if (!regionMatch) continue;
+    // Check payment method support
+    if (!config.supportedMethods.includes(paymentMethod)) continue;
+
+    eligible.push({
+      id: id as ProcessorId,
+      config,
+      combinedRate: trustlockRate + config.feeRate,
+    });
+  }
+
+  // Sort by combined rate ascending (cheapest first)
+  eligible.sort((a, b) => a.combinedRate - b.combinedRate);
+
+  return eligible;
+}
+
+/**
+ * Selects the cheapest eligible processor for a country and payment method.
+ * Falls back to Stripe for unmatched regions.
+ */
 export function selectProcessor(
   country: string,
   isCrypto: boolean,
-  processorHint?: ProcessorId
+  processorHint?: ProcessorId,
+  paymentMethod?: PaymentMethod,
+  transactionType?: TransactionType
 ): ProcessorId {
   // If caller specifies a processor, use it
   if (processorHint && PROCESSORS[processorHint]) return processorHint;
@@ -205,18 +242,15 @@ export function selectProcessor(
   // Direct crypto-to-crypto bypasses all processors
   if (isCrypto) return "direct";
 
-  // African local payments: prefer Yellow Card, fallback to Coinbase
-  const africanCountries = PROCESSORS.yellow_card.regions;
-  if (africanCountries.includes(country)) {
-    return "yellow_card";
+  const method = paymentMethod ?? "card";
+  const txType = transactionType ?? "checkout_fiat";
+  const eligible = getEligibleProcessors(country, method, txType);
+
+  if (eligible.length > 0) {
+    return eligible[0].id;
   }
 
-  // Coinbase for supported regions with crypto on/off ramp
-  if (PROCESSORS.coinbase.regions.includes(country)) {
-    return "coinbase";
-  }
-
-  // Diaspora / global: Stripe for pure fiat, Transak for fiat-to-crypto
+  // Ultimate fallback
   return "stripe";
 }
 
@@ -319,17 +353,15 @@ export const FEE_CATEGORIES = {
     label: "Payment Processor Fee",
     shortLabel: "Processor Fee",
     rates: {
-      thirdweb: { rate: 1.0, display: "1.0%" },
       coinbase: { rate: 1.5, display: "1.5%" },
       transak: { rate: 1.5, display: "1.5%" },
-      yellow_card: { rate: 2.0, display: "2.0%" },
       stripe: { rate: 2.9, display: "2.9%" },
       direct: { rate: 0, display: "0%" },
     },
-    range: "1.0% – 2.9%",
+    range: "1.5% – 2.9%",
     rangeWithDirect: "0% – 2.9%",
     wallet: "external" as const,
-    description: "Paid to the payment processor (Stripe, Coinbase, Yellow Card, Transak, or Thirdweb) for fiat-to-crypto conversion.",
+    description: "Paid to the payment processor (Stripe, Coinbase, or Transak) for fiat-to-crypto conversion.",
     when: "Charged at checkout. Direct crypto-to-crypto transfers bypass this fee entirely.",
   },
   escrow: {
