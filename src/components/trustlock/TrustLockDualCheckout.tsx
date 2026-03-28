@@ -269,9 +269,33 @@ const TrustLockDualCheckout = () => {
                       <Input placeholder="Full Name" value={pendingName} onChange={e => setPendingName(e.target.value)} className="text-[10px]" />
                       <Input placeholder="Email Address" value={pendingEmail} onChange={e => setPendingEmail(e.target.value)} className="text-[10px]" />
                       <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" disabled={!pendingName || !pendingEmail}
-                        onClick={() => {
+                        onClick={async () => {
+                          // Persist to crypto support queue
+                          await supabase.from("crypto_support_queue" as any).insert({
+                            sender_name: pendingName,
+                            sender_email: pendingEmail,
+                            sender_wallet: checkoutSenderWallet,
+                            tx_id: checkoutTxId,
+                            amount_sent: parseFloat(checkoutSenderAmount) || 0,
+                            token: checkoutToken,
+                            network: "Polygon",
+                            source: "checkout",
+                          });
+                          // Notify admins
+                          const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+                          if (admins?.length) {
+                            await supabase.from("notifications").insert(
+                              admins.map((a: any) => ({
+                                user_id: a.user_id,
+                                title: "🔎 Crypto Payment Pending Investigation",
+                                message: `${pendingName} (${pendingEmail}) submitted a pending ${checkoutToken} payment of $${checkoutSenderAmount}. TxID: ${checkoutTxId || "not provided"}. Wallet: ${checkoutSenderWallet || "not provided"}.`,
+                                type: "critical",
+                                related_entity_type: "crypto_support",
+                              }))
+                            );
+                          }
                           setCryptoVerifyStatus("idle");
-                          toast?.("Details submitted. TrustLock support will investigate and contact you at " + pendingEmail + " within 24–48 hours.");
+                          toast("Details submitted. TrustLock support will investigate and contact you at " + pendingEmail + " within 24–48 hours.");
                         }}>
                         Submit & Close
                       </Button>
