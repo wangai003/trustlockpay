@@ -349,6 +349,7 @@ const TrustLockDualCheckout = () => {
                       <strong>⚠️ Important:</strong> Your exchange or self-custody wallet may charge a network/withdrawal fee that is <strong>deducted from the amount you send</strong>. If this happens, the full escrow obligation may not be met. Consider sending slightly more than the required total to ensure the exact amount arrives.
                     </p>
                   </div>
+                  </>)}
                 </div>
               )}
 
