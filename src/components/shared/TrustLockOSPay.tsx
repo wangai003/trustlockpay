@@ -103,13 +103,21 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-  const feeRate = isAdmin ? 0
-    : payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
-    : payMode === "diaspora" && method === "thirdweb" ? 0.01
-    : method === "azix" ? 0.01
-    : 0.015;
-  const fee = isAdmin ? "0.00" : parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
-  const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
+
+  // Dynamic fee calculation using the cost-optimization engine
+  const isCryptoMethod = method === "azix";
+  const feePaymentMethod: FeePaymentMethod = method === "mobile_money" ? "mobile_money"
+    : method === "bank_transfer" ? "bank_transfer"
+    : method === "azix" ? "crypto"
+    : "card";
+  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
+  const feeBreakdown = parsedAmount > 0 && !isAdmin
+    ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
+    : null;
+  const feeRate = feeBreakdown ? feeBreakdown.feePercentage / 100 : 0;
+  const fee = isAdmin ? "0.00" : feeBreakdown ? feeBreakdown.trustlockFee.toFixed(2) : "0.00";
+  const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
+  const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
 
   const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
 
