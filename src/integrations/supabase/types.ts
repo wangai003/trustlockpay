@@ -1438,6 +1438,77 @@ export type Database = {
           },
         ]
       }
+      seed_token_audit_logs: {
+        Row: {
+          action: string
+          amount: number | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          order_number: string | null
+          payment_id: string | null
+          purpose: string
+          role: string | null
+          seed_token_id: string | null
+          source: string | null
+          target_wallet_address: string | null
+          target_wallet_label: string | null
+          token_value: string
+          transaction_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          amount?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          order_number?: string | null
+          payment_id?: string | null
+          purpose?: string
+          role?: string | null
+          seed_token_id?: string | null
+          source?: string | null
+          target_wallet_address?: string | null
+          target_wallet_label?: string | null
+          token_value: string
+          transaction_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amount?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          order_number?: string | null
+          payment_id?: string | null
+          purpose?: string
+          role?: string | null
+          seed_token_id?: string | null
+          source?: string | null
+          target_wallet_address?: string | null
+          target_wallet_label?: string | null
+          token_value?: string
+          transaction_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seed_token_audit_logs_seed_token_id_fkey"
+            columns: ["seed_token_id"]
+            isOneToOne: false
+            referencedRelation: "seed_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seed_tokens: {
         Row: {
           created_at: string
