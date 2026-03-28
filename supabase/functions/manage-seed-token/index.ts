@@ -13,7 +13,6 @@ const AZIX_ESCROW_WALLET = "0x4E1c...A83b";       // Collects escrow service fee
 const PROCESSOR_FEES: Record<string, number> = {
   stripe: 0.029,        // 2.9%
   coinbase: 0.015,      // 1.5%
-  yellow_card: 0.020,   // 2.0%
   transak: 0.015,       // 1.5%
   direct: 0,            // 0% (on-chain)
 };
