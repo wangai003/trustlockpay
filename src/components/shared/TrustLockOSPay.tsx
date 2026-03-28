@@ -477,16 +477,88 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           )}
 
           {method === "azix" && (
-            <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div>
-                <Label className="text-xs text-muted-foreground">Azix Transaction Fee Wallet (auto-filled)</Label>
+            <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
+              {/* ── CRYPTO VERIFICATION PROTOCOL ── */}
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-destructive">⚠️ Crypto Verification Required — Read Before Sending</p>
+                    <p className="text-[10px] text-foreground leading-relaxed">
+                      For your protection, <strong>all first-time crypto payments require a $1.00 USD test transaction</strong> before any larger amount is processed. This verifies your wallet address and ensures funds are routed correctly on-chain.
+                    </p>
+                  </div>
+                </div>
+                <div className="ml-6 space-y-1.5 text-[10px] text-foreground">
+                  <p><strong>Step 1:</strong> Send exactly <strong>$1.00 in USDC</strong> to the Azix receiving wallet below.</p>
+                  <p><strong>Step 2:</strong> Email <strong>support@azix.world</strong> with the following details:</p>
+                  <ul className="list-disc ml-4 space-y-0.5 text-muted-foreground">
+                    <li>Your full name and account email</li>
+                    <li>Your sending wallet address</li>
+                    <li>Transaction hash (TxID) of the $1.00 test</li>
+                    <li>The amount you intend to send after verification</li>
+                  </ul>
+                  <p><strong>Step 3:</strong> An Azix team member will confirm receipt, verify your wallet address matches on-chain records, and reply to your email with:</p>
+                  <ul className="list-disc ml-4 space-y-0.5 text-muted-foreground">
+                    <li>✅ Confirmation of the $1.00 received</li>
+                    <li>✅ Your verified sending wallet address</li>
+                    <li>✅ The receiving wallet address for your full payment</li>
+                    <li>✅ Status: <em>"Payment verified — proceed with balance"</em></li>
+                  </ul>
+                  <p><strong>Step 4:</strong> Once you receive confirmation, send the remaining balance to complete your payment.</p>
+                </div>
+                <div className="ml-6 p-2 rounded bg-destructive/5 border border-destructive/20">
+                  <p className="text-[10px] font-bold text-destructive">
+                    ⛔ DO NOT send large amounts without completing verification first. Unverified transactions may be delayed or flagged for compliance review.
+                  </p>
+                </div>
+              </div>
+
+              {/* ── Network & Token Selection ── */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Network & Token</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
+                    <p className="text-[10px] font-bold text-primary">Network</p>
+                    <p className="text-xs font-semibold">Polygon (MATIC)</p>
+                    <p className="text-[10px] text-muted-foreground">Chain ID: 137</p>
+                  </div>
+                  <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
+                    <p className="text-[10px] font-bold text-primary">Token</p>
+                    <p className="text-xs font-semibold">USDC</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">0x3c499...b8f0</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-destructive font-medium">
+                  ⚠️ Only send USDC on Polygon network. Sending on other networks (Ethereum, BSC, etc.) will result in permanent loss of funds.
+                </p>
+              </div>
+
+              {/* ── Azix Receiving Wallet ── */}
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Azix Receiving Wallet (Owned by Azix Inc.)</Label>
                 <Input value={AZIX_WALLETS.transaction.publicKey} disabled className="mt-1 bg-muted font-mono text-xs" />
+                <div className="p-2 rounded bg-muted text-[10px] space-y-1">
+                  <p><strong>Owner:</strong> Azix Inc. — Parent company of TrustLock</p>
+                  <p><strong>Purpose:</strong> Receives platform fees and crypto payments</p>
+                  <p><strong>Network:</strong> Polygon (MATIC) — USDC only</p>
+                  <p><strong>Support:</strong> support@azix.world</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  This is a public blockchain address. Sharing it does not compromise security — only the private key holder (Azix) can access received funds.
+                </p>
               </div>
+
+              {/* ── Sender Wallet Input ── */}
               <div>
-                <Label className="text-xs">Your Azix Wallet Address</Label>
-                <Input placeholder="0x..." value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
+                <Label className="text-xs font-semibold">Your Sending Wallet Address</Label>
+                <Input placeholder="0x... (Polygon USDC wallet)" value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  This address will be verified against on-chain records during the $1 test. Ensure it matches the wallet you will use.
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet</p>
+
+              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
             </div>
           )}
 
