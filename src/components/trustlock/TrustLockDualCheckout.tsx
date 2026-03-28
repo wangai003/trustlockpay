@@ -25,10 +25,12 @@ const TrustLockDualCheckout = () => {
   const [checkoutTxId, setCheckoutTxId] = useState("");
   const [checkoutSenderWallet, setCheckoutSenderWallet] = useState("");
   const [checkoutSenderAmount, setCheckoutSenderAmount] = useState("");
-  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed">("idle");
+  const [cryptoVerifyStatus, setCryptoVerifyStatus] = useState<"idle" | "verifying" | "verified" | "pending" | "failed" | "shortfall">("idle");
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
+  const [cumulativeReceived, setCumulativeReceived] = useState(0);
+  const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
   const sampleAmount = mode === "diaspora" ? 292.50 : 450000;
   const isCrypto = selectedProvider?.category === "crypto_wallet";
