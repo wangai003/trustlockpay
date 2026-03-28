@@ -584,17 +584,17 @@ const TrustLockOSPayout = ({
             </div>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Payout Amount</span><span className="font-medium text-foreground">${amountNum.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="text-muted-foreground">-${fees.trustlock.toFixed(2)}</span></div>
-              {fees.processor > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Processor Fee</span><span className="text-muted-foreground">-${fees.processor.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="text-muted-foreground">-${fees.trustlockFee.toFixed(2)}</span></div>
+              {fees.processorFee > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Processor Fee</span><span className="text-muted-foreground">-${fees.processorFee.toFixed(2)}</span></div>
               )}
-              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee</span><span className="text-muted-foreground">-${fees.escrow.toFixed(2)}</span></div>
-              {fees.gas > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gas.toFixed(4)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee</span><span className="text-muted-foreground">-${fees.escrowFee.toFixed(2)}</span></div>
+              {fees.gasFee > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gasFee.toFixed(4)}</span></div>
               )}
               <div className="flex justify-between border-t border-border pt-1 mt-1">
                 <span className="font-bold text-sm text-foreground">You Receive</span>
-                <span className="font-bold text-sm text-primary">${fees.net.toFixed(2)}</span>
+                <span className="font-bold text-sm text-primary">${fees.netAmount.toFixed(2)}</span>
               </div>
             </div>
             {showFees && (
