@@ -23,11 +23,10 @@ import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import {
   type PaymentProvider,
-  calculateFees,
   PRIVACY_DISCLAIMER,
   FEE_DISCLOSURE,
 } from "@/lib/paymentProviders";
-import { AZIX_WALLETS } from "@/lib/feeEngine";
+import { AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import {
   useGetOrCreateSeedToken,
   useInitiatePayout,
@@ -161,8 +160,13 @@ const TrustLockOSPayout = ({
 
   const amountNum = parseFloat(amount) || 0;
   const isCrypto = selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
-  const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
-  const fees = amountNum > 0 ? calculateFees(amountNum, feeType) : null;
+  const txType: TransactionType = payoutType === "refund"
+    ? (isCrypto ? "refund_crypto" : "refund_fiat")
+    : payoutType === "split"
+      ? "split_payout"
+      : "release_to_vendor";
+  const processorId = selectProcessor("global", isCrypto);
+  const fees = amountNum > 0 ? calculateFeesV2(amountNum, txType, processorId) : null;
 
   const handleFieldChange = (key: string, value: string) => {
     setProviderFields((prev) => ({ ...prev, [key]: value }));
@@ -191,6 +195,9 @@ const TrustLockOSPayout = ({
     setConfirmDialog(false);
     setProcessing(true);
 
+    const providerName = selectedProvider?.name ?? activeConfig?.provider ?? "Direct";
+    const providerCategory = selectedProvider?.category ?? selectedMethod ?? "unknown";
+
     try {
       const res = await initiatePayout.mutateAsync({
         seedToken,
@@ -199,9 +206,9 @@ const TrustLockOSPayout = ({
         transactionId,
         orderNumber: prefillOrderNumber,
         amount: String(amountNum),
-        paymentCategory: selectedProvider!.category,
-        paymentProvider: selectedProvider!.name,
-        providerDetails: providerFields,
+        paymentCategory: providerCategory,
+        paymentProvider: providerName,
+        providerDetails: { ...providerFields, ...dynamicFields },
         mode,
       });
 
@@ -247,9 +254,9 @@ const TrustLockOSPayout = ({
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>Amount: <span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></p>
-              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.total.toFixed(2)}</span></p>}
-              {fees && <p>Net received: <span className="font-semibold text-primary">${fees.net.toFixed(2)}</span></p>}
-              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name}</span></p>
+              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.totalFees.toFixed(2)}</span></p>}
+              {fees && <p>Net received: <span className="font-semibold text-primary">${fees.netAmount.toFixed(2)}</span></p>}
+              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name ?? activeConfig?.provider ?? "Direct"}</span></p>
             </div>
           </CardContent>
         </Card>
@@ -577,17 +584,17 @@ const TrustLockOSPayout = ({
             </div>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Payout Amount</span><span className="font-medium text-foreground">${amountNum.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="text-muted-foreground">-${fees.trustlock.toFixed(2)}</span></div>
-              {fees.processor > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Processor Fee</span><span className="text-muted-foreground">-${fees.processor.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">TrustLock Fee</span><span className="text-muted-foreground">-${fees.trustlockFee.toFixed(2)}</span></div>
+              {fees.processorFee > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Processor Fee</span><span className="text-muted-foreground">-${fees.processorFee.toFixed(2)}</span></div>
               )}
-              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee</span><span className="text-muted-foreground">-${fees.escrow.toFixed(2)}</span></div>
-              {fees.gas > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gas.toFixed(4)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee</span><span className="text-muted-foreground">-${fees.escrowFee.toFixed(2)}</span></div>
+              {fees.gasFee > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gasFee.toFixed(4)}</span></div>
               )}
               <div className="flex justify-between border-t border-border pt-1 mt-1">
                 <span className="font-bold text-sm text-foreground">You Receive</span>
-                <span className="font-bold text-sm text-primary">${fees.net.toFixed(2)}</span>
+                <span className="font-bold text-sm text-primary">${fees.netAmount.toFixed(2)}</span>
               </div>
             </div>
             {showFees && (
@@ -670,11 +677,11 @@ const TrustLockOSPayout = ({
               <p className="font-semibold text-accent">Fee Trickle-Down Summary</p>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Escrow fee collected</span>
-                <span className="font-medium text-foreground">${fees.escrow.toFixed(2)}</span>
+                <span className="font-medium text-foreground">${fees.escrowFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">→ Forwarded to Transaction Wallet</span>
-                <span className="font-medium text-accent">${fees.escrow.toFixed(2)}</span>
+                <span className="font-medium text-accent">${fees.feeTrickleToTransactionWallet.toFixed(2)}</span>
               </div>
               {payoutType === "split" && (
                 <p className="text-muted-foreground pt-1 border-t border-accent/10">
@@ -730,8 +737,8 @@ const TrustLockOSPayout = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payout</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via <strong>{selectedProvider?.name}</strong>?
-              {fees && <> After fees, you will receive <strong className="text-primary">${fees.net.toFixed(2)}</strong>.</>}
+              Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via <strong>{selectedProvider?.name ?? activeConfig?.provider ?? "Direct"}</strong>?
+              {fees && <> After fees, you will receive <strong className="text-primary">${fees.netAmount.toFixed(2)}</strong>.</>}
               {" "}This action will instruct the Azix wallet to release funds to your selected payment method.
             </AlertDialogDescription>
           </AlertDialogHeader>

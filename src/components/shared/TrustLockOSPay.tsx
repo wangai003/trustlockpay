@@ -13,9 +13,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
-import { AZIX_WALLETS } from "@/lib/feeEngine";
+import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 
-type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "thirdweb" | "transak" | null;
+type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
 type PayMode = "local" | "diaspora";
 
@@ -40,7 +40,6 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
   { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
-  { id: "thirdweb", icon: Globe, label: "Thirdweb Pay", sub: "Global on-ramp · 1.5% platform + 1.0% processor" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
   { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC · 1.0% platform fee · no processor fee" },
 ];
@@ -104,13 +103,21 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
-  const feeRate = isAdmin ? 0
-    : payMode === "diaspora" && (method === "coinbase" || method === "transak") ? 0.015
-    : payMode === "diaspora" && method === "thirdweb" ? 0.01
-    : method === "azix" ? 0.01
-    : 0.015;
-  const fee = isAdmin ? "0.00" : parsedAmount ? (parsedAmount * feeRate).toFixed(2) : "0.00";
-  const total = parsedAmount ? (parsedAmount + taxTotal + parseFloat(fee)).toFixed(2) : "0.00";
+
+  // Dynamic fee calculation using the cost-optimization engine
+  const isCryptoMethod = method === "azix";
+  const feePaymentMethod: FeePaymentMethod = method === "mobile_money" ? "mobile_money"
+    : method === "bank_transfer" ? "bank_transfer"
+    : method === "azix" ? "crypto"
+    : "card";
+  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
+  const feeBreakdown = parsedAmount > 0 && !isAdmin
+    ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
+    : null;
+  const feeRate = feeBreakdown ? feeBreakdown.feePercentage / 100 : 0;
+  const fee = isAdmin ? "0.00" : feeBreakdown ? feeBreakdown.trustlockFee.toFixed(2) : "0.00";
+  const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
+  const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
 
   const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
 
@@ -410,14 +417,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
-          {(method === "coinbase" || method === "thirdweb" || method === "transak") && (
+          {(method === "coinbase" || method === "transak") && (
             <div className="p-3 rounded-lg border border-border text-center space-y-1">
               <p className="text-xs font-medium">
-                {method === "coinbase" ? "Coinbase Commerce" : method === "thirdweb" ? "Thirdweb Pay" : "Transak"} on-ramp
+                {method === "coinbase" ? "Coinbase Commerce" : "Transak"} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
-                {method === "thirdweb" ? " 1.5% platform + 1.0% processor fee" : " 1.5% platform + 1.5% processor fee"}
+                {" "}1.5% platform + 1.5% processor fee
               </p>
             </div>
           )}
@@ -436,23 +443,35 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           )}
 
           {/* Summary (vendor/buyer only — admin has no fees) */}
-          {!isAdmin && amount && parsedAmount > 0 && (
+          {!isAdmin && amount && parsedAmount > 0 && feeBreakdown && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-muted-foreground">Service Amount</span><span className="font-medium">${parsedAmount.toFixed(2)}</span></div>
               {taxTotal > 0 && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes & Duties</span><span className="font-medium">${taxTotal.toFixed(2)}</span></div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform Fee ({(feeRate * 100).toFixed(1)}%)</span>
+                <span className="text-muted-foreground">Platform Fee ({feeBreakdown.trustlockFee > 0 ? ((feeBreakdown.trustlockFee / parsedAmount) * 100).toFixed(1) : "0.0"}%)</span>
                 <span className="font-medium">${fee}</span>
               </div>
+              {feeBreakdown.processorFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Processor Fee ({feeBreakdown.processorUsed})</span>
+                  <span className="font-medium">${processorFeeDisplay}</span>
+                </div>
+              )}
+              {feeBreakdown.gasFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gas Fee</span>
+                  <span className="font-medium">${feeBreakdown.gasFee.toFixed(4)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border pt-1 mt-1">
                 <span className="font-bold text-sm">Total</span>
                 <span className="font-bold text-sm text-primary">${total}</span>
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
-                <span>Mode</span>
-                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"}</span>
+                <span>Mode · Processor</span>
+                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"} · {feeBreakdown.processorUsed}</span>
               </div>
             </div>
           )}
