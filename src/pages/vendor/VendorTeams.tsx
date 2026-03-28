@@ -252,8 +252,11 @@ const VendorTeams = () => {
               <Badge className={selectedWs.status === "active" ? "bg-primary" : selectedWs.status === "complete" ? "bg-green-600" : "bg-destructive"}>{selectedWs.status}</Badge>
             </div>
             {selectedWs.description && <p className="text-sm text-muted-foreground mt-2">{selectedWs.description}</p>}
+            {!isOwner && myMembership && (
+              <p className="text-xs text-primary font-medium mt-1">You are a team member{myMembership.can_finalize ? " (Finalizer)" : ""}</p>
+            )}
           </div>
-          {selectedWs.status === "active" && (
+          {isOwner && selectedWs.status === "active" && (
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "complete", id: selectedWs.id, label: "Mark as Complete" })}>
                 <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
