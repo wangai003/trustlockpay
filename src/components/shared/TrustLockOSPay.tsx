@@ -731,6 +731,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <p><strong>Support:</strong> support@azix.world</p>
               </div>
 
+              <div className="p-2 rounded-lg border border-accent/30 bg-accent/5">
+                <p className="text-[10px] text-foreground leading-relaxed">
+                  <strong>⚠️ Important:</strong> Your exchange or self-custody wallet may charge a network/withdrawal fee that is <strong>deducted from the amount you send</strong>. If this happens, the full escrow obligation may not be met. To avoid delays, consider sending slightly more than the required total (e.g., $102 for a $100 payment) to ensure the exact amount arrives at our escrow wallet.
+                </p>
+              </div>
+
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
             </div>
           )}
