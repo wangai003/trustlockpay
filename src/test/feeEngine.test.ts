@@ -27,9 +27,9 @@ describe("Fee Engine V2", () => {
       expect(["coinbase", "transak"]).toContain(result);
     });
 
-    it("falls back to stripe for regions only stripe covers", () => {
-      // Japan is only in stripe's region list
-      expect(selectProcessor("JP", false)).toBe("stripe");
+    it("picks transak for regions where transak has global coverage (cheaper than stripe)", () => {
+      // JP: stripe covers it explicitly, but transak has "global" and is cheaper
+      expect(selectProcessor("JP", false)).toBe("transak");
     });
 
     it("respects processorHint override", () => {
