@@ -49,6 +49,7 @@ import BuyerOSPay from "./pages/buyer/BuyerOSPay.tsx";
 import BuyerPayout from "./pages/buyer/BuyerPayout.tsx";
 import BuyerBillPayments from "./pages/buyer/BuyerBillPayments.tsx";
 import BuyerIndustryPlaybook from "./pages/buyer/BuyerIndustryPlaybook.tsx";
+import BuyerTeams from "./pages/buyer/BuyerTeams.tsx";
 
 // Vendor
 import VendorLogin from "./pages/vendor/VendorLogin.tsx";
@@ -72,6 +73,7 @@ import VendorPayout from "./pages/vendor/VendorPayout.tsx";
 import VendorBillPayments from "./pages/vendor/VendorBillPayments.tsx";
 import VendorStandaloneLinks from "./pages/vendor/VendorStandaloneLinks.tsx";
 import VendorIndustryPlaybook from "./pages/vendor/VendorIndustryPlaybook.tsx";
+import VendorTeams from "./pages/vendor/VendorTeams.tsx";
 import PublicCheckout from "./pages/public/PublicCheckout.tsx";
 
 const queryClient = new QueryClient();
@@ -137,6 +139,7 @@ const App = () => (
               <Route path="os-pay" element={<VendorOSPay />} />
               <Route path="payout" element={<VendorPayout />} />
               <Route path="standalone-links" element={<VendorStandaloneLinks />} />
+              <Route path="teams" element={<VendorTeams />} />
               <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
@@ -159,6 +162,7 @@ const App = () => (
               <Route path="analytics" element={<BuyerAnalytics />} />
               <Route path="os-pay" element={<BuyerOSPay />} />
               <Route path="payout" element={<BuyerPayout />} />
+              <Route path="teams" element={<BuyerTeams />} />
               <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
               <Route path="settings" element={<BuyerSettings />} />
             </Route>

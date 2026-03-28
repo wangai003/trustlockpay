@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ const navItems = [
   { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments" },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails" },
+  { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings" },
 ];

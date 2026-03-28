@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, Info, BookOpen } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, Info, BookOpen, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,6 +17,7 @@ const navItems = [
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/buyer/help", tip: "Guides, FAQs, and how-to articles" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/buyer/os-pay", tip: "Make internal OS service payments" },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Withdraw refunded or split funds" },
+  { label: "Teams", icon: Users, to: "/trustlock/buyer/teams", tip: "Manage procurement teams and coordinate buyer-side tasks" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/buyer/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview" },
   { label: "Settings", icon: Settings, to: "/trustlock/buyer/settings", tip: "Account preferences and notifications" },
 ];
