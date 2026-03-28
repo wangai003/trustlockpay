@@ -252,7 +252,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     token: "USDC",
     tokenContract: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
     receivingWallet: AZIX_TRANSACTION_WALLET,
-    owner: "Azix Inc.",
+    owner: "Azix",
     supportEmail: "support@azix.world",
     instructions: [
       "Send exactly $1.00 in USDC on Polygon to the receiving wallet.",
