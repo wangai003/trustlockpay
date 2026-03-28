@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       devOptions: { enabled: false },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
