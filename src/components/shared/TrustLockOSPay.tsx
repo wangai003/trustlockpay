@@ -283,29 +283,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
           </div>
 
-          {/* ─── SEED TOKEN (auto-linked, read-only) ─── */}
-          {!isAdmin && (
-          <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-primary" />
-              <p className="text-xs font-semibold">Transaction Fee Wallet</p>
-              {seedTokenLinked && <Badge className="text-[10px] bg-primary/20 text-primary border-0 ml-auto">✓ Auto-Linked</Badge>}
-              {!seedTokenLinked && <Badge variant="outline" className="text-[10px] ml-auto animate-pulse">Linking...</Badge>}
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Your seed token is automatically generated and linked to the Azix Transaction Fee Wallet. No action needed.
-            </p>
-            <Input
-              value={seedToken || "Generating..."}
-              readOnly
-              className="font-mono text-xs bg-muted"
-            />
-            <div className="p-2 rounded bg-muted text-[10px]">
-              <p className="text-muted-foreground">Routing to → <span className="font-semibold text-foreground">{AZIX_WALLETS.transaction.label}</span></p>
-              <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
-            </div>
-          </div>
-          )}
+          {/* Seed token is auto-linked in the background — UI hidden, backend logic intact */}
 
           {/* ─── COUNTRY SELECTOR (for local mode bank/mobile) ─── */}
           {!isAdmin && payMode === "local" && (method === "bank_transfer" || method === "mobile_money") && (

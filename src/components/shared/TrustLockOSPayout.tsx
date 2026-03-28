@@ -293,41 +293,7 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
-      {/* ═══ ESCROW WALLET SEED TOKEN (Top) ═══ */}
-      <Card className="rounded-t-none -mt-4 border-t-0 border-2 border-primary/20">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-primary" />
-            <p className="text-xs font-semibold">Escrow Custodian Wallet</p>
-            <Badge variant="outline" className="text-[10px] ml-auto">
-              {payoutType === "refund" ? "Refund Mode" : payoutType === "split" ? "Split Mode" : "Release Mode"}
-            </Badge>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            {payoutType === "refund"
-              ? "Funds will be returned to the buyer from the escrow wallet. No fees are deducted — escrow and platform fees are waived on refunds."
-              : payoutType === "split"
-                ? "Both buyer and vendor receive their split simultaneously. Escrow service fee is deducted from the vendor's share only, then forwarded to the transaction fee wallet below."
-                : "Vendor's funds are released first. The escrow service fee (1.0%) is deducted and forwarded to the transaction fee wallet below."}
-          </p>
-          <div>
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Escrow Seed Token (Payout)</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                value={seedToken}
-                disabled
-                className="font-mono text-xs bg-muted flex-1"
-              />
-              <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-            </div>
-          </div>
-          <div className="p-2 rounded bg-muted text-[10px]">
-            <p className="text-muted-foreground">Linked to → <span className="font-semibold text-foreground">{AZIX_WALLETS.escrow.label}</span></p>
-            <p className="font-mono font-medium">{AZIX_WALLETS.escrow.publicKey}</p>
-            <p className="text-muted-foreground mt-1">{AZIX_WALLETS.escrow.purpose}</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
 
       {/* ═══ FLOW CONNECTOR: Escrow → Payment Methods → Transaction Wallet ═══ */}
       <div className="flex flex-col items-center gap-1 -my-2 relative z-10">
@@ -637,101 +603,7 @@ const TrustLockOSPayout = ({
         </Card>
       )}
 
-      {/* ═══ TRANSACTION FEE WALLET SEED TOKEN (Bottom) ═══ */}
-      <div className="flex flex-col items-center gap-1 -mb-2 relative z-10">
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
-          <span className="font-semibold">
-            {payoutType === "refund"
-              ? "No fees forwarded on refunds"
-              : "Escrow service fees trickle down here"}
-          </span>
-          <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
-        </div>
-      </div>
-
-      <Card className={cn(
-        "border-2 transition-all",
-        payoutType === "refund"
-          ? "border-muted opacity-60"
-          : "border-accent/30"
-      )}>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-accent" />
-            <p className="text-xs font-semibold">Transaction Fee Wallet</p>
-            {payoutType === "refund" && (
-              <Badge variant="secondary" className="text-[10px] ml-auto">Inactive on Refunds</Badge>
-            )}
-            {payoutType !== "refund" && (
-              <Badge className="text-[10px] ml-auto bg-accent/20 text-accent border-0">Receiving Fees</Badge>
-            )}
-          </div>
-
-          {payoutType === "refund" ? (
-            <p className="text-[10px] text-muted-foreground">
-              This wallet does not receive any fees during a refund. The escrow wallet returns the full principal to the buyer with no deductions.
-            </p>
-          ) : payoutType === "split" ? (
-            <p className="text-[10px] text-muted-foreground">
-              The 1.0% escrow service fee deducted from the <strong>vendor's share only</strong> is forwarded here.
-              The buyer's share is released without any fee deduction. Both parties are paid simultaneously.
-            </p>
-          ) : (
-            <p className="text-[10px] text-muted-foreground">
-              The 1.0% escrow service fee deducted at release is forwarded from the escrow wallet to this transaction fee wallet.
-              This wallet also collects platform fees from TrustLock OS Pay service payments.
-            </p>
-          )}
-
-          <div>
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Transaction Fee Seed Token (OS Pay)</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                value={payoutType === "refund" ? "— No fee transfer on refunds —" : seedToken ? `PAY-${seedToken.slice(3)}` : "TL-PAY-DEMO-XXXX"}
-                disabled
-                className={cn(
-                  "font-mono text-xs flex-1",
-                  payoutType === "refund" ? "bg-muted/50 text-muted-foreground italic" : "bg-muted"
-                )}
-              />
-              <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            </div>
-          </div>
-
-          <div className="p-2 rounded bg-muted text-[10px]">
-            <p className="text-muted-foreground">Linked to → <span className="font-semibold text-foreground">{AZIX_WALLETS.transaction.label}</span></p>
-            <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
-            <p className="text-muted-foreground mt-1">{AZIX_WALLETS.transaction.purpose}</p>
-          </div>
-
-          {payoutType !== "refund" && fees && amountNum > 0 && (
-            <div className="p-2 rounded border border-accent/20 bg-accent/5 text-[10px] space-y-1">
-              <p className="font-semibold text-accent">Fee Trickle-Down Summary</p>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Escrow fee collected</span>
-                <span className="font-medium text-foreground">${fees.escrowFee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">→ Forwarded to Transaction Wallet</span>
-                <span className="font-medium text-accent">${fees.feeTrickleToTransactionWallet.toFixed(2)}</span>
-              </div>
-              {payoutType === "split" && (
-                <p className="text-muted-foreground pt-1 border-t border-accent/10">
-                  Fee calculated on vendor's share only. Buyer's portion is fee-free.
-                </p>
-              )}
-            </div>
-          )}
-
-          <Separator />
-
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Shield className="w-3 h-3" />
-            <span>Same seed token wired in TrustLock OS Pay — unified fee collection point</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Transaction fee wallet seed token auto-linked in background — UI hidden, backend logic intact */}
 
       {/* Privacy Disclaimer */}
       <div className="bg-muted/50 rounded-lg p-3 space-y-1">
