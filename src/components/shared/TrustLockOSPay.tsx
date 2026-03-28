@@ -648,6 +648,54 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 </div>
               </div>
 
+              {/* ── PIN + Bypass / Test Submit ── */}
+              <div className="space-y-2 p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+                <p className="text-xs font-semibold">4-Digit Security PIN</p>
+                <Input
+                  type="password"
+                  maxLength={4}
+                  placeholder="Enter or create your 4-digit PIN"
+                  value={cryptoPin}
+                  onChange={e => setCryptoPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="mt-1 text-center text-lg tracking-[0.5em] font-mono"
+                />
+                <p className="text-[9px] text-muted-foreground">
+                  {testVerified
+                    ? "Enter your PIN to bypass the test and proceed with payment."
+                    : "First time? Create a 4-digit PIN. This PIN is linked to your wallet and used for all future crypto payments on TrustLock OS Pay and TrustLock Pay."}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    disabled={cryptoPin.length !== 4 || !txIdInput || !senderAmount}
+                    onClick={() => {
+                      toast.success("Test transaction submitted for verification. Check your email for confirmation from support@azix.world.");
+                    }}
+                  >
+                    Submit Test ($1.00)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="text-xs"
+                    disabled={cryptoPin.length !== 4 || !testVerified}
+                    onClick={() => {
+                      toast.info("Bypass activated — proceed with full payment.");
+                    }}
+                  >
+                    Bypass → Pay Balance
+                  </Button>
+                </div>
+                {!testVerified && (
+                  <p className="text-[9px] text-destructive font-medium">
+                    ⛔ You must complete at least one verified test before using Bypass.
+                  </p>
+                )}
+              </div>
+
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
             </div>
           )}
