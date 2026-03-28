@@ -83,11 +83,28 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   const handleMarkFulfilled = async (milestoneId: string) => {
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
-    await updateMilestone.mutateAsync({
+
+    // Phase 1: Capture GPS coordinates on milestone completion
+    const geo = await capturePosition();
+    
+    const updatePayload: Record<string, any> = {
       milestoneId,
       userId,
       status: "completed",
-    });
+    };
+
+    if (geo) {
+      // Store GPS data via direct update since hook may not support new cols
+      await supabase.from("transaction_milestones").update({
+        gps_latitude: geo.latitude,
+        gps_longitude: geo.longitude,
+        gps_accuracy: geo.accuracy,
+        gps_captured_at: geo.capturedAt,
+      } as any).eq("id", milestoneId);
+      toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+    }
+
+    await updateMilestone.mutateAsync(updatePayload);
   };
 
   const handleReleaseMilestone = async (milestoneId: string) => {
