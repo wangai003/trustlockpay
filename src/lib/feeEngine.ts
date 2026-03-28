@@ -179,11 +179,62 @@ const FEE_RULES: Record<TransactionType, FeeRule> = {
 };
 
 // ─── Processor Selection Logic ─────────────────────────────
-// Selects best processor based on region and transaction type
+// Cost-optimized: finds all eligible processors for a region+method,
+// ranks by combined fee (TrustLock + processor), picks cheapest.
+
+export interface ProcessorMatch {
+  id: ProcessorId;
+  config: ProcessorConfig;
+  combinedRate: number; // trustlock rate + processor rate
+}
+
+/**
+ * Returns all processors eligible for a given country and payment method,
+ * sorted by fee rate ascending (cheapest first).
+ */
+export function getEligibleProcessors(
+  country: string,
+  paymentMethod: PaymentMethod = "card",
+  transactionType: TransactionType = "checkout_fiat"
+): ProcessorMatch[] {
+  const trustlockRate = FEE_RULES[transactionType]?.trustlockRate ?? 1.5;
+
+  const eligible: ProcessorMatch[] = [];
+
+  for (const [id, config] of Object.entries(PROCESSORS) as [ProcessorId, ProcessorConfig][]) {
+    // Skip direct for non-crypto methods
+    if (id === "direct" && paymentMethod !== "crypto") continue;
+    // Skip non-crypto processors for crypto method
+    if (paymentMethod === "crypto" && !config.supportsCrypto) continue;
+    // Check region match
+    const regionMatch = config.regions.includes(country) || config.regions.includes("global");
+    if (!regionMatch) continue;
+    // Check payment method support
+    if (!config.supportedMethods.includes(paymentMethod)) continue;
+
+    eligible.push({
+      id: id as ProcessorId,
+      config,
+      combinedRate: trustlockRate + config.feeRate,
+    });
+  }
+
+  // Sort by combined rate ascending (cheapest first)
+  eligible.sort((a, b) => a.combinedRate - b.combinedRate);
+
+  return eligible;
+}
+
+/**
+ * Selects the cheapest eligible processor for a country and payment method.
+ * Falls back to Stripe for unmatched regions.
+ */
 export function selectProcessor(
   country: string,
   isCrypto: boolean,
-  processorHint?: ProcessorId
+  processorHint?: ProcessorId,
+  paymentMethod?: PaymentMethod,
+  transactionType?: TransactionType
 ): ProcessorId {
   // If caller specifies a processor, use it
   if (processorHint && PROCESSORS[processorHint]) return processorHint;
@@ -191,18 +242,15 @@ export function selectProcessor(
   // Direct crypto-to-crypto bypasses all processors
   if (isCrypto) return "direct";
 
-  // African local payments: prefer Yellow Card, fallback to Coinbase
-  const africanCountries = PROCESSORS.yellow_card.regions;
-  if (africanCountries.includes(country)) {
-    return "yellow_card";
+  const method = paymentMethod ?? "card";
+  const txType = transactionType ?? "checkout_fiat";
+  const eligible = getEligibleProcessors(country, method, txType);
+
+  if (eligible.length > 0) {
+    return eligible[0].id;
   }
 
-  // Coinbase for supported regions with crypto on/off ramp
-  if (PROCESSORS.coinbase.regions.includes(country)) {
-    return "coinbase";
-  }
-
-  // Diaspora / global: Stripe for pure fiat, Transak for fiat-to-crypto
+  // Ultimate fallback
   return "stripe";
 }
 
