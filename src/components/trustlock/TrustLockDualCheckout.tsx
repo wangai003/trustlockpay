@@ -276,6 +276,12 @@ const TrustLockDualCheckout = () => {
                     <p><strong>Owner:</strong> Azix</p>
                     <p><strong>Support:</strong> support@azix.world</p>
                   </div>
+
+                  <div className="p-1.5 rounded-lg border border-accent/30 bg-accent/5">
+                    <p className="text-[9px] text-foreground leading-relaxed">
+                      <strong>⚠️ Important:</strong> Your exchange or self-custody wallet may charge a network/withdrawal fee that is <strong>deducted from the amount you send</strong>. If this happens, the full escrow obligation may not be met. Consider sending slightly more than the required total to ensure the exact amount arrives.
+                    </p>
+                  </div>
                 </div>
               )}
 
