@@ -239,8 +239,7 @@ const TrustLockDualCheckout = () => {
                       setCryptoVerifyStatus("verifying");
                       await new Promise(r => setTimeout(r, 2500));
                       const amt = parseFloat(checkoutSenderAmount) || 0;
-                      if (amt > 0 && amt < 100) { setCryptoVerifyStatus("verified"); } 
-                      else if (amt >= 100) { setCryptoVerifyStatus("pending"); } 
+                      if (amt > 0) { setCryptoVerifyStatus("verified"); } 
                       else { setCryptoVerifyStatus("failed"); }
                     }}>
                     {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." : "Verify & Generate Order"}
@@ -255,8 +254,8 @@ const TrustLockDualCheckout = () => {
                   )}
                   {cryptoVerifyStatus === "pending" && (
                     <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 space-y-1.5">
-                      <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Pending Admin Verification ($100+)</p>
-                      <p className="text-[9px] text-foreground">Provide your details so our team can confirm and contact you.</p>
+                      <p className="text-[10px] font-bold text-accent flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Pending On-Chain Confirmation</p>
+                      <p className="text-[9px] text-foreground">Transaction not yet confirmed. Provide your details so our team can investigate.</p>
                       <Input placeholder="Full Name" value={pendingName} onChange={e => setPendingName(e.target.value)} className="text-[10px]" />
                       <Input placeholder="Email Address" value={pendingEmail} onChange={e => setPendingEmail(e.target.value)} className="text-[10px]" />
                       <Button type="button" variant="outline" size="sm" className="w-full text-[9px] h-6" disabled={!pendingName || !pendingEmail}>Submit for Review</Button>
