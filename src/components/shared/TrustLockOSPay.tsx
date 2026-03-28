@@ -793,6 +793,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
 
               <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
+              </>)}
             </div>
           )}
 
