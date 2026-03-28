@@ -190,6 +190,12 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
 
               <div className="text-[11px] text-muted-foreground">
                 Amount: ${Number(ms.payment_amount || 0).toLocaleString()} · Uploaded docs: {(ms.uploaded_documents || []).length}
+                {ms.gps_latitude && (
+                  <span className="ml-2 inline-flex items-center gap-0.5">
+                    <MapPin className="w-3 h-3 text-primary" />
+                    {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
+                  </span>
+                )}
               </div>
 
               {role === "vendor" && !ms.observer_id && (
