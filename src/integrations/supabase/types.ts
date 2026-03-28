@@ -1674,6 +1674,160 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          added_by: string
+          can_finalize: boolean
+          created_at: string
+          display_name: string | null
+          id: string
+          removed_at: string | null
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          added_by: string
+          can_finalize?: boolean
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          removed_at?: string | null
+          role?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          added_by?: string
+          can_finalize?: boolean
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          removed_at?: string | null
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "team_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_task_assignments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          evidence_url: string | null
+          id: string
+          instructions: string | null
+          member_id: string
+          milestone_key: string
+          milestone_label: string | null
+          sort_order: number
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          instructions?: string | null
+          member_id: string
+          milestone_key: string
+          milestone_label?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          instructions?: string | null
+          member_id?: string
+          milestone_key?: string
+          milestone_label?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_task_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_task_assignments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "team_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_workspaces: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          industry: string
+          owner_id: string
+          role: string
+          status: string
+          title: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string
+          owner_id: string
+          role?: string
+          status?: string
+          title: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string
+          owner_id?: string
+          role?: string
+          status?: string
+          title?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_workspaces_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_bloc_rules: {
         Row: {
           bloc_code: string
