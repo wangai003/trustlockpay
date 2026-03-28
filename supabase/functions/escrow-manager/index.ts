@@ -455,6 +455,19 @@ async function releaseFunds(body: Record<string, unknown>) {
   if (fetchErr || !tx) return errorResponse("Transaction not found", 404);
   if (tx.status === "released") return errorResponse("Already released", 400);
 
+  // ── Compliance: log high-value releases for CTR ──
+  if (tx.amount >= AML_THRESHOLDS.CTR_REPORTING) {
+    await supabase.from("compliance_flags").insert({
+      flag_id: `REL-${Date.now()}`,
+      type: "CTR_RELEASE",
+      description: `Escrow release of $${tx.amount.toLocaleString()} for ${tx.tx_id}. Mandatory CTR reporting threshold exceeded.`,
+      severity: "high",
+      status: "open",
+      related_buyer_id: tx.buyer_id,
+      related_vendor_id: tx.vendor_id,
+    });
+  }
+
   const fees = calculateFees(tx.amount, "release");
   const wallets = getWalletAddresses();
   const now = new Date().toISOString();
