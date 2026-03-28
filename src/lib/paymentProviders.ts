@@ -300,7 +300,7 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     category: "crypto_wallet",
     mode: "local",
     countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "email", label: "Email", placeholder: "your@email.com", type: "text", required: true },
     ],
