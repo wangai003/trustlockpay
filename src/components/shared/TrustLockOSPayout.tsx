@@ -195,6 +195,9 @@ const TrustLockOSPayout = ({
     setConfirmDialog(false);
     setProcessing(true);
 
+    const providerName = selectedProvider?.name ?? activeConfig?.provider ?? "Direct";
+    const providerCategory = selectedProvider?.category ?? selectedMethod ?? "unknown";
+
     try {
       const res = await initiatePayout.mutateAsync({
         seedToken,
@@ -203,9 +206,9 @@ const TrustLockOSPayout = ({
         transactionId,
         orderNumber: prefillOrderNumber,
         amount: String(amountNum),
-        paymentCategory: selectedProvider!.category,
-        paymentProvider: selectedProvider!.name,
-        providerDetails: providerFields,
+        paymentCategory: providerCategory,
+        paymentProvider: providerName,
+        providerDetails: { ...providerFields, ...dynamicFields },
         mode,
       });
 
