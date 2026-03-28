@@ -494,22 +494,17 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   </div>
                 </div>
                 <div className="ml-6 space-y-1.5 text-[10px] text-foreground">
-                  <p><strong>Step 1:</strong> Send exactly <strong>$1.00 in USDC</strong> to the Azix receiving wallet below.</p>
-                  <p><strong>Step 2:</strong> Email <strong>support@azix.world</strong> with the following details:</p>
+                  <p><strong>Step 1:</strong> Send exactly <strong>$1.00 in {selectedToken}</strong> on <strong>Polygon</strong> to the Azix receiving wallet below.</p>
+                  <p><strong>Step 2:</strong> Return here and paste your <strong>Transaction ID (TxID)</strong> and the <strong>amount sent</strong> into the fields below.</p>
+                  <p><strong>Step 3:</strong> Email <strong>support@azix.world</strong> with:</p>
                   <ul className="list-disc ml-4 space-y-0.5 text-muted-foreground">
                     <li>Your full name and account email</li>
                     <li>Your sending wallet address</li>
                     <li>Transaction hash (TxID) of the $1.00 test</li>
                     <li>The amount you intend to send after verification</li>
                   </ul>
-                  <p><strong>Step 3:</strong> An Azix team member will confirm receipt, verify your wallet address matches on-chain records, and reply to your email with:</p>
-                  <ul className="list-disc ml-4 space-y-0.5 text-muted-foreground">
-                    <li>✅ Confirmation of the $1.00 received</li>
-                    <li>✅ Your verified sending wallet address</li>
-                    <li>✅ The receiving wallet address for your full payment</li>
-                    <li>✅ Status: <em>"Payment verified — proceed with balance"</em></li>
-                  </ul>
-                  <p><strong>Step 4:</strong> Once you receive confirmation, return here, enter your 4-digit PIN, and tap <strong>"Bypass"</strong> to send the remaining balance. The difference (total minus $1.00 test) will auto-populate.</p>
+                  <p><strong>Step 4:</strong> An Azix team member will confirm receipt, verify your wallet address matches on-chain records, and reply with confirmation.</p>
+                  <p><strong>Step 5:</strong> Once confirmed, return here, enter your 4-digit PIN, and tap <strong>"Bypass"</strong> to send the remaining balance. The difference (total minus $1.00 test) will auto-populate.</p>
                 </div>
                 <div className="ml-6 p-2 rounded bg-destructive/5 border border-destructive/20">
                   <p className="text-[10px] font-bold text-destructive">
@@ -532,45 +527,122 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     <p className="text-xs font-semibold">Polygon (MATIC)</p>
                     <p className="text-[10px] text-muted-foreground">Chain ID: 137</p>
                   </div>
-                  <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
-                    <p className="text-[10px] font-bold text-primary">Token</p>
-                    <p className="text-xs font-semibold">USDC</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">0x3c499...b8f0</p>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-primary text-center">Select Token</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        onClick={() => setSelectedToken("USDC")}
+                        className={cn(
+                          "p-1.5 rounded-lg border-2 text-center text-[10px] font-semibold transition-all",
+                          selectedToken === "USDC" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-muted-foreground/40"
+                        )}
+                      >
+                        USDC
+                      </button>
+                      <button
+                        onClick={() => setSelectedToken("USDT")}
+                        className={cn(
+                          "p-1.5 rounded-lg border-2 text-center text-[10px] font-semibold transition-all",
+                          selectedToken === "USDT" ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-muted-foreground/40"
+                        )}
+                      >
+                        USDT
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground font-mono text-center">
+                      {selectedToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"}
+                    </p>
                   </div>
                 </div>
                 <p className="text-[10px] text-destructive font-medium">
-                  ⚠️ Only send USDC on Polygon network. Sending on other networks (Ethereum, BSC, etc.) will result in permanent loss of funds.
+                  ⚠️ Only send {selectedToken} on Polygon network. Sending on other networks (Ethereum, BSC, Arbitrum, etc.) will result in <strong>permanent loss of funds</strong>.
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
-                  <p><strong>Where to send from:</strong> You can send USDC from any self-custody wallet (MetaMask, Trust Wallet, Ledger, Coinbase Wallet) or directly from an exchange that supports Polygon USDC withdrawals (Coinbase, Binance, Kraken).</p>
-                  <p><strong>How to get USDC on Polygon:</strong> If your USDC is on Ethereum or another chain, use a bridge like <em>Polygon Bridge</em> or <em>Jumper Exchange</em> to move it to Polygon before sending.</p>
-                  <p><strong>Network selection:</strong> When withdrawing from an exchange, select <strong>"Polygon"</strong> or <strong>"MATIC"</strong> as the withdrawal network — NOT Ethereum mainnet.</p>
+                  <p><strong>Where to send from:</strong> Any self-custody wallet (MetaMask, Trust Wallet, Ledger, Coinbase Wallet) or exchange supporting Polygon withdrawals (Coinbase, Binance, Kraken, Luno).</p>
+                  <p><strong>How to get {selectedToken} on Polygon:</strong> If your {selectedToken} is on Ethereum or another chain, use a bridge like <em>Polygon Bridge</em> or <em>Jumper Exchange</em> to move it to Polygon first.</p>
+                  <p><strong>From an exchange:</strong> Go to Withdraw → select {selectedToken} → choose <strong>"Polygon"</strong> or <strong>"MATIC"</strong> network (NOT Ethereum mainnet) → paste the Azix address below.</p>
+                  <p><strong>From a self-custody wallet:</strong> Open MetaMask/Trust Wallet → switch to Polygon network → Send → paste the Azix address → enter amount → confirm.</p>
                 </div>
               </div>
 
-              {/* ── Azix Receiving Wallet ── */}
+              {/* ── Azix Receiving Wallet (LOCKED + COPY) ── */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Azix Receiving Wallet (Owned by Azix)</Label>
-                <Input value={AZIX_WALLETS.transaction.publicKey} disabled className="mt-1 bg-muted font-mono text-xs" />
+                <Label className="text-xs font-semibold">Azix Receiving Wallet — <span className="text-destructive">DO NOT EDIT</span></Label>
+                <div className="relative">
+                  <Input
+                    value={AZIX_WALLETS.transaction.publicKey}
+                    readOnly
+                    className="mt-1 bg-muted font-mono text-xs pr-16 cursor-not-allowed border-2 border-primary/30"
+                    tabIndex={-1}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 gap-1 text-[10px]"
+                    onClick={() => {
+                      navigator.clipboard.writeText(AZIX_WALLETS.transaction.publicKey);
+                      setCopiedAddress(true);
+                      toast.success("Wallet address copied!");
+                      setTimeout(() => setCopiedAddress(false), 3000);
+                    }}
+                  >
+                    {copiedAddress ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                    {copiedAddress ? "Copied" : "Copy"}
+                  </Button>
+                </div>
                 <div className="p-2 rounded bg-muted text-[10px] space-y-1">
                   <p><strong>Owner:</strong> Azix — Parent company of TrustLock</p>
                   <p><strong>Purpose:</strong> Receives platform fees and crypto payments</p>
-                  <p><strong>Network:</strong> Polygon (MATIC) — USDC only</p>
+                  <p><strong>Network:</strong> Polygon (MATIC) — {selectedToken} only</p>
                   <p><strong>Support:</strong> support@azix.world</p>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  This is a public blockchain address. Sharing it does not compromise security — only the private key holder (Azix) can access received funds.
+                  🔒 This address is locked and cannot be edited. Copy it and paste into your wallet or exchange withdrawal screen. Sharing a public address does not compromise security.
                 </p>
               </div>
 
               {/* ── Sender Wallet Input ── */}
               <div>
                 <Label className="text-xs font-semibold">Your Sending Wallet Address</Label>
-                <Input placeholder="0x... (Polygon USDC wallet)" value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
+                <Input placeholder="0x... (Polygon wallet)" value={azixAddress} onChange={e => setAzixAddress(e.target.value)} className="mt-1 font-mono text-xs" />
                 <div className="mt-1 p-2 rounded bg-muted/50 text-[10px] text-muted-foreground space-y-1">
-                  <p>Enter the wallet address you will send USDC from. This address will be verified during the $1 test.</p>
-                  <p><strong>How to find it:</strong> Open your wallet app (MetaMask, Trust Wallet, etc.) → tap your account name → copy address. If withdrawing from an exchange, check your withdrawal history for the sending address.</p>
+                  <p>Enter the wallet address you will send {selectedToken} from. This address will be verified during the $1 test.</p>
+                  <p><strong>How to find it:</strong> Open your wallet app → tap your account name or address → copy. If withdrawing from an exchange, check withdrawal history for the sending address.</p>
                   <p><strong>Important:</strong> Use the same address for the test and all subsequent payments. Changing wallets requires a new verification.</p>
+                </div>
+              </div>
+
+              {/* ── TxID & Amount Verification Fields ── */}
+              <div className="space-y-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                <p className="text-xs font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                  After Sending — Paste Your Proof
+                </p>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Transaction ID (TxID / Hash)</Label>
+                  <Input
+                    placeholder="0x... (paste your transaction hash from wallet/exchange)"
+                    value={txIdInput}
+                    onChange={e => setTxIdInput(e.target.value)}
+                    className="mt-1 font-mono text-xs"
+                  />
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    <strong>Where to find:</strong> After sending, your wallet/exchange shows a "Transaction Hash" or "TxID" — it starts with 0x and is 66 characters long. You can also find it on <em>polygonscan.com</em>.
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Amount Sent ({selectedToken})</Label>
+                  <Input
+                    type="number"
+                    placeholder="1.00"
+                    value={senderAmount}
+                    onChange={e => setSenderAmount(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    Enter the exact amount you sent so we can match it on-chain. For the test run, this should be <strong>$1.00</strong>.
+                  </p>
                 </div>
               </div>
 
