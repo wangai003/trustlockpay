@@ -119,7 +119,7 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
         }
       });
 
-      const { data, error } = await supabase.from("rfq_requests").insert({
+      const insertPayload = {
         vendor_id: vendorId,
         rfq_number: rfqNumber,
         status: "submitted",
@@ -135,7 +135,8 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
         requested_delivery_date: deliveryDate || null,
         notes: notes.trim() || null,
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      }).select().single();
+      } as any;
+      const { data, error } = await supabase.from("rfq_requests").insert(insertPayload).select().single();
 
       if (error) throw error;
 
