@@ -19,6 +19,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 const BuyerOverview = () => {
   const { buyer } = useBuyer();
+  const navigate = useNavigate();
   const { data: transactions = [] } = useTransactions();
   const confirmDelivery = useConfirmDelivery();
 

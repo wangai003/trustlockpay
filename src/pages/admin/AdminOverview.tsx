@@ -155,7 +155,9 @@ const AdminOverview = () => {
                       <td className="p-4 text-right font-semibold">{tx.amount}</td>
                       <td className="p-4 text-center">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[tx.status] || ""}`}>
-                          {tx.status === "locked" && <Clock className="w-3 h-3" />}
+                         {tx.status === "locked" && <Clock className="w-3 h-3" />}
+                          {tx.status === "shipped" && <Clock className="w-3 h-3" />}
+                          {tx.status === "delivered" && <CheckCircle className="w-3 h-3" />}
                           {tx.status === "released" && <CheckCircle className="w-3 h-3" />}
                           {tx.status === "disputed" && <AlertTriangle className="w-3 h-3" />}
                           {tx.status}
