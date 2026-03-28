@@ -142,7 +142,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
     name: "Buy with Card (Thirdweb)",
     category: "card",
     mode: "diaspora",
-    processor: "thirdweb",
+    processor: "transak",
     fields: [
       { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
       { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
