@@ -361,7 +361,7 @@ export const FEE_CATEGORIES = {
     range: "1.5% – 2.9%",
     rangeWithDirect: "0% – 2.9%",
     wallet: "external" as const,
-    description: "Paid to the payment processor (Stripe, Coinbase, Yellow Card, Transak, or Thirdweb) for fiat-to-crypto conversion.",
+    description: "Paid to the payment processor (Stripe, Coinbase, or Transak) for fiat-to-crypto conversion.",
     when: "Charged at checkout. Direct crypto-to-crypto transfers bypass this fee entirely.",
   },
   escrow: {
