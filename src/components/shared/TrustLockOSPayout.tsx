@@ -677,11 +677,11 @@ const TrustLockOSPayout = ({
               <p className="font-semibold text-accent">Fee Trickle-Down Summary</p>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Escrow fee collected</span>
-                <span className="font-medium text-foreground">${fees.escrow.toFixed(2)}</span>
+                <span className="font-medium text-foreground">${fees.escrowFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">→ Forwarded to Transaction Wallet</span>
-                <span className="font-medium text-accent">${fees.escrow.toFixed(2)}</span>
+                <span className="font-medium text-accent">${fees.feeTrickleToTransactionWallet.toFixed(2)}</span>
               </div>
               {payoutType === "split" && (
                 <p className="text-muted-foreground pt-1 border-t border-accent/10">
