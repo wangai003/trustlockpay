@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
         if (!paymentProvider) throw new Error("Payment provider required");
 
         const amountNum = parseFloat(amount);
-        const processor = processorId || (paymentCategory === "crypto_wallet" ? "direct" : "yellow_card");
+        const processor = processorId || (paymentCategory === "crypto_wallet" ? "direct" : "coinbase");
 
         const fees = calculatePayoutFees(
           amountNum,
