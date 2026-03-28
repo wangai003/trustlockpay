@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import TeamTemplateManager from "@/components/shared/TeamTemplateManager";
 import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, Eye, AlertTriangle, ClipboardList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [
   { key: "mining", label: "Mining" },
@@ -36,6 +37,7 @@ type Workspace = {
   status: string;
   created_at: string;
   transaction_id: string | null;
+  owner_id: string;
 };
 
 type Member = {
@@ -69,6 +71,8 @@ const VendorTeams = () => {
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
   const [tab, setTab] = useState("active");
+  const [isOwner, setIsOwner] = useState(true);
+  const [myMembership, setMyMembership] = useState<Member | null>(null);
 
   // Form states
   const [newTitle, setNewTitle] = useState("");
@@ -88,13 +92,31 @@ const VendorTeams = () => {
 
   const fetchWorkspaces = async () => {
     setLoading(true);
-    const { data } = await supabase
+    // Fetch owned workspaces
+    const { data: owned } = await supabase
       .from("team_workspaces")
       .select("*")
       .eq("owner_id", user!.id)
       .eq("role", "vendor")
       .order("created_at", { ascending: false });
-    setWorkspaces((data as any[]) || []);
+    // Also fetch workspaces where user is a member (RLS handles this)
+    const { data: memberOf } = await supabase
+      .from("team_members")
+      .select("workspace_id")
+      .eq("user_id", user!.id)
+      .is("removed_at", null);
+    const memberWsIds = (memberOf || []).map((m: any) => m.workspace_id);
+    const ownedIds = (owned || []).map((w: any) => w.id);
+    const missingIds = memberWsIds.filter((id: string) => !ownedIds.includes(id));
+    let allWorkspaces = [...(owned || [])] as Workspace[];
+    if (missingIds.length > 0) {
+      const { data: extra } = await supabase
+        .from("team_workspaces")
+        .select("*")
+        .in("id", missingIds);
+      allWorkspaces = [...allWorkspaces, ...((extra || []) as Workspace[])];
+    }
+    setWorkspaces(allWorkspaces);
     setLoading(false);
   };
 
@@ -107,7 +129,8 @@ const VendorTeams = () => {
     setMembers((data as any[]) || []);
   };
 
-  const fetchTasks = async (wsId: string) => {
+  const fetchTasks = async (wsId: string, ownerCheck: boolean, membership: Member | null) => {
+    // RLS already filters: owners see all, members see only their assigned tasks
     const { data } = await supabase
       .from("team_task_assignments")
       .select("*")
@@ -116,10 +139,25 @@ const VendorTeams = () => {
     setTasks((data as any[]) || []);
   };
 
-  const openWorkspace = (ws: Workspace) => {
+  const openWorkspace = async (ws: Workspace) => {
     setSelectedWs(ws);
-    fetchMembers(ws.id);
-    fetchTasks(ws.id);
+    const owner = ws.owner_id === user!.id;
+    setIsOwner(owner);
+    
+    // Fetch members
+    const { data: memberData } = await supabase
+      .from("team_members")
+      .select("*")
+      .eq("workspace_id", ws.id)
+      .is("removed_at", null);
+    const mems = (memberData as any[]) || [];
+    setMembers(mems);
+    
+    // Find current user's membership
+    const myMem = mems.find((m: Member) => m.user_id === user!.id) || null;
+    setMyMembership(myMem);
+    
+    fetchTasks(ws.id, owner, myMem);
   };
 
   const createWorkspace = async () => {
@@ -185,7 +223,7 @@ const VendorTeams = () => {
     setTaskKey("");
     setTaskLabel("");
     setTaskInstructions("");
-    fetchTasks(selectedWs.id);
+    fetchTasks(selectedWs.id, isOwner, myMembership);
   };
 
   const updateWorkspaceStatus = async (status: string) => {
@@ -215,8 +253,11 @@ const VendorTeams = () => {
               <Badge className={selectedWs.status === "active" ? "bg-primary" : selectedWs.status === "complete" ? "bg-green-600" : "bg-destructive"}>{selectedWs.status}</Badge>
             </div>
             {selectedWs.description && <p className="text-sm text-muted-foreground mt-2">{selectedWs.description}</p>}
+            {!isOwner && myMembership && (
+              <p className="text-xs text-primary font-medium mt-1">You are a team member{myMembership.can_finalize ? " (Finalizer)" : ""}</p>
+            )}
           </div>
-          {selectedWs.status === "active" && (
+          {isOwner && selectedWs.status === "active" && (
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "complete", id: selectedWs.id, label: "Mark as Complete" })}>
                 <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
@@ -228,76 +269,113 @@ const VendorTeams = () => {
           )}
         </div>
 
-        {/* Members Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Team Members</CardTitle>
-            {selectedWs.status === "active" && (
-              <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No members added yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {members.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Finalizer</Label>
-                        <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+        {/* Members Section — only visible to Team Lead */}
+        {isOwner && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Team Members</CardTitle>
+              {selectedWs.status === "active" && (
+                <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {members.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No members added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                      <div>
+                        <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
                       </div>
-                      {selectedWs.status === "active" && (
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Finalizer</Label>
+                          <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+                        </div>
+                        {selectedWs.status === "active" && (
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Task Assignments */}
+        {/* Task Assignments — filtered for members, full for owner */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Task Assignments</CardTitle>
-            {selectedWs.status === "active" && (
+            <CardTitle className="text-lg">{isOwner ? "Task Assignments" : "My Tasks"}</CardTitle>
+            {isOwner && selectedWs.status === "active" && (
               <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign Task</Button>
             )}
           </CardHeader>
           <CardContent>
-            {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks assigned yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {tasks.map((t, i) => {
-                  const member = members.find((m) => m.id === t.member_id);
-                  return (
-                    <div key={t.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-muted-foreground w-6">{i + 1}</span>
-                        <div>
-                          <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
-                          <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>
-                          {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+            {(() => {
+              // Members only see their own tasks; owner sees all
+              const visibleTasks = isOwner
+                ? tasks
+                : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
+              
+              if (visibleTasks.length === 0) {
+                return <p className="text-sm text-muted-foreground">{isOwner ? "No tasks assigned yet." : "No tasks assigned to you."}</p>;
+              }
+
+              return (
+                <div className="space-y-2">
+                  {visibleTasks.map((t, i) => {
+                    const member = members.find((m) => m.id === t.member_id);
+                    const isMyTask = myMembership && t.member_id === myMembership.id;
+                    const allPriorDone = tasks
+                      .filter((pt) => pt.sort_order < t.sort_order)
+                      .every((pt) => pt.status === "completed");
+                    const canComplete = isMyTask && t.status === "pending" && allPriorDone && selectedWs.status === "active";
+
+                    return (
+                      <div key={t.id} className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border",
+                        isMyTask && t.status === "pending" ? "border-primary bg-primary/5" : "border-border"
+                      )}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-muted-foreground w-6">{isOwner ? i + 1 : ""}</span>
+                          <div>
+                            <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
+                            {isOwner && <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>}
+                            {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+                            {!isOwner && !allPriorDone && t.status === "pending" && (
+                              <p className="text-xs text-amber-600 mt-1">⏳ Waiting for previous task to complete</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canComplete && (
+                            <Button size="sm" variant="default" onClick={async () => {
+                              const { error } = await supabase.functions.invoke("manage-teams", {
+                                body: { action: "complete_task", task_id: t.id },
+                              });
+                              if (error) return toast.error("Failed to complete task");
+                              toast.success("Task completed!");
+                              fetchTasks(selectedWs.id, isOwner, myMembership);
+                            }}>
+                              <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
+                            </Button>
+                          )}
+                          <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>
+                            {t.status}
+                          </Badge>
                         </div>
                       </div>
-                      <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>
-                        {t.status}
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
