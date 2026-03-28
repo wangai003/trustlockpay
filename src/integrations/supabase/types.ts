@@ -1674,6 +1674,47 @@ export type Database = {
         }
         Relationships: []
       }
+      team_assignment_templates: {
+        Row: {
+          auto_trigger_mode: string
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          auto_trigger_mode?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          auto_trigger_mode?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_assignment_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "team_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           added_by: string
@@ -1778,9 +1819,61 @@ export type Database = {
           },
         ]
       }
+      team_template_rules: {
+        Row: {
+          auto_assign: boolean
+          created_at: string
+          id: string
+          instructions: string | null
+          member_id: string | null
+          milestone_key: string
+          milestone_label: string | null
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          auto_assign?: boolean
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          member_id?: string | null
+          milestone_key: string
+          milestone_label?: string | null
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          auto_assign?: boolean
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          member_id?: string | null
+          milestone_key?: string
+          milestone_label?: string | null
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_template_rules_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_template_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "team_assignment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_workspaces: {
         Row: {
           archived_at: string | null
+          auto_match_industry: boolean
           created_at: string
           description: string | null
           id: string
@@ -1794,6 +1887,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          auto_match_industry?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -1807,6 +1901,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          auto_match_industry?: boolean
           created_at?: string
           description?: string | null
           id?: string
