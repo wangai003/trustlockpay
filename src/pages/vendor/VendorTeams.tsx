@@ -69,6 +69,8 @@ const VendorTeams = () => {
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
   const [tab, setTab] = useState("active");
+  const [isOwner, setIsOwner] = useState(true);
+  const [myMembership, setMyMembership] = useState<Member | null>(null);
 
   // Form states
   const [newTitle, setNewTitle] = useState("");
