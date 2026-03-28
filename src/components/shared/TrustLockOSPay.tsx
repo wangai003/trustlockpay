@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -97,9 +97,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const [seedToken, setSeedToken] = useState("");
   const [seedTokenLinked, setSeedTokenLinked] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("");
 
   const processPayment = useProcessPayment();
   const getSeedToken = useGetOrCreateSeedToken();
+
+  // Auto-link seed token on mount — no manual button needed
+  useEffect(() => {
+    if (!isAdmin && !seedTokenLinked) {
+      getSeedToken.mutate(undefined, {
+        onSuccess: (result) => {
+          setSeedToken(result?.token?.token || result?.token || result?.seed_token || "");
+          setSeedTokenLinked(true);
+        },
+      });
+    }
+  }, [isAdmin]);
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
@@ -114,23 +127,35 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const feeBreakdown = parsedAmount > 0 && !isAdmin
     ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
     : null;
-  const feeRate = feeBreakdown ? feeBreakdown.feePercentage / 100 : 0;
   const fee = isAdmin ? "0.00" : feeBreakdown ? feeBreakdown.trustlockFee.toFixed(2) : "0.00";
   const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
 
   const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
 
-  const handleLinkSeedToken = async () => {
-    try {
-      const result = await getSeedToken.mutateAsync();
-      setSeedToken(result.token || result.seed_token || "");
-      setSeedTokenLinked(true);
-      toast.success("Seed token linked to custodian wallet");
-    } catch {
-      toast.error("Failed to link seed token");
-    }
+  /* ── Country-specific bank & mobile lists ── */
+  const COUNTRY_BANKS: Record<string, string[]> = {
+    NG: ["GTBank", "First Bank", "Zenith Bank", "Access Bank", "UBA", "Stanbic IBTC", "Fidelity Bank", "Sterling Bank", "Wema Bank", "Polaris Bank"],
+    KE: ["KCB Bank", "Equity Bank", "Co-operative Bank", "NCBA", "Absa Kenya", "Standard Chartered Kenya", "I&M Bank", "DTB Kenya"],
+    GH: ["GCB Bank", "Ecobank Ghana", "Stanbic Bank Ghana", "Fidelity Bank Ghana", "CalBank", "ADB Ghana", "Absa Ghana"],
+    ZA: ["Standard Bank", "FNB", "Absa", "Nedbank", "Capitec", "Investec", "African Bank"],
+    CM: ["Afriland First Bank", "Ecobank Cameroon", "Société Générale Cameroon", "UBA Cameroon", "BICEC"],
+    EG: ["National Bank of Egypt", "Banque Misr", "CIB Egypt", "QNB Alahli", "Banque du Caire"],
   };
+
+  const COUNTRY_MOBILE: Record<string, string[]> = {
+    KE: ["M-Pesa (Safaricom)", "Airtel Money"],
+    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money"],
+    NG: ["OPay", "PalmPay", "Kuda"],
+    ZA: ["FNB eWallet", "Standard Bank Instant Money"],
+    UG: ["MTN Mobile Money", "Airtel Money"],
+    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money"],
+    CM: ["Orange Money", "MTN Mobile Money"],
+    RW: ["MTN Mobile Money", "Airtel Money"],
+  };
+
+  const bankList = COUNTRY_BANKS[selectedCountry] || [];
+  const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
@@ -245,43 +270,51 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
           </div>
 
-          {/* ─── SEED TOKEN + WALLET LINK (vendor/buyer only) ─── */}
+          {/* ─── SEED TOKEN (auto-linked, read-only) ─── */}
           {!isAdmin && (
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary" />
-              <p className="text-xs font-semibold">Transaction Fee Wallet Link</p>
+              <p className="text-xs font-semibold">Transaction Fee Wallet</p>
+              {seedTokenLinked && <Badge className="text-[10px] bg-primary/20 text-primary border-0 ml-auto">✓ Auto-Linked</Badge>}
+              {!seedTokenLinked && <Badge variant="outline" className="text-[10px] ml-auto animate-pulse">Linking...</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Platform service payments route to the Azix Transaction Fee Wallet. This is separate from the Escrow Wallet used for payouts.
+              Your seed token is automatically generated and linked to the Azix Transaction Fee Wallet. No action needed.
             </p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Pay seed token (auto-generated)"
-                value={seedToken}
-                readOnly
-                className="font-mono text-xs bg-muted flex-1"
-              />
-              <Button
-                size="sm"
-                variant={seedTokenLinked ? "outline" : "default"}
-                onClick={handleLinkSeedToken}
-                disabled={seedTokenLinked || getSeedToken.isPending}
-                className="shrink-0 text-xs"
-              >
-                {getSeedToken.isPending ? "Linking..." : seedTokenLinked ? "✓ Linked" : "Link Token"}
-              </Button>
+            <Input
+              value={seedToken || "Generating..."}
+              readOnly
+              className="font-mono text-xs bg-muted"
+            />
+            <div className="p-2 rounded bg-muted text-[10px]">
+              <p className="text-muted-foreground">Routing to → <span className="font-semibold text-foreground">{AZIX_WALLETS.transaction.label}</span></p>
+              <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
             </div>
-            {seedTokenLinked && (
-              <div className="text-[10px]">
-                <div className="p-2 rounded bg-muted">
-                  <p className="text-muted-foreground">Routing to → Azix Transaction Fee Wallet</p>
-                  <p className="font-mono font-medium">{AZIX_WALLETS.transaction.publicKey}</p>
-                  <p className="text-muted-foreground mt-1">{AZIX_WALLETS.transaction.purpose}</p>
-                </div>
-              </div>
-            )}
           </div>
+          )}
+
+          {/* ─── COUNTRY SELECTOR (for local mode bank/mobile) ─── */}
+          {!isAdmin && payMode === "local" && (method === "bank_transfer" || method === "mobile_money") && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Your Country</Label>
+              <select
+                value={selectedCountry}
+                onChange={e => { setSelectedCountry(e.target.value); setBankName(""); setMobileProvider(""); }}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select country...</option>
+                <option value="NG">Nigeria</option>
+                <option value="KE">Kenya</option>
+                <option value="GH">Ghana</option>
+                <option value="ZA">South Africa</option>
+                <option value="CM">Cameroon</option>
+                <option value="EG">Egypt</option>
+                <option value="UG">Uganda</option>
+                <option value="TZ">Tanzania</option>
+                <option value="RW">Rwanda</option>
+              </select>
+            </div>
           )}
 
           {/* ─── ADMIN ACTIONS ─── */}
@@ -381,25 +414,64 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {method === "mobile_money" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
+              {!selectedCountry && (
+                <p className="text-[10px] text-destructive">↑ Please select your country above to see available providers</p>
+              )}
               <div>
                 <Label className="text-xs">Mobile Money Provider</Label>
                 <select value={mobileProvider} onChange={e => setMobileProvider(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Select provider...</option>
-                  <option value="mpesa">M-Pesa</option>
-                  <option value="mtn">MTN Mobile Money</option>
-                  <option value="airtel">Airtel Money</option>
-                  <option value="orange">Orange Money</option>
-                  <option value="vodafone">Vodafone Cash</option>
+                  {mobileList.length > 0
+                    ? mobileList.map(p => <option key={p} value={p}>{p}</option>)
+                    : <>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="mtn">MTN Mobile Money</option>
+                        <option value="airtel">Airtel Money</option>
+                        <option value="orange">Orange Money</option>
+                      </>
+                  }
                 </select>
               </div>
               <div><Label className="text-xs">Phone Number</Label><Input placeholder="+254 7XX XXX XXX" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className="mt-1" /></div>
+              {selectedCountry && (
+                <p className="text-[10px] text-muted-foreground">
+                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
+                </p>
+              )}
             </div>
           )}
 
           {method === "bank_transfer" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div><Label className="text-xs">Bank Name</Label><Input placeholder="e.g. GTBank, KCB, Standard Bank" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" /></div>
-              <div><Label className="text-xs">Account Number</Label><Input placeholder="Account / NUBAN number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" /></div>
+              {!selectedCountry && (
+                <p className="text-[10px] text-destructive">↑ Please select your country above to see available banks</p>
+              )}
+              <div>
+                <Label className="text-xs">Bank Name</Label>
+                {bankList.length > 0 ? (
+                  <select value={bankName} onChange={e => setBankName(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">Select your bank...</option>
+                    {bankList.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                ) : (
+                  <Input placeholder="Enter bank name" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" />
+                )}
+              </div>
+              <div>
+                <Label className="text-xs">Account Number{selectedCountry === "NG" ? " (NUBAN)" : selectedCountry === "ZA" ? " (Branch Code + Account)" : ""}</Label>
+                <Input placeholder={selectedCountry === "NG" ? "10-digit NUBAN" : selectedCountry === "KE" ? "Branch + Account" : "Account number"} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" />
+              </div>
+              {selectedCountry === "NG" && (
+                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" className="mt-1" /></div>
+              )}
+              {(selectedCountry === "ZA" || selectedCountry === "KE") && (
+                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+              )}
+              {selectedCountry && (
+                <p className="text-[10px] text-muted-foreground">
+                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
+                </p>
+              )}
             </div>
           )}
 
