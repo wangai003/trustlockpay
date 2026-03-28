@@ -1722,6 +1722,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          preferred_language: string | null
           removed_at: string | null
           role: string
           user_id: string
@@ -1733,6 +1734,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          preferred_language?: string | null
           removed_at?: string | null
           role?: string
           user_id: string
@@ -1744,6 +1746,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          preferred_language?: string | null
           removed_at?: string | null
           role?: string
           user_id?: string
@@ -1759,16 +1762,45 @@ export type Database = {
           },
         ]
       }
+      team_role_presets: {
+        Row: {
+          created_at: string | null
+          id: string
+          industry: string
+          role_key: string
+          role_name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          industry: string
+          role_key: string
+          role_name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          industry?: string
+          role_key?: string
+          role_name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       team_task_assignments: {
         Row: {
           completed_at: string | null
           created_at: string
+          deadline_at: string | null
           evidence_url: string | null
           id: string
           instructions: string | null
           member_id: string
           milestone_key: string
           milestone_label: string | null
+          sla_hours: number | null
           sort_order: number
           status: string
           updated_at: string
@@ -1777,12 +1809,14 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          deadline_at?: string | null
           evidence_url?: string | null
           id?: string
           instructions?: string | null
           member_id: string
           milestone_key: string
           milestone_label?: string | null
+          sla_hours?: number | null
           sort_order?: number
           status?: string
           updated_at?: string
@@ -1791,12 +1825,14 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          deadline_at?: string | null
           evidence_url?: string | null
           id?: string
           instructions?: string | null
           member_id?: string
           milestone_key?: string
           milestone_label?: string | null
+          sla_hours?: number | null
           sort_order?: number
           status?: string
           updated_at?: string
