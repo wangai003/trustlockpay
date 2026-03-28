@@ -29,7 +29,7 @@ const INDUSTRIES = [
   { key: "project_management", label: "Project Management" },
 ];
 
-type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null };
+type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null; owner_id: string };
 type Member = { id: string; user_id: string; display_name: string | null; role: string; can_finalize: boolean; removed_at: string | null };
 type TaskAssignment = { id: string; member_id: string; milestone_key: string; milestone_label: string | null; instructions: string | null; status: string; sort_order: number };
 
@@ -45,6 +45,8 @@ const BuyerTeams = () => {
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
   const [tab, setTab] = useState("active");
+  const [isOwner, setIsOwner] = useState(true);
+  const [myMembership, setMyMembership] = useState<Member | null>(null);
 
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
