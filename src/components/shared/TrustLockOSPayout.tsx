@@ -737,8 +737,8 @@ const TrustLockOSPayout = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payout</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via <strong>{selectedProvider?.name}</strong>?
-              {fees && <> After fees, you will receive <strong className="text-primary">${fees.net.toFixed(2)}</strong>.</>}
+              Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via <strong>{selectedProvider?.name ?? activeConfig?.provider ?? "Direct"}</strong>?
+              {fees && <> After fees, you will receive <strong className="text-primary">${fees.netAmount.toFixed(2)}</strong>.</>}
               {" "}This action will instruct the Azix wallet to release funds to your selected payment method.
             </AlertDialogDescription>
           </AlertDialogHeader>
