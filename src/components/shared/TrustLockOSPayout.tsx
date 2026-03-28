@@ -293,41 +293,7 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
-      {/* ═══ ESCROW WALLET SEED TOKEN (Top) ═══ */}
-      <Card className="rounded-t-none -mt-4 border-t-0 border-2 border-primary/20">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-primary" />
-            <p className="text-xs font-semibold">Escrow Custodian Wallet</p>
-            <Badge variant="outline" className="text-[10px] ml-auto">
-              {payoutType === "refund" ? "Refund Mode" : payoutType === "split" ? "Split Mode" : "Release Mode"}
-            </Badge>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            {payoutType === "refund"
-              ? "Funds will be returned to the buyer from the escrow wallet. No fees are deducted — escrow and platform fees are waived on refunds."
-              : payoutType === "split"
-                ? "Both buyer and vendor receive their split simultaneously. Escrow service fee is deducted from the vendor's share only, then forwarded to the transaction fee wallet below."
-                : "Vendor's funds are released first. The escrow service fee (1.0%) is deducted and forwarded to the transaction fee wallet below."}
-          </p>
-          <div>
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Escrow Seed Token (Payout)</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                value={seedToken}
-                disabled
-                className="font-mono text-xs bg-muted flex-1"
-              />
-              <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-            </div>
-          </div>
-          <div className="p-2 rounded bg-muted text-[10px]">
-            <p className="text-muted-foreground">Linked to → <span className="font-semibold text-foreground">{AZIX_WALLETS.escrow.label}</span></p>
-            <p className="font-mono font-medium">{AZIX_WALLETS.escrow.publicKey}</p>
-            <p className="text-muted-foreground mt-1">{AZIX_WALLETS.escrow.purpose}</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
 
       {/* ═══ FLOW CONNECTOR: Escrow → Payment Methods → Transaction Wallet ═══ */}
       <div className="flex flex-col items-center gap-1 -my-2 relative z-10">
