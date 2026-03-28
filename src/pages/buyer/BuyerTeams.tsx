@@ -157,8 +157,11 @@ const BuyerTeams = () => {
               <Badge className={selectedWs.status === "active" ? "bg-primary" : selectedWs.status === "complete" ? "bg-green-600" : "bg-destructive"}>{selectedWs.status}</Badge>
             </div>
             {selectedWs.description && <p className="text-sm text-muted-foreground mt-2">{selectedWs.description}</p>}
+            {!isOwner && myMembership && (
+              <p className="text-xs text-primary font-medium mt-1">You are a team member{myMembership.can_finalize ? " (Finalizer)" : ""}</p>
+            )}
           </div>
-          {selectedWs.status === "active" && (
+          {isOwner && selectedWs.status === "active" && (
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setConfirmAction({ type: "complete", id: selectedWs.id, label: "Mark as Complete" })}><CheckCircle2 className="w-4 h-4 mr-1" /> Complete</Button>
               <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ type: "dissolve", id: selectedWs.id, label: "Dissolve Work Order" })}><XCircle className="w-4 h-4 mr-1" /> Dissolve</Button>
@@ -166,64 +169,90 @@ const BuyerTeams = () => {
           )}
         </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Procurement Team</CardTitle>
-            {selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>}
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet.</p> : (
-              <div className="space-y-3">
-                {members.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Finalizer</Label>
-                        <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+        {/* Members — only visible to Team Lead */}
+        {isOwner && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Procurement Team</CardTitle>
+              {selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAddMember(true)}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>}
+            </CardHeader>
+            <CardContent>
+              {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet.</p> : (
+                <div className="space-y-3">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                      <div>
+                        <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}...</p>
                       </div>
-                      {selectedWs.status === "active" && (
-                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Finalizer</Label>
+                          <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+                        </div>
+                        {selectedWs.status === "active" && (
+                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
+        {/* Tasks — filtered for members */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Task Assignments</CardTitle>
-            {selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign Task</Button>}
+            <CardTitle className="text-lg">{isOwner ? "Task Assignments" : "My Tasks"}</CardTitle>
+            {isOwner && selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign Task</Button>}
           </CardHeader>
           <CardContent>
-            {tasks.length === 0 ? <p className="text-sm text-muted-foreground">No tasks assigned yet.</p> : (
-              <div className="space-y-2">
-                {tasks.map((t, i) => {
-                  const member = members.find((m) => m.id === t.member_id);
-                  return (
-                    <div key={t.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-muted-foreground w-6">{i + 1}</span>
-                        <div>
-                          <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
-                          <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>
-                          {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+            {(() => {
+              const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
+              if (visibleTasks.length === 0) return <p className="text-sm text-muted-foreground">{isOwner ? "No tasks assigned yet." : "No tasks assigned to you."}</p>;
+              return (
+                <div className="space-y-2">
+                  {visibleTasks.map((t, i) => {
+                    const member = members.find((m) => m.id === t.member_id);
+                    const isMyTask = myMembership && t.member_id === myMembership.id;
+                    const allPriorDone = tasks.filter((pt) => pt.sort_order < t.sort_order).every((pt) => pt.status === "completed");
+                    const canComplete = isMyTask && t.status === "pending" && allPriorDone && selectedWs.status === "active";
+                    return (
+                      <div key={t.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isMyTask && t.status === "pending" ? "border-primary bg-primary/5" : "border-border")}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-muted-foreground w-6">{isOwner ? i + 1 : ""}</span>
+                          <div>
+                            <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
+                            {isOwner && <p className="text-xs text-muted-foreground">Assigned to: {member?.display_name || "Unknown"}</p>}
+                            {t.instructions && <p className="text-xs text-muted-foreground mt-1 italic">{t.instructions}</p>}
+                            {!isOwner && !allPriorDone && t.status === "pending" && (
+                              <p className="text-xs text-amber-600 mt-1">⏳ Waiting for previous task to complete</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canComplete && (
+                            <Button size="sm" variant="default" onClick={async () => {
+                              const { error } = await supabase.functions.invoke("manage-teams", { body: { action: "complete_task", task_id: t.id } });
+                              if (error) return toast.error("Failed to complete task");
+                              toast.success("Task completed!");
+                              fetchTasks(selectedWs.id);
+                            }}>
+                              <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
+                            </Button>
+                          )}
+                          <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>{t.status}</Badge>
                         </div>
                       </div>
-                      <Badge variant={t.status === "completed" ? "default" : t.status === "in_progress" ? "secondary" : "outline"}>{t.status}</Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
