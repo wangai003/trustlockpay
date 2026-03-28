@@ -254,9 +254,9 @@ const TrustLockOSPayout = ({
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>Amount: <span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></p>
-              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.total.toFixed(2)}</span></p>}
-              {fees && <p>Net received: <span className="font-semibold text-primary">${fees.net.toFixed(2)}</span></p>}
-              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name}</span></p>
+              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.totalFees.toFixed(2)}</span></p>}
+              {fees && <p>Net received: <span className="font-semibold text-primary">${fees.netAmount.toFixed(2)}</span></p>}
+              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name ?? activeConfig?.provider ?? "Direct"}</span></p>
             </div>
           </CardContent>
         </Card>
