@@ -269,10 +269,26 @@ const TrustLockDualCheckout = () => {
                       setCryptoVerifyStatus("verifying");
                       await new Promise(r => setTimeout(r, 2500));
                       const amt = parseFloat(checkoutSenderAmount) || 0;
-                      if (amt > 0) { setCryptoVerifyStatus("verified"); } 
-                      else { setCryptoVerifyStatus("failed"); }
+                      const requiredAmount = sampleAmount;
+                      const newCumulative = cumulativeReceived + amt;
+                      if (amt > 0 && newCumulative >= requiredAmount) {
+                        setCumulativeReceived(newCumulative);
+                        setShortfallTxIds(prev => [...prev, checkoutTxId]);
+                        setCryptoVerifyStatus("verified");
+                      } else if (amt > 0 && newCumulative < requiredAmount) {
+                        setCumulativeReceived(newCumulative);
+                        setShortfallTxIds(prev => [...prev, checkoutTxId]);
+                        setCryptoVerifyStatus("shortfall");
+                        setCheckoutTxId("");
+                        setCheckoutSenderAmount("");
+                        toast.info(`Received $${amt.toFixed(2)} — $${(requiredAmount - newCumulative).toFixed(2)} remaining.`);
+                      } else {
+                        setCryptoVerifyStatus("failed");
+                      }
                     }}>
-                    {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." : "Verify & Generate Order"}
+                    {cryptoVerifyStatus === "verifying" ? "Verifying on Polygon..." :
+                     cryptoVerifyStatus === "shortfall" ? "Submit Additional Payment" :
+                     "Verify & Generate Order"}
                   </Button>
 
                   {/* Status States */}
