@@ -573,6 +573,36 @@ const TrustLockOSPayout = ({
               No specific payout configuration found for this country. Please use the provider search above.
             </p>
           )}
+
+          {/* Crypto Payout — Credential Confirmation (No Test Required) */}
+          {isCrypto && (
+            <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-accent">⚠️ Please Double-Check Your Wallet Credentials</p>
+                  <p className="text-[9px] text-foreground leading-relaxed">
+                    TrustLock's escrow smart contract will release funds directly to the wallet address you provided. <strong>This action is irreversible on-chain.</strong> Please confirm:
+                  </p>
+                  <ul className="list-disc ml-4 text-[9px] text-muted-foreground space-y-0.5">
+                    <li>Your wallet address is correct and supports <strong>USDC on Polygon (Chain ID: 137)</strong></li>
+                    <li>You are using a self-custody wallet (MetaMask, Trust Wallet, Ledger) or an exchange that accepts Polygon USDC deposits</li>
+                    <li>You have NOT entered an address from a different network — funds sent to the wrong network <strong>cannot be recovered</strong></li>
+                  </ul>
+                  <div className="p-1.5 rounded bg-muted text-[9px] space-y-0.5">
+                    <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
+                    <p><strong>Token:</strong> USDC only</p>
+                    <p><strong>Source:</strong> Azix Escrow Wallet</p>
+                    <p><strong>Support:</strong> support@azix.world</p>
+                    <p className="mt-1 text-muted-foreground"><strong>Where to find your address:</strong> Open your wallet app → tap your account name → copy address. If receiving to an exchange, use your exchange's Polygon USDC deposit address.</p>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground">
+                    Payouts do not require a $1 test transaction. The escrow wallet follows smart contract release procedures to disburse funds at scale.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
       {/* Fee Summary */}
