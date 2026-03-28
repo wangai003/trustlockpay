@@ -698,6 +698,41 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 </div>
               )}
 
+              {/* ── SHORTFALL STATE — Partial payment received ── */}
+              {cryptoVerifyStatus === "shortfall" && (
+                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
+                  <p className="text-xs font-bold text-accent flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Partial Payment Received
+                  </p>
+                  <div className="p-2 rounded-lg bg-muted/50 space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Required Total</span>
+                      <span className="font-semibold">${(parseFloat(total) || parsedAmount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Received So Far</span>
+                      <span className="font-semibold text-primary">${cumulativeReceived.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] border-t border-border pt-1">
+                      <span className="font-bold text-destructive">Remaining Balance</span>
+                      <span className="font-bold text-destructive">${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-foreground">
+                    Your payment was received but does not cover the full amount. This is likely due to a network or withdrawal fee deducted by your exchange or wallet.
+                  </p>
+                  <p className="text-[10px] text-foreground font-semibold">
+                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same Azix wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
+                  </p>
+                  {shortfallTxIds.length > 0 && (
+                    <div className="p-1.5 rounded bg-muted text-[9px] text-muted-foreground">
+                      <p className="font-semibold">Previous TxIDs recorded:</p>
+                      {shortfallTxIds.map((id, i) => <p key={i} className="font-mono truncate">#{i+1}: {id}</p>)}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ── PENDING STATE — Verification not yet confirmed on-chain ── */}
               {cryptoVerifyStatus === "pending" && (
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 space-y-2">
