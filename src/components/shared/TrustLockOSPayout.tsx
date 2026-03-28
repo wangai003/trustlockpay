@@ -160,8 +160,13 @@ const TrustLockOSPayout = ({
 
   const amountNum = parseFloat(amount) || 0;
   const isCrypto = selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
-  const feeType = isCrypto ? "crypto_to_crypto" : "crypto_to_fiat";
-  const fees = amountNum > 0 ? calculateFees(amountNum, feeType) : null;
+  const txType: TransactionType = payoutType === "refund"
+    ? (isCrypto ? "refund_crypto" : "refund_fiat")
+    : payoutType === "split"
+      ? "split_payout"
+      : "release_to_vendor";
+  const processorId = selectProcessor("global", isCrypto);
+  const fees = amountNum > 0 ? calculateFeesV2(amountNum, txType, processorId) : null;
 
   const handleFieldChange = (key: string, value: string) => {
     setProviderFields((prev) => ({ ...prev, [key]: value }));
