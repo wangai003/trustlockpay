@@ -112,7 +112,7 @@ const ProformaInvoice = ({
     try {
       const proformaNumber = `PF-${Date.now().toString(36).toUpperCase()}`;
 
-      const { data, error } = await supabase.from("proforma_invoices").insert({
+      const insertPayload = {
         rfq_id: rfqId || null,
         vendor_id: vendorId,
         proforma_number: proformaNumber,
@@ -140,7 +140,8 @@ const ProformaInvoice = ({
         gate_status: gateValues,
         industry: industry || null,
         notes: notes || null,
-      }).select().single();
+      } as any;
+      const { data, error } = await supabase.from("proforma_invoices").insert(insertPayload).select().single();
 
       if (error) throw error;
       toast.success(`Proforma ${proformaNumber} created`);
