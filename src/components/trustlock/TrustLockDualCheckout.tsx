@@ -163,6 +163,27 @@ const TrustLockDualCheckout = () => {
                 )}
               </div>
 
+              {/* Crypto Verification Protocol Alert */}
+              {isCrypto && selectedProvider && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-destructive">⚠️ Crypto Verification Required</p>
+                      <p className="text-[9px] text-foreground leading-relaxed">
+                        Before sending any large payment, you must first send a <strong>$1.00 USDC test transaction</strong> on <strong>Polygon network</strong> to the Azix receiving wallet. Contact <strong>support@azix.world</strong> with your sending address and TxID, then wait for confirmation before proceeding.
+                      </p>
+                      <div className="p-1.5 rounded bg-muted text-[9px] font-mono space-y-0.5">
+                        <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
+                        <p><strong>Token:</strong> USDC only</p>
+                        <p><strong>Owner:</strong> Azix Inc.</p>
+                        <p><strong>Support:</strong> support@azix.world</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Tax breakdown */}
               <TaxBreakdown
                 subtotal={sampleAmount}
