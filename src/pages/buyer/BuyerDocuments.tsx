@@ -127,6 +127,9 @@ const BuyerDocuments = () => {
           )}
         </Card>
 
+        {/* ── My Protection Documents ─── */}
+        <ProtectionDocsSection role="buyer" />
+
         {/* Reference Library */}
         <div>
           <h2 className="font-heading text-lg font-bold">Buyer Reference Library</h2>
