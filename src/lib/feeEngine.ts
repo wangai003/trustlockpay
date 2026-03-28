@@ -44,7 +44,18 @@ export interface ProcessorConfig {
   supportedMethods: PaymentMethod[];  // what payment methods this processor handles
 }
 
-export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
+// ─── KYC Tier Definitions ─────────────────────────────────
+export type KycTier = "none" | "basic" | "intermediate" | "full";
+
+export interface ProcessorLimits {
+  minPerTx: number;          // Minimum transaction amount (USD)
+  maxPerTx: Record<KycTier, number>;   // Max per single transaction by KYC tier
+  dailyLimit: Record<KycTier, number>; // Max daily volume by KYC tier
+  monthlyLimit: Record<KycTier, number>; // Max monthly volume by KYC tier
+  maxDailyTxCount: number;   // Max number of transactions per day
+}
+
+export const PROCESSORS: Record<ProcessorId, ProcessorConfig & { limits: ProcessorLimits }> = {
   stripe: {
     name: "Stripe",
     feeRate: 2.9,
@@ -54,6 +65,13 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     onRamp: true,
     offRamp: false,
     supportedMethods: ["card", "bank_transfer"],
+    limits: {
+      minPerTx: 0.50,
+      maxPerTx:    { none: 500, basic: 10_000, intermediate: 250_000, full: 999_999 },
+      dailyLimit:  { none: 2_000, basic: 50_000, intermediate: 500_000, full: 2_000_000 },
+      monthlyLimit:{ none: 10_000, basic: 250_000, intermediate: 2_000_000, full: 10_000_000 },
+      maxDailyTxCount: 200,
+    },
   },
   coinbase: {
     name: "Coinbase",
@@ -68,6 +86,13 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 300, basic: 7_500, intermediate: 50_000, full: 250_000 },
+      dailyLimit:  { none: 500, basic: 25_000, intermediate: 100_000, full: 500_000 },
+      monthlyLimit:{ none: 5_000, basic: 100_000, intermediate: 500_000, full: 2_500_000 },
+      maxDailyTxCount: 100,
+    },
   },
   transak: {
     name: "Transak",
@@ -82,6 +107,13 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     onRamp: true,
     offRamp: true,
     supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 100, basic: 500, intermediate: 15_000, full: 50_000 },
+      dailyLimit:  { none: 100, basic: 1_500, intermediate: 25_000, full: 100_000 },
+      monthlyLimit:{ none: 1_000, basic: 10_000, intermediate: 100_000, full: 500_000 },
+      maxDailyTxCount: 50,
+    },
   },
   direct: {
     name: "Direct (On-chain)",
@@ -92,8 +124,158 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig> = {
     onRamp: false,
     offRamp: false,
     supportedMethods: ["crypto"],
+    limits: {
+      minPerTx: 0.01,
+      maxPerTx:    { none: 50_000, basic: 250_000, intermediate: 1_000_000, full: 10_000_000 },
+      dailyLimit:  { none: 100_000, basic: 500_000, intermediate: 5_000_000, full: 50_000_000 },
+      monthlyLimit:{ none: 500_000, basic: 2_500_000, intermediate: 25_000_000, full: 100_000_000 },
+      maxDailyTxCount: 500,
+    },
   },
 };
+
+// ─── AML / Compliance Thresholds ─────────────────────────
+// These are LEGAL thresholds that apply regardless of processor
+export const AML_THRESHOLDS = {
+  FATF_TRAVEL_RULE_CRYPTO: 1_000,     // FATF R.16: originator/beneficiary info for crypto
+  WIRE_RECORDING: 3_000,              // FinCEN: record sender/receiver details
+  EDD_THRESHOLD: 3_000,               // Enhanced Due Diligence trigger
+  CTR_REPORTING: 10_000,              // Currency Transaction Report (mandatory filing)
+  STRUCTURING_BAND_LOW: 7_500,        // Anti-structuring detection lower bound
+  STRUCTURING_WINDOW_HOURS: 24,       // Rolling window for structuring detection
+  STRUCTURING_MIN_COUNT: 3,           // Min transactions in band to flag
+  VELOCITY_SPIKE_MULTIPLIER: 3,       // Spike = 3x above 30-day daily average
+} as const;
+
+// ─── Transaction Limit Validation ─────────────────────────
+export interface LimitCheckResult {
+  allowed: boolean;
+  reason?: string;
+  maxAllowed?: number;
+  currentUsage?: { daily: number; monthly: number; dailyCount: number };
+  suggestedAction?: string;
+  upgradeRequired?: boolean;
+  amlFlags?: string[];
+}
+
+/**
+ * Client-side pre-check for transaction limits.
+ * Backend (compliance-velocity edge function) performs the authoritative check.
+ */
+export function checkTransactionLimits(
+  amount: number,
+  processorId: ProcessorId,
+  kycTier: KycTier = "basic",
+  paymentMethod: PaymentMethod = "card",
+  dailyVolumeUsed: number = 0,
+  monthlyVolumeUsed: number = 0,
+  dailyTxCount: number = 0,
+): LimitCheckResult {
+  const processor = PROCESSORS[processorId];
+  const limits = processor.limits;
+  const amlFlags: string[] = [];
+
+  // 1) Minimum check
+  if (amount < limits.minPerTx) {
+    return {
+      allowed: false,
+      reason: `Minimum transaction for ${processor.name} is $${limits.minPerTx.toFixed(2)}`,
+      maxAllowed: limits.maxPerTx[kycTier],
+    };
+  }
+
+  // 2) Per-transaction max
+  const maxTx = limits.maxPerTx[kycTier];
+  if (amount > maxTx) {
+    const nextTier = getNextKycTier(kycTier);
+    return {
+      allowed: false,
+      reason: `$${amount.toLocaleString()} exceeds ${processor.name} per-transaction limit of $${maxTx.toLocaleString()} for your verification level (${kycTier})`,
+      maxAllowed: maxTx,
+      upgradeRequired: !!nextTier,
+      suggestedAction: nextTier
+        ? `Upgrade to ${nextTier} verification to increase your limit to $${limits.maxPerTx[nextTier].toLocaleString()}`
+        : "Contact support for enterprise limits",
+    };
+  }
+
+  // 3) Daily volume
+  const maxDaily = limits.dailyLimit[kycTier];
+  if (dailyVolumeUsed + amount > maxDaily) {
+    return {
+      allowed: false,
+      reason: `Adding $${amount.toLocaleString()} would exceed your daily limit of $${maxDaily.toLocaleString()} (used: $${dailyVolumeUsed.toLocaleString()})`,
+      maxAllowed: maxDaily - dailyVolumeUsed,
+      currentUsage: { daily: dailyVolumeUsed, monthly: monthlyVolumeUsed, dailyCount: dailyTxCount },
+      suggestedAction: "Try again tomorrow or upgrade your verification level",
+      upgradeRequired: true,
+    };
+  }
+
+  // 4) Monthly volume
+  const maxMonthly = limits.monthlyLimit[kycTier];
+  if (monthlyVolumeUsed + amount > maxMonthly) {
+    return {
+      allowed: false,
+      reason: `Adding $${amount.toLocaleString()} would exceed your monthly limit of $${maxMonthly.toLocaleString()} (used: $${monthlyVolumeUsed.toLocaleString()})`,
+      maxAllowed: maxMonthly - monthlyVolumeUsed,
+      currentUsage: { daily: dailyVolumeUsed, monthly: monthlyVolumeUsed, dailyCount: dailyTxCount },
+      suggestedAction: "Wait until next billing cycle or upgrade your verification level",
+      upgradeRequired: true,
+    };
+  }
+
+  // 5) Daily transaction count
+  if (dailyTxCount >= limits.maxDailyTxCount) {
+    return {
+      allowed: false,
+      reason: `You've reached the maximum of ${limits.maxDailyTxCount} transactions per day for ${processor.name}`,
+      currentUsage: { daily: dailyVolumeUsed, monthly: monthlyVolumeUsed, dailyCount: dailyTxCount },
+      suggestedAction: "Try again tomorrow",
+    };
+  }
+
+  // 6) AML threshold flags (informational — don't block, just flag)
+  const isCrypto = paymentMethod === "crypto" || processorId === "direct";
+  if (isCrypto && amount >= AML_THRESHOLDS.FATF_TRAVEL_RULE_CRYPTO) {
+    amlFlags.push(`FATF Travel Rule: Crypto transaction ≥$${AML_THRESHOLDS.FATF_TRAVEL_RULE_CRYPTO.toLocaleString()} requires originator/beneficiary identification`);
+  }
+  if (amount >= AML_THRESHOLDS.EDD_THRESHOLD) {
+    amlFlags.push(`Enhanced Due Diligence: Transaction ≥$${AML_THRESHOLDS.EDD_THRESHOLD.toLocaleString()} triggers additional identity verification`);
+  }
+  if (amount >= AML_THRESHOLDS.CTR_REPORTING) {
+    amlFlags.push(`CTR Reporting: Transaction ≥$${AML_THRESHOLDS.CTR_REPORTING.toLocaleString()} is subject to mandatory Currency Transaction Reporting`);
+  }
+
+  return {
+    allowed: true,
+    maxAllowed: maxTx,
+    currentUsage: { daily: dailyVolumeUsed, monthly: monthlyVolumeUsed, dailyCount: dailyTxCount },
+    amlFlags: amlFlags.length > 0 ? amlFlags : undefined,
+  };
+}
+
+function getNextKycTier(current: KycTier): KycTier | null {
+  const order: KycTier[] = ["none", "basic", "intermediate", "full"];
+  const idx = order.indexOf(current);
+  return idx < order.length - 1 ? order[idx + 1] : null;
+}
+
+/**
+ * Returns all processor limits formatted for UI display
+ */
+export function getProcessorLimitsDisplay(processorId: ProcessorId, kycTier: KycTier = "basic") {
+  const p = PROCESSORS[processorId];
+  return {
+    processor: p.name,
+    tier: kycTier,
+    minPerTx: p.limits.minPerTx,
+    maxPerTx: p.limits.maxPerTx[kycTier],
+    dailyLimit: p.limits.dailyLimit[kycTier],
+    monthlyLimit: p.limits.monthlyLimit[kycTier],
+    maxDailyTxCount: p.limits.maxDailyTxCount,
+  };
+}
 
 // ─── Fee Calculation Result ────────────────────────────────
 export interface FeeBreakdown {
