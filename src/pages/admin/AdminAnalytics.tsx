@@ -155,8 +155,9 @@ const AdminAnalytics = () => {
       <div className="p-6 space-y-6">
         <Tabs defaultValue="analytics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-lg">
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="rejections">Rejections</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="archives">Archives</TabsTrigger>
             </TabsList>
