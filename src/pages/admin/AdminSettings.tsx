@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Bell, Globe, Lock, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useSaveAdminSettings, useAdminSettings } from "@/hooks/useBackendSync";
 
 const adminNotifKeys = [
   { key: "new_dispute", label: "New dispute filed" },
@@ -18,12 +19,18 @@ const adminNotifKeys = [
 ];
 
 const AdminSettings = () => {
+  const { data: savedNotifs } = useAdminSettings();
+  const saveSettings = useSaveAdminSettings();
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    if (savedNotifs && typeof savedNotifs === "object") {
+      setNotifPrefs(savedNotifs as Record<string, boolean>);
+    }
+  }, [savedNotifs]);
+
   const handleSave = () => {
-    // Admin settings are stored differently (admin_accounts table or localStorage for now)
-    localStorage.setItem("tl_admin_notif_prefs", JSON.stringify(notifPrefs));
-    toast.success("Admin settings saved");
+    saveSettings.mutateAsync({ notifPrefs });
   };
   return (
     <div>
