@@ -78,6 +78,9 @@ const PublicCheckout = () => {
         tax_total: Number(data.tax_total),
         grand_total: Number(data.grand_total),
         industry: data.industry || "default",
+        currency: (data as any).currency || "USD",
+        incoterms: (data as any).incoterms || "",
+        delivery_terms: (data as any).delivery_terms || "",
       });
 
       // Auto-set invoice data from saved link
