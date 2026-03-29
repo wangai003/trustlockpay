@@ -125,12 +125,17 @@ const VendorStandaloneLinks = () => {
   };
 
   const handleCreateLink = async (invoice: {
-    items: { id: string; description: string; quantity: number; unitPrice: number }[];
+    items: { id: string; description: string; quantity: number; unitPrice: number; unit: string }[];
     taxItems: TaxLineItem[];
     subtotal: number;
     taxTotal: number;
     grandTotal: number;
     note: string;
+    industry: string;
+    currency: string;
+    incoterms: string;
+    deliveryTerms: string;
+    documentGates: Record<string, string>;
   }) => {
     const linkId = `TL-${Date.now()}`;
     const vendorId = session?.user?.id;
@@ -157,6 +162,7 @@ const VendorStandaloneLinks = () => {
       subtotal: invoice.subtotal,
       tax_total: invoice.taxTotal,
       grand_total: invoice.grandTotal,
+      industry: invoice.industry || "default",
       status: "active",
     });
 
