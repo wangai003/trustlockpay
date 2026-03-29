@@ -7,7 +7,8 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity,
 } from "lucide-react";
-import { useKycQueue, useComplianceFlags } from "@/hooks/useSupabaseData";
+import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs } from "@/hooks/useSupabaseData";
+import { useAdmin } from "@/contexts/AdminContext";
 import { useState } from "react";
 
 const severityColors: Record<string, string> = {
@@ -118,8 +119,10 @@ const TESTNET_SCREENING_LOGS = [
 ];
 
 const AdminCompliance = () => {
+  const { isTestnet } = useAdmin();
   const { data: rawKyc = [] } = useKycQueue();
   const { data: rawFlags = [] } = useComplianceFlags();
+  const { data: rawScreenings = [] } = useSanctionsScreeningLogs();
   const [screeningFilter, setScreeningFilter] = useState<string>("all");
 
   const kycQueue = rawKyc.map(k => ({
@@ -139,17 +142,35 @@ const AdminCompliance = () => {
     date: new Date(f.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   }));
 
+  // Use real screening logs in mainnet, testnet mock data as fallback
+  const screeningLogs = (!isTestnet && rawScreenings.length > 0)
+    ? rawScreenings.map(s => ({
+        id: s.id.slice(0, 10).toUpperCase(),
+        timestamp: s.created_at,
+        type: "checkout" as const,
+        buyer: s.full_name,
+        buyerCountry: s.country,
+        vendor: "—",
+        vendorCountry: "—",
+        amount: Number(s.risk_score || 0),
+        listsChecked: ["OFAC SDN", "EU Consolidated", "UN Security Council"],
+        result: s.result as "clear" | "blocked" | "edd_required" | "flagged",
+        eddTriggered: s.result === "edd_required",
+        notes: (s as any).admin_notes || `Screening result: ${s.result}`,
+      }))
+    : TESTNET_SCREENING_LOGS;
+
   const pendingCount = kycQueue.filter(k => k.status === "pending").length;
   const approvedCount = kycQueue.filter(k => k.status === "approved").length;
   const rejectedCount = kycQueue.filter(k => k.status === "rejected").length;
 
   const filteredScreenings = screeningFilter === "all"
-    ? TESTNET_SCREENING_LOGS
-    : TESTNET_SCREENING_LOGS.filter(s => s.result === screeningFilter);
+    ? screeningLogs
+    : screeningLogs.filter(s => s.result === screeningFilter);
 
-  const blockedCount = TESTNET_SCREENING_LOGS.filter(s => s.result === "blocked").length;
-  const eddCount = TESTNET_SCREENING_LOGS.filter(s => s.eddTriggered).length;
-  const clearCount = TESTNET_SCREENING_LOGS.filter(s => s.result === "clear").length;
+  const blockedCount = screeningLogs.filter(s => s.result === "blocked").length;
+  const eddCount = screeningLogs.filter(s => s.eddTriggered).length;
+  const clearCount = screeningLogs.filter(s => s.result === "clear").length;
 
   return (
     <div>

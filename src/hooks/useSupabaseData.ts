@@ -789,3 +789,70 @@ export function useSaveProfileNotifications() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ─── Admin: All Profiles by Role ────────────────────────────
+export function useProfilesByRole(role: "vendor" | "buyer") {
+  return useQuery({
+    queryKey: ["profiles_by_role", role],
+    queryFn: async () => {
+      // Get user_ids with this role
+      const { data: roleRows, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", role);
+      if (roleErr) throw roleErr;
+      if (!roleRows?.length) return [];
+
+      const userIds = roleRows.map((r) => r.user_id);
+      const { data: profiles, error: profErr } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", userIds)
+        .order("created_at", { ascending: false });
+      if (profErr) throw profErr;
+      return profiles || [];
+    },
+  });
+}
+
+// ─── Admin: Sanctions Screening Logs ────────────────────────
+export function useSanctionsScreeningLogs() {
+  return useQuery({
+    queryKey: ["sanctions_screening_logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sanctions_screening_logs")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Admin: Save Onboarding Profile Data ────────────────────
+export function useSaveOnboardingProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { industry: string; location: string; fullName?: string }) => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          onboarding_industry: params.industry,
+          location: params.location,
+          full_name: params.fullName || undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.user.id);
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profiles_by_role"] });
+      toast.success("Profile updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
