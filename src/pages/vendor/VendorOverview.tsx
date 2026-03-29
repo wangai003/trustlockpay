@@ -116,7 +116,7 @@ const VendorOverview = () => {
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <OnboardingTaskCard role="vendor" />
+        <TLId code="TL-V-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="vendor" /></TLId>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
