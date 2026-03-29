@@ -57,6 +57,7 @@ const VendorSettings = () => {
     if (settings) {
       if (settings.auto_delivery !== null) setAutoDelivery(settings.auto_delivery);
       if (settings.pay_enabled !== null) setPayEnabled(settings.pay_enabled);
+      if (settings.notifications) setNotifPrefs(settings.notifications as Record<string, boolean>);
     }
   }, [settings]);
 
