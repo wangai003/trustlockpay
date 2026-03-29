@@ -1741,7 +1741,9 @@ export type Database = {
           country_code: string
           country_name: string
           created_at: string
+          de_minimis_usd: number | null
           id: string
+          industry_overrides: Json | null
           is_active: boolean | null
           rate_percentage: number
           tariff_rate_percentage: number | null
@@ -1752,7 +1754,9 @@ export type Database = {
           country_code: string
           country_name: string
           created_at?: string
+          de_minimis_usd?: number | null
           id?: string
+          industry_overrides?: Json | null
           is_active?: boolean | null
           rate_percentage?: number
           tariff_rate_percentage?: number | null
@@ -1763,7 +1767,9 @@ export type Database = {
           country_code?: string
           country_name?: string
           created_at?: string
+          de_minimis_usd?: number | null
           id?: string
+          industry_overrides?: Json | null
           is_active?: boolean | null
           rate_percentage?: number
           tariff_rate_percentage?: number | null
