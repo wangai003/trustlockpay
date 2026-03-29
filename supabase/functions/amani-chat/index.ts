@@ -8,6 +8,15 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are Amani, TrustLock's AI assistant for vendors. You help with dashboard metrics, widget setup, KYC submission, fee structures, payout timelines, and integration troubleshooting. You are professional and knowledgeable about African e-commerce. You wear a traditional Kenyan kanzu with modern accessories. You are Zawadi's twin brother. Never fabricate data. Format with markdown.
 
+## Document & Image Analysis
+- When a user uploads a document or image, analyze it thoroughly.
+- For invoices/receipts: extract amounts, dates, vendor names, line items.
+- For shipping documents: identify carrier, tracking numbers, origin/destination.
+- For KYC documents: confirm document type (ID, license, certificate) and verify completeness.
+- For milestone evidence: assess whether the evidence supports task completion.
+- For dispute-related images: describe what you see objectively and note anything relevant.
+- Always state clearly what you observe — never fabricate details not visible in the document.
+
 ## Behavior Rules
 - Handle things expeditiously. No excessive sentiment — just professional guidance with personality.
 - Apologies are occasional, genuine, and backed by reasoning — never hollow.
@@ -23,7 +32,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    const { messages } = await req.json();
+    const { messages, attachments } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -55,6 +64,55 @@ serve(async (req) => {
       }
     }
 
+    // Build multimodal messages — convert attachments to inline image_url parts
+    const processedMessages = messages.map((msg: any) => {
+      if (msg.role === "user" && msg.attachments && msg.attachments.length > 0) {
+        const parts: any[] = [];
+        if (msg.content) parts.push({ type: "text", text: msg.content });
+        for (const att of msg.attachments) {
+          if (att.type === "image" && att.data) {
+            parts.push({
+              type: "image_url",
+              image_url: { url: att.data },
+            });
+          } else if (att.type === "document" && att.extractedText) {
+            parts.push({
+              type: "text",
+              text: `\n\n--- Uploaded Document: ${att.name || "document"} ---\n${att.extractedText}\n--- End Document ---`,
+            });
+          }
+        }
+        return { role: "user", content: parts };
+      }
+      return msg;
+    });
+
+    // Also handle top-level attachments for the last message
+    let finalMessages = processedMessages;
+    if (attachments && attachments.length > 0) {
+      const lastMsg = finalMessages[finalMessages.length - 1];
+      if (lastMsg?.role === "user") {
+        const parts: any[] = [];
+        if (typeof lastMsg.content === "string") {
+          parts.push({ type: "text", text: lastMsg.content });
+        } else if (Array.isArray(lastMsg.content)) {
+          parts.push(...lastMsg.content);
+        }
+        for (const att of attachments) {
+          if (att.type === "image" && att.data) {
+            parts.push({ type: "image_url", image_url: { url: att.data } });
+          } else if (att.type === "document" && att.extractedText) {
+            parts.push({ type: "text", text: `\n\n--- Uploaded Document: ${att.name || "document"} ---\n${att.extractedText}\n--- End Document ---` });
+          }
+        }
+        finalMessages = [...finalMessages.slice(0, -1), { role: "user", content: parts }];
+      }
+    }
+
+    // Use gemini-2.5-pro for multimodal (image+text), flash for text-only
+    const hasImages = JSON.stringify(finalMessages).includes("image_url");
+    const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -62,10 +120,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
+          ...finalMessages,
         ],
         stream: true,
       }),
