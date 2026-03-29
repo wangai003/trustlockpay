@@ -583,7 +583,7 @@ export const ALL_IN_RANGES = {
   cryptoDirect: { range: "2.0%", label: "Crypto-to-Crypto (Direct)" },
   cryptoViaProcessor: { range: "2.5% – 3.5%", label: "Crypto via Processor" },
   fiat: { range: "4.4% – 5.4%", label: "Fiat-to-Crypto" },
-  refund: { range: "Gas only (~$0.02–$0.05)", label: "Refund (no service fees)" },
+  refund: { range: "$0 — gas absorbed from escrow fee", label: "Refund (no fees to buyer)" },
   osPayment: { range: "1.0% – 1.5%", label: "OS Platform Payment (no escrow)" },
 } as const;
 
