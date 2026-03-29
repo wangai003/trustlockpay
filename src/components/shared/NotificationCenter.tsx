@@ -73,6 +73,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<DbNotification[]>([]);
   const [activeTab, setActiveTab] = useState<Priority | "all">("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isMainnet, setIsMainnet] = useState(false);
   const [loading, setLoading] = useState(false);
   const userIdRef = useRef<string | null>(null);
