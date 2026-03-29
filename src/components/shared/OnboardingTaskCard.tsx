@@ -56,6 +56,7 @@ const adminTasks: OnboardingTask[] = [
   { id: "a6", label: "Audit dispute evidence for resolved cases", frequency: "sometimes", description: "Cross-reference uploaded evidence with resolution outcomes." },
   { id: "a7", label: "Generate compliance reports (monthly)", frequency: "always", description: "Export transaction, dispute, and KYC data for regulatory filing." },
   { id: "a8", label: "Review 7-year retention compliance", frequency: "future", description: "Audit cross-border trade docs against 7-year immutable retention policy." },
+  { id: "a9", label: "Monitor vendor rejection analytics", frequency: "always", description: "Review rejection rates, gas costs absorbed, and revenue impact in Analytics → Rejections tab." },
 ];
 
 const frequencyBadge: Record<TaskFrequency, { label: string; color: string }> = {
