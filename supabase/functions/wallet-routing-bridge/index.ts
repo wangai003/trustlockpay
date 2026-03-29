@@ -616,31 +616,76 @@ Deno.serve(async (req) => {
 
       const milestoneAmount = Number(milestone.amount) || 0;
 
-      // ── Fractional fee model ──────────────────────────
-      // Instead of charging 1% on each milestone's amount,
-      // we split the total 1% fee evenly across all milestones.
-      // e.g. 5 milestones → 0.2% per milestone release.
-      const { count: totalMilestoneCount } = await supabase
-        .from("transaction_milestones")
-        .select("id", { count: "exact", head: true })
-        .eq("transaction_id", transactionId);
+      // ── Zero-amount checkpoint: no funds move, no fee ─────
+      if (milestoneAmount <= 0) {
+        // Mark as completed but skip all financial routing
+        await supabase
+          .from("transaction_milestones")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", milestoneId);
 
-      const mCount = totalMilestoneCount || 1;
-      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_release / 100)); // 1% of full principal
-      const fractionalFee = round(totalEscrowFee / mCount);
+        const { data: remaining } = await supabase
+          .from("transaction_milestones")
+          .select("id")
+          .eq("transaction_id", transactionId)
+          .neq("status", "completed");
 
-      // Count how many milestones are already completed (before this one)
-      const { count: alreadyCompleted } = await supabase
+        if (!remaining?.length) {
+          await supabase
+            .from("transactions")
+            .update({
+              status: "released",
+              milestone_status: "all_completed",
+              released_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", transactionId);
+        }
+
+        await notify(supabase, tx.vendor_id,
+          "Milestone Completed",
+          `Checkpoint "${milestone.title}" marked complete. No funds released.`,
+          "info", transactionId);
+
+        return json({
+          success: true,
+          action: "route_milestone",
+          transactionId,
+          milestoneId,
+          milestoneAmount: 0,
+          escrowFee: 0,
+          vendorNet: 0,
+          checkpoint: true,
+          allCompleted: !remaining?.length,
+          transfers: [],
+        });
+      }
+
+      // ── Fractional fee model (payment milestones only) ────
+      // Count only milestones that have payment amounts (skip checkpoints)
+      const { count: paymentMilestoneCount } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
         .eq("transaction_id", transactionId)
-        .eq("status", "completed");
+        .gt("payment_amount", 0);
 
-      const priorCompleted = alreadyCompleted || 0;
-      const isLastMilestone = (priorCompleted + 1) === mCount;
-      // On last milestone, absorb any rounding remainder so total = exactly 1%
+      const pmCount = paymentMilestoneCount || 1;
+      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_release / 100)); // 1% of full principal
+      const fractionalFee = round(totalEscrowFee / pmCount);
+
+      // Count already-completed PAYMENT milestones (not checkpoints)
+      const { count: completedPaymentMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id", { count: "exact", head: true })
+        .eq("transaction_id", transactionId)
+        .eq("status", "completed")
+        .gt("payment_amount", 0);
+
+      const priorCompleted = completedPaymentMilestones || 0;
+      const isLastPaymentMilestone = (priorCompleted + 1) === pmCount;
+      // Last payment milestone absorbs rounding remainder so total = exactly 1%
       const feesAlreadyCharged = round(fractionalFee * priorCompleted);
-      const escrowFee = isLastMilestone
+      const escrowFee = isLastPaymentMilestone
         ? round(totalEscrowFee - feesAlreadyCharged)
         : fractionalFee;
       const vendorNet = round(milestoneAmount - escrowFee);

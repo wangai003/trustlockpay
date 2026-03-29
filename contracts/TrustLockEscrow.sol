@@ -427,6 +427,19 @@ contract TrustLockEscrow is ReentrancyGuard {
 
         m.released = true;
 
+        // Zero-amount checkpoints: no funds move, no fee
+        if (m.amount == 0) {
+            // If all milestones released, mark escrow as RELEASED
+            if (_allMilestonesReleased(escrowId)) {
+                e.status = EscrowStatus.RELEASED;
+            }
+            emit MilestoneReleased(escrowId, milestoneIndex, 0);
+            return;
+        }
+
+        // Payment milestone: deduct fractional escrow service fee
+        // Fee = 1% of THIS milestone's amount (totals to 1% of principal
+        // only across payment milestones, since checkpoints have amount=0)
         uint256 serviceFee = (m.amount * ESCROW_SERVICE_FEE_BPS) / 10000;
         uint256 vendorPayout = m.amount - serviceFee;
 
