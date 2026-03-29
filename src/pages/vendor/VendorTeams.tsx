@@ -217,6 +217,7 @@ const VendorTeams = () => {
     return <TestnetTeamsView testnet={testnet} role="vendor" />;
   }
 
+  if (selectedWs) {
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
 
     return (
