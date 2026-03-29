@@ -8,6 +8,7 @@ import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldChec
 import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
 import { useNavigate } from "react-router-dom";
 import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
+import TLId from "@/components/shared/TLId";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
