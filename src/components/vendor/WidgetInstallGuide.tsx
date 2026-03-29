@@ -253,9 +253,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
       )}
 
       {/* Help footer */}
-      <div className="px-4 py-2 bg-muted/10 border-t border-border">
-        <p className="text-[10px] text-muted-foreground text-center">
-          Need help? Contact support or ask your TrustLock assistant for a walkthrough.
+      <div className="px-4 py-2.5 bg-muted/10 border-t border-border">
+        <p className="text-[11px] text-muted-foreground text-center">
+          Need help installing? Email us at{" "}
+          <a href="mailto:support@azix.world" className="text-primary font-semibold hover:underline">
+            support@azix.world
+          </a>{" "}
+          or use the TrustLock Assistant in your dashboard.
         </p>
       </div>
     </div>
