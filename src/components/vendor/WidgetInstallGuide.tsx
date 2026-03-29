@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Keyboard, Link } from "lucide-react";
+import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Link } from "lucide-react";
 import { toast } from "sonner";
 
 interface WidgetInstallGuideProps {
