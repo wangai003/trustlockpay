@@ -22,6 +22,7 @@ const ALL_TABLES = [
   { id: "payouts", label: "Payouts" },
   { id: "payout_requests", label: "Payout Requests" },
   { id: "order_carbon_copies", label: "Order Carbon Copies" },
+  { id: "tax_ledger", label: "Tax & Tariff Collections" },
 ];
 
 interface AuditSession {
