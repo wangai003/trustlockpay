@@ -176,7 +176,7 @@ const VendorSettings = () => {
                   Automatically mark orders as shipped when payment is received. Best for digital goods or high-volume sellers.
                 </p>
               </div>
-              <Switch checked={autoDelivery} onCheckedChange={handleAutoDeliveryToggle} />
+              <TLId code="TL-V-SET-TGL-AUTO-DELIVERY" inline><Switch checked={autoDelivery} onCheckedChange={handleAutoDeliveryToggle} /></TLId>
             </div>
             {autoDelivery && (
               <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
