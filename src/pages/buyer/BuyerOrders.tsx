@@ -307,7 +307,10 @@ const BuyerOrders = () => {
                     <div className="flex gap-2 shrink-0">
                       {order.status === "delivered" && (
                         <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
-                          <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>
+                          <Button size="sm" onClick={() => {
+                            if (isTestnet) { testnet.confirmDelivery(order.id); }
+                            else { confirmDeliveryHook.mutate(order.id); }
+                          }}>Confirm Delivery</Button>
                         </TLId>
                       )}
                       {order.status === "shipped" && (
