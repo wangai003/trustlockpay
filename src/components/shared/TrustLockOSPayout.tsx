@@ -1003,7 +1003,7 @@ const TrustLockOSPayout = ({
                   Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via{" "}
                   <strong>{selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? `${selectedChain.toUpperCase()} direct` : "Direct")}</strong>?
                   {fees && <> After fees, you will receive <strong className="text-primary">${fees.netAmount.toFixed(2)}</strong>.</>}
-                  {" "}This action will instruct the Azix wallet to release funds to your selected payment method.
+                  {" "}This action will instruct the escrow wallet to release funds to your selected payment method.
                 </>
               )}
               {isCrypto && (

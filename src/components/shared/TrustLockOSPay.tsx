@@ -34,7 +34,7 @@ const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string
   { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
   { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
   { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC/USDT · 1.0% platform fee · no processor fee" },
+  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
 ];
 
 /* ── Diaspora payment methods ── */
@@ -43,7 +43,7 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
   { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
-  { id: "azix", icon: Wallet, label: "Azix Wallet (Crypto)", sub: "Direct USDC/USDT · 1.0% platform fee · no processor fee" },
+  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
 ];
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
@@ -564,7 +564,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-primary">How to Pay with Crypto</p>
                     <p className="text-[10px] text-foreground leading-relaxed">
-                      Send <strong>{selectedToken}</strong> on <strong>Polygon network</strong> to the locked Azix wallet address below, then return here and paste your transaction details to confirm payment and generate your order.
+                      Send <strong>{selectedToken}</strong> on <strong>Polygon network</strong> to the locked receiving wallet address below, then return here and paste your transaction details to confirm payment and generate your order.
                     </p>
                   </div>
                 </div>
@@ -789,7 +789,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     Your payment was received but does not cover the full amount. This is likely due to a network or withdrawal fee deducted by your exchange or wallet.
                   </p>
                   <p className="text-[10px] text-foreground font-semibold">
-                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same Azix wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
+                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
                   </p>
                   {shortfallTxIds.length > 0 && (
                     <div className="p-1.5 rounded bg-muted text-[9px] text-muted-foreground">

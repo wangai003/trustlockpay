@@ -186,7 +186,7 @@ const TrustLockDualCheckout = () => {
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold text-primary">How to Pay with Crypto</p>
                         <p className="text-[9px] text-foreground leading-relaxed">
-                          Send <strong>{checkoutToken}</strong> on <strong>Polygon</strong> to the Azix wallet below, then paste your transaction details to verify payment and generate your order.
+                          Send <strong>{checkoutToken}</strong> on <strong>Polygon</strong> to the receiving wallet below, then paste your transaction details to verify payment and generate your order.
                         </p>
                       </div>
                     </div>
@@ -228,7 +228,7 @@ const TrustLockDualCheckout = () => {
                   {polygonConfirmed && (<>
                   {/* Locked Receiving Wallet + Copy */}
                   <div className="space-y-1">
-                    <p className="text-[10px] font-semibold">Step 3 — Send to Azix Wallet <span className="text-destructive">(Locked)</span></p>
+                    <p className="text-[10px] font-semibold">Step 3 — Send to Receiving Wallet <span className="text-destructive">(Locked)</span></p>
                     <div className="relative">
                       <Input value={AZIX_WALLETS.transaction.publicKey} readOnly className="bg-muted font-mono text-[10px] pr-16 cursor-not-allowed border-2 border-primary/30" tabIndex={-1} />
                       <Button type="button" size="sm" variant="outline" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 px-2 gap-1 text-[9px]"
