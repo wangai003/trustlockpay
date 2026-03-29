@@ -1,8 +1,9 @@
 /**
  * TestnetTeamsView — Interactive Team Lead simulation for testnet mode.
- * Shows pre-populated workspaces with members, tasks, statuses, and full CRUD.
+ * Shows pre-populated workspaces with members, tasks, activity log, and full CRUD.
+ * Tasks are categorized by order number — never bundled across orders.
  */
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,12 +15,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle,
-  ClipboardList, RotateCcw, Upload, Clock, Shield, FileText
+  ClipboardList, RotateCcw, Upload, Clock, Shield, FileText, Activity,
+  Hash, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { useTestnetTeams } from "@/hooks/useTestnetTeams";
 
 const INDUSTRIES = [
   { key: "mining", label: "Mining" }, { key: "agriculture", label: "Agriculture" },
@@ -36,7 +40,7 @@ const LANGUAGES = [
 ];
 
 interface TestnetTeamsViewProps {
-  testnet: ReturnType<typeof import("@/hooks/useTestnetTeams").useTestnetTeams>;
+  testnet: ReturnType<typeof useTestnetTeams>;
   role: "vendor" | "buyer";
 }
 
@@ -46,7 +50,10 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   const [showCreate, setShowCreate] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
+  const [showCompleteTask, setShowCompleteTask] = useState<string | null>(null);
+  const [showResult, setShowResult] = useState<{ title: string; detail: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
+  const [wsTab, setWsTab] = useState<"tasks" | "members" | "log">("tasks");
 
   // Create form
   const [newTitle, setNewTitle] = useState("");
@@ -65,30 +72,60 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   const [taskInstructions, setTaskInstructions] = useState("");
   const [taskSlaHours, setTaskSlaHours] = useState("");
 
-  const { workspaces, getMembers, getTasks, getPresets, createWorkspace, addMember, removeMember, toggleFinalize, assignTask, completeTask, updateWorkspaceStatus, resetTeams } = testnet;
+  // Complete task form
+  const [evidenceName, setEvidenceName] = useState("");
+  const [evidenceNotes, setEvidenceNotes] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+
+  const { workspaces, getMembers, getTasks, getPresets, getActivityLog, createWorkspace, addMember, removeMember, toggleFinalize, assignTask, completeTask, updateWorkspaceStatus, resetTeams } = testnet;
 
   const selectedWs = workspaces.find(w => w.id === selectedWsId) || null;
   const members = selectedWsId ? getMembers(selectedWsId).filter(m => !m.removed_at) : [];
   const tasks = selectedWsId ? getTasks(selectedWsId) : [];
   const presets = selectedWs ? getPresets(selectedWs.industry) : [];
+  const wsLog = selectedWsId ? getActivityLog(selectedWsId) : [];
 
   const activeWs = workspaces.filter(w => w.status === "active");
   const completedWs = workspaces.filter(w => w.status === "complete");
   const dissolvedWs = workspaces.filter(w => w.status === "dissolved");
 
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffH = Math.round((now.getTime() - d.getTime()) / 3600000);
+    if (diffH < 1) return "Just now";
+    if (diffH < 24) return `${diffH}h ago`;
+    const diffD = Math.round(diffH / 24);
+    return `${diffD}d ago`;
+  };
+
+  const actionIcon = (action: string) => {
+    if (action.includes("completed")) return <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />;
+    if (action.includes("assigned")) return <ClipboardList className="w-3.5 h-3.5 text-primary" />;
+    if (action.includes("added")) return <UserPlus className="w-3.5 h-3.5 text-blue-500" />;
+    if (action.includes("removed")) return <Trash2 className="w-3.5 h-3.5 text-destructive" />;
+    if (action.includes("created")) return <Plus className="w-3.5 h-3.5 text-primary" />;
+    if (action.includes("complete") || action.includes("dissolved")) return <Shield className="w-3.5 h-3.5 text-amber-500" />;
+    return <Activity className="w-3.5 h-3.5 text-muted-foreground" />;
+  };
+
   // ─── Selected Workspace Detail View ───
   if (selectedWs) {
     const completedCount = tasks.filter(t => t.status === "completed").length;
     const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
+    const completingTask = showCompleteTask ? tasks.find(t => t.id === showCompleteTask) : null;
+    const completingMember = completingTask ? members.find(m => m.id === completingTask.member_id) : null;
 
     return (
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedWsId(null)}>← Back</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setSelectedWsId(null); setWsTab("tasks"); }}>← Back</Button>
             <h1 className="text-xl sm:text-2xl font-bold mt-2">{selectedWs.title}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <Badge variant="outline" className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedWs.order_number}</Badge>
               <Badge variant="outline">{selectedWs.industry}</Badge>
               <Badge className={cn(
                 selectedWs.status === "active" ? "bg-primary" : selectedWs.status === "complete" ? "bg-green-600" : "bg-destructive"
@@ -117,145 +154,260 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
               <span className="text-sm text-muted-foreground">{completedCount}/{tasks.length} tasks</span>
             </div>
             <Progress value={progress} className="h-2" />
-          </CardContent>
-        </Card>
-
-        {/* Team Members */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="w-5 h-5" /> Team Members ({members.length})
-            </CardTitle>
-            {selectedWs.status === "active" && (
-              <Button size="sm" onClick={() => setShowAddMember(true)}>
-                <UserPlus className="w-4 h-4 mr-1" /> Add Member
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No members added yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {members.map(m => (
-                  <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
-                    <div>
-                      <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {m.role} · {LANGUAGES.find(l => l.code === m.preferred_language)?.label || "English"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 self-end sm:self-center">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Finalizer</Label>
-                        <Switch
-                          checked={m.can_finalize}
-                          onCheckedChange={() => toggleFinalize(selectedWs.id, m.id)}
-                          disabled={selectedWs.status !== "active"}
-                        />
-                      </div>
-                      {m.can_finalize && <Badge className="bg-primary/15 text-primary text-[9px]">Can Release</Badge>}
-                      {selectedWs.status === "active" && (
-                        <Button size="icon" variant="ghost" className="text-destructive"
-                          onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {progress === 100 && tasks.length > 0 && (
+              <p className="text-xs text-green-600 mt-2 font-medium">🎉 All tasks completed — ready to finalize work order</p>
             )}
           </CardContent>
         </Card>
 
-        {/* Task Pipeline */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="w-5 h-5" /> Task Pipeline
-            </CardTitle>
-            {selectedWs.status === "active" && (
-              <Button size="sm" onClick={() => setShowAssignTask(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Assign Task
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tasks assigned yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {tasks.map((t, i) => {
-                  const member = members.find(m => m.id === t.member_id);
-                  const allPriorDone = tasks.filter(pt => pt.sort_order < t.sort_order).every(pt => pt.status === "completed");
-                  const isBlocked = t.status === "pending" && !allPriorDone;
-                  const canAct = t.status === "pending" && allPriorDone && selectedWs.status === "active";
+        {/* Inner Tabs: Tasks / Members / Activity Log */}
+        <Tabs value={wsTab} onValueChange={v => setWsTab(v as any)}>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="tasks" className="flex-1 sm:flex-none gap-1"><ClipboardList className="w-3.5 h-3.5" /> Tasks ({tasks.length})</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1 sm:flex-none gap-1"><Users className="w-3.5 h-3.5" /> Members ({members.length})</TabsTrigger>
+            <TabsTrigger value="log" className="flex-1 sm:flex-none gap-1"><Activity className="w-3.5 h-3.5" /> Log ({wsLog.length})</TabsTrigger>
+          </TabsList>
 
-                  return (
-                    <div key={t.id} className={cn(
-                      "p-3 rounded-lg border transition-colors",
-                      t.status === "completed" ? "border-green-500/30 bg-green-50/50 dark:bg-green-950/10" :
-                      isBlocked ? "border-border bg-muted/30 opacity-60" :
-                      canAct ? "border-primary/40 bg-primary/5" : "border-border"
-                    )}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5",
-                            t.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                            canAct ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-                          )}>
-                            {t.status === "completed" ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Assigned to: <strong>{member?.display_name || "Unassigned"}</strong>
-                            </p>
-                            {t.instructions && (
-                              <p className="text-xs text-muted-foreground mt-1 italic">"{t.instructions}"</p>
-                            )}
-                            <div className="flex gap-2 mt-1 flex-wrap">
-                              {t.sla_hours && (
-                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                  <Clock className="w-3 h-3" /> SLA: {t.sla_hours}h
-                                </span>
+          {/* ── Tasks Tab ── */}
+          <TabsContent value="tasks">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Task Pipeline</CardTitle>
+                {selectedWs.status === "active" && (
+                  <Button size="sm" onClick={() => setShowAssignTask(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> Assign Task
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {tasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No tasks assigned yet. Click "Assign Task" to start.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {tasks.map((t, i) => {
+                      const member = members.find(m => m.id === t.member_id);
+                      const allPriorDone = tasks.filter(pt => pt.sort_order < t.sort_order).every(pt => pt.status === "completed");
+                      const isBlocked = t.status === "pending" && !allPriorDone;
+                      const canAct = t.status === "pending" && allPriorDone && selectedWs.status === "active";
+
+                      return (
+                        <div key={t.id} className={cn(
+                          "p-3 rounded-lg border transition-colors",
+                          t.status === "completed" ? "border-green-500/30 bg-green-50/50 dark:bg-green-950/10" :
+                          isBlocked ? "border-border bg-muted/30 opacity-60" :
+                          canAct ? "border-primary/40 bg-primary/5" : "border-border"
+                        )}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-start gap-3">
+                              <div className={cn(
+                                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5",
+                                t.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                                canAct ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                              )}>
+                                {t.status === "completed" ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{t.milestone_label || t.milestone_key}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Assigned to: <strong>{member?.display_name || "Unassigned"}</strong>
+                                </p>
+                                {t.instructions && (
+                                  <p className="text-xs text-muted-foreground mt-1 italic">"{t.instructions}"</p>
+                                )}
+                                <div className="flex gap-2 mt-1 flex-wrap">
+                                  {t.sla_hours && (
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Clock className="w-3 h-3" /> SLA: {t.sla_hours}h
+                                    </span>
+                                  )}
+                                  {t.evidence_url && (
+                                    <span className="text-[10px] text-green-600 flex items-center gap-1 cursor-pointer" onClick={() => setShowResult({ title: t.milestone_label || t.milestone_key, detail: `Evidence: ${t.evidence_url}\nCompleted by: ${member?.display_name || "Team Member"}\nOrder: ${selectedWs.order_number}` })}>
+                                      <FileText className="w-3 h-3" /> Evidence ↗
+                                    </span>
+                                  )}
+                                  {isBlocked && (
+                                    <span className="text-[10px] text-amber-600 flex items-center gap-1">
+                                      <AlertTriangle className="w-3 h-3" /> Blocked — prior task incomplete
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end sm:self-center">
+                              <Badge variant={t.status === "completed" ? "default" : "outline"} className={cn(
+                                "text-[10px]",
+                                t.status === "completed" && "bg-green-600"
+                              )}>
+                                {t.status === "completed" ? "Done" : canAct ? "Ready" : "Pending"}
+                              </Badge>
+                              {t.status === "completed" && (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowResult({ title: t.milestone_label || t.milestone_key, detail: `✅ Task completed successfully\n\nEvidence: ${t.evidence_url || "N/A"}\nAssigned to: ${member?.display_name || "Unknown"}\nOrder: ${selectedWs.order_number}\nSLA: ${t.sla_hours || "N/A"}h` })}>
+                                  <Eye className="w-3 h-3 mr-1" /> View
+                                </Button>
                               )}
-                              {t.evidence_url && (
-                                <span className="text-[10px] text-green-600 flex items-center gap-1">
-                                  <FileText className="w-3 h-3" /> Evidence uploaded
-                                </span>
-                              )}
-                              {isBlocked && (
-                                <span className="text-[10px] text-amber-600 flex items-center gap-1">
-                                  <AlertTriangle className="w-3 h-3" /> Blocked — prior task incomplete
-                                </span>
+                              {canAct && (
+                                <Button size="sm" className="h-7 text-xs" onClick={() => { setShowCompleteTask(t.id); setEvidenceName(""); setEvidenceNotes(""); setEvidenceFile(null); }}>
+                                  <Upload className="w-3 h-3 mr-1" /> Complete
+                                </Button>
                               )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 self-end sm:self-center">
-                          <Badge variant={t.status === "completed" ? "default" : "outline"} className={cn(
-                            "text-[10px]",
-                            t.status === "completed" && "bg-green-600"
-                          )}>
-                            {t.status === "completed" ? "Done" : canAct ? "Ready" : "Pending"}
-                          </Badge>
-                          {canAct && (
-                            <Button size="sm" className="h-7 text-xs" onClick={() => completeTask(selectedWs.id, t.id)}>
-                              <Upload className="w-3 h-3 mr-1" /> Complete
-                            </Button>
-                          )}
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Members Tab ── */}
+          <TabsContent value="members">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="w-5 h-5" /> Team Members
+                </CardTitle>
+                {selectedWs.status === "active" && (
+                  <Button size="sm" onClick={() => setShowAddMember(true)}>
+                    <UserPlus className="w-4 h-4 mr-1" /> Add Member
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {members.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No members added yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {members.map(m => {
+                      const memberTasks = tasks.filter(t => t.member_id === m.id);
+                      const memberDone = memberTasks.filter(t => t.status === "completed").length;
+                      return (
+                        <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
+                          <div>
+                            <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {m.role} · {LANGUAGES.find(l => l.code === m.preferred_language)?.label || "English"}
+                              {memberTasks.length > 0 && <span className="ml-2">· {memberDone}/{memberTasks.length} tasks done</span>}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 self-end sm:self-center">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Finalizer</Label>
+                              <Switch
+                                checked={m.can_finalize}
+                                onCheckedChange={() => toggleFinalize(selectedWs.id, m.id)}
+                                disabled={selectedWs.status !== "active"}
+                              />
+                            </div>
+                            {m.can_finalize && <Badge className="bg-primary/15 text-primary text-[9px]">Can Release</Badge>}
+                            {selectedWs.status === "active" && (
+                              <Button size="icon" variant="ghost" className="text-destructive"
+                                onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Activity Log Tab ── */}
+          <TabsContent value="log">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" /> Workflow Activity Log
+                  <Badge variant="secondary" className="text-[10px]">{selectedWs.order_number}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {wsLog.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+                ) : (
+                  <div className="space-y-0 relative">
+                    <div className="absolute left-[17px] top-3 bottom-3 w-px bg-border" />
+                    {wsLog.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-3 py-2.5 relative">
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0 z-10">
+                          {actionIcon(entry.action)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm"><strong>{entry.actor}</strong> · <span className="text-muted-foreground">{entry.action.replace(/_/g, " ")}</span></p>
+                          <p className="text-xs text-muted-foreground">{entry.detail}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{formatTime(entry.timestamp)}</p>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* ── Complete Task Dialog ── */}
+        <Dialog open={!!showCompleteTask} onOpenChange={() => setShowCompleteTask(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Complete Task</DialogTitle></DialogHeader>
+            {completingTask && (
+              <div className="space-y-4">
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm font-medium">{completingTask.milestone_label || completingTask.milestone_key}</p>
+                  <p className="text-xs text-muted-foreground">Assigned to: {completingMember?.display_name || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground">Order: {selectedWs.order_number}</p>
+                </div>
+                <div>
+                  <Label className="text-sm">Evidence Name</Label>
+                  <Input value={evidenceName} onChange={e => setEvidenceName(e.target.value)} placeholder="e.g. inspection_report_march_2026.pdf" />
+                </div>
+                <div>
+                  <Label className="text-sm">Upload Evidence (optional)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Upload photo, report, or document as proof.</p>
+                  <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx" onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)} />
+                  <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-1" /> {evidenceFile ? evidenceFile.name : "Choose File"}
+                  </Button>
+                </div>
+                <div>
+                  <Label className="text-sm">Completion Notes</Label>
+                  <Textarea value={evidenceNotes} onChange={e => setEvidenceNotes(e.target.value)} placeholder="Any notes about this task completion..." />
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCompleteTask(null)}>Cancel</Button>
+              <Button onClick={() => {
+                if (!showCompleteTask || !selectedWs) return;
+                const evName = evidenceName || evidenceFile?.name || "evidence_uploaded.pdf";
+                completeTask(selectedWs.id, showCompleteTask, evName, completingMember?.display_name || undefined);
+                setShowCompleteTask(null);
+                setShowResult({
+                  title: "Task Completed Successfully",
+                  detail: `✅ ${completingTask?.milestone_label || "Task"}\n\nEvidence: ${evName}\nCompleted by: ${completingMember?.display_name || "Team Member"}\nOrder: ${selectedWs.order_number}\n${evidenceNotes ? `\nNotes: ${evidenceNotes}` : ""}\n\nThis has been logged in the Team Lead's activity log.`
+                });
+              }}>
+                <CheckCircle2 className="w-4 h-4 mr-1" /> Confirm Complete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ── Result / Evidence View Dialog ── */}
+        <Dialog open={!!showResult} onOpenChange={() => setShowResult(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-600" /> {showResult?.title}</DialogTitle></DialogHeader>
+            <pre className="text-sm whitespace-pre-wrap bg-muted/50 p-4 rounded-lg border border-border">{showResult?.detail}</pre>
+            <DialogFooter>
+              <Button onClick={() => setShowResult(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Add Member Dialog */}
         <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
@@ -294,6 +446,7 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
         <Dialog open={showAssignTask} onOpenChange={setShowAssignTask}>
           <DialogContent>
             <DialogHeader><DialogTitle>Assign Task</DialogTitle></DialogHeader>
+            <p className="text-xs text-muted-foreground">Order: <strong>{selectedWs.order_number}</strong> — tasks are scoped to this order only.</p>
             <div className="space-y-4">
               <div>
                 <Label>Assign To</Label>
@@ -322,12 +475,21 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           <DialogContent>
             <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Confirm Action</DialogTitle></DialogHeader>
             <p className="text-sm text-muted-foreground">Are you sure you want to: <strong>{confirmAction?.label}</strong>?</p>
+            <p className="text-xs text-muted-foreground">Order: {selectedWs.order_number}</p>
             <DialogFooter>
               <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
               <Button variant="destructive" onClick={() => {
-                if (confirmAction?.type === "complete") { updateWorkspaceStatus(selectedWs.id, "complete"); setSelectedWsId(null); }
-                else if (confirmAction?.type === "dissolve") { updateWorkspaceStatus(selectedWs.id, "dissolved"); setSelectedWsId(null); }
-                else if (confirmAction?.type === "remove_member") removeMember(selectedWs.id, confirmAction.id);
+                if (confirmAction?.type === "complete") {
+                  updateWorkspaceStatus(selectedWs.id, "complete");
+                  setShowResult({ title: "Work Order Completed", detail: `✅ Order ${selectedWs.order_number} has been marked as complete.\n\nAll activities have been logged.\n${tasks.filter(t => t.status === "completed").length}/${tasks.length} tasks completed.\n\nThis order will be auto-archived after 90 days.` });
+                  setSelectedWsId(null);
+                } else if (confirmAction?.type === "dissolve") {
+                  updateWorkspaceStatus(selectedWs.id, "dissolved");
+                  setShowResult({ title: "Work Order Dissolved", detail: `⚠️ Order ${selectedWs.order_number} has been dissolved.\n\nAll activities have been logged.\nNo further task completions are possible.\n\nThis order will be auto-archived after 90 days.` });
+                  setSelectedWsId(null);
+                } else if (confirmAction?.type === "remove_member") {
+                  removeMember(selectedWs.id, confirmAction.id);
+                }
                 setConfirmAction(null);
               }}>Confirm</Button>
             </DialogFooter>
@@ -338,6 +500,7 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   }
 
   // ─── Workspace List View ───
+  const allLog = getActivityLog();
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -358,7 +521,9 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           <TabsTrigger value="active" className="flex-1 sm:flex-none">Active ({activeWs.length})</TabsTrigger>
           <TabsTrigger value="complete" className="flex-1 sm:flex-none">Complete ({completedWs.length})</TabsTrigger>
           <TabsTrigger value="dissolved" className="flex-1 sm:flex-none">Dissolved ({dissolvedWs.length})</TabsTrigger>
+          <TabsTrigger value="master_log" className="flex-1 sm:flex-none gap-1"><Activity className="w-3.5 h-3.5" /> Master Log</TabsTrigger>
         </TabsList>
+
         {["active", "complete", "dissolved"].map(status => {
           const list = status === "active" ? activeWs : status === "complete" ? completedWs : dissolvedWs;
           return (
@@ -378,6 +543,7 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                             <CardTitle className="text-base">{ws.title}</CardTitle>
                             <Badge variant="outline">{ws.industry}</Badge>
                           </div>
+                          <Badge variant="secondary" className="w-fit text-[10px] flex items-center gap-1"><Hash className="w-3 h-3" />{ws.order_number}</Badge>
                         </CardHeader>
                         <CardContent>
                           {ws.description && <p className="text-sm text-muted-foreground line-clamp-2">{ws.description}</p>}
@@ -397,6 +563,51 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
             </TabsContent>
           );
         })}
+
+        {/* ── Master Activity Log ── */}
+        <TabsContent value="master_log">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5" /> Master Workflow Log
+                <Badge variant="secondary" className="text-[10px]">All Orders</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allLog.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[140px]">Order #</TableHead>
+                        <TableHead>Actor</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead className="hidden sm:table-cell">Detail</TableHead>
+                        <TableHead className="w-[80px]">Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allLog.slice(0, 50).map(entry => (
+                        <TableRow key={entry.id} className="cursor-pointer" onClick={() => {
+                          const ws = workspaces.find(w => w.id === entry.workspace_id);
+                          if (ws) setSelectedWsId(ws.id);
+                        }}>
+                          <TableCell><Badge variant="outline" className="text-[9px]">{entry.order_number}</Badge></TableCell>
+                          <TableCell className="text-sm">{entry.actor}</TableCell>
+                          <TableCell className="flex items-center gap-1 text-sm">{actionIcon(entry.action)} {entry.action.replace(/_/g, " ")}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs text-muted-foreground max-w-[200px] truncate">{entry.detail}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatTime(entry.timestamp)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Create Dialog */}
@@ -420,6 +631,17 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
               createWorkspace(newTitle, newIndustry, newDesc);
               setShowCreate(false); setNewTitle(""); setNewDesc("");
             }}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Result Dialog (used after completing/dissolving from list) */}
+      <Dialog open={!!showResult} onOpenChange={() => setShowResult(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-600" /> {showResult?.title}</DialogTitle></DialogHeader>
+          <pre className="text-sm whitespace-pre-wrap bg-muted/50 p-4 rounded-lg border border-border">{showResult?.detail}</pre>
+          <DialogFooter>
+            <Button onClick={() => setShowResult(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

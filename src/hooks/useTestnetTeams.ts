@@ -1,6 +1,7 @@
 /**
  * Testnet mock data for Teams — provides interactive Team Lead experience
- * with pre-populated workspaces, members, tasks, and status management.
+ * with pre-populated workspaces, members, tasks, activity log, and status management.
+ * Tasks are categorized by order number (workspace transaction_id).
  */
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -9,12 +10,17 @@ import type { TaskAssignment } from "@/components/shared/TeamTaskCard";
 type Workspace = {
   id: string; title: string; description: string | null; industry: string;
   status: string; created_at: string; transaction_id: string | null; owner_id: string;
+  order_number: string;
 };
 type Member = {
   id: string; user_id: string; display_name: string | null; role: string;
   can_finalize: boolean; removed_at: string | null; preferred_language?: string;
 };
 type RolePreset = { id: string; industry: string; role_name: string; role_key: string };
+export type ActivityLogEntry = {
+  id: string; workspace_id: string; order_number: string; actor: string;
+  action: string; detail: string; timestamp: string;
+};
 
 const LS_KEY = "tl_testnet_teams";
 
@@ -67,12 +73,21 @@ const MOCK_TASKS: Record<string, TaskAssignment[]> = {
 };
 
 const INITIAL_WORKSPACES: Workspace[] = [
-  { id: "ws-mining-1", title: "Gold Export — Obuasi Mine Lot #7", description: "25-ton gold ore shipment from Obuasi to Rotterdam via Tema Port. 4 team members coordinating geological survey through export.", industry: "mining", status: "active", created_at: new Date(Date.now() - 5 * 86400000).toISOString(), transaction_id: "tx-mining-001", owner_id: "testnet-owner" },
-  { id: "ws-agri-1", title: "Cocoa Export — Kumasi Cooperative", description: "500 bags premium cocoa beans for Swiss buyer. Quality inspection and reefer booking in progress.", industry: "agriculture", status: "active", created_at: new Date(Date.now() - 3 * 86400000).toISOString(), transaction_id: "tx-agri-001", owner_id: "testnet-owner" },
-  { id: "ws-constr-1", title: "Office Complex — Phase 1 Foundation", description: "Commercial property build in Accra. Foundation stage with material procurement and structural engineering.", industry: "construction", status: "active", created_at: new Date(Date.now() - 10 * 86400000).toISOString(), transaction_id: "tx-constr-001", owner_id: "testnet-owner" },
-  { id: "ws-realestate-1", title: "Property Sale — Lekki Peninsula", description: "Residential property transfer. Title verification and purchase agreement in progress.", industry: "real_estate", status: "active", created_at: new Date(Date.now() - 7 * 86400000).toISOString(), transaction_id: "tx-re-001", owner_id: "testnet-owner" },
-  { id: "ws-complete-1", title: "Shea Butter Export — Completed", description: "Successfully exported 10 tons of refined shea butter to EU distributor.", industry: "agriculture", status: "complete", created_at: new Date(Date.now() - 30 * 86400000).toISOString(), transaction_id: "tx-shea-001", owner_id: "testnet-owner" },
-  { id: "ws-dissolved-1", title: "Textile Order — Dissolved", description: "Client cancelled order before production started. No milestones released.", industry: "retail", status: "dissolved", created_at: new Date(Date.now() - 20 * 86400000).toISOString(), transaction_id: null, owner_id: "testnet-owner" },
+  { id: "ws-mining-1", title: "Gold Export — Obuasi Mine Lot #7", description: "25-ton gold ore shipment from Obuasi to Rotterdam via Tema Port.", industry: "mining", status: "active", created_at: new Date(Date.now() - 5 * 86400000).toISOString(), transaction_id: "tx-mining-001", owner_id: "testnet-owner", order_number: "ORD-MIN-2026-0047" },
+  { id: "ws-agri-1", title: "Cocoa Export — Kumasi Cooperative", description: "500 bags premium cocoa beans for Swiss buyer.", industry: "agriculture", status: "active", created_at: new Date(Date.now() - 3 * 86400000).toISOString(), transaction_id: "tx-agri-001", owner_id: "testnet-owner", order_number: "ORD-AGR-2026-0112" },
+  { id: "ws-constr-1", title: "Office Complex — Phase 1 Foundation", description: "Commercial property build in Accra. Foundation stage.", industry: "construction", status: "active", created_at: new Date(Date.now() - 10 * 86400000).toISOString(), transaction_id: "tx-constr-001", owner_id: "testnet-owner", order_number: "ORD-CON-2026-0023" },
+  { id: "ws-realestate-1", title: "Property Sale — Lekki Peninsula", description: "Residential property transfer. Title verification in progress.", industry: "real_estate", status: "active", created_at: new Date(Date.now() - 7 * 86400000).toISOString(), transaction_id: "tx-re-001", owner_id: "testnet-owner", order_number: "ORD-RE-2026-0089" },
+  { id: "ws-complete-1", title: "Shea Butter Export — Completed", description: "Successfully exported 10 tons of refined shea butter.", industry: "agriculture", status: "complete", created_at: new Date(Date.now() - 30 * 86400000).toISOString(), transaction_id: "tx-shea-001", owner_id: "testnet-owner", order_number: "ORD-AGR-2026-0098" },
+  { id: "ws-dissolved-1", title: "Textile Order — Dissolved", description: "Client cancelled order before production started.", industry: "retail", status: "dissolved", created_at: new Date(Date.now() - 20 * 86400000).toISOString(), transaction_id: null, owner_id: "testnet-owner", order_number: "ORD-RET-2026-0054" },
+];
+
+const INITIAL_ACTIVITY_LOG: ActivityLogEntry[] = [
+  { id: "log-1", workspace_id: "ws-mining-1", order_number: "ORD-MIN-2026-0047", actor: "Kwame Asante", action: "task_completed", detail: "Completed: Geological Survey — evidence: survey_report.pdf", timestamp: new Date(Date.now() - 4 * 86400000).toISOString() },
+  { id: "log-2", workspace_id: "ws-mining-1", order_number: "ORD-MIN-2026-0047", actor: "Fatima Diallo", action: "task_completed", detail: "Completed: Assay Report — evidence: assay_cert.pdf", timestamp: new Date(Date.now() - 3 * 86400000).toISOString() },
+  { id: "log-3", workspace_id: "ws-agri-1", order_number: "ORD-AGR-2026-0112", actor: "Grace Nyambura", action: "task_completed", detail: "Completed: Harvest Schedule confirmed", timestamp: new Date(Date.now() - 2 * 86400000).toISOString() },
+  { id: "log-4", workspace_id: "ws-constr-1", order_number: "ORD-CON-2026-0023", actor: "Ibrahim Toure", action: "task_completed", detail: "Completed: Material Procurement — evidence: purchase_orders.pdf", timestamp: new Date(Date.now() - 8 * 86400000).toISOString() },
+  { id: "log-5", workspace_id: "ws-realestate-1", order_number: "ORD-RE-2026-0089", actor: "James Otieno", action: "task_completed", detail: "Completed: Title Search — evidence: title_report.pdf", timestamp: new Date(Date.now() - 6 * 86400000).toISOString() },
+  { id: "log-6", workspace_id: "ws-mining-1", order_number: "ORD-MIN-2026-0047", actor: "Team Lead", action: "member_added", detail: "Added Amina Bello as Compliance Officer", timestamp: new Date(Date.now() - 5 * 86400000).toISOString() },
 ];
 
 const MOCK_PRESETS: Record<string, RolePreset[]> = {
@@ -100,6 +115,31 @@ const MOCK_PRESETS: Record<string, RolePreset[]> = {
     { id: "rp15", industry: "real_estate", role_name: "Legal Counsel", role_key: "legal" },
     { id: "rp16", industry: "real_estate", role_name: "Surveyor", role_key: "surveyor" },
   ],
+  logistics: [
+    { id: "rp17", industry: "logistics", role_name: "Dispatch Manager", role_key: "dispatch" },
+    { id: "rp18", industry: "logistics", role_name: "Fleet Supervisor", role_key: "fleet" },
+    { id: "rp19", industry: "logistics", role_name: "Customs Agent", role_key: "customs" },
+  ],
+  tourism: [
+    { id: "rp20", industry: "tourism", role_name: "Tour Coordinator", role_key: "coordinator" },
+    { id: "rp21", industry: "tourism", role_name: "Safety Officer", role_key: "safety" },
+  ],
+  freelance: [
+    { id: "rp22", industry: "freelance", role_name: "Project Manager", role_key: "pm" },
+    { id: "rp23", industry: "freelance", role_name: "QA Reviewer", role_key: "qa" },
+  ],
+  education: [
+    { id: "rp24", industry: "education", role_name: "Course Lead", role_key: "course_lead" },
+    { id: "rp25", industry: "education", role_name: "Content Reviewer", role_key: "reviewer" },
+  ],
+  retail: [
+    { id: "rp26", industry: "retail", role_name: "Inventory Manager", role_key: "inventory" },
+    { id: "rp27", industry: "retail", role_name: "Shipping Coordinator", role_key: "shipping" },
+  ],
+  project_management: [
+    { id: "rp28", industry: "project_management", role_name: "Scrum Master", role_key: "scrum" },
+    { id: "rp29", industry: "project_management", role_name: "Delivery Lead", role_key: "delivery" },
+  ],
 };
 
 function loadState() {
@@ -110,56 +150,104 @@ function loadState() {
   return null;
 }
 
-function saveState(ws: Workspace[], members: Record<string, Member[]>, tasks: Record<string, TaskAssignment[]>) {
-  localStorage.setItem(LS_KEY, JSON.stringify({ ws, members, tasks }));
+function saveState(ws: Workspace[], members: Record<string, Member[]>, tasks: Record<string, TaskAssignment[]>, log: ActivityLogEntry[]) {
+  localStorage.setItem(LS_KEY, JSON.stringify({ ws, members, tasks, log }));
 }
+
+let orderCounter = 200;
 
 export function useTestnetTeams(role: "vendor" | "buyer" = "vendor") {
   const saved = loadState();
   const [workspaces, setWorkspaces] = useState<Workspace[]>(saved?.ws || INITIAL_WORKSPACES);
   const [allMembers, setAllMembers] = useState<Record<string, Member[]>>(saved?.members || MOCK_MEMBERS);
   const [allTasks, setAllTasks] = useState<Record<string, TaskAssignment[]>>(saved?.tasks || MOCK_TASKS);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>(saved?.log || INITIAL_ACTIVITY_LOG);
 
-  const persist = useCallback((ws: Workspace[], m: Record<string, Member[]>, t: Record<string, TaskAssignment[]>) => {
-    saveState(ws, m, t);
+  const persist = useCallback((ws: Workspace[], m: Record<string, Member[]>, t: Record<string, TaskAssignment[]>, l: ActivityLogEntry[]) => {
+    saveState(ws, m, t, l);
+  }, []);
+
+  const addLog = useCallback((wsId: string, orderNum: string, actor: string, action: string, detail: string) => {
+    const entry: ActivityLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      workspace_id: wsId, order_number: orderNum, actor, action, detail,
+      timestamp: new Date().toISOString(),
+    };
+    setActivityLog(prev => {
+      const updated = [entry, ...prev];
+      return updated;
+    });
+    return entry;
   }, []);
 
   const getMembers = useCallback((wsId: string) => allMembers[wsId] || [], [allMembers]);
   const getTasks = useCallback((wsId: string) => allTasks[wsId] || [], [allTasks]);
   const getPresets = useCallback((industry: string) => MOCK_PRESETS[industry] || [], []);
+  const getActivityLog = useCallback((wsId?: string) => {
+    if (!wsId) return activityLog;
+    return activityLog.filter(e => e.workspace_id === wsId);
+  }, [activityLog]);
 
   const createWorkspace = useCallback((title: string, industry: string, description: string, txId?: string) => {
+    orderCounter++;
+    const prefix = industry.slice(0, 3).toUpperCase();
+    const orderNumber = `ORD-${prefix}-2026-${String(orderCounter).padStart(4, "0")}`;
     const ws: Workspace = {
       id: `ws-${Date.now()}`, title, description, industry, status: "active",
-      created_at: new Date().toISOString(), transaction_id: txId || null, owner_id: "testnet-owner",
+      created_at: new Date().toISOString(), transaction_id: txId || `tx-${Date.now()}`, owner_id: "testnet-owner",
+      order_number: orderNumber,
     };
     const updated = [ws, ...workspaces];
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: ws.id, order_number: orderNumber,
+      actor: "Team Lead", action: "workspace_created", detail: `Created workspace: ${title} (${orderNumber})`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setWorkspaces(updated);
-    persist(updated, allMembers, allTasks);
-    toast.success("Workspace created (testnet)");
+    setActivityLog(updatedLog);
+    persist(updated, allMembers, allTasks, updatedLog);
+    toast.success(`Workspace created — ${orderNumber}`);
     return ws;
-  }, [workspaces, allMembers, allTasks, persist]);
+  }, [workspaces, allMembers, allTasks, activityLog, persist]);
 
   const addMember = useCallback((wsId: string, name: string, roleKey: string, lang: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
     const member: Member = {
       id: `m-${Date.now()}`, user_id: `usr-${Date.now()}`, display_name: name,
       role: roleKey, can_finalize: false, removed_at: null, preferred_language: lang,
     };
     const updated = { ...allMembers, [wsId]: [...(allMembers[wsId] || []), member] };
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: wsId, order_number: ws?.order_number || "",
+      actor: "Team Lead", action: "member_added", detail: `Added ${name} as ${roleKey}`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setAllMembers(updated);
-    persist(workspaces, updated, allTasks);
-    toast.success("Member added (testnet)");
-  }, [allMembers, workspaces, allTasks, persist]);
+    setActivityLog(updatedLog);
+    persist(workspaces, updated, allTasks, updatedLog);
+    toast.success("Member added");
+  }, [allMembers, workspaces, allTasks, activityLog, persist]);
 
   const removeMember = useCallback((wsId: string, memberId: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    const member = (allMembers[wsId] || []).find(m => m.id === memberId);
     const updated = {
       ...allMembers,
       [wsId]: (allMembers[wsId] || []).map(m => m.id === memberId ? { ...m, removed_at: new Date().toISOString() } : m),
     };
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: wsId, order_number: ws?.order_number || "",
+      actor: "Team Lead", action: "member_removed", detail: `Removed ${member?.display_name || "member"}`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setAllMembers(updated);
-    persist(workspaces, updated, allTasks);
-    toast.success("Member removed (testnet)");
-  }, [allMembers, workspaces, allTasks, persist]);
+    setActivityLog(updatedLog);
+    persist(workspaces, updated, allTasks, updatedLog);
+    toast.success("Member removed");
+  }, [allMembers, workspaces, allTasks, activityLog, persist]);
 
   const toggleFinalize = useCallback((wsId: string, memberId: string) => {
     const updated = {
@@ -167,11 +255,13 @@ export function useTestnetTeams(role: "vendor" | "buyer" = "vendor") {
       [wsId]: (allMembers[wsId] || []).map(m => m.id === memberId ? { ...m, can_finalize: !m.can_finalize } : m),
     };
     setAllMembers(updated);
-    persist(workspaces, updated, allTasks);
-    toast.success("Finalizer toggled (testnet)");
-  }, [allMembers, workspaces, allTasks, persist]);
+    persist(workspaces, updated, allTasks, activityLog);
+    toast.success("Finalizer toggled");
+  }, [allMembers, workspaces, allTasks, activityLog, persist]);
 
   const assignTask = useCallback((wsId: string, memberId: string, key: string, label: string, instructions: string, slaHours?: number, deadline?: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    const member = (allMembers[wsId] || []).find(m => m.id === memberId);
     const existing = allTasks[wsId] || [];
     const task: TaskAssignment = {
       id: `t-${Date.now()}`, member_id: memberId, milestone_key: key,
@@ -179,40 +269,69 @@ export function useTestnetTeams(role: "vendor" | "buyer" = "vendor") {
       sort_order: existing.length, sla_hours: slaHours || null, deadline_at: deadline || null,
     };
     const updated = { ...allTasks, [wsId]: [...existing, task] };
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: wsId, order_number: ws?.order_number || "",
+      actor: "Team Lead", action: "task_assigned", detail: `Assigned "${label}" to ${member?.display_name || "member"}`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setAllTasks(updated);
-    persist(workspaces, allMembers, updated);
-    toast.success("Task assigned (testnet)");
-  }, [allTasks, workspaces, allMembers, persist]);
+    setActivityLog(updatedLog);
+    persist(workspaces, allMembers, updated, updatedLog);
+    toast.success("Task assigned");
+  }, [allTasks, workspaces, allMembers, activityLog, persist]);
 
-  const completeTask = useCallback((wsId: string, taskId: string, evidenceUrl?: string) => {
+  const completeTask = useCallback((wsId: string, taskId: string, evidenceUrl?: string, completedBy?: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
+    const task = (allTasks[wsId] || []).find(t => t.id === taskId);
+    const member = task ? (allMembers[wsId] || []).find(m => m.id === task.member_id) : null;
+    const evUrl = evidenceUrl || "evidence_uploaded.pdf";
     const updated = {
       ...allTasks,
       [wsId]: (allTasks[wsId] || []).map(t =>
-        t.id === taskId ? { ...t, status: "completed", evidence_url: evidenceUrl || t.evidence_url || "evidence_uploaded.pdf" } : t
+        t.id === taskId ? { ...t, status: "completed", evidence_url: evUrl } : t
       ),
     };
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: wsId, order_number: ws?.order_number || "",
+      actor: completedBy || member?.display_name || "Team Member", action: "task_completed",
+      detail: `Completed: ${task?.milestone_label || task?.milestone_key || "Task"} — evidence: ${evUrl}`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setAllTasks(updated);
-    persist(workspaces, allMembers, updated);
-    toast.success("✅ Task completed (testnet)");
-  }, [allTasks, workspaces, allMembers, persist]);
+    setActivityLog(updatedLog);
+    persist(workspaces, allMembers, updated, updatedLog);
+    toast.success(`✅ Task completed — ${task?.milestone_label || "Task"}`);
+  }, [allTasks, workspaces, allMembers, activityLog, persist]);
 
   const updateWorkspaceStatus = useCallback((wsId: string, status: string) => {
+    const ws = workspaces.find(w => w.id === wsId);
     const updated = workspaces.map(w => w.id === wsId ? { ...w, status } : w);
+    const logEntry: ActivityLogEntry = {
+      id: `log-${Date.now()}`, workspace_id: wsId, order_number: ws?.order_number || "",
+      actor: "Team Lead", action: `workspace_${status}`,
+      detail: `Work order ${ws?.order_number || ""} marked as ${status}`,
+      timestamp: new Date().toISOString(),
+    };
+    const updatedLog = [logEntry, ...activityLog];
     setWorkspaces(updated);
-    persist(updated, allMembers, allTasks);
-    toast.success(`Work order marked as ${status} (testnet)`);
-  }, [workspaces, allMembers, allTasks, persist]);
+    setActivityLog(updatedLog);
+    persist(updated, allMembers, allTasks, updatedLog);
+    toast.success(`Work order marked as ${status}`);
+  }, [workspaces, allMembers, allTasks, activityLog, persist]);
 
   const resetTeams = useCallback(() => {
     setWorkspaces(INITIAL_WORKSPACES);
     setAllMembers(MOCK_MEMBERS);
     setAllTasks(MOCK_TASKS);
-    saveState(INITIAL_WORKSPACES, MOCK_MEMBERS, MOCK_TASKS);
+    setActivityLog(INITIAL_ACTIVITY_LOG);
+    saveState(INITIAL_WORKSPACES, MOCK_MEMBERS, MOCK_TASKS, INITIAL_ACTIVITY_LOG);
     toast.success("🔄 Teams data reset");
   }, []);
 
   return {
-    workspaces, getMembers, getTasks, getPresets,
+    workspaces, getMembers, getTasks, getPresets, getActivityLog,
     createWorkspace, addMember, removeMember, toggleFinalize,
     assignTask, completeTask, updateWorkspaceStatus, resetTeams,
   };
