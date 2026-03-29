@@ -208,9 +208,10 @@ const VendorTransactions = () => {
                       </td>
                     </tr>
                   )}
-                  {filtered.map((tx) => {
+                  {filtered.map((tx, rowIdx) => {
                     const cfg = statusConfig[tx.status] || statusConfig.locked;
                     const grayed = isGrayedOut(tx.order);
+                    const row = rowIdx + 1;
 
                     return (
                       <React.Fragment key={tx.id}>
@@ -220,71 +221,117 @@ const VendorTransactions = () => {
                         }`}
                       >
                         <td className="p-3 sm:p-4">
-                          <Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} />
+                          <TLId code={dynTLId("V", "TX", row, "CHK-SELECT")} inline>
+                            <Checkbox checked={selected.includes(tx.id)} onCheckedChange={() => toggleSelect(tx.id)} />
+                          </TLId>
                         </td>
-                        <td className="p-3 sm:p-4 font-mono text-xs">{tx.id}</td>
                         <td className="p-3 sm:p-4">
-                          <div>
-                            <p className="text-xs font-medium">{tx.buyer}</p>
-                            <p className="text-[10px] text-muted-foreground hidden sm:block">{tx.buyerLocation}</p>
-                          </div>
+                          <TLId code={dynTLId("V", "TX", row, "LBL-TXID")} inline>
+                            <span className="font-mono text-xs">{tx.id}</span>
+                          </TLId>
                         </td>
-                        <td className="p-3 sm:p-4 hidden md:table-cell text-muted-foreground text-xs">{tx.item}</td>
+                        <td className="p-3 sm:p-4">
+                          <TLId code={dynTLId("V", "TX", row, "LBL-BUYER")} inline>
+                            <div>
+                              <p className="text-xs font-medium">{tx.buyer}</p>
+                              <p className="text-[10px] text-muted-foreground hidden sm:block">{tx.buyerLocation}</p>
+                            </div>
+                          </TLId>
+                        </td>
+                        <td className="p-3 sm:p-4 hidden md:table-cell">
+                          <TLId code={dynTLId("V", "TX", row, "LBL-ITEM")} inline>
+                            <span className="text-muted-foreground text-xs">{tx.item}</span>
+                          </TLId>
+                        </td>
                         <td className="p-3 sm:p-4 hidden lg:table-cell">
                           {tx.industry ? (
-                            <Badge variant="outline" className="text-[10px] capitalize">
-                              {industryLabels[tx.industry] || tx.industry}
-                            </Badge>
+                            <TLId code={dynTLId("V", "TX", row, "BDG-INDUSTRY")} inline>
+                              <Badge variant="outline" className="text-[10px] capitalize">
+                                {industryLabels[tx.industry] || tx.industry}
+                              </Badge>
+                            </TLId>
                           ) : (
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
                         <td className="p-3 sm:p-4 hidden xl:table-cell">
-                          <Badge variant="secondary" className="text-[10px] capitalize">{tx.type}</Badge>
+                          <TLId code={dynTLId("V", "TX", row, "BDG-TYPE")} inline>
+                            <Badge variant="secondary" className="text-[10px] capitalize">{tx.type}</Badge>
+                          </TLId>
                         </td>
-                        <td className="p-3 sm:p-4 hidden lg:table-cell font-mono text-xs text-muted-foreground">{tx.tracking || "—"}</td>
-                        <td className="p-3 sm:p-4 hidden xl:table-cell text-xs text-muted-foreground">{tx.date}</td>
-                        <td className="p-3 sm:p-4 text-right font-semibold text-xs">${tx.amount.toLocaleString()}</td>
+                        <td className="p-3 sm:p-4 hidden lg:table-cell">
+                          <TLId code={dynTLId("V", "TX", row, "LBL-TRACKING")} inline>
+                            <span className="font-mono text-xs text-muted-foreground">{tx.tracking || "—"}</span>
+                          </TLId>
+                        </td>
+                        <td className="p-3 sm:p-4 hidden xl:table-cell">
+                          <TLId code={dynTLId("V", "TX", row, "LBL-DATE")} inline>
+                            <span className="text-xs text-muted-foreground">{tx.date}</span>
+                          </TLId>
+                        </td>
+                        <td className="p-3 sm:p-4 text-right">
+                          <TLId code={dynTLId("V", "TX", row, "LBL-AMOUNT")} inline>
+                            <span className="font-semibold text-xs">${tx.amount.toLocaleString()}</span>
+                          </TLId>
+                        </td>
                         <td className="p-3 sm:p-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${cfg.color}`}>
-                            <cfg.icon className="w-3 h-3" /> {cfg.label}
-                          </span>
+                          <TLId code={dynTLId("V", "TX", row, "STS")} inline>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${cfg.color}`}>
+                              <cfg.icon className="w-3 h-3" /> {cfg.label}
+                            </span>
+                          </TLId>
                           {grayed && (
-                            <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
+                            <TLId code={dynTLId("V", "TX", row, "BDG-LIMIT")} inline>
+                              <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
+                            </TLId>
                           )}
                         </td>
                         <td className="p-3 sm:p-4 text-center">
                           <div className="flex items-center justify-center gap-1 flex-wrap">
                             {grayed ? (
-                              <Button variant="outline" size="sm" className="text-xs text-accent" onClick={() => setUpgradeDialog(true)}>
-                                <ArrowUpCircle className="w-3 h-3 mr-1" /> Upgrade
-                              </Button>
+                              <TLId code={dynTLId("V", "TX", row, "BTN-UPGRADE")} inline>
+                                <Button variant="outline" size="sm" className="text-xs text-accent" onClick={() => setUpgradeDialog(true)}>
+                                  <ArrowUpCircle className="w-3 h-3 mr-1" /> Upgrade
+                                </Button>
+                              </TLId>
                             ) : (
                               <>
                                 {tx.status === "locked" && (
                                   <>
-                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleAddTracking(tx.id)} title="Add tracking number">
-                                      <Truck className="w-3 h-3 mr-1" /> Track
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkShipped(tx.id)} title="Mark as shipped">
-                                      <Send className="w-3 h-3 mr-1" /> Ship
-                                    </Button>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-TRACK")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleAddTracking(tx.id)} title="Add tracking number">
+                                        <Truck className="w-3 h-3 mr-1" /> Track
+                                      </Button>
+                                    </TLId>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-SHIP")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkShipped(tx.id)} title="Mark as shipped">
+                                        <Send className="w-3 h-3 mr-1" /> Ship
+                                      </Button>
+                                    </TLId>
                                   </>
                                 )}
                                 {tx.status === "shipped" && (
-                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
-                                    <PackageCheck className="w-3 h-3 mr-1" /> Delivered
-                                  </Button>
+                                  <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
+                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
+                                      <PackageCheck className="w-3 h-3 mr-1" /> Delivered
+                                    </Button>
+                                  </TLId>
                                 )}
                                 {(tx.status === "locked" || tx.status === "shipped") && (
-                                  <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => setExpandedRow(tx.id)} title="Open work-order panel">
-                                    <FileText className="w-3 h-3" />
-                                  </Button>
+                                  <TLId code={dynTLId("V", "TX", row, "BTN-WORKORDER")} inline>
+                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => setExpandedRow(tx.id)} title="Open work-order panel">
+                                      <FileText className="w-3 h-3" />
+                                    </Button>
+                                  </TLId>
                                 )}
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
-                                  {expandedRow === tx.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                </Button>
+                                <TLId code={dynTLId("V", "TX", row, "BTN-VIEW")} inline>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
+                                </TLId>
+                                <TLId code={dynTLId("V", "TX", row, "BTN-EXPAND")} inline>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setExpandedRow(expandedRow === tx.id ? null : tx.id)}>
+                                    {expandedRow === tx.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                  </Button>
+                                </TLId>
                               </>
                             )}
                           </div>
