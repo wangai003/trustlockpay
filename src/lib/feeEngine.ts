@@ -572,8 +572,9 @@ export const FEE_CATEGORIES = {
     shortLabel: "Gas",
     estimate: "$0.00",
     refundEstimate: "$0.02 – $0.05",
-    description: "Internal wallet-to-wallet gas fees are covered by TrustLock from platform revenue. Refund gas fees are minimal and disclosed at time of refund.",
-    when: "Covered by TrustLock for standard transactions. Only applies to refunds and crypto-to-crypto split payouts.",
+    splitEstimate: "$0.01 – $0.025 per party",
+    description: "Gas fees are small costs paid to blockchain network validators (not TrustLock) to process and confirm transactions — similar to a bank wire transfer fee. They fluctuate with network demand, which is why we show an estimated range instead of a fixed price.",
+    when: "Standard transactions & vendor releases: $0 (covered by TrustLock). Refunds: ~$0.02–$0.05 deducted from returned funds. Split payouts: ~$0.02–$0.05 total, split equally between buyer and vendor.",
   },
 } as const;
 
