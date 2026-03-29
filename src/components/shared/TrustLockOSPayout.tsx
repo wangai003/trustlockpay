@@ -640,12 +640,12 @@ const TrustLockOSPayout = ({
           </CardContent>
         </Card>
 
-        {/* Diaspora Panel */}
+        {/* International Panel */}
         <Card className={cn("border-2 transition-all", mode === "diaspora" ? "border-primary/30 shadow-md" : "border-border opacity-50 pointer-events-none")}>
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Diaspora Payment</h3>
+              <h3 className="text-sm font-bold text-foreground">International Payment</h3>
             </div>
             <p className="text-[10px] text-muted-foreground">
               Receive funds via card, PayPal, Apple Pay, Google Pay, or direct crypto transfer.
