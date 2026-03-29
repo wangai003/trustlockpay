@@ -3,15 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, User, Search, Archive, X } from "lucide-react";
+import { Send, User, Search, Archive, X, Paperclip, FileText, ImageIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import aiEmmanuel from "@/assets/ai-emmanuel.png";
+import { toast } from "sonner";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Attachment = {
+  type: "image" | "document";
+  name: string;
+  data?: string;
+  extractedText?: string;
+  preview?: string;
+};
 
+type Msg = { role: "user" | "assistant"; content: string; attachments?: Attachment[] };
 type CaseInfo = { caseRef: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/emmanuel-chat`;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const EmmanuelChat = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -21,7 +31,9 @@ const EmmanuelChat = () => {
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({ caseRef: "" });
   const [archivedCases, setArchivedCases] = useState<{ info: CaseInfo; messages: Msg[]; date: string }[]>([]);
   const [showArchive, setShowArchive] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -59,14 +71,63 @@ const EmmanuelChat = () => {
     saveToArchive();
     setMessages([]);
     setCaseInfo({ caseRef: "" });
+    setPendingAttachments([]);
     setShowLookup(true);
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} exceeds 10MB limit`);
+        continue;
+      }
+
+      if (IMAGE_TYPES.includes(file.type)) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          setPendingAttachments(prev => [...prev, {
+            type: "image", name: file.name, data: dataUrl, preview: dataUrl,
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === "text/plain" || file.type === "text/csv" || file.type === "application/json" || file.name.endsWith(".txt") || file.name.endsWith(".csv") || file.name.endsWith(".json") || file.name.endsWith(".md")) {
+        const text = await file.text();
+        const truncated = text.length > 8000 ? text.slice(0, 8000) + "\n...[truncated]" : text;
+        setPendingAttachments(prev => [...prev, {
+          type: "document", name: file.name, extractedText: truncated,
+        }]);
+      } else if (file.type === "application/pdf") {
+        setPendingAttachments(prev => [...prev, {
+          type: "document", name: file.name,
+          extractedText: `[PDF document: ${file.name}, ${(file.size / 1024).toFixed(1)}KB — Please describe the key contents if the AI cannot read it.]`,
+        }]);
+        toast.info("PDF uploaded — Emmanuel will analyze filename and context.");
+      } else {
+        toast.error(`Unsupported file type: ${file.type || file.name}`);
+      }
+    }
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setPendingAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const sendMessage = async (text: string) => {
-    const userMsg: Msg = { role: "user", content: text };
+    const attachments = [...pendingAttachments];
+    const userMsg: Msg = {
+      role: "user",
+      content: text,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput("");
+    setPendingAttachments([]);
     setIsLoading(true);
 
     let assistantSoFar = "";
@@ -78,7 +139,7 @@ const EmmanuelChat = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages, attachments }),
       });
 
       if (!resp.ok) {
@@ -133,8 +194,8 @@ const EmmanuelChat = () => {
   };
 
   const handleSend = () => {
-    if (!input.trim() || isLoading) return;
-    sendMessage(input.trim());
+    if ((!input.trim() && pendingAttachments.length === 0) || isLoading) return;
+    sendMessage(input.trim() || "Please analyze the attached evidence.");
   };
 
   return (
@@ -144,7 +205,7 @@ const EmmanuelChat = () => {
           <img src={aiEmmanuel} alt="Emmanuel" className="w-8 h-8 rounded-full object-cover border-2 border-primary/20" />
           <div>
             <CardTitle className="text-base">Emmanuel</CardTitle>
-            <p className="text-[10px] text-muted-foreground">Dispute Resolution Analyst</p>
+            <p className="text-[10px] text-muted-foreground">Dispute Resolution Analyst · Vision Enabled</p>
           </div>
         </div>
         <div className="flex gap-1">
@@ -193,7 +254,7 @@ const EmmanuelChat = () => {
                 onKeyDown={e => e.key === "Enter" && startCase()}
                 className="h-9 text-xs"
               />
-              <p className="text-[10px] text-muted-foreground mt-1">Emmanuel will pull up all linked details automatically.</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Emmanuel will pull up all linked details. You can also upload evidence images/documents.</p>
             </div>
             <Button size="sm" onClick={startCase} disabled={!caseInfo.caseRef.trim()} className="w-full gap-1 text-xs">
               <img src={aiEmmanuel} alt="" className="w-4 h-4 rounded-full" /> Pull Up Case
@@ -205,7 +266,7 @@ const EmmanuelChat = () => {
           {messages.length === 0 && !showLookup && (
             <div className="text-center py-8">
               <img src={aiEmmanuel} alt="Emmanuel" className="w-16 h-16 mx-auto rounded-full object-cover border-2 border-primary/20 mb-3" />
-              <p className="text-sm text-muted-foreground">Enter case details above or type a message to begin.</p>
+              <p className="text-sm text-muted-foreground">Enter case details above, upload evidence, or type a message to begin.</p>
             </div>
           )}
           {messages.map((msg, i) => (
@@ -216,6 +277,25 @@ const EmmanuelChat = () => {
               <div className={`max-w-[85%] rounded-lg p-3 text-xs ${
                 msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50"
               }`}>
+                {/* Show attachments */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {msg.attachments.map((att, ai) => (
+                      <div key={ai} className="flex items-center gap-1 px-2 py-1 rounded bg-background/20 text-[10px]">
+                        {att.type === "image" ? (
+                          att.preview ? (
+                            <img src={att.preview} alt={att.name} className="w-6 h-6 rounded object-cover" />
+                          ) : (
+                            <ImageIcon className="w-3 h-3" />
+                          )
+                        ) : (
+                          <FileText className="w-3 h-3" />
+                        )}
+                        {att.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {msg.role === "assistant" ? (
                   <div className="prose prose-xs max-w-none [&_p]:mb-1 [&_li]:mb-0.5 [&_strong]:text-foreground [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -234,21 +314,62 @@ const EmmanuelChat = () => {
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex gap-2">
               <img src={aiEmmanuel} alt="Emmanuel" className="w-6 h-6 rounded-full object-cover shrink-0 border border-primary/20" />
-              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">Analyzing...</div>
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
+                {pendingAttachments.length > 0 ? "Analyzing evidence..." : "Analyzing..."}
+              </div>
             </div>
           )}
         </div>
 
+        {/* Pending Attachments Preview */}
+        {pendingAttachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {pendingAttachments.map((att, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-border bg-muted/30 text-[10px]">
+                {att.type === "image" && att.preview ? (
+                  <img src={att.preview} alt={att.name} className="w-8 h-8 rounded object-cover" />
+                ) : att.type === "image" ? (
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                ) : (
+                  <FileText className="w-4 h-4 text-primary" />
+                )}
+                <span className="max-w-[100px] truncate">{att.name}</span>
+                <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-destructive">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-2 shrink-0">
+          <input
+            ref={fileRef}
+            type="file"
+            className="hidden"
+            accept="image/*,.txt,.csv,.json,.md,.pdf"
+            multiple
+            onChange={handleFileSelect}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => fileRef.current?.click()}
+            disabled={isLoading}
+            className="h-9 px-2 shrink-0"
+            title="Attach evidence (images, documents)"
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
           <Input
-            placeholder="Ask Emmanuel about the case..."
+            placeholder={pendingAttachments.length > 0 ? "Describe the evidence..." : "Ask Emmanuel about the case..."}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
             disabled={isLoading}
             className="text-xs h-9"
           />
-          <Button size="sm" onClick={handleSend} disabled={isLoading || !input.trim()} className="h-9 px-3">
+          <Button size="sm" onClick={handleSend} disabled={isLoading || (!input.trim() && pendingAttachments.length === 0)} className="h-9 px-3">
             <Send className="w-4 h-4" />
           </Button>
         </div>

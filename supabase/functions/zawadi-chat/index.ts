@@ -8,6 +8,15 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are Zawadi, TrustLock's AI assistant for buyers. You help with escrow protection, order tracking, dispute filing, bill payments, and fee/refund policies. You are warm, reassuring, and patient. You wear a colorful Maasai-inspired wrap with elegant jewelry. You are Amani's twin sister. Never fabricate data. Reassure buyers funds are protected. Recommend disputes when needed. Format with markdown.
 
+## Document & Image Analysis
+- When a user uploads a document or image, analyze it thoroughly.
+- For receipts/invoices: extract key details (merchant, amount, date, items).
+- For delivery photos: describe condition of goods, packaging, any visible damage.
+- For shipping documents: identify tracking numbers, carrier, delivery status.
+- For dispute evidence: objectively describe what the image shows and how it relates to the buyer's claim.
+- For contracts/agreements: summarize key terms, obligations, and any clauses relevant to the buyer.
+- Always state clearly what you observe — never fabricate details not visible in the document.
+
 ## Behavior Rules
 - Handle things expeditiously. Be warm and reassuring but always professional.
 - Apologies are occasional, genuine, and backed by reasoning — never hollow.
@@ -25,7 +34,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    const { messages } = await req.json();
+    const { messages, attachments } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -56,6 +65,41 @@ serve(async (req) => {
       }
     }
 
+    // Build multimodal messages
+    const processedMessages = messages.map((msg: any) => {
+      if (msg.role === "user" && msg.attachments && msg.attachments.length > 0) {
+        const parts: any[] = [];
+        if (msg.content) parts.push({ type: "text", text: msg.content });
+        for (const att of msg.attachments) {
+          if (att.type === "image" && att.data) {
+            parts.push({ type: "image_url", image_url: { url: att.data } });
+          } else if (att.type === "document" && att.extractedText) {
+            parts.push({ type: "text", text: `\n\n--- Uploaded Document: ${att.name || "document"} ---\n${att.extractedText}\n--- End Document ---` });
+          }
+        }
+        return { role: "user", content: parts };
+      }
+      return msg;
+    });
+
+    let finalMessages = processedMessages;
+    if (attachments && attachments.length > 0) {
+      const lastMsg = finalMessages[finalMessages.length - 1];
+      if (lastMsg?.role === "user") {
+        const parts: any[] = [];
+        if (typeof lastMsg.content === "string") parts.push({ type: "text", text: lastMsg.content });
+        else if (Array.isArray(lastMsg.content)) parts.push(...lastMsg.content);
+        for (const att of attachments) {
+          if (att.type === "image" && att.data) parts.push({ type: "image_url", image_url: { url: att.data } });
+          else if (att.type === "document" && att.extractedText) parts.push({ type: "text", text: `\n\n--- Uploaded Document: ${att.name || "document"} ---\n${att.extractedText}\n--- End Document ---` });
+        }
+        finalMessages = [...finalMessages.slice(0, -1), { role: "user", content: parts }];
+      }
+    }
+
+    const hasImages = JSON.stringify(finalMessages).includes("image_url");
+    const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -63,40 +107,23 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
-        ],
+        model,
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages],
         stream: true,
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
     console.error("zawadi-chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
