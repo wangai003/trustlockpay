@@ -169,14 +169,7 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
                   <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               )}
-              {step.shortcut && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Keyboard className="w-3 h-3 text-primary/60" />
-                  <span className="text-[10px] text-primary/80 font-mono bg-primary/5 px-1.5 py-0.5 rounded">
-                    {step.shortcut}
-                  </span>
-                </div>
-              )}
+              
             </div>
           </div>
         ))}
