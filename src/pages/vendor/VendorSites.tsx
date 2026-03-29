@@ -449,7 +449,11 @@ const VendorSites = () => {
                         </>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
+                    <TLId code={dynTLId("V", "SIT", row, "BTN-DELETE")} inline>
+                      <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TLId>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
