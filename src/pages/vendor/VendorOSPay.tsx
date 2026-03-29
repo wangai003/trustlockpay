@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import { useVendor } from "@/contexts/VendorContext";
+import TLId from "@/components/shared/TLId";
 
 const VendorOSPay = () => {
   const { isTestnet } = useVendor();
@@ -13,12 +14,14 @@ const VendorOSPay = () => {
     <div>
       <VendorHeader title="TrustLock OS Pay" />
       <div className="p-3 sm:p-6">
-        <TrustLockOSPay
-          role="vendor"
-          isTestnet={isTestnet}
-          prefillService={prefillService}
-          prefillAmount={prefillAmount}
-        />
+        <TLId code="TL-V-PAY-BTN-PAY">
+          <TrustLockOSPay
+            role="vendor"
+            isTestnet={isTestnet}
+            prefillService={prefillService}
+            prefillAmount={prefillAmount}
+          />
+        </TLId>
       </div>
     </div>
   );
