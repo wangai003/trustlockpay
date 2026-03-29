@@ -935,7 +935,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
                 <span>Mode · Processor</span>
-                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"} · {feeBreakdown.processorUsed}</span>
+                <span className="font-medium">{payMode === "local" ? "🌍 Africa" : "🌐 International"} · {feeBreakdown.processorUsed}</span>
               </div>
             </div>
           )}
