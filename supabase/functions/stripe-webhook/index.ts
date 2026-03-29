@@ -102,16 +102,22 @@ async function forwardConfirm(sessionId: string) {
   return (await res.json()) as Record<string, unknown>;
 }
 
-// ─── Forward to escrow-bridge for locking ─────────────────
-async function forwardEscrowLock(transactionId: string) {
-  const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
+// ─── Forward to wallet-routing-bridge (Transaction Wallet → Escrow Wallet) ──
+async function forwardWalletRouting(transactionId: string, amount: number, processor: string) {
+  const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
     },
-    body: JSON.stringify({ action: "lock", transactionId }),
+    body: JSON.stringify({
+      action: "route_inbound",
+      transactionId,
+      processor,
+      paymentMethod: "card",
+      verifiedAmount: amount,
+    }),
   });
   return (await res.json()) as Record<string, unknown>;
 }
@@ -171,10 +177,11 @@ Deno.serve(async (req) => {
         confirmResult = await forwardConfirm(sessionId);
       }
 
-      // Lock funds in escrow
-      let escrowResult = null;
+      // Route funds: Transaction Wallet → deduct fees → Escrow Wallet
+      let routingResult = null;
       if (transactionId) {
-        escrowResult = await forwardEscrowLock(transactionId);
+        const amountUsd = (data.amount || 0) / 100;
+        routingResult = await forwardWalletRouting(transactionId, amountUsd, "stripe");
       }
 
       await notify(
@@ -190,7 +197,7 @@ Deno.serve(async (req) => {
         event: eventType,
         action: "payment_confirmed",
         confirmResult,
-        escrowResult,
+        routingResult,
       });
     }
 
@@ -243,7 +250,7 @@ Deno.serve(async (req) => {
         confirmResult = await forwardConfirm(csSessionId);
       }
       if (transactionId) {
-        await forwardEscrowLock(transactionId);
+        await forwardWalletRouting(transactionId, 0, "stripe");
       }
 
       return json({

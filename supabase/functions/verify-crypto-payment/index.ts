@@ -229,12 +229,23 @@ Deno.serve(async (req) => {
 
     // ── Step 7: Record verified payment ───────────────
     if (isFullyPaid) {
-      // Auto-confirm — update transaction status
+      // Route through wallet-routing-bridge: Transaction Wallet → fees → Escrow Wallet
       if (transactionId) {
-        await supabase
-          .from("transactions")
-          .update({ status: "locked", updated_at: new Date().toISOString() })
-          .eq("id", transactionId);
+        const routingUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
+        await fetch(routingUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "route_inbound",
+            transactionId,
+            processor: "direct",
+            paymentMethod: "crypto",
+            verifiedAmount: verifiedAmount,
+          }),
+        });
       }
 
       // Forward to checkout-widget for session confirmation
@@ -247,19 +258,6 @@ Deno.serve(async (req) => {
             Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")!}`,
           },
           body: JSON.stringify({ action: "confirm_payment", sessionId }),
-        });
-      }
-
-      // Forward to escrow-bridge
-      if (transactionId) {
-        const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
-        await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-          },
-          body: JSON.stringify({ action: "lock", transactionId }),
         });
       }
 
