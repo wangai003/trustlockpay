@@ -155,8 +155,11 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
           )}
 
           {completedCount === steps.length && !collapsed && (
-            <div className="text-center py-2">
+            <div className="text-center py-2 space-y-2">
               <p className="text-xs font-semibold text-blue-600">🎉 All tasks completed! You've explored the {role} dashboard.</p>
+              <Button size="sm" variant="outline" className="text-[10px] gap-1" onClick={() => { setCompleted([]); resetTestnetData(); }}>
+                <RotateCcw className="w-3 h-3" /> Reset Guide & Data
+              </Button>
             </div>
           )}
         </CardContent>
