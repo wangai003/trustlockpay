@@ -30,14 +30,16 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 };
 
 const BuyerOrders = () => {
+  const { isTestnet } = useBuyer();
   const [filter, setFilter] = useState<OrderStatus>("all");
   const [search, setSearch] = useState("");
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
-  const confirmDelivery = useConfirmDelivery();
-  const openDispute = useOpenDispute();
+  const confirmDeliveryHook = useConfirmDelivery();
+  const openDisputeHook = useOpenDispute();
+  const testnet = useTestnetData();
 
   const handleClaimOrder = async () => {
     const code = claimCode.trim();
