@@ -9,25 +9,26 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import { supabase } from "@/integrations/supabase/client";
+import TLId from "@/components/shared/TLId";
 
 const navItems = [
-  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity" },
-  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees" },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow transactions and order statuses" },
-  { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts", tip: "Track released funds and payout history" },
-  { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites with TrustLock widget installed" },
-  { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity documents and verify your account" },
-  { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries" },
-  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports" },
-  { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files" },
-  { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help", tip: "Guides, FAQs, and platform documentation" },
-  { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan" },
-  { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals" },
-  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments" },
-  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails" },
-  { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members" },
-  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview" },
-  { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings" },
+  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
+  { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY" },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow transactions and order statuses", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
+  { label: "Payouts", icon: DollarSign, to: "/trustlock/vendor/payouts", tip: "Track released funds and payout history", tlId: "TL-V-SB-NAV-PAYOUTS" },
+  { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites with TrustLock widget installed", tlId: "TL-V-SB-NAV-SITES" },
+  { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity documents and verify your account", tlId: "TL-V-SB-NAV-KYC" },
+  { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries", tlId: "TL-V-SB-NAV-ASSISTANT" },
+  { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports", tlId: "TL-V-SB-NAV-ANALYTICS" },
+  { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files", tlId: "TL-V-SB-NAV-DOCUMENTS" },
+  { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help", tip: "Guides, FAQs, and platform documentation", tlId: "TL-V-SB-NAV-HELP" },
+  { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan", tlId: "TL-V-SB-NAV-PRICING" },
+  { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals", tlId: "TL-V-SB-NAV-LINKS" },
+  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments", tlId: "TL-V-SB-NAV-OSPAY" },
+  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails", tlId: "TL-V-SB-NAV-PAYOUT" },
+  { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS" },
+  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK" },
+  { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS" },
 ];
 
 const VendorSidebar = () => {
@@ -43,12 +44,14 @@ const VendorSidebar = () => {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-sidebar border border-sidebar-border text-sidebar-foreground"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      <TLId code="TL-V-SB-BTN-MENU" inline>
+        <button
+          onClick={() => setOpen(true)}
+          className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-sidebar border border-sidebar-border text-sidebar-foreground"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </TLId>
 
       {open && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
@@ -79,22 +82,24 @@ const VendorSidebar = () => {
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => (
             <div key={item.to} className="flex items-center gap-1">
-              <NavLink
-                to={item.to}
-                end={item.to === "/trustlock/vendor"}
-                onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )
-                }
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
-              </NavLink>
+              <TLId code={item.tlId} inline>
+                <NavLink
+                  to={item.to}
+                  end={item.to === "/trustlock/vendor"}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )
+                  }
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.label}
+                </NavLink>
+              </TLId>
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
@@ -110,18 +115,24 @@ const VendorSidebar = () => {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-1">
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
-            <ShoppingBag className="w-4 h-4" />
-            {switching ? "Switching..." : "Switch to Buyer"}
-          </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
-            <Home className="w-4 h-4" />
-            Back to Home
-          </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
+          <TLId code="TL-V-SB-BTN-SWITCH-BUYER" inline>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
+              <ShoppingBag className="w-4 h-4" />
+              {switching ? "Switching..." : "Switch to Buyer"}
+            </Button>
+          </TLId>
+          <TLId code="TL-V-SB-BTN-HOME" inline>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
+              <Home className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </TLId>
+          <TLId code="TL-V-SB-BTN-LOGOUT" inline>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </TLId>
         </div>
       </aside>
     </>
