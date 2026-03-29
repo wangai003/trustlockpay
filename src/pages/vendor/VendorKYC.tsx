@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ShieldCheck, Upload, CheckCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import TLId from "@/components/shared/TLId";
 
 const tiers = [
   { tier: 0, label: "Unverified", limit: "Cannot transact", status: "completed" as const },
