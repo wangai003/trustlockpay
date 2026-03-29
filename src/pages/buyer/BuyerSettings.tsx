@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -14,6 +14,15 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfileNotifications, useSaveProfileNotifications } from "@/hooks/useSupabaseData";
+
+const buyerNotificationKeys = [
+  { key: "order_status", label: "Order status updates" },
+  { key: "delivery_reminder", label: "Delivery confirmation reminders" },
+  { key: "auto_release", label: "Auto-release countdown (48h)" },
+  { key: "dispute_updates", label: "Dispute updates" },
+  { key: "funds_released", label: "Funds released" },
+];
 
 const BuyerSettings = () => {
   const { buyer } = useBuyer();
@@ -21,6 +30,15 @@ const BuyerSettings = () => {
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const { data: savedNotifs } = useProfileNotifications();
+  const saveNotifs = useSaveProfileNotifications();
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (savedNotifs && typeof savedNotifs === "object") {
+      setNotifPrefs(savedNotifs as Record<string, boolean>);
+    }
+  }, [savedNotifs]);
 
   return (
     <div>
