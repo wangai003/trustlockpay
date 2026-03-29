@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Plus, X, Info } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Plus, X, Info, Loader2, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTaxResolver } from "@/hooks/useTaxResolver";
 
 export interface TaxLineItem {
   id: string;
@@ -34,6 +35,14 @@ interface TaxBreakdownProps {
   editable?: boolean;
   compact?: boolean;
   currencySymbol?: string;
+  /** Pass buyer country code (e.g. "NG") to enable auto-detection */
+  buyerCountry?: string;
+  /** Pass vendor country code (e.g. "US") to enable auto-detection */
+  vendorCountry?: string;
+  /** Industry key for industry-specific tariff rules */
+  industry?: string;
+  /** Item category for tariff multipliers */
+  itemCategory?: string;
 }
 
 const TaxBreakdown = ({
@@ -43,6 +52,10 @@ const TaxBreakdown = ({
   editable = true,
   compact = false,
   currencySymbol = "$",
+  buyerCountry,
+  vendorCountry,
+  industry,
+  itemCategory,
 }: TaxBreakdownProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
