@@ -20,8 +20,10 @@ import {
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 import WidgetPreviewMockup from "@/components/vendor/WidgetPreviewMockup";
+import WidgetIndustryConfig from "@/components/vendor/WidgetIndustryConfig";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import { ALL_INDUSTRIES } from "@/lib/industryList";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
