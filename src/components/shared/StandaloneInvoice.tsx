@@ -143,34 +143,13 @@ const StandaloneInvoice = ({ vendorName = "Vendor", onProceed }: StandaloneInvoi
           editable
         />
 
-        {/* Note */}
-        <div>
-          <Label className="text-xs text-muted-foreground">Note to buyer (optional)</Label>
-          <Input
-            placeholder="Payment terms, delivery info..."
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="mt-1 text-xs"
-          />
-        </div>
-
-        {/* Summary */}
-        <div className="p-3 rounded-lg bg-muted/50 space-y-1 text-xs">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-medium">${subtotal.toFixed(2)}</span>
-          </div>
-          {taxTotal > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Taxes & Duties</span>
-              <span className="font-medium">${taxTotal.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="flex justify-between border-t border-border pt-1 mt-1">
-            <span className="font-bold text-sm">Total</span>
-            <span className="font-bold text-sm text-primary">${grandTotal.toFixed(2)}</span>
-          </div>
-        </div>
+        {/* Fee Calculator — mandatory disclosure */}
+        <InvoiceFeeCalculator
+          escrowPrincipal={subtotal}
+          processorId={selectProcessor("global", false)}
+          isCrypto={false}
+          taxAmount={taxTotal}
+        />
 
         <Button
           className="w-full gap-2"
