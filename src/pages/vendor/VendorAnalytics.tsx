@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useVendor } from "@/contexts/VendorContext";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import { useTransactions, useArchivedReports } from "@/hooks/useSupabaseData";
+import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
