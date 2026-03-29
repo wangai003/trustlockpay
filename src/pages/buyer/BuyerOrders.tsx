@@ -327,7 +327,8 @@ const BuyerOrders = () => {
                             onClick={() => {
                               const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
                               const description = window.prompt("Add note/details for dispute (optional):", "") || "";
-                              openDispute.mutate({ txId: order.id, reason, description });
+                              if (isTestnet) { testnet.openDispute(order.id, reason); }
+                              else { openDisputeHook.mutate({ txId: order.id, reason, description }); }
                             }}
                           >
                             Dispute
