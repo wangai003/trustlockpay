@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Keyboard, Link } from "lucide-react";
+import { Copy, CheckCircle, ChevronDown, ChevronUp, HelpCircle, ExternalLink, Shield, Link } from "lucide-react";
 import { toast } from "sonner";
 
 interface WidgetInstallGuideProps {
@@ -169,14 +169,7 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
                   <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               )}
-              {step.shortcut && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Keyboard className="w-3 h-3 text-primary/60" />
-                  <span className="text-[10px] text-primary/80 font-mono bg-primary/5 px-1.5 py-0.5 rounded">
-                    {step.shortcut}
-                  </span>
-                </div>
-              )}
+              
             </div>
           </div>
         ))}
@@ -191,18 +184,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
           </div>
         )}
 
-        {/* Keyboard shortcuts note */}
+        {/* Quick summary */}
         {!isMarketplace && (
-          <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border">
-            <Keyboard className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              <p className="font-semibold text-foreground text-xs">Keyboard Shortcuts</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+C</span> Copy selected text</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+V</span> Paste copied code</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+F</span> Find text on page</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+S</span> Save changes</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+End</span> Jump to bottom of file</p>
-              <p className="text-[9px] italic mt-1">On Mac, use Cmd instead of Ctrl</p>
+          <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">How it works</p>
+              <p>Copy the TrustLock script tag below and paste it just before the closing <code className="font-mono bg-muted px-1 rounded text-[10px]">&lt;/body&gt;</code> tag on your checkout page. Once saved, a secure TrustLock shield icon will appear — buyers click it to open the escrow payment form. No additional configuration is needed.</p>
             </div>
           </div>
         )}
@@ -265,9 +253,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
       )}
 
       {/* Help footer */}
-      <div className="px-4 py-2 bg-muted/10 border-t border-border">
-        <p className="text-[10px] text-muted-foreground text-center">
-          Need help? Contact support or ask your TrustLock assistant for a walkthrough.
+      <div className="px-4 py-2.5 bg-muted/10 border-t border-border">
+        <p className="text-[11px] text-muted-foreground text-center">
+          Need help installing? Email us at{" "}
+          <a href="mailto:support@azix.world" className="text-primary font-semibold hover:underline">
+            support@azix.world
+          </a>{" "}
+          or use the TrustLock Assistant in your dashboard.
         </p>
       </div>
     </div>
