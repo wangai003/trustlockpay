@@ -164,10 +164,10 @@ const AdminReports = () => {
                     <h4 className="font-semibold mb-2">Transaction Overview</h4>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
-                        { label: "Total Transactions", value: "278" },
-                        { label: "Total Volume", value: "$124,800" },
-                        { label: "Avg Size", value: "$449" },
-                        { label: "Success Rate", value: "98.2%" },
+                        { label: "Total Transactions", value: String(txCount) },
+                        { label: "Total Volume", value: `$${txVolume.toLocaleString()}` },
+                        { label: "Avg Size", value: `$${avgSize.toLocaleString()}` },
+                        { label: "Success Rate", value: `${successRate}%` },
                       ].map((m) => (
                         <div key={m.label} className="bg-muted/30 rounded-lg p-3">
                           <div className="text-xs text-muted-foreground">{m.label}</div>
