@@ -182,10 +182,10 @@ const AdminReports = () => {
                     <h4 className="font-semibold mb-2">Dispute Summary</h4>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
-                        { label: "Total Disputes", value: "12" },
-                        { label: "Resolution Rate", value: "87.5%" },
-                        { label: "Avg Resolution", value: "2.4 days" },
-                        { label: "Buyer Won", value: "58%" },
+                        { label: "Total Disputes", value: String(totalDisputes) },
+                        { label: "Resolution Rate", value: `${resolvedRate}%` },
+                        { label: "Pending", value: String(rawDisputes.filter(d => d.status === "pending").length) },
+                        { label: "In Arbitration", value: String(rawDisputes.filter(d => d.status === "arbitration").length) },
                       ].map((m) => (
                         <div key={m.label} className="bg-muted/30 rounded-lg p-3">
                           <div className="text-xs text-muted-foreground">{m.label}</div>
