@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Download, FileText, Calendar, Archive, Search, Shield
+  Download, FileText, Calendar, Archive, Search, Shield, XCircle, Fuel, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
-import { useTransactions, useDisputes, usePayouts, useArchivedReports } from "@/hooks/useSupabaseData";
+import { useTransactions, useDisputes, usePayouts, useArchivedReports, useVendorRejections } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
 
 const chartStyle = {
@@ -31,6 +31,41 @@ const AdminAnalytics = () => {
   const { data: rawDisputes = [] } = useDisputes();
   const { data: rawPayouts = [] } = usePayouts();
   const { data: rawArchives = [] } = useArchivedReports("admin");
+  const { data: rawRejections = [] } = useVendorRejections();
+
+  // Rejection analytics
+  const rejectionStats = useMemo(() => {
+    const totalRejected = rawRejections.length;
+    const totalLostVolume = rawRejections.reduce((s: number, r: any) => s + Number(r.original_amount || 0), 0);
+    const totalGasSpent = rawRejections.reduce((s: number, r: any) => s + Number(r.gas_deducted || 0), 0);
+    const totalRefunded = rawRejections.reduce((s: number, r: any) => s + Number(r.refund_amount || 0), 0);
+
+    const monthly: Record<string, { count: number; volume: number; gas: number }> = {};
+    rawRejections.forEach((r: any) => {
+      const d = new Date(r.created_at);
+      const key = d.toLocaleString("en-US", { month: "short" });
+      if (!monthly[key]) monthly[key] = { count: 0, volume: 0, gas: 0 };
+      monthly[key].count += 1;
+      monthly[key].volume += Number(r.original_amount || 0);
+      monthly[key].gas += Number(r.gas_deducted || 0);
+    });
+    const trend = Object.entries(monthly).map(([month, data]) => ({ month, ...data }));
+
+    const byIndustry: Record<string, number> = {};
+    rawRejections.forEach((r: any) => {
+      const ind = r.industry || "Other";
+      byIndustry[ind] = (byIndustry[ind] || 0) + 1;
+    });
+    const industryData = Object.entries(byIndustry)
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const totalTx = rawTx.length || 1;
+    const rejectionRate = ((totalRejected / totalTx) * 100).toFixed(1);
+
+    return { totalRejected, totalLostVolume, totalGasSpent, totalRefunded, trend, industryData, rejectionRate };
+  }, [rawRejections, rawTx]);
 
   // Compute monthly volume from real transactions
   const monthlyVolume = useMemo(() => {
@@ -120,8 +155,9 @@ const AdminAnalytics = () => {
       <div className="p-6 space-y-6">
         <Tabs defaultValue="analytics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-lg">
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="rejections">Rejections</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="archives">Archives</TabsTrigger>
             </TabsList>
@@ -273,6 +309,114 @@ const AdminAnalytics = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* ─── Rejections Tab ─── */}
+          <TabsContent value="rejections" className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: "Total Rejections", value: String(rejectionStats.totalRejected), icon: XCircle, color: "text-destructive" },
+                { label: "Lost Volume", value: `$${rejectionStats.totalLostVolume.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-destructive" },
+                { label: "Gas Spent on Refunds", value: `$${rejectionStats.totalGasSpent.toFixed(2)}`, icon: Fuel, color: "text-muted-foreground" },
+                { label: "Rejection Rate", value: `${rejectionStats.rejectionRate}%`, icon: XCircle, color: "text-destructive" },
+              ].map((s) => (
+                <Card key={s.label}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <s.icon className={`w-4 h-4 ${s.color}`} />
+                      <span className="text-[10px] text-muted-foreground">{s.label}</span>
+                    </div>
+                    <div className="text-xl font-bold">{s.value}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Revenue Impact Notice */}
+            <Card className="border-destructive/30 bg-destructive/5">
+              <CardContent className="p-4 flex items-start gap-3">
+                <TrendingDown className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Revenue Impact</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rejected orders represent <strong className="text-foreground">${rejectionStats.totalLostVolume.toLocaleString()}</strong> in
+                    volume that generated <strong className="text-foreground">$0 in fees</strong>. Gas costs of{" "}
+                    <strong className="text-foreground">${rejectionStats.totalGasSpent.toFixed(2)}</strong> were absorbed from escrowed
+                    principal for on-chain refunds — this is a direct platform cost with no revenue offset.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Monthly Rejection Trend */}
+              <Card>
+                <CardHeader><CardTitle className="text-base">Monthly Rejection Trend</CardTitle></CardHeader>
+                <CardContent>
+                  {rejectionStats.trend.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={rejectionStats.trend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(45,10%,90%)" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="cnt" orientation="left" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="vol" orientation="right" tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip contentStyle={chartStyle} />
+                        <Bar yAxisId="cnt" dataKey="count" fill="hsl(0,84%,60%)" radius={[4,4,0,0]} name="Rejections" />
+                        <Bar yAxisId="vol" dataKey="volume" fill="hsl(0,60%,40%)" radius={[4,4,0,0]} name="Lost Volume ($)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-12">No rejection data yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Rejections by Industry */}
+              <Card>
+                <CardHeader><CardTitle className="text-base">Rejections by Industry</CardTitle></CardHeader>
+                <CardContent>
+                  {rejectionStats.industryData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={rejectionStats.industryData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(45,10%,90%)" />
+                        <XAxis type="number" tick={{ fontSize: 11 }} />
+                        <YAxis dataKey="industry" type="category" tick={{ fontSize: 10 }} width={90} />
+                        <Tooltip contentStyle={chartStyle} />
+                        <Bar dataKey="count" fill="hsl(0,84%,60%)" radius={[0,4,4,0]} name="Rejections" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-12">No industry data yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gas Cost Breakdown */}
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><Fuel className="w-4 h-4" /> Gas Cost vs Refund Volume</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Total Refunded</p>
+                    <p className="text-lg font-bold">${rejectionStats.totalRefunded.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Gas Absorbed</p>
+                    <p className="text-lg font-bold text-destructive">${rejectionStats.totalGasSpent.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Gas as % of Refunds</p>
+                    <p className="text-lg font-bold">
+                      {rejectionStats.totalRefunded > 0
+                        ? ((rejectionStats.totalGasSpent / rejectionStats.totalRefunded) * 100).toFixed(3)
+                        : "0.000"}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

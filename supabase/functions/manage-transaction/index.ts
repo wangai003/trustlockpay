@@ -145,6 +145,22 @@ Deno.serve(async (req) => {
             });
           }
 
+          // Record in vendor_rejections for analytics
+          await supabase.from("vendor_rejections").insert({
+            transaction_id: tx.id,
+            tx_id: tx.tx_id,
+            vendor_id: tx.vendor_id,
+            buyer_id: tx.buyer_id,
+            vendor_name: tx.vendor_name || "Unknown",
+            buyer_name: tx.buyer_name || "Unknown",
+            original_amount: tx.amount,
+            gas_deducted: gasDeduction,
+            refund_amount: refundAmount,
+            industry: tx.industry,
+            rejection_reason: reason || "Vendor declined order",
+            refund_status: "initiated",
+          });
+
           refundResults.push({
             tx_id: tx.tx_id,
             original_amount: tx.amount,
