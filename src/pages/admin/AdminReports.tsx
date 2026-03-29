@@ -138,10 +138,10 @@ const AdminReports = () => {
               <Button onClick={() => setGenerated(true)} disabled={selected.length === 0}>
                 <Eye className="w-4 h-4 mr-2" /> Generate Preview
               </Button>
-              <Button variant="outline" disabled={!generated}>
+              <Button variant="outline" disabled={!generated} onClick={handleExportPdf}>
                 <Download className="w-4 h-4 mr-2" /> Export PDF
               </Button>
-              <Button variant="outline" disabled={!generated}>
+              <Button variant="outline" disabled={!generated} onClick={handleExportCsv}>
                 <FileText className="w-4 h-4 mr-2" /> Export CSV
               </Button>
             </div>
