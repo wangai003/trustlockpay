@@ -145,6 +145,10 @@ const TaxBreakdown = ({
         <span className="text-muted-foreground flex items-center gap-1">
           <Info className="w-3 h-3" />
           Taxes & Duties
+          {taxLoading && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+          {(buyerCountry || vendorCountry) && !taxLoading && (
+            <Zap className="w-3 h-3 text-primary" />
+          )}
           {taxItems.length > 0 && (
             <span className="text-foreground font-semibold ml-1">
               ({taxItems.length} item{taxItems.length > 1 ? "s" : ""})
@@ -161,6 +165,32 @@ const TaxBreakdown = ({
 
       {expanded && (
         <div className="space-y-2 p-2.5 rounded-lg border border-border bg-muted/30">
+          {/* Smart detection notice */}
+          {autoNotes && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
+              <Zap className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] text-foreground leading-relaxed">{autoNotes}</p>
+            </div>
+          )}
+
+          {deMinimisApplied && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-accent/30 border border-accent/20">
+              <Info className="w-3 h-3 text-accent-foreground shrink-0 mt-0.5" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong>De minimis exemption:</strong> Transaction amount is below the import duty threshold — tariffs waived.
+              </p>
+            </div>
+          )}
+
+          {blocName && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-accent/30 border border-accent/20">
+              <Info className="w-3 h-3 text-accent-foreground shrink-0 mt-0.5" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong>{blocName} trade bloc</strong> detected — preferential tariff rates applied.
+              </p>
+            </div>
+          )}
+
           {/* Existing tax items */}
           {taxItems.map((item) => (
             <div key={item.id} className="flex items-center gap-2">
@@ -281,9 +311,11 @@ const TaxBreakdown = ({
             </div>
           )}
 
-          {taxItems.length === 0 && (
+          {taxItems.length === 0 && !taxLoading && (
             <p className="text-[10px] text-muted-foreground text-center py-1">
-              No taxes or duties added. Tap a preset or add a custom line item.
+              {(buyerCountry || vendorCountry)
+                ? "No applicable taxes detected for this corridor. Add manually if needed."
+                : "No taxes or duties added. Tap a preset or add a custom line item."}
             </p>
           )}
         </div>
