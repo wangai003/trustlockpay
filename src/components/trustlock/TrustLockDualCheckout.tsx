@@ -186,7 +186,7 @@ const TrustLockDualCheckout = () => {
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold text-primary">How to Pay with Crypto</p>
                         <p className="text-[9px] text-foreground leading-relaxed">
-                          Send <strong>{checkoutToken}</strong> on <strong>Polygon</strong> to the Azix wallet below, then paste your transaction details to verify payment and generate your order.
+                          Send <strong>{checkoutToken}</strong> on <strong>Polygon</strong> to the receiving wallet below, then paste your transaction details to verify payment and generate your order.
                         </p>
                       </div>
                     </div>
