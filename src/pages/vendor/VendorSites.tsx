@@ -38,17 +38,20 @@ const NO_CHECKOUT_PLATFORMS = [
   "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
 ];
 
+const INDUSTRY_ICONS: Record<string, string> = {
+  ecommerce: "🛒", construction: "🏗️", real_estate: "🏘️", mining: "⛏️",
+  agriculture: "🌾", freelance: "💼", logistics: "🚚", tourism: "✈️",
+  education: "🎓", project_management: "📋", automotive: "🚗", energy: "⚡",
+  pharmaceuticals: "💊", telecommunications: "📡", manufacturing: "🏭",
+  renewable_energy: "☀️", textiles: "🧵", marine_fisheries: "🐟",
+  water_sanitation: "💧", media_entertainment: "🎬", aviation: "✈️",
+  insurance: "🛡️", legal_services: "⚖️", food_beverage: "🍽️",
+  waste_management: "♻️", other: "📦",
+};
+
 const TRUSTLOCK_INDUSTRIES = [
-  { key: "construction", label: "Construction", icon: "🏗️" },
-  { key: "real_estate", label: "Real Estate", icon: "🏘️" },
-  { key: "agriculture", label: "Agriculture", icon: "🌾" },
-  { key: "mining", label: "Mining & Export", icon: "⛏️" },
-  { key: "tourism", label: "Tourism & Hospitality", icon: "✈️" },
-  { key: "retail", label: "Retail & E-Commerce", icon: "🛒" },
-  { key: "freelance", label: "Freelance & Consulting", icon: "💼" },
-  { key: "logistics", label: "Logistics & Shipping", icon: "🚚" },
-  { key: "education", label: "Education & Training", icon: "🎓" },
-  { key: "project_management", label: "Project Management", icon: "📋" },
+  ...ALL_INDUSTRIES.map(i => ({ key: i.value, label: i.label, icon: INDUSTRY_ICONS[i.value] || "📦" })),
+  { key: "other", label: "Other / Not Listed", icon: "📦" },
 ];
 import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
