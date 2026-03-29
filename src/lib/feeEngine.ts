@@ -630,14 +630,8 @@ The total amount charged includes the following fees added on top of the escrow 
 
 **The escrow principal (the agreed invoice amount) is preserved in full.** The vendor will receive 100% of this amount upon successful completion.
 
-**What are Network Gas Fees?**
-Gas fees are small costs required by the blockchain network to process and verify transactions on the ledger. Think of them like a postage stamp — a small fee that goes to the network validators (not TrustLock) who confirm your transaction is legitimate. Because network demand fluctuates, gas fees are variable and shown as an estimated range rather than a fixed price.
+**Gas Fees:** TrustLock absorbs ALL blockchain gas fees. For standard operations (checkout, release), gas is covered from platform revenue. For refunds and split payouts, gas is absorbed from the pre-paid 1% escrow service fee. **You will never be charged gas fees.**
 
-**When Gas Fees Apply:**
-• **Checkout & Vendor Release:** $0.00 — TrustLock covers all internal gas from platform revenue. You pay nothing.
-• **Refunds:** An estimated ~$0.02–$0.05 is deducted from the refund amount to cover the blockchain cost of returning your funds. This is the ONLY charge on refunds — no TrustLock service fees apply.
-• **Split Payouts (Dispute Resolution):** An estimated ~$0.02–$0.05 total is split equally between buyer and vendor (~$0.01–$0.025 each).
+**Refund Policy:** If a refund is processed before work begins, you receive 100% of your escrow principal PLUS 100% of the pre-paid escrow fee. TrustLock charges $0 in service fees or gas on refunds — all gas costs are absorbed from the escrow fee pool.
 
-Gas fees are NOT charged upfront because the exact cost is only known at the time of the blockchain transaction. The Polygon network used by TrustLock is one of the most affordable networks available, keeping these costs minimal.
-
-**Internal Gas Fees:** TrustLock covers all blockchain gas fees for routing funds between internal wallets. These costs come from platform revenue and are never charged to buyers or vendors.`;
+**Internal Gas Fees:** TrustLock covers all blockchain gas fees for routing funds between internal wallets. These costs come from platform revenue and the pre-paid escrow fee, and are never charged to buyers or vendors.`;
