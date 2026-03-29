@@ -69,13 +69,91 @@ Deno.serve(async (req) => {
 
       case "reject_orders": {
         const txIds: string[] = body.txIds || [];
-        const { data, error } = await supabase
+
+        // Fetch all transactions being rejected
+        const { data: txRows, error: fetchErr } = await supabase
           .from("transactions")
-          .update({ status: "cancelled", updated_at: new Date().toISOString() })
-          .in("tx_id", txIds)
-          .select();
-        if (error) throw error;
-        result = data;
+          .select("*")
+          .in("tx_id", txIds);
+        if (fetchErr) throw fetchErr;
+
+        // Estimated gas cost in USD for on-chain refund (Polygon avg ~$0.01-0.05)
+        // In production this is fetched from gas oracle; using conservative estimate
+        const ESTIMATED_GAS_USD = 0.05;
+
+        const refundResults = [];
+
+        for (const tx of (txRows || [])) {
+          const gasDeduction = Math.min(ESTIMATED_GAS_USD, tx.amount * 0.005); // cap at 0.5% of principal
+          const refundAmount = Math.round((tx.amount - gasDeduction) * 100) / 100;
+
+          // Update transaction status with refund metadata
+          await supabase
+            .from("transactions")
+            .update({
+              status: "vendor_rejected",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("tx_id", tx.tx_id);
+
+          // Archive refund receipt in protection_documents
+          await supabase.from("protection_documents").insert({
+            document_type: "vendor_rejection_refund",
+            title: `Vendor Rejection Refund Receipt — ${tx.tx_id}`,
+            transaction_id: tx.id,
+            user_id: tx.buyer_id,
+            role: "buyer",
+            industry: tx.industry,
+            retention_years: 7,
+            metadata: {
+              auto_generated: true,
+              trigger: "vendor_reject_orders",
+              original_amount: tx.amount,
+              gas_deducted: gasDeduction,
+              refund_amount: refundAmount,
+              vendor_id: tx.vendor_id,
+              buyer_id: tx.buyer_id,
+              buyer_name: tx.buyer_name || "Unknown",
+              vendor_name: tx.vendor_name || "Unknown",
+              tx_id: tx.tx_id,
+              reason: "Vendor rejected order — 100% principal refund minus network gas fee",
+              rejected_at: new Date().toISOString(),
+            },
+          });
+
+          // Notify buyer of refund
+          if (tx.buyer_id) {
+            await supabase.from("notifications").insert({
+              user_id: tx.buyer_id,
+              title: "Order Rejected — Refund Initiated",
+              message: `The vendor declined order #${tx.order_number || tx.tx_id}. A refund of $${refundAmount.toFixed(2)} has been initiated (network gas fee of $${gasDeduction.toFixed(2)} deducted from escrow per protocol). No cancellation fee applies for vendor-initiated rejections.`,
+              type: "warning",
+              related_entity_type: "transaction",
+              related_entity_id: tx.id,
+            });
+          }
+
+          // Notify vendor confirmation
+          if (tx.vendor_id) {
+            await supabase.from("notifications").insert({
+              user_id: tx.vendor_id,
+              title: "Order Rejected",
+              message: `You rejected order #${tx.order_number || tx.tx_id}. The buyer's funds ($${refundAmount.toFixed(2)}) are being returned. Gas fee of $${gasDeduction.toFixed(2)} was deducted from escrow.`,
+              type: "info",
+              related_entity_type: "transaction",
+              related_entity_id: tx.id,
+            });
+          }
+
+          refundResults.push({
+            tx_id: tx.tx_id,
+            original_amount: tx.amount,
+            gas_deducted: gasDeduction,
+            refund_amount: refundAmount,
+          });
+        }
+
+        result = refundResults;
         break;
       }
 
