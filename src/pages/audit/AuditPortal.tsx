@@ -276,7 +276,33 @@ const AuditPortal = () => {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  {/* Tax Ledger: Party Search Filter */}
+                  {tableName === "tax_ledger" && (
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by vendor or buyer name..."
+                        className="h-7 text-xs max-w-xs"
+                        value={partySearch}
+                        onChange={(e) => {
+                          setPartySearch(e.target.value);
+                          setPartyFilterActive(e.target.value.length > 0);
+                        }}
+                      />
+                      {partyFilterActive && (
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setPartySearch(""); setPartyFilterActive(false); }}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                      {partyFilterActive && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Showing tax statement for "{partySearch}"
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
                   {loadingTable ? (
                     <div className="flex justify-center py-8">
                       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -285,36 +311,61 @@ const AuditPortal = () => {
                     <p className="text-sm text-muted-foreground text-center py-8">
                       No data available yet. Records will appear here once the platform is operational.
                     </p>
-                  ) : (
-                    <div className="overflow-x-auto max-h-[60vh]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {Object.keys(tableData[tableName][0])
-                              .filter((k) => !k.includes("password") && !k.includes("hash"))
-                              .map((key) => (
-                                <TableHead key={key} className="text-xs whitespace-nowrap">
-                                  {key.replace(/_/g, " ")}
-                                </TableHead>
-                              ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {tableData[tableName].map((row, i) => (
-                            <TableRow key={i}>
-                              {Object.entries(row)
-                                .filter(([k]) => !k.includes("password") && !k.includes("hash"))
-                                .map(([k, v], j) => (
-                                  <TableCell key={j} className="text-xs whitespace-nowrap max-w-[200px] truncate">
-                                    {v === null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v)}
-                                  </TableCell>
+                  ) : (() => {
+                    const rows = tableName === "tax_ledger" && partyFilterActive
+                      ? tableData[tableName].filter((row: any) => {
+                          const q = partySearch.toLowerCase();
+                          return (row.vendor_name && String(row.vendor_name).toLowerCase().includes(q))
+                            || (row.buyer_name && String(row.buyer_name).toLowerCase().includes(q))
+                            || (row.vendor_id && String(row.vendor_id).toLowerCase().includes(q))
+                            || (row.buyer_id && String(row.buyer_id).toLowerCase().includes(q));
+                        })
+                      : tableData[tableName];
+
+                    if (!rows.length) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          No tax records found for "{partySearch}".
+                        </p>
+                      );
+                    }
+
+                    return (
+                      <div className="overflow-x-auto max-h-[60vh]">
+                        {tableName === "tax_ledger" && partyFilterActive && (
+                          <div className="mb-2 p-2 rounded bg-muted text-xs text-muted-foreground">
+                            📋 Tax Statement: {rows.length} record(s) · Total collected: ${rows.reduce((s: number, r: any) => s + Number(r.total_collected || 0), 0).toFixed(2)}
+                          </div>
+                        )}
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {Object.keys(rows[0])
+                                .filter((k) => !k.includes("password") && !k.includes("hash"))
+                                .map((key) => (
+                                  <TableHead key={key} className="text-xs whitespace-nowrap">
+                                    {key.replace(/_/g, " ")}
+                                  </TableHead>
                                 ))}
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                          </TableHeader>
+                          <TableBody>
+                            {rows.map((row: any, i: number) => (
+                              <TableRow key={i}>
+                                {Object.entries(row)
+                                  .filter(([k]) => !k.includes("password") && !k.includes("hash"))
+                                  .map(([k, v], j) => (
+                                    <TableCell key={j} className="text-xs whitespace-nowrap max-w-[200px] truncate">
+                                      {v === null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v)}
+                                    </TableCell>
+                                  ))}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
