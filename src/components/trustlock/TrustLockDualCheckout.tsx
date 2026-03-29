@@ -68,17 +68,6 @@ const TrustLockDualCheckout = () => {
         {/* Mode Toggle */}
         <div className="flex items-center justify-center mt-10 gap-4">
           <button
-            onClick={() => handleModeSwitch("diaspora")}
-            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-              mode === "diaspora"
-                ? "bg-primary text-primary-foreground shadow-lg"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Globe className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Diaspora Mode
-          </button>
-          <button
             onClick={() => handleModeSwitch("local")}
             className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
               mode === "local"
@@ -87,7 +76,18 @@ const TrustLockDualCheckout = () => {
             }`}
           >
             <Smartphone className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Local Mode
+            Africa
+          </button>
+          <button
+            onClick={() => handleModeSwitch("diaspora")}
+            className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+              mode === "diaspora"
+                ? "bg-primary text-primary-foreground shadow-lg"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Globe className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            International
           </button>
         </div>
 
