@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, Clock, CheckCircle, TrendingUp, Download, ArrowRight } from "lucide-react";
 import { usePayouts } from "@/hooks/useSupabaseData";
 import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   completed: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
