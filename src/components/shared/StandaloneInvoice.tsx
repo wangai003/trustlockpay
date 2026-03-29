@@ -36,6 +36,7 @@ const StandaloneInvoice = ({ vendorName = "Vendor", onProceed }: StandaloneInvoi
   ]);
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const [note, setNote] = useState("");
+  const [paymentType, setPaymentType] = useState<"fiat" | "crypto">("fiat");
 
   const addItem = () => {
     setItems([...items, { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
