@@ -30,7 +30,8 @@ const VendorPricing = () => {
 
   const handleSelect = (planId: PlanId) => {
     if (planId === "basic") return;
-    navigate(`/trustlock/vendor/checkout?plan=${planId}&billing=${billing}`);
+    const price = billing === "monthly" ? PLANS[planId].monthly : PLANS[planId].yearly;
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`TrustLock OS License — ${PLANS[planId].name} (${billing})`)}&amount=${price.toFixed(2)}`);
   };
 
   const confirmTrial = () => {
