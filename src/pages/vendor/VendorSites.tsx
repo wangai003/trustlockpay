@@ -412,10 +412,12 @@ const VendorSites = () => {
                         <>
                           {/* Widget Toggle */}
                           <div className="mt-3 flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
-                            <Switch
-                              checked={isWidgetEnabled}
-                              onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
-                            />
+                            <TLId code={dynTLId("V", "SIT", row, "TGL-WIDGET")} inline>
+                              <Switch
+                                checked={isWidgetEnabled}
+                                onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
+                              />
+                            </TLId>
                             <div>
                               <p className="text-xs font-semibold">{isWidgetEnabled ? "Widget Enabled" : "Widget Disabled"}</p>
                               <p className="text-[10px] text-muted-foreground">
