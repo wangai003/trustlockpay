@@ -60,21 +60,24 @@ const BuyerSettings = () => {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Full Name</Label>
-                <Input defaultValue={buyer.name} />
+                <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input defaultValue={buyer.email} />
+                <Input defaultValue={buyer.email} disabled />
               </div>
               <div className="space-y-2">
                 <Label>Location</Label>
-                <Input defaultValue={buyer.location} />
+                <Input value={profileLocation} onChange={(e) => setProfileLocation(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Phone (optional)</Label>
-                <Input placeholder="+1 (xxx) xxx-xxxx" />
+                <Input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="+1 (xxx) xxx-xxxx" />
               </div>
             </div>
+            <Button size="sm" variant="outline" onClick={() => saveProfile.mutateAsync({ fullName: profileName, location: profileLocation, phone: profilePhone })}>
+              <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
+            </Button>
           </CardContent>
         </Card>
 
