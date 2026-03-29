@@ -8,6 +8,8 @@ import { Shield, Plus, X, FileText, ArrowRight } from "lucide-react";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import InvoiceFeeCalculator from "./InvoiceFeeCalculator";
 import { selectProcessor } from "@/lib/feeEngine";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Wallet, CreditCard } from "lucide-react";
 
 interface InvoiceLineItem {
   id: string;
