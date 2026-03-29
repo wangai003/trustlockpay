@@ -9,6 +9,14 @@ const corsHeaders = {
 // ─── In-memory session store (production: use Redis/DB) ────
 const sessions = new Map<string, CheckoutSession>();
 
+interface TaxLineResult {
+  type: string;
+  label: string;
+  rate: number;
+  amount: number;
+  source: string;
+}
+
 interface CheckoutSession {
   sessionId: string;
   vendorId: string;
@@ -25,6 +33,11 @@ interface CheckoutSession {
   status: "pending" | "confirmed" | "failed";
   createdAt: string;
   vendorName: string;
+  taxBreakdown: TaxLineResult[];
+  taxTotal: number;
+  escrowFee: number;
+  platformFee: number;
+  processorFee: number;
 }
 
 interface ProcessorResult {
