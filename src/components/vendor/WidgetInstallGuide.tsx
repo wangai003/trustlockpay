@@ -184,18 +184,13 @@ const WidgetInstallGuide = ({ platform, siteId, vendorSlug }: WidgetInstallGuide
           </div>
         )}
 
-        {/* Keyboard shortcuts note */}
+        {/* Quick summary */}
         {!isMarketplace && (
-          <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border">
-            <Keyboard className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              <p className="font-semibold text-foreground text-xs">Keyboard Shortcuts</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+C</span> Copy selected text</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+V</span> Paste copied code</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+F</span> Find text on page</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+S</span> Save changes</p>
-              <p><span className="font-mono bg-muted px-1 rounded">Ctrl+End</span> Jump to bottom of file</p>
-              <p className="text-[9px] italic mt-1">On Mac, use Cmd instead of Ctrl</p>
+          <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">How it works</p>
+              <p>Copy the TrustLock script tag below and paste it just before the closing <code className="font-mono bg-muted px-1 rounded text-[10px]">&lt;/body&gt;</code> tag on your checkout page. Once saved, a secure TrustLock shield icon will appear — buyers click it to open the escrow payment form. No additional configuration is needed.</p>
             </div>
           </div>
         )}
