@@ -349,10 +349,11 @@ const VendorSites = () => {
 
         {/* Connected Sites */}
         <div className="grid gap-4">
-          {allSites.map((site) => {
+          {allSites.map((site, siteIdx) => {
             const isWidgetEnabled = siteWidgetStates[site.id] ?? false;
             const isDeleted = widgetState.widgetState === "deleted";
             const isNoCheckoutPlatform = NO_CHECKOUT_PLATFORMS.includes(site.platform || "");
+            const row = siteIdx + 1;
             return (
               <Card key={site.id}>
                 <CardContent className="p-5">
