@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Clock, CheckCircle, TrendingUp, Download, ArrowRight } from "lucide-react";
 import { usePayouts } from "@/hooks/useSupabaseData";
+import TLId from "@/components/shared/TLId";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   completed: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
