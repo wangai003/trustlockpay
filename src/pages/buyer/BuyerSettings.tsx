@@ -81,7 +81,7 @@ const BuyerSettings = () => {
           </CardContent>
         </Card>
 
-        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
+        <TLId code="TL-B-SET-BTN-SAVE" inline><Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button></TLId>
 
         {/* Account Actions */}
         <Card className="border-destructive/20">
