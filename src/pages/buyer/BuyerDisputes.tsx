@@ -67,8 +67,9 @@ const BuyerDisputes = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Transaction ID</Label>
+              <TLId code={dynTLId("B", "DSPF", 1, "INP-TXID")} inline>
                 <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
+              </TLId>
               </div>
               <div className="space-y-2">
                 <Label>Reason</Label>
