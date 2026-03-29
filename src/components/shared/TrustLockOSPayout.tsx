@@ -598,7 +598,7 @@ const TrustLockOSPayout = ({
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Local Payment (Africa)</h3>
+              <h3 className="text-sm font-bold text-foreground">Africa Payment</h3>
             </div>
             <p className="text-[10px] text-muted-foreground">
               Select your payment method to receive funds. Banks, mobile wallets, and crypto wallets from across Africa are supported.
