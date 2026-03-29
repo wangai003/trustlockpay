@@ -166,7 +166,7 @@ const VendorOverview = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Transactions</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/vendor/transactions")}>View All →</Button>
+            <TLId code="TL-V-OVW-BTN-VIEW-ALL-TX" inline><Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/vendor/transactions")}>View All →</Button></TLId>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
