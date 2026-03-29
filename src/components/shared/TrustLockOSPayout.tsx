@@ -587,7 +587,7 @@ const TrustLockOSPayout = ({
           )}
         >
           <Globe className="w-4 h-4" />
-          Diaspora
+          International
         </button>
       </div>
 

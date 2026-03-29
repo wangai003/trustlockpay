@@ -18,7 +18,7 @@ export interface PaymentProvider {
   id: string;
   name: string;
   category: PaymentCategory;
-  mode: "diaspora" | "local" | "both";
+  mode: "diaspora" | "local" | "both"; // "diaspora" = International, "local" = Africa
   countries?: string[];
   processor: ProcessorId;
   fields: ProviderField[];
