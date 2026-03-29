@@ -72,24 +72,30 @@ function round(n: number): number {
 const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d";
 const AZIX_ESCROW_WALLET = "0x4E1c...A83b";
 
-// ─── Fee calculation (mirrors feeEngine) ───────────────────
-function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean) {
+// ─── Fee calculation (mirrors feeEngine — MUST stay in sync) ──
+function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean, taxTotal: number = 0) {
   const trustlockRate = isCrypto ? 1.0 : 1.5;
-  const escrowRate = 0.5;
-  const gasEstimate = 0.02;
+  const escrowRate = 1.0; // 1% escrow service fee — pre-paid at checkout
 
   const trustlockFee = round(amount * (trustlockRate / 100));
   const processorFee = isCrypto ? 0 : round(amount * (processorFeeRate / 100));
   const escrowFee = round(amount * (escrowRate / 100));
-  const totalFees = round(trustlockFee + processorFee + escrowFee + gasEstimate);
+  const gasFee = 0; // $0 — ALL gas covered by TrustLock (from platform revenue or escrow fee pool)
+  const totalFees = round(trustlockFee + processorFee + escrowFee + gasFee);
+  const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
   return {
     trustlockFee,
     processorFee,
     escrowFee,
-    gasFee: gasEstimate,
+    gasFee,
     totalFees,
-    netAmount: round(amount - totalFees),
+    taxTotal,
+    totalBuyerCharge,
+    netAmount: amount, // Vendor receives 100% of escrow principal
+    // Wallet routing
+    escrowWalletReceives: round(amount + escrowFee), // principal + escrow fee
+    transactionWalletReceives: round(trustlockFee + taxTotal), // platform fee + taxes
   };
 }
 
