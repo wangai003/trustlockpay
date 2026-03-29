@@ -443,8 +443,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
           {/* Seed token is auto-linked in the background — UI hidden, backend logic intact */}
 
-          {/* ─── COUNTRY SELECTOR (for local mode bank/mobile) ─── */}
-          {!isAdmin && payMode === "local" && (method === "bank_transfer" || method === "mobile_money") && (
+          {/* ─── COUNTRY SELECTOR (for all Africa mode non-crypto methods) ─── */}
+          {!isAdmin && payMode === "local" && method && method !== "azix" && (
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Your Country</Label>
               <select
