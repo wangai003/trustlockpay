@@ -90,7 +90,7 @@ const BuyerOverview = () => {
                 <p className="text-sm font-semibold">Action Required</p>
                 <p className="text-xs text-muted-foreground">You have orders awaiting delivery confirmation. Confirm to release funds to vendor.</p>
               </div>
-              <Button size="sm">Review Now</Button>
+              <TLId code="TL-B-OVW-BTN-CONFIRM-DELIVERY" inline><Button size="sm">Review Now</Button></TLId>
             </CardContent>
           </Card>
         )}
