@@ -130,6 +130,18 @@ const ComplianceDisclosure = ({ amount, paymentMethod, userRole, onAccept }: Com
           </div>
         )}
 
+        {/* Vendor Rejection & Gas Deduction Disclosure */}
+        <div className="p-2.5 rounded-lg bg-muted/50 flex items-start gap-2">
+          <Shield className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground">
+            <strong className="text-foreground">Rejection & Refund Policy:</strong> If a vendor rejects
+            your order, 100% of your principal is refunded with <strong>no cancellation fee</strong>.
+            However, a nominal blockchain network gas fee (est. $0.01–$0.05 on Polygon) is deducted
+            from the escrowed funds to process the on-chain refund. This is the only scenario where
+            TrustLock deducts from escrow principal, as gas costs are variable and non-recoverable.
+          </p>
+        </div>
+
         {/* Legal references */}
         <div className="p-2 rounded-lg border border-border bg-muted/30 space-y-1">
           <p className="text-[9px] font-semibold flex items-center gap-1 text-muted-foreground">
