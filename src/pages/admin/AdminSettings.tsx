@@ -143,7 +143,7 @@ const AdminSettings = () => {
         </Card>
 
 
-        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
+        <Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
     </div>
   );
