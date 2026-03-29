@@ -113,7 +113,15 @@ const VendorOnboarding = () => {
     return true;
   };
 
+  const saveOnboarding = useSaveOnboardingProfile();
+
   const handleComplete = () => {
+    // Persist to DB if authenticated
+    saveOnboarding.mutate({
+      industry: primaryIndustry,
+      location: businessLocation,
+      fullName: businessName,
+    });
     localStorage.setItem("tl_vendor_auth", "true");
     localStorage.setItem("tl_vendor_network", "testnet");
     localStorage.setItem("tl_vendor_onboarded", "true");
