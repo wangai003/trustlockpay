@@ -20,8 +20,10 @@ import {
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 import WidgetPreviewMockup from "@/components/vendor/WidgetPreviewMockup";
+import WidgetIndustryConfig from "@/components/vendor/WidgetIndustryConfig";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import { ALL_INDUSTRIES } from "@/lib/industryList";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
@@ -36,17 +38,20 @@ const NO_CHECKOUT_PLATFORMS = [
   "Portfolio / Blog", "Social Media Page", "Landing Page", "Service Website",
 ];
 
+const INDUSTRY_ICONS: Record<string, string> = {
+  ecommerce: "🛒", construction: "🏗️", real_estate: "🏘️", mining: "⛏️",
+  agriculture: "🌾", freelance: "💼", logistics: "🚚", tourism: "✈️",
+  education: "🎓", project_management: "📋", automotive: "🚗", energy: "⚡",
+  pharmaceuticals: "💊", telecommunications: "📡", manufacturing: "🏭",
+  renewable_energy: "☀️", textiles: "🧵", marine_fisheries: "🐟",
+  water_sanitation: "💧", media_entertainment: "🎬", aviation: "✈️",
+  insurance: "🛡️", legal_services: "⚖️", food_beverage: "🍽️",
+  waste_management: "♻️", other: "📦",
+};
+
 const TRUSTLOCK_INDUSTRIES = [
-  { key: "construction", label: "Construction", icon: "🏗️" },
-  { key: "real_estate", label: "Real Estate", icon: "🏘️" },
-  { key: "agriculture", label: "Agriculture", icon: "🌾" },
-  { key: "mining", label: "Mining & Export", icon: "⛏️" },
-  { key: "tourism", label: "Tourism & Hospitality", icon: "✈️" },
-  { key: "retail", label: "Retail & E-Commerce", icon: "🛒" },
-  { key: "freelance", label: "Freelance & Consulting", icon: "💼" },
-  { key: "logistics", label: "Logistics & Shipping", icon: "🚚" },
-  { key: "education", label: "Education & Training", icon: "🎓" },
-  { key: "project_management", label: "Project Management", icon: "📋" },
+  ...ALL_INDUSTRIES.map(i => ({ key: i.value, label: i.label, icon: INDUSTRY_ICONS[i.value] || "📦" })),
+  { key: "other", label: "Other / Not Listed", icon: "📦" },
 ];
 import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
@@ -301,8 +306,28 @@ const VendorSites = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
+                   <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template, document gates, and compliance requirements</p>
                 </div>
+
+                {/* Industry-specific widget pre-configuration */}
+                {siteIndustry && siteIndustry !== "other" && (
+                  <div className="sm:col-span-2">
+                    <WidgetIndustryConfig
+                      industry={siteIndustry}
+                      onConfigSave={(config) => {
+                        localStorage.setItem(`tl_site_industry_config_${siteIndustry}`, JSON.stringify(config));
+                      }}
+                    />
+                  </div>
+                )}
+
+                {siteIndustry === "other" && (
+                  <div className="sm:col-span-2 p-3 bg-muted/20 rounded-lg border border-border">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Custom Industry:</strong> Your widget will use the default escrow workflow. You can manually configure pricing, documents, and compliance fields from your dashboard after setup.
+                    </p>
+                  </div>
+                )}
 
                 {/* Checkout toggle */}
                 <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/10">
