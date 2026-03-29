@@ -255,6 +255,7 @@ Deno.serve(async (req) => {
         .eq("id", transactionId);
 
       // Calculate trickle-down fee for records
+      // 1% of total principal (atomic release = full 1%)
       const escrowFee = Math.round(tx.amount * 0.01 * 100) / 100;
       const vendorPayout = tx.amount - escrowFee;
 
