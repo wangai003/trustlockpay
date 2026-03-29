@@ -217,6 +217,76 @@ export const TL_ID_REGISTRY: Record<string, TLIdEntry> = {
   "TL-S-NAV-NOTIFICATIONS": { id: "TL-S-NAV-NOTIFICATIONS", label: "Notification Bell", description: "Notification center bell icon in header", page: "Shared", role: "shared", type: "navigation" },
   "TL-S-NAV-SEARCH": { id: "TL-S-NAV-SEARCH", label: "Search Bar", description: "Global search bar in header", page: "Shared", role: "shared", type: "search" },
 
+  // ============ VENDOR HEADER ============
+  "TL-V-HDR-TGL-NETWORK": { id: "TL-V-HDR-TGL-NETWORK", label: "Network Toggle", description: "Toggle between Testnet and Mainnet (Live) mode", page: "Vendor Header", role: "vendor", type: "toggle" },
+  "TL-V-HDR-BTN-SEARCH": { id: "TL-V-HDR-BTN-SEARCH", label: "Header Search", description: "Search button in vendor header bar", page: "Vendor Header", role: "vendor", type: "button" },
+  "TL-V-HDR-BTN-NOTIFICATIONS": { id: "TL-V-HDR-BTN-NOTIFICATIONS", label: "Notifications", description: "Notification bell icon in vendor header", page: "Vendor Header", role: "vendor", type: "button" },
+  "TL-V-HDR-BTN-AVATAR": { id: "TL-V-HDR-BTN-AVATAR", label: "Profile Avatar", description: "Vendor profile avatar in header", page: "Vendor Header", role: "vendor", type: "button" },
+  "TL-V-HDR-BTN-LOGOUT": { id: "TL-V-HDR-BTN-LOGOUT", label: "Header Sign Out", description: "Sign out button in vendor header", page: "Vendor Header", role: "vendor", type: "button" },
+
+  // ============ BUYER HEADER ============
+  "TL-B-HDR-TGL-NETWORK": { id: "TL-B-HDR-TGL-NETWORK", label: "Network Toggle", description: "Toggle between Testnet and Mainnet (Live) mode", page: "Buyer Header", role: "buyer", type: "toggle" },
+  "TL-B-HDR-BTN-SEARCH": { id: "TL-B-HDR-BTN-SEARCH", label: "Header Search", description: "Search button in buyer header bar", page: "Buyer Header", role: "buyer", type: "button" },
+  "TL-B-HDR-BTN-NOTIFICATIONS": { id: "TL-B-HDR-BTN-NOTIFICATIONS", label: "Notifications", description: "Notification bell icon in buyer header", page: "Buyer Header", role: "buyer", type: "button" },
+  "TL-B-HDR-BTN-AVATAR": { id: "TL-B-HDR-BTN-AVATAR", label: "Profile Avatar", description: "Buyer profile avatar in header", page: "Buyer Header", role: "buyer", type: "button" },
+  "TL-B-HDR-BTN-LOGOUT": { id: "TL-B-HDR-BTN-LOGOUT", label: "Header Sign Out", description: "Sign out button in buyer header", page: "Buyer Header", role: "buyer", type: "button" },
+
+  // ============ VENDOR SETTINGS (additional) ============
+  "TL-V-SET-TGL-PAY-WIDGET": { id: "TL-V-SET-TGL-PAY-WIDGET", label: "TrustLock Pay Toggle", description: "Toggle to enable/disable TrustLock Pay widget on store", page: "Vendor Settings", role: "vendor", type: "toggle" },
+  "TL-V-SET-BTN-PAUSE": { id: "TL-V-SET-BTN-PAUSE", label: "Pause Account", description: "Button to temporarily pause vendor account", page: "Vendor Settings", role: "vendor", type: "button" },
+  "TL-V-SET-BTN-DELETE": { id: "TL-V-SET-BTN-DELETE", label: "Delete Account", description: "Button to permanently delete vendor account", page: "Vendor Settings", role: "vendor", type: "button" },
+  "TL-V-SET-BTN-PAYOUT-SWITCH": { id: "TL-V-SET-BTN-PAYOUT-SWITCH", label: "Switch Payout Tier", description: "Button to switch between managed and self-custody payouts", page: "Vendor Settings", role: "vendor", type: "button" },
+
+  // ============ VENDOR PAYOUTS (additional) ============
+  "TL-V-PYO-BTN-EXPORT": { id: "TL-V-PYO-BTN-EXPORT", label: "Export Payouts", description: "Button to export payout history data", page: "Vendor Payouts", role: "vendor", type: "button" },
+
+  // ============ VENDOR ANALYTICS (additional) ============
+  "TL-V-ANL-TAB-ANALYTICS": { id: "TL-V-ANL-TAB-ANALYTICS", label: "Analytics Tab", description: "Tab for viewing analytics charts", page: "Vendor Analytics", role: "vendor", type: "tab" },
+  "TL-V-ANL-TAB-REPORTS": { id: "TL-V-ANL-TAB-REPORTS", label: "Reports Tab", description: "Tab for generating downloadable reports", page: "Vendor Analytics", role: "vendor", type: "tab" },
+  "TL-V-ANL-TAB-ARCHIVES": { id: "TL-V-ANL-TAB-ARCHIVES", label: "Archives Tab", description: "Tab for viewing archived reports", page: "Vendor Analytics", role: "vendor", type: "tab" },
+  "TL-V-ANL-BTN-DOWNLOAD": { id: "TL-V-ANL-BTN-DOWNLOAD", label: "Download Report", description: "Button to download a specific report as PDF", page: "Vendor Analytics", role: "vendor", type: "button" },
+
+  // ============ VENDOR PRICING (additional) ============
+  "TL-V-PRC-BTN-TRIAL": { id: "TL-V-PRC-BTN-TRIAL", label: "Activate Trial", description: "Button to activate 30-day free trial", page: "Vendor Pricing", role: "vendor", type: "button" },
+  "TL-V-PRC-TGL-BILLING": { id: "TL-V-PRC-TGL-BILLING", label: "Billing Toggle", description: "Toggle between monthly and yearly billing", page: "Vendor Pricing", role: "vendor", type: "toggle" },
+
+  // ============ VENDOR SITES (additional) ============
+  "TL-V-SIT-DRP-PLATFORM": { id: "TL-V-SIT-DRP-PLATFORM", label: "Platform Selector", description: "Dropdown to select e-commerce platform", page: "Vendor Sites", role: "vendor", type: "dropdown" },
+  "TL-V-SIT-DRP-INDUSTRY": { id: "TL-V-SIT-DRP-INDUSTRY", label: "Site Industry", description: "Dropdown to select industry for site", page: "Vendor Sites", role: "vendor", type: "dropdown" },
+  "TL-V-SIT-TGL-WIDGET": { id: "TL-V-SIT-TGL-WIDGET", label: "Widget Toggle", description: "Toggle to enable/disable widget on a specific site", page: "Vendor Sites", role: "vendor", type: "toggle" },
+  "TL-V-SIT-BTN-DELETE": { id: "TL-V-SIT-BTN-DELETE", label: "Delete Site", description: "Button to remove a connected site", page: "Vendor Sites", role: "vendor", type: "button" },
+
+  // ============ VENDOR STANDALONE LINKS (additional) ============
+  "TL-V-LNK-BTN-PREVIEW": { id: "TL-V-LNK-BTN-PREVIEW", label: "Preview Link", description: "Button to preview a standalone payment link", page: "Vendor Links", role: "vendor", type: "button" },
+
+  // ============ BUYER SETTINGS (additional) ============
+  "TL-B-SET-BTN-PAUSE": { id: "TL-B-SET-BTN-PAUSE", label: "Pause Account", description: "Button to temporarily pause buyer account", page: "Buyer Settings", role: "buyer", type: "button" },
+  "TL-B-SET-BTN-DELETE": { id: "TL-B-SET-BTN-DELETE", label: "Delete Account", description: "Button to permanently delete buyer account", page: "Buyer Settings", role: "buyer", type: "button" },
+
+  // ============ BUYER ORDERS (additional) ============
+  "TL-B-ORD-BTN-EXPAND-DETAILS": { id: "TL-B-ORD-BTN-EXPAND-DETAILS", label: "Order Details", description: "Button to expand/collapse order details panel", page: "Buyer Orders", role: "buyer", type: "button" },
+
+  // ============ BUYER DISPUTES (additional) ============
+  "TL-B-DSP-BTN-NEW": { id: "TL-B-DSP-BTN-NEW", label: "New Dispute", description: "Button to open new dispute form", page: "Buyer Disputes", role: "buyer", type: "button" },
+  "TL-B-DSP-BTN-SUBMIT": { id: "TL-B-DSP-BTN-SUBMIT", label: "Submit Dispute", description: "Button to submit a new dispute", page: "Buyer Disputes", role: "buyer", type: "button" },
+
+  // ============ BUYER ANALYTICS (additional) ============
+  "TL-B-ANL-TAB-ANALYTICS": { id: "TL-B-ANL-TAB-ANALYTICS", label: "Analytics Tab", description: "Tab for viewing buyer analytics charts", page: "Buyer Analytics", role: "buyer", type: "tab" },
+  "TL-B-ANL-TAB-REPORTS": { id: "TL-B-ANL-TAB-REPORTS", label: "Reports Tab", description: "Tab for generating buyer reports", page: "Buyer Analytics", role: "buyer", type: "tab" },
+  "TL-B-ANL-TAB-ARCHIVES": { id: "TL-B-ANL-TAB-ARCHIVES", label: "Archives Tab", description: "Tab for viewing archived buyer reports", page: "Buyer Analytics", role: "buyer", type: "tab" },
+  "TL-B-ANL-BTN-DOWNLOAD": { id: "TL-B-ANL-BTN-DOWNLOAD", label: "Download Report", description: "Button to download a buyer report as PDF", page: "Buyer Analytics", role: "buyer", type: "button" },
+
+  // ============ BUYER BILL PAYMENTS (additional) ============
+  "TL-B-BIL-FLT-STATUS": { id: "TL-B-BIL-FLT-STATUS", label: "Bill Status Filter", description: "Filter buttons for bill payment status", page: "Buyer Bill Pay", role: "buyer", type: "filter" },
+  "TL-B-BIL-DRP-CATEGORY": { id: "TL-B-BIL-DRP-CATEGORY", label: "Bill Category Filter", description: "Dropdown to filter bills by category", page: "Buyer Bill Pay", role: "buyer", type: "dropdown" },
+
+  // ============ VENDOR BILL PAYMENTS (additional) ============
+  "TL-V-BIL-FLT-STATUS": { id: "TL-V-BIL-FLT-STATUS", label: "Bill Status Filter", description: "Filter buttons for bill payment status", page: "Vendor Bill Pay", role: "vendor", type: "filter" },
+  "TL-V-BIL-DRP-CATEGORY": { id: "TL-V-BIL-DRP-CATEGORY", label: "Bill Category Filter", description: "Dropdown to filter bills by category", page: "Vendor Bill Pay", role: "vendor", type: "dropdown" },
+
+  // ============ BUYER CONFIRMATION (public) (additional) ============
+  "TL-B-CNF-BTN-COPY-TX": { id: "TL-B-CNF-BTN-COPY-TX", label: "Copy TX ID", description: "Button to copy transaction ID on confirmation page", page: "Buyer Confirmation", role: "buyer", type: "button" },
+
   // ============ MAIN NAVBAR ============
   "TL-S-NAV-LOGO": { id: "TL-S-NAV-LOGO", label: "Azix Logo", description: "Main Azix logo linking to homepage", page: "Navbar", role: "shared", type: "navigation" },
   "TL-S-NAV-HOW": { id: "TL-S-NAV-HOW", label: "How It Works Link", description: "Navbar link to How It Works section", page: "Navbar", role: "shared", type: "navigation" },

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { User, Bell, Save, AlertTriangle, Pause, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import TLId from "@/components/shared/TLId";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
 } from "@/components/ui/alert-dialog";
@@ -80,7 +81,7 @@ const BuyerSettings = () => {
           </CardContent>
         </Card>
 
-        <Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button>
+        <TLId code="TL-B-SET-BTN-SAVE" inline><Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button></TLId>
 
         {/* Account Actions */}
         <Card className="border-destructive/20">
@@ -99,18 +100,22 @@ const BuyerSettings = () => {
                 <p className="text-sm font-medium">Pause Account</p>
                 <p className="text-xs text-muted-foreground">Temporarily deactivate. Pending escrows continue processing. Reactivate anytime.</p>
               </div>
-              <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
-                <Pause className="w-3.5 h-3.5" /> Pause
-              </Button>
+              <TLId code="TL-B-SET-BTN-PAUSE" inline>
+                <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
+                  <Pause className="w-3.5 h-3.5" /> Pause
+                </Button>
+              </TLId>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
               <div>
                 <p className="text-sm font-medium text-destructive">Delete Account</p>
                 <p className="text-xs text-muted-foreground">Permanently delete your account and all data. Audit records retained per compliance policy.</p>
               </div>
-              <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </Button>
+              <TLId code="TL-B-SET-BTN-DELETE" inline>
+                <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </Button>
+              </TLId>
             </div>
           </CardContent>
         </Card>

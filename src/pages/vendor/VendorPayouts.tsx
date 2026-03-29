@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Clock, CheckCircle, TrendingUp, Download, ArrowRight } from "lucide-react";
 import { usePayouts } from "@/hooks/useSupabaseData";
+import TLId from "@/components/shared/TLId";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   completed: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
@@ -58,7 +59,7 @@ const VendorPayouts = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Payout History</CardTitle>
-            <Button variant="outline" size="sm"><Download className="w-3 h-3 mr-1" /> Export</Button>
+            <TLId code="TL-V-PYO-BTN-EXPORT" inline><Button variant="outline" size="sm"><Download className="w-3 h-3 mr-1" /> Export</Button></TLId>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

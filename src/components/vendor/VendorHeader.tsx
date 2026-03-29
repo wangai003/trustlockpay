@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 import SearchBar from "@/components/shared/SearchBar";
 import { supabase } from "@/integrations/supabase/client";
+import TLId from "@/components/shared/TLId";
 
 const VendorHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, vendor } = useVendor();
@@ -25,30 +26,40 @@ const VendorHeader = ({ title }: { title: string }) => {
         <h1 className="font-heading font-bold text-sm sm:text-lg text-foreground pl-10 lg:pl-0 truncate">{title}</h1>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] sm:text-xs font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Test</span>
-            <Switch
-              checked={!isTestnet}
-              onCheckedChange={(checked) => setNetworkMode(checked ? "mainnet" : "testnet")}
-              className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-accent scale-90 sm:scale-100"
-            />
-            <span className={`text-[10px] sm:text-xs font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Live</span>
-            <Badge variant={isTestnet ? "outline" : "default"} className="text-[9px] sm:text-[10px] hidden sm:inline-flex">
-              {isTestnet ? "TEST" : "LIVE"}
-            </Badge>
-          </div>
+          <TLId code="TL-V-HDR-TGL-NETWORK" inline>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] sm:text-xs font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Test</span>
+              <Switch
+                checked={!isTestnet}
+                onCheckedChange={(checked) => setNetworkMode(checked ? "mainnet" : "testnet")}
+                className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-accent scale-90 sm:scale-100"
+              />
+              <span className={`text-[10px] sm:text-xs font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Live</span>
+              <Badge variant={isTestnet ? "outline" : "default"} className="text-[9px] sm:text-[10px] hidden sm:inline-flex">
+                {isTestnet ? "TEST" : "LIVE"}
+              </Badge>
+            </div>
+          </TLId>
 
-          <SearchBar onOpen={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))} />
+          <TLId code="TL-V-HDR-BTN-SEARCH" inline>
+            <SearchBar onOpen={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))} />
+          </TLId>
 
-          <NotificationCenter role="vendor" />
+          <TLId code="TL-V-HDR-BTN-NOTIFICATIONS" inline>
+            <NotificationCenter role="vendor" />
+          </TLId>
 
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-[10px] sm:text-xs font-bold text-primary">{vendor.name.substring(0, 2).toUpperCase()}</span>
-          </div>
+          <TLId code="TL-V-HDR-BTN-AVATAR" inline>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-[10px] sm:text-xs font-bold text-primary">{vendor.name.substring(0, 2).toUpperCase()}</span>
+            </div>
+          </TLId>
 
-          <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleLogout} title="Sign Out">
-            <LogOut className="w-4 h-4" />
-          </Button>
+          <TLId code="TL-V-HDR-BTN-LOGOUT" inline>
+            <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleLogout} title="Sign Out">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </TLId>
         </div>
       </div>
     </header>

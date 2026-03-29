@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ShieldCheck, Upload, CheckCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import TLId from "@/components/shared/TLId";
 
 const tiers = [
   { tier: 0, label: "Unverified", limit: "Cannot transact", status: "completed" as const },
@@ -259,9 +260,11 @@ const VendorKYC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Submitted Documents</CardTitle>
-              <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload} disabled={uploading}>
-                <Upload className="w-3 h-3" /> Upload New
-              </Button>
+              <TLId code="TL-V-KYC-BTN-SUBMIT" inline>
+                <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload} disabled={uploading}>
+                  <Upload className="w-3 h-3" /> Upload New
+                </Button>
+              </TLId>
               <input
                 ref={fileInputRef}
                 type="file"
