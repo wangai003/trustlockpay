@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
         confirmResult = await forwardConfirm(csSessionId);
       }
       if (transactionId) {
-        await forwardEscrowLock(transactionId);
+        await forwardWalletRouting(transactionId, 0, "stripe");
       }
 
       return json({
