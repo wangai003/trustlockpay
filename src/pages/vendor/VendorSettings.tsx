@@ -226,20 +226,22 @@ const VendorSettings = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { label: "New escrow created", email: true, inApp: true },
-              { label: "Buyer confirms delivery", email: true, inApp: true },
-              { label: "Funds released", email: true, inApp: true },
-              { label: "Dispute opened against you", email: true, inApp: true },
-              { label: "KYC status update", email: true, inApp: true },
-              { label: "Plan expiry reminder", email: true, inApp: true },
-              { label: "Order limit warning", email: true, inApp: true },
-            ].map((n) => (
-              <div key={n.label} className="flex items-center justify-between">
+            {notificationKeys.map((n) => (
+              <div key={n.key} className="flex items-center justify-between">
                 <span className="text-sm">{n.label}</span>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.email} /> Email</label>
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.inApp} /> In-App</label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_email`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_email`]: checked }))}
+                    /> Email
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_inapp`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_inapp`]: checked }))}
+                    /> In-App
+                  </label>
                 </div>
               </div>
             ))}
