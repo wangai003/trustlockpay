@@ -78,9 +78,9 @@ const InvoiceFeeCalculator = ({
       </div>
 
       {/* Refund disclosure */}
-      <div className="flex items-start gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-        <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
+      <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+        <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+        <div className="text-[10px] text-foreground leading-relaxed">
           <strong>Refund Policy:</strong> If a refund is issued before work begins, you receive 100% of the escrow principal
           ({currency} {escrowPrincipal.toFixed(2)}) plus the pre-paid escrow fee ({currency} {calc.escrowFee.toFixed(2)}).
           Only minimal network gas fees (~$0.02–$0.05) apply. No TrustLock service fees on refunds.
