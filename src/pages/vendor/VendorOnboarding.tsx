@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Store, Wrench, ArrowRight, ArrowLeft, CheckCircle, Upload, Globe, Info } from "lucide-react";
 
 import { ALL_INDUSTRIES } from "@/lib/industryList";
+import { useSaveOnboardingProfile } from "@/hooks/useSupabaseData";
 
 const industryOptions = [
   ...ALL_INDUSTRIES,
