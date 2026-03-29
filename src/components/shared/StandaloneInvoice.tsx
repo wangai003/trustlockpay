@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Plus, X, FileText, ArrowRight } from "lucide-react";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
+import InvoiceFeeCalculator from "./InvoiceFeeCalculator";
+import { selectProcessor } from "@/lib/feeEngine";
 
 interface InvoiceLineItem {
   id: string;
