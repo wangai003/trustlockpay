@@ -266,6 +266,9 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                 {counts.all > 0 && (
                   <button onClick={markAllRead} className="text-[10px] text-primary hover:underline">Mark all read</button>
                 )}
+                <button onClick={() => setOpen(false)} className="ml-1 p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Close notifications">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
