@@ -615,7 +615,28 @@ Deno.serve(async (req) => {
       if (!milestone) return json({ error: "Milestone not found" }, 404);
 
       const milestoneAmount = Number(milestone.amount) || 0;
-      const escrowFee = round(milestoneAmount * (FEE_RATES.escrow_release / 100));
+
+      // ── Fractional fee model ──────────────────────────
+      // Instead of charging 1% on each milestone's amount,
+      // we split the total 1% fee evenly across all milestones.
+      // e.g. 5 milestones → 0.2% per milestone release.
+      const { count: totalMilestoneCount } = await supabase
+        .from("transaction_milestones")
+        .select("id", { count: "exact", head: true })
+        .eq("transaction_id", transactionId);
+
+      const mCount = totalMilestoneCount || 1;
+      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_release / 100)); // 1% of full principal
+      const fractionalFee = round(totalEscrowFee / mCount);
+      // On last milestone, absorb any rounding remainder
+      const completedCount = (remaining?.length != null)
+        ? (mCount - (remaining?.length ?? 0))
+        : mCount; // fallback
+      const isLastMilestone = completedCount === mCount;
+      const feesAlreadyCharged = round(fractionalFee * (completedCount - 1));
+      const escrowFee = isLastMilestone
+        ? round(totalEscrowFee - feesAlreadyCharged)
+        : fractionalFee;
       const vendorNet = round(milestoneAmount - escrowFee);
 
       const transfers = [];
