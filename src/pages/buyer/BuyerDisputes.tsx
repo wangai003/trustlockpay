@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
+import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
