@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Crown, Building2, Gift, Briefcase, Shield } from "lucide-react";
-import { toast } from "sonner";
 import TLId from "@/components/shared/TLId";
+import { useActivateTrial } from "@/hooks/useBackendSync";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
@@ -34,11 +34,10 @@ const VendorPricing = () => {
     navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`TrustLock OS License — ${PLANS[planId].name} (${billing})`)}&amount=${price.toFixed(2)}`);
   };
 
+  const activateTrial = useActivateTrial();
+
   const confirmTrial = () => {
-    localStorage.setItem("tl_vendor_trial_start", new Date().toISOString());
-    localStorage.setItem("tl_vendor_plan", "free");
-    toast.success("🎉 Free trial activated! You have 30 days of Growth-level access.");
-    setActivatingTrial(false);
+    activateTrial.mutateAsync().then(() => setActivatingTrial(false));
   };
 
   return (
