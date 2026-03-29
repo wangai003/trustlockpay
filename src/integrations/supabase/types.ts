@@ -1638,6 +1638,104 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_ledger: {
+        Row: {
+          buyer_country: string | null
+          collection_period: string | null
+          corridor_route: string | null
+          created_at: string
+          fiscal_quarter: string | null
+          id: string
+          industry: string | null
+          item_category: string | null
+          jurisdiction_country_code: string | null
+          order_number: string | null
+          remittance_notes: string | null
+          remittance_reference: string | null
+          remittance_status: string
+          remitted_at: string | null
+          remitted_by: string | null
+          tariff_collected: number
+          tax_authority_name: string | null
+          tax_collected: number
+          tax_jurisdiction: string
+          tax_rate: number
+          tax_type: string
+          taxable_amount: number
+          total_collected: number
+          transaction_id: string | null
+          tx_id: string | null
+          updated_at: string
+          vendor_country: string | null
+        }
+        Insert: {
+          buyer_country?: string | null
+          collection_period?: string | null
+          corridor_route?: string | null
+          created_at?: string
+          fiscal_quarter?: string | null
+          id?: string
+          industry?: string | null
+          item_category?: string | null
+          jurisdiction_country_code?: string | null
+          order_number?: string | null
+          remittance_notes?: string | null
+          remittance_reference?: string | null
+          remittance_status?: string
+          remitted_at?: string | null
+          remitted_by?: string | null
+          tariff_collected?: number
+          tax_authority_name?: string | null
+          tax_collected?: number
+          tax_jurisdiction: string
+          tax_rate?: number
+          tax_type?: string
+          taxable_amount?: number
+          total_collected?: number
+          transaction_id?: string | null
+          tx_id?: string | null
+          updated_at?: string
+          vendor_country?: string | null
+        }
+        Update: {
+          buyer_country?: string | null
+          collection_period?: string | null
+          corridor_route?: string | null
+          created_at?: string
+          fiscal_quarter?: string | null
+          id?: string
+          industry?: string | null
+          item_category?: string | null
+          jurisdiction_country_code?: string | null
+          order_number?: string | null
+          remittance_notes?: string | null
+          remittance_reference?: string | null
+          remittance_status?: string
+          remitted_at?: string | null
+          remitted_by?: string | null
+          tariff_collected?: number
+          tax_authority_name?: string | null
+          tax_collected?: number
+          tax_jurisdiction?: string
+          tax_rate?: number
+          tax_type?: string
+          taxable_amount?: number
+          total_collected?: number
+          transaction_id?: string | null
+          tx_id?: string | null
+          updated_at?: string
+          vendor_country?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_ledger_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_rates: {
         Row: {
           country_code: string
