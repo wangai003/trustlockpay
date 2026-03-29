@@ -45,6 +45,7 @@ const industryLabels: Record<string, string> = INDUSTRY_LABELS;
 
 const VendorTransactions = () => {
   const navigate = useNavigate();
+  const { isTestnet } = useVendor();
   const [filter, setFilter] = useState<TxStatus>("all");
   const [industryFilter, setIndustryFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -52,30 +53,52 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
 
+  // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
-  const rejectOrders = useRejectOrders();
-  const addTracking = useAddTracking();
-  const markDelivered = useMarkDelivered();
+  const rejectOrdersHook = useRejectOrders();
+  const addTrackingHook = useAddTracking();
+  const markDeliveredHook = useMarkDelivered();
+
+  // Testnet mock hooks
+  const testnet = useTestnetData();
 
   const planState = getVendorPlanState();
   const orderMax = planState.orderMax;
   const isUnlimited = orderMax === -1;
 
-  const allTx = rawTransactions.map((tx, i) => ({
-    dbId: tx.id,
-    id: tx.tx_id,
-    buyer: tx.buyer_name || "Unknown",
-    amount: Number(tx.amount),
-    status: tx.status as "locked" | "shipped" | "released" | "disputed",
-    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    item: tx.item || "—",
-    tracking: tx.tracking || null,
-    order: tx.order_number ?? (i + 1),
-    industry: tx.industry || null,
-    type: tx.type || "product",
-    buyerLocation: tx.buyer_location || "—",
-    vendorLocation: tx.vendor_location || "—",
-  }));
+  const sourceData = isTestnet
+    ? testnet.transactions.map((tx, i) => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        buyer: tx.buyer_name,
+        amount: tx.amount,
+        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item,
+        tracking: tx.tracking,
+        order: tx.order_number,
+        industry: tx.industry,
+        type: tx.type,
+        buyerLocation: tx.buyer_location,
+        vendorLocation: tx.vendor_location,
+      }))
+    : rawTransactions.map((tx, i) => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        buyer: tx.buyer_name || "Unknown",
+        amount: Number(tx.amount),
+        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item || "—",
+        tracking: tx.tracking || null,
+        order: tx.order_number ?? (i + 1),
+        industry: tx.industry || null,
+        type: tx.type || "product",
+        buyerLocation: tx.buyer_location || "—",
+        vendorLocation: tx.vendor_location || "—",
+      }));
+
+  const allTx = sourceData;
 
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
