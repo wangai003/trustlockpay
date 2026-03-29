@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfileNotifications, useSaveProfileNotifications } from "@/hooks/useSupabaseData";
+import { useSaveProfile } from "@/hooks/useBackendSync";
 
 const buyerNotificationKeys = [
   { key: "order_status", label: "Order status updates" },
