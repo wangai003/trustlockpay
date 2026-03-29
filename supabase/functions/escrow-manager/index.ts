@@ -722,13 +722,35 @@ async function createMilestones(body: Record<string, unknown>) {
 
   // Calculate payment amounts from percentages if transaction amount is known
   const txAmount = Number(tx.amount);
+  const milestoneCount = milestoneData.length;
+
+  // ── Equal-split default ─────────────────────────────
+  // If no milestone has a custom percentage or amount set,
+  // auto-distribute equally. Parties can override per-milestone.
+  const hasAnyCustomAmount = milestoneData.some(
+    (m: Record<string, unknown>) =>
+      (m.payment_percentage && Number(m.payment_percentage) > 0) ||
+      (m.payment_amount && Number(m.payment_amount) > 0)
+  );
+
+  const equalShare = milestoneCount > 0 ? round(txAmount / milestoneCount) : txAmount;
+  // Last milestone absorbs rounding remainder
+  const equalShareLast = milestoneCount > 0
+    ? round(txAmount - equalShare * (milestoneCount - 1))
+    : txAmount;
 
   const rows = milestoneData.map((m: Record<string, unknown>, idx: number) => {
     let paymentAmount: number | null = null;
-    if (m.is_payment_milestone && m.payment_percentage && txAmount > 0) {
+
+    if (m.is_payment_milestone && m.payment_percentage && Number(m.payment_percentage) > 0 && txAmount > 0) {
+      // Custom percentage provided — use it
       paymentAmount = round(txAmount * (Number(m.payment_percentage) / 100));
-    } else if (m.payment_amount) {
+    } else if (m.payment_amount && Number(m.payment_amount) > 0) {
+      // Custom fixed amount provided — use it
       paymentAmount = Number(m.payment_amount);
+    } else if (txAmount > 0) {
+      // No custom amount — auto-distribute equally (optional default)
+      paymentAmount = idx === milestoneCount - 1 ? equalShareLast : equalShare;
     }
 
     return {
