@@ -158,13 +158,23 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const COUNTRY_MOBILE: Record<string, string[]> = {
     KE: ["M-Pesa (Safaricom)", "Airtel Money"],
-    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money"],
-    NG: ["OPay", "PalmPay", "Kuda"],
-    ZA: ["FNB eWallet", "Standard Bank Instant Money"],
+    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money", "Wave"],
+    NG: ["MTN Mobile Money", "OPay", "PalmPay", "Kuda", "Airtel Money"],
+    ZA: ["FNB eWallet", "Standard Bank Instant Money", "Vodacom M-Pesa"],
     UG: ["MTN Mobile Money", "Airtel Money"],
-    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money"],
+    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money", "HaloPesa"],
     CM: ["Orange Money", "MTN Mobile Money"],
     RW: ["MTN Mobile Money", "Airtel Money"],
+    EG: ["M-Pesa (Vodafone Egypt)", "Orange Money Egypt"],
+    SN: ["Orange Money", "Wave", "Free Money"],
+    CI: ["Orange Money", "MTN Mobile Money", "Wave"],
+    ML: ["Orange Money", "Wave"],
+    BF: ["Orange Money", "Wave"],
+    BJ: ["MTN Mobile Money"],
+    TG: ["Tmoney TG", "Togocell Money"],
+    ZM: ["MTN Mobile Money", "Airtel Money", "Zamtel Money"],
+    MW: ["Airtel Money"],
+    MG: ["Orange Money"],
   };
 
   const bankList = COUNTRY_BANKS[selectedCountry] || [];
@@ -286,11 +296,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="local" className="gap-1.5 text-xs">
                   <MapPin className="w-3.5 h-3.5" />
-                  Local Africa
+                  Africa
                 </TabsTrigger>
                 <TabsTrigger value="diaspora" className="gap-1.5 text-xs">
                   <Globe className="w-3.5 h-3.5" />
-                  Diaspora
+                  International
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -350,6 +360,15 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <option value="UG">Uganda</option>
                 <option value="TZ">Tanzania</option>
                 <option value="RW">Rwanda</option>
+                <option value="SN">Senegal</option>
+                <option value="CI">Côte d'Ivoire</option>
+                <option value="ML">Mali</option>
+                <option value="BF">Burkina Faso</option>
+                <option value="BJ">Benin</option>
+                <option value="TG">Togo</option>
+                <option value="ZM">Zambia</option>
+                <option value="MW">Malawi</option>
+                <option value="MG">Madagascar</option>
               </select>
             </div>
           )}
@@ -415,7 +434,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           <>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pay With — {payMode === "local" ? "Local Africa" : "Diaspora / International"}
+              Pay With — {payMode === "local" ? "Africa" : "International"}
             </p>
             {activeMethods.map(m => (
               <button
@@ -925,7 +944,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
                 <span>Mode · Processor</span>
-                <span className="font-medium">{payMode === "local" ? "🌍 Local Africa" : "🌐 Diaspora"} · {feeBreakdown.processorUsed}</span>
+                <span className="font-medium">{payMode === "local" ? "🌍 Africa" : "🌐 International"} · {feeBreakdown.processorUsed}</span>
               </div>
             </div>
           )}
