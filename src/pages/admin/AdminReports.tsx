@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Download, FileText, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTransactions, useDisputes, usePayouts } from "@/hooks/useSupabaseData";
+import { toast } from "sonner";
 
 const reportSections = [
   { id: "tx_overview", label: "Transaction Overview", desc: "Total count, volume, avg size, success rate" },
