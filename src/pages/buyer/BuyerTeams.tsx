@@ -50,6 +50,8 @@ type RolePreset = { id: string; industry: string; role_name: string; role_key: s
 
 const BuyerTeams = () => {
   const { user } = useAuth();
+  const { isTestnet } = useBuyer();
+  const testnet = useTestnetTeams("buyer");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
