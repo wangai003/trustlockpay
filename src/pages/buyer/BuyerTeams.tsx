@@ -209,6 +209,11 @@ const BuyerTeams = () => {
     </div>
   ) : null;
 
+  // ─── TESTNET MODE ─────────────────────────────────────────
+  if (isTestnet) {
+    return <TestnetTeamsView testnet={testnet} role="buyer" />;
+  }
+
   if (selectedWs) {
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
 
