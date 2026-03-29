@@ -160,7 +160,10 @@ const MilestoneWorkOrderPanel = ({
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
+  const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+
+  const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
   const rolePrefix = role === "vendor" ? "V" : "B";
 
