@@ -25,6 +25,9 @@ const BuyerDisputes = () => {
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Item not as described");
   const [descInput, setDescInput] = useState("");
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const evidenceInputRef = useRef<HTMLInputElement>(null);
   const { data: rawDisputes = [] } = useDisputes();
   const fileDispute = useFileDispute();
 
