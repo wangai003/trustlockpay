@@ -218,7 +218,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     return () => clearInterval(interval);
   }, [rateLockExpiry, rateLockActive]);
 
-  const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
 
   // Dynamic fee calculation using the cost-optimization engine
