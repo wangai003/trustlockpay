@@ -21,12 +21,23 @@ import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 
+const notificationKeys = [
+  { key: "new_escrow", label: "New escrow created" },
+  { key: "buyer_confirms", label: "Buyer confirms delivery" },
+  { key: "funds_released", label: "Funds released" },
+  { key: "dispute_opened", label: "Dispute opened against you" },
+  { key: "kyc_update", label: "KYC status update" },
+  { key: "plan_expiry", label: "Plan expiry reminder" },
+  { key: "order_limit", label: "Order limit warning" },
+];
+
 const VendorSettings = () => {
   const { vendor } = useVendor();
   const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
