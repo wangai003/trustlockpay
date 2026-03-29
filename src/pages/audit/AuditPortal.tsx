@@ -44,6 +44,8 @@ const AuditPortal = () => {
   const [loadingTable, setLoadingTable] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [partySearch, setPartySearch] = useState("");
+  const [partyFilterActive, setPartyFilterActive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const callAudit = async (body: Record<string, unknown>) => {
