@@ -9,6 +9,14 @@ const corsHeaders = {
 // ─── In-memory session store (production: use Redis/DB) ────
 const sessions = new Map<string, CheckoutSession>();
 
+interface TaxLineResult {
+  type: string;
+  label: string;
+  rate: number;
+  amount: number;
+  source: string;
+}
+
 interface CheckoutSession {
   sessionId: string;
   vendorId: string;
@@ -25,6 +33,11 @@ interface CheckoutSession {
   status: "pending" | "confirmed" | "failed";
   createdAt: string;
   vendorName: string;
+  taxBreakdown: TaxLineResult[];
+  taxTotal: number;
+  escrowFee: number;
+  platformFee: number;
+  processorFee: number;
 }
 
 interface ProcessorResult {
@@ -59,24 +72,30 @@ function round(n: number): number {
 const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d";
 const AZIX_ESCROW_WALLET = "0x4E1c...A83b";
 
-// ─── Fee calculation (mirrors feeEngine) ───────────────────
-function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean) {
+// ─── Fee calculation (mirrors feeEngine — MUST stay in sync) ──
+function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean, taxTotal: number = 0) {
   const trustlockRate = isCrypto ? 1.0 : 1.5;
-  const escrowRate = 0.5;
-  const gasEstimate = 0.02;
+  const escrowRate = 1.0; // 1% escrow service fee — pre-paid at checkout
 
   const trustlockFee = round(amount * (trustlockRate / 100));
   const processorFee = isCrypto ? 0 : round(amount * (processorFeeRate / 100));
   const escrowFee = round(amount * (escrowRate / 100));
-  const totalFees = round(trustlockFee + processorFee + escrowFee + gasEstimate);
+  const gasFee = 0; // $0 — ALL gas covered by TrustLock (from platform revenue or escrow fee pool)
+  const totalFees = round(trustlockFee + processorFee + escrowFee + gasFee);
+  const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
   return {
     trustlockFee,
     processorFee,
     escrowFee,
-    gasFee: gasEstimate,
+    gasFee,
     totalFees,
-    netAmount: round(amount - totalFees),
+    taxTotal,
+    totalBuyerCharge,
+    netAmount: amount, // Vendor receives 100% of escrow principal
+    // Wallet routing
+    escrowWalletReceives: round(amount + escrowFee), // principal + escrow fee
+    transactionWalletReceives: round(trustlockFee + taxTotal), // platform fee + taxes
   };
 }
 
@@ -198,8 +217,44 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     }
   }
 
-  // Calculate fees
-  const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto);
+  // ── Dynamic Tax Resolution ──
+  // Call tax-resolve engine for jurisdiction-based taxes/tariffs
+  let taxBreakdown: TaxLineResult[] = [];
+  let taxTotal = 0;
+  try {
+    const taxResult = (await callEdgeFunction("tax-resolve", {
+      buyer_country: country,
+      vendor_country: params.vendor_country || country,
+      amount: numAmount,
+      industry: params.industry || "default",
+      item_category: params.item_category || "general",
+      is_cross_border: params.vendor_country ? (String(params.vendor_country) !== country) : false,
+    })) as { taxes?: TaxLineResult[]; total_tax?: number };
+
+    if (taxResult?.taxes && Array.isArray(taxResult.taxes)) {
+      taxBreakdown = taxResult.taxes;
+      taxTotal = round(taxResult.total_tax || taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
+    }
+  } catch {
+    // Non-blocking — proceed without auto-taxes; vendor/buyer can add manually
+    console.log("Tax resolution skipped or failed — proceeding without auto-taxes");
+  }
+
+  // If vendor provided manual tax items, merge them
+  if (params.tax_items && Array.isArray(params.tax_items)) {
+    const manualTaxes = (params.tax_items as { label?: string; value?: number; type?: string }[]).map((t) => ({
+      type: t.type || "percentage",
+      label: t.label || "Tax",
+      rate: t.type === "percentage" ? (t.value || 0) : 0,
+      amount: t.type === "percentage" ? round(numAmount * ((t.value || 0) / 100)) : round(t.value || 0),
+      source: "vendor_manual",
+    }));
+    taxBreakdown = [...taxBreakdown, ...manualTaxes];
+    taxTotal = round(taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
+  }
+
+  // Calculate fees (now includes tax total)
+  const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto, taxTotal);
 
   // Call auto-signature-protocol before creating session
   let contractResult: Record<string, unknown> = {};
@@ -222,7 +277,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     vendorId: String(vendorId),
     amount: numAmount,
     fee: fees.totalFees,
-    total: round(numAmount + fees.totalFees),
+    total: fees.totalBuyerCharge,
     item: String(item),
     buyerEmail: String(buyerEmail),
     buyerName: String(buyerName),
@@ -233,6 +288,11 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     status: "pending",
     createdAt: new Date().toISOString(),
     vendorName,
+    taxBreakdown,
+    taxTotal,
+    escrowFee: fees.escrowFee,
+    platformFee: fees.trustlockFee,
+    processorFee: fees.processorFee,
   };
 
   sessions.set(sessionId, session);
@@ -286,7 +346,17 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         name: processor.processorName,
         feeRate: processor.feeRate,
       },
-      feeBreakdown: fees,
+      feeBreakdown: {
+        ...fees,
+        taxBreakdown,
+        taxTotal,
+        gasCoverage: "All gas fees covered by TrustLock — $0 to buyer/vendor",
+      },
+      walletRouting: {
+        escrowWallet: { address: AZIX_ESCROW_WALLET, receives: fees.escrowWalletReceives, description: "Escrow principal + pre-paid 1% escrow fee" },
+        transactionWallet: { address: AZIX_TRANSACTION_WALLET, receives: fees.transactionWalletReceives, description: "Platform fee + taxes/tariffs" },
+        processorReceives: fees.processorFee,
+      },
       walletAddresses: session.walletAddresses,
       vendorName,
       item,
@@ -296,6 +366,13 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         route: contractResult.route || null,
       } : null,
       cryptoVerification,
+      disclosure: {
+        escrowPrincipalPreserved: true,
+        vendorReceives: `100% of escrow principal ($${numAmount.toFixed(2)})`,
+        gasFeePolicy: "All gas fees absorbed by TrustLock — from platform revenue (checkout/release) or escrow fee pool (refund/split)",
+        refundPolicy: "Full principal + escrow fee returned. Gas absorbed from escrow fee — $0 charged to buyer.",
+        splitPayoutPolicy: "Escrow fee halved to 0.5%, applied to vendor share only. Gas absorbed from escrow fee for both parties.",
+      },
     },
   });
 }
