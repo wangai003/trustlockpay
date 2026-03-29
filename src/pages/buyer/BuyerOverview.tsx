@@ -129,7 +129,7 @@ const BuyerOverview = () => {
                         </td>
                         <td className="p-4 text-center hidden sm:table-cell">
                           <div className="flex items-center justify-center gap-1">
-                            {order.status === "delivered" && <Button size="sm" className="text-xs" onClick={() => confirmDelivery.mutate(order.id)}>Confirm</Button>}
+                            {order.status === "delivered" && <TLId code="TL-B-OVW-BTN-CONFIRM-DELIVERY" inline><Button size="sm" className="text-xs" onClick={() => confirmDelivery.mutate(order.id)}>Confirm</Button></TLId>}
                             {order.status === "shipped" && <Button variant="outline" size="sm" className="text-xs">Track</Button>}
                             <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                           </div>
