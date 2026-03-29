@@ -16,6 +16,7 @@ import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import TLId from "@/components/shared/TLId";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
