@@ -360,6 +360,15 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <option value="UG">Uganda</option>
                 <option value="TZ">Tanzania</option>
                 <option value="RW">Rwanda</option>
+                <option value="SN">Senegal</option>
+                <option value="CI">Côte d'Ivoire</option>
+                <option value="ML">Mali</option>
+                <option value="BF">Burkina Faso</option>
+                <option value="BJ">Benin</option>
+                <option value="TG">Togo</option>
+                <option value="ZM">Zambia</option>
+                <option value="MW">Malawi</option>
+                <option value="MG">Madagascar</option>
               </select>
             </div>
           )}
