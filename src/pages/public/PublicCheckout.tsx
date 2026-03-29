@@ -26,6 +26,9 @@ interface LinkData {
   tax_total: number;
   grand_total: number;
   industry: string;
+  currency: string;
+  incoterms: string;
+  delivery_terms: string;
 }
 
 const PublicCheckout = () => {
