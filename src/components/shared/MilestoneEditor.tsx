@@ -522,11 +522,23 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 Milestones ({milestones.length})
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </CardTitle>
-              {locked && (role === "vendor" || role === "buyer") && (
-                <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
-                  <RotateCcw className="w-3 h-3" /> Propose Change
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {totalAllocated > 0 && (
+                  <Badge variant="outline" className="text-[10px]">
+                    💰 Total: ${totalAllocated.toLocaleString()}
+                  </Badge>
+                )}
+                {milestones.length > 1 && !locked && (
+                  <Badge variant="secondary" className="text-[9px]">
+                    {equalSplitHint}
+                  </Badge>
+                )}
+                {locked && (role === "vendor" || role === "buyer") && (
+                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
+                    <RotateCcw className="w-3 h-3" /> Propose Change
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
