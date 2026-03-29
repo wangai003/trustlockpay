@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Crown, Building2, Gift, Briefcase, Shield } from "lucide-react";
-import { toast } from "sonner";
 import TLId from "@/components/shared/TLId";
+import { useActivateTrial } from "@/hooks/useBackendSync";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
