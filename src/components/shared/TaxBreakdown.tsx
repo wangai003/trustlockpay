@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Plus, X, Info } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Plus, X, Info, Loader2, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTaxResolver } from "@/hooks/useTaxResolver";
 
 export interface TaxLineItem {
   id: string;
@@ -34,6 +34,14 @@ interface TaxBreakdownProps {
   editable?: boolean;
   compact?: boolean;
   currencySymbol?: string;
+  /** Pass buyer country code (e.g. "NG") to enable auto-detection */
+  buyerCountry?: string;
+  /** Pass vendor country code (e.g. "US") to enable auto-detection */
+  vendorCountry?: string;
+  /** Industry key for industry-specific tariff rules */
+  industry?: string;
+  /** Item category for tariff multipliers */
+  itemCategory?: string;
 }
 
 const TaxBreakdown = ({
@@ -43,9 +51,54 @@ const TaxBreakdown = ({
   editable = true,
   compact = false,
   currencySymbol = "$",
+  buyerCountry,
+  vendorCountry,
+  industry,
+  itemCategory,
 }: TaxBreakdownProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+  const [autoNotes, setAutoNotes] = useState<string>("");
+  const [deMinimisApplied, setDeMinimisApplied] = useState(false);
+  const [blocName, setBlocName] = useState<string | null>(null);
+  const { resolve, loading: taxLoading } = useTaxResolver();
+  const lastResolveKey = useRef("");
+
+  // Auto-resolve taxes when country/amount info changes
+  useEffect(() => {
+    if (!buyerCountry && !vendorCountry) return;
+    if (subtotal <= 0) return;
+
+    const key = `${buyerCountry}-${vendorCountry}-${Math.round(subtotal)}-${industry}-${itemCategory}`;
+    if (key === lastResolveKey.current) return;
+    lastResolveKey.current = key;
+
+    resolve(buyerCountry ?? "", vendorCountry ?? "", subtotal, industry, itemCategory).then((res) => {
+      if (!res || !res.items?.length) {
+        if (res?.summary?.de_minimis_applied) {
+          setDeMinimisApplied(true);
+          setAutoNotes(res.notes);
+        }
+        return;
+      }
+
+      // Convert resolved items to TaxLineItems (only add new auto items, preserve manual ones)
+      const manualItems = taxItems.filter((t) => !(t as any)._auto);
+      const autoItems: TaxLineItem[] = res.items.map((item: any) => ({
+        id: item.id,
+        label: item.label,
+        type: item.type,
+        value: item.value,
+        _auto: true,
+      }));
+
+      onTaxItemsChange([...autoItems, ...manualItems]);
+      setAutoNotes(res.notes);
+      setDeMinimisApplied(res.summary.de_minimis_applied ?? false);
+      setBlocName(res.summary.bloc ?? null);
+      setExpanded(true);
+    });
+  }, [buyerCountry, vendorCountry, subtotal, industry, itemCategory]);
 
   const calcAmount = (item: TaxLineItem) =>
     item.type === "percentage" ? subtotal * (item.value / 100) : item.value;
@@ -91,6 +144,10 @@ const TaxBreakdown = ({
         <span className="text-muted-foreground flex items-center gap-1">
           <Info className="w-3 h-3" />
           Taxes & Duties
+          {taxLoading && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+          {(buyerCountry || vendorCountry) && !taxLoading && (
+            <Zap className="w-3 h-3 text-primary" />
+          )}
           {taxItems.length > 0 && (
             <span className="text-foreground font-semibold ml-1">
               ({taxItems.length} item{taxItems.length > 1 ? "s" : ""})
@@ -107,6 +164,32 @@ const TaxBreakdown = ({
 
       {expanded && (
         <div className="space-y-2 p-2.5 rounded-lg border border-border bg-muted/30">
+          {/* Smart detection notice */}
+          {autoNotes && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
+              <Zap className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] text-foreground leading-relaxed">{autoNotes}</p>
+            </div>
+          )}
+
+          {deMinimisApplied && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-accent/30 border border-accent/20">
+              <Info className="w-3 h-3 text-accent-foreground shrink-0 mt-0.5" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong>De minimis exemption:</strong> Transaction amount is below the import duty threshold — tariffs waived.
+              </p>
+            </div>
+          )}
+
+          {blocName && (
+            <div className="flex items-start gap-1.5 p-2 rounded-md bg-accent/30 border border-accent/20">
+              <Info className="w-3 h-3 text-accent-foreground shrink-0 mt-0.5" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong>{blocName} trade bloc</strong> detected — preferential tariff rates applied.
+              </p>
+            </div>
+          )}
+
           {/* Existing tax items */}
           {taxItems.map((item) => (
             <div key={item.id} className="flex items-center gap-2">
@@ -227,9 +310,11 @@ const TaxBreakdown = ({
             </div>
           )}
 
-          {taxItems.length === 0 && (
+          {taxItems.length === 0 && !taxLoading && (
             <p className="text-[10px] text-muted-foreground text-center py-1">
-              No taxes or duties added. Tap a preset or add a custom line item.
+              {(buyerCountry || vendorCountry)
+                ? "No applicable taxes detected for this corridor. Add manually if needed."
+                : "No taxes or duties added. Tap a preset or add a custom line item."}
             </p>
           )}
         </div>

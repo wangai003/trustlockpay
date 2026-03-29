@@ -112,12 +112,13 @@ async function calculateTax(
     .in("country_code", countries)
     .eq("is_active", true);
 
-  const rateMap: Record<string, { rate: number; type: string; bloc: string | null; tariff: number }> = {};
+  const rateMap: Record<string, { rate: number; type: string; bloc: string | null; tariff: number; de_minimis: number }> = {};
   if (rates) {
     for (const r of rates) {
       rateMap[r.country_code] = {
         rate: Number(r.rate_percentage), type: r.tax_type,
         bloc: r.trade_bloc, tariff: Number(r.tariff_rate_percentage ?? 0),
+        de_minimis: Number(r.de_minimis_usd ?? 0),
       };
     }
   }
@@ -131,6 +132,8 @@ async function calculateTax(
   const isExportTx = isExport ?? (!isDomestic && !isSameBloc);
 
   let taxAmount = 0, taxType = "None", taxRate = 0, tariffAmount = 0, tariffRate = 0, notes = "";
+  const deMinimis = buyerRate?.de_minimis ?? 0;
+  const belowDeMinimis = deMinimis > 0 && amount < deMinimis;
 
   if (isDomestic) {
     if (buyerRate) {
@@ -146,9 +149,12 @@ async function calculateTax(
       taxAmount = round(amount * (taxRate / 100));
       notes = `Intra-bloc (${buyerBloc}) transaction. Destination ${buyerRate.type} at ${taxRate}% applied to buyer country ${bCountry}.`;
     }
+    // No tariff within same bloc
   } else if (isExportTx) {
     taxRate = 0; taxType = "VAT (Zero-Rated Export)"; taxAmount = 0;
-    if (buyerRate && buyerRate.tariff > 0) {
+    if (belowDeMinimis) {
+      notes = `International export: VAT zero-rated. Below de minimis threshold ($${deMinimis}) — import duties waived.`;
+    } else if (buyerRate && buyerRate.tariff > 0) {
       const multiplier = ITEM_TARIFF_MULTIPLIERS[category] ?? 1.0;
       tariffRate = round(buyerRate.tariff * multiplier);
       tariffAmount = round(amount * (tariffRate / 100));
