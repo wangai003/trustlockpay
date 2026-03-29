@@ -475,7 +475,83 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
-          {/* ─── ADMIN ACTIONS ─── */}
+          {/* ─── RATE LOCK BANNER (Africa mode, non-crypto) ─── */}
+          {!isAdmin && rateLockActive && lockedRate && parsedAmount > 0 && (
+            <div className="p-3 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold text-primary">Rate Locked</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-xs font-mono font-bold text-primary">{rateLockCountdown}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-background border border-border space-y-1.5">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">Exchange Rate</span>
+                  <span className="font-bold">1 USD = {lockedCurrencySymbol}{lockedRate.toLocaleString()} {lockedCurrencyCode}</span>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">Amount (USD)</span>
+                  <span className="font-semibold">${parsedAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs border-t border-border pt-1.5 mt-1">
+                  <span className="font-bold">You Pay ({lockedCurrencyCode})</span>
+                  <span className="font-bold text-primary text-sm">{lockedCurrencySymbol}{(parsedAmount * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                {feeBreakdown && feeBreakdown.totalFees > 0 && (
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-muted-foreground">Incl. Fees ({lockedCurrencyCode})</span>
+                    <span className="text-muted-foreground">{lockedCurrencySymbol}{(feeBreakdown.totalFees * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+                {taxTotal > 0 && (
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-muted-foreground">Incl. Taxes ({lockedCurrencyCode})</span>
+                    <span className="text-muted-foreground">{lockedCurrencySymbol}{(taxTotal * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs border-t border-border pt-1.5 mt-1">
+                  <span className="font-bold">Total ({lockedCurrencyCode})</span>
+                  <span className="font-bold text-primary text-sm">{lockedCurrencySymbol}{(parseFloat(total) * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              <p className="text-[9px] text-muted-foreground text-center">
+                🔒 This rate is guaranteed for 30 minutes from lock time. Send the exact {lockedCurrencyCode} amount shown above via your selected payment method.
+              </p>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-[10px] gap-1"
+                onClick={() => {
+                  setRateLockActive(false);
+                  setRateLockExpiry(null);
+                  setLockedRate(null);
+                  toast.info("Rate lock cleared. A new rate will be quoted.");
+                }}
+              >
+                🔄 Refresh Rate
+              </Button>
+            </div>
+          )}
+
+          {/* Rate lock prompt — show when country is selected but rate not yet locked */}
+          {!isAdmin && payMode === "local" && selectedCountry && currencyInfo && parsedAmount > 0 && method && method !== "azix" && !rateLockActive && (
+            <div className="p-2.5 rounded-lg border border-accent/30 bg-accent/5 text-center space-y-2">
+              <p className="text-[10px] text-foreground">
+                Current rate: <strong>1 USD = {currencyInfo.symbol}{currencyInfo.rate.toLocaleString()} {currencyInfo.code}</strong>
+              </p>
+              <Button type="button" size="sm" className="text-[10px] gap-1" onClick={lockRate}>
+                <Lock className="w-3 h-3" /> Lock Rate for 30 Minutes
+              </Button>
+            </div>
+          )}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Admin Actions</p>
             <div className="grid grid-cols-2 gap-2">
