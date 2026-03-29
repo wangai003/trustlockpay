@@ -117,9 +117,11 @@ const VendorTransactions = () => {
   const toggleSelect = (id: string) => setSelected((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]);
 
   const handleRejectSelected = async () => {
-    try {
-      await rejectOrders.mutateAsync(selected);
-    } catch { /* handled by hook */ }
+    if (isTestnet) {
+      testnet.rejectOrders(selected);
+    } else {
+      try { await rejectOrdersHook.mutateAsync(selected); } catch { /* handled */ }
+    }
     setSelected([]);
     setRejectDialog(false);
   };
@@ -127,19 +129,31 @@ const VendorTransactions = () => {
   const handleAddTracking = async (txId: string) => {
     const tracking = prompt("Enter tracking number:");
     if (tracking) {
-      await addTracking.mutateAsync({ txId, tracking });
+      if (isTestnet) {
+        testnet.addTracking(txId, tracking);
+      } else {
+        await addTrackingHook.mutateAsync({ txId, tracking });
+      }
     }
   };
 
   const handleMarkShipped = (txId: string) => {
     void (async () => {
       const tracking = prompt("Optional tracking number (leave blank for manual ship):")?.trim() || `MANUAL-${Date.now()}`;
-      await addTracking.mutateAsync({ txId, tracking });
+      if (isTestnet) {
+        testnet.addTracking(txId, tracking);
+      } else {
+        await addTrackingHook.mutateAsync({ txId, tracking });
+      }
     })();
   };
 
   const handleMarkDelivered = async (txId: string) => {
-    await markDelivered.mutateAsync(txId);
+    if (isTestnet) {
+      testnet.markDelivered(txId);
+    } else {
+      await markDeliveredHook.mutateAsync(txId);
+    }
   };
 
   return (
