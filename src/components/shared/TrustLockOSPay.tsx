@@ -170,6 +170,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const bankList = COUNTRY_BANKS[selectedCountry] || [];
   const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
+  // Map UI payment method → processor ID for API routing
+  const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "direct" => {
+    if (m === "azix") return "direct";
+    if (m === "coinbase") return "coinbase";
+    if (m === "transak") return "transak";
+    if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak"; // Coinbase for Africa mobile money
+    if (m === "bank_transfer") return payMode === "local" ? "coinbase" : "stripe";
+    return "stripe"; // card, applepay
+  };
+
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
@@ -179,22 +189,58 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
     setProcessing(true);
     try {
-      await processPayment.mutateAsync({
-        action: isAdmin && adminAction ? adminAction : "payment",
-        service,
-        amount,
-        fee,
-        total,
-        method: method!,
-        role,
-        payMode,
-        refundEmail: refundEmail || undefined,
-        refundReason: refundReason || undefined,
-        splitRecipient: splitRecipient || undefined,
-        splitPercentage: splitPercentage || undefined,
-      });
-      const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
-      toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
+      const processorId = getProcessorForMethod(method);
+      const isCryptoPayment = method === "azix";
+
+      // For non-admin, non-crypto payments: route through processor API
+      if (!isAdmin && !isCryptoPayment) {
+        const result = await processPayment.mutateAsync({
+          action: "payment",
+          service,
+          amount,
+          fee,
+          total,
+          method: method!,
+          role,
+          payMode,
+          // Processor routing params — triggers real API flow in process-payment
+          processor: processorId,
+          direction: "onramp",
+          currency: "USD",
+          walletAddress: AZIX_WALLETS.transaction.publicKey,
+        });
+
+        // If processor returned a hosted URL (Coinbase) or client secret (Stripe), handle it
+        const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
+        if (procResult?.hostedUrl) {
+          window.open(procResult.hostedUrl as string, "_blank");
+          toast.success("Redirecting to payment page...");
+        } else if (procResult?.clientSecret) {
+          toast.success("Payment intent created — complete checkout in Stripe widget");
+        } else if (procResult?.widgetConfig) {
+          toast.success("Transak widget ready — complete payment in the popup");
+        } else {
+          toast.success(`✅ Payment of $${amount} initiated via ${processorId}`);
+        }
+      } else {
+        // Admin actions or crypto direct pay — original flow
+        await processPayment.mutateAsync({
+          action: isAdmin && adminAction ? adminAction : "payment",
+          service,
+          amount,
+          fee,
+          total,
+          method: method!,
+          role,
+          payMode,
+          refundEmail: refundEmail || undefined,
+          refundReason: refundReason || undefined,
+          splitRecipient: splitRecipient || undefined,
+          splitPercentage: splitPercentage || undefined,
+        });
+        const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
+        toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
+      }
       onComplete?.();
     } catch {
       // error handled by hook

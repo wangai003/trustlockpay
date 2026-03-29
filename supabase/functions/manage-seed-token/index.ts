@@ -270,13 +270,55 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        // Simulate async processing (production: triggers Azix wallet disbursement)
-        setTimeout(async () => {
+        // Route through wallet-routing-bridge for actual fund movement
+        // This triggers: Escrow Wallet → deduct fees → trickle to Transaction Wallet → vendor/buyer payout
+        try {
+          const routingAction = payoutType === "refund" ? "route_refund"
+            : payoutType === "split" ? "route_split"
+            : "route_release";
+
+          const routingBody: Record<string, unknown> = {
+            action: routingAction,
+            transactionId: transactionId || null,
+          };
+
+          // For split payouts, include share ratios
+          if (payoutType === "split" && splitVendorShare !== undefined) {
+            routingBody.buyerShare = 1 - splitVendorShare;
+            routingBody.vendorShare = splitVendorShare;
+          }
+
+          const routingUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
+          const routingRes = await fetch(routingUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify(routingBody),
+          });
+          const routingResult = await routingRes.json();
+
+          if (routingResult.success) {
+            await supabase
+              .from("payout_requests")
+              .update({ status: "completed", completed_at: new Date().toISOString() })
+              .eq("id", payout.id);
+          } else {
+            // Mark as pending manual processing
+            await supabase
+              .from("payout_requests")
+              .update({ status: "pending_routing", updated_at: new Date().toISOString() })
+              .eq("id", payout.id);
+          }
+        } catch (routeErr) {
+          console.error("Wallet routing bridge call failed:", routeErr);
+          // Fallback: mark as pending for admin review
           await supabase
             .from("payout_requests")
-            .update({ status: "completed", completed_at: new Date().toISOString() })
+            .update({ status: "pending_routing", updated_at: new Date().toISOString() })
             .eq("id", payout.id);
-        }, 3000);
+        }
 
         return new Response(
           JSON.stringify({
