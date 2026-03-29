@@ -158,7 +158,8 @@ Deno.serve(async (req) => {
 
       let confirmResult = null;
       if (sessionId) confirmResult = await forwardConfirm(sessionId);
-      if (transactionId) await forwardEscrowLock(transactionId);
+      const amount = Number(data.pricing?.local?.amount || data.pricing?.settlement?.amount || 0);
+      if (transactionId) await forwardWalletRouting(transactionId, amount);
 
       const amount = data.pricing?.local?.amount || data.pricing?.settlement?.amount || "N/A";
       await notify(
