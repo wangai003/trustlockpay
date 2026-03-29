@@ -64,8 +64,6 @@ const BuyerDocuments = () => {
                 </Button>
                 </TLId>
               </div>
-                </Button>
-              </div>
             </div>
           </CardHeader>
           {showAckPreview && (
