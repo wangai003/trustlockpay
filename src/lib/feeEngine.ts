@@ -517,13 +517,13 @@ export function getFeeRangeForType(type: TransactionType): string {
     case "checkout_fiat":
       return "2.5% – 5.4% total (platform + processor + escrow) — added to invoice";
     case "refund_crypto":
-      return "Gas only (~$0.05) — no TrustLock service fees";
+      return "$0 — all gas absorbed from pre-paid escrow fee, no service fees";
     case "refund_fiat":
-      return "Gas only (~$0.02) — no TrustLock service fees";
+      return "$0 — all gas absorbed from pre-paid escrow fee, no service fees";
     case "release_to_vendor":
-      return "No additional fees — escrow fee pre-paid at checkout";
+      return "No additional fees — escrow fee pre-paid at checkout, gas absorbed from escrow fee";
     case "split_payout":
-      return "Halved escrow fee on vendor side only · Gas split between parties";
+      return "Halved escrow fee on vendor side only · Gas absorbed from escrow fee";
     case "os_payment":
       return "1.0% – 1.5% platform fee (no escrow)";
     default:
