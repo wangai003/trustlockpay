@@ -157,17 +157,29 @@ const BuyerOrders = () => {
     }
   };
 
-  const allOrders = rawTransactions.map(tx => ({
-    dbId: tx.id,
-    id: tx.tx_id,
-    vendor: tx.vendor_name || "Unknown",
-    amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-    status: tx.status,
-    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    item: tx.item || "—",
-    tracking: tx.tracking || null,
-    industry: tx.industry || null,
-  }));
+  const allOrders = isTestnet
+    ? testnet.transactions.map(tx => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        vendor: tx.vendor_name,
+        amount: `$${tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        status: tx.status,
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item,
+        tracking: tx.tracking,
+        industry: tx.industry,
+      }))
+    : rawTransactions.map(tx => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        vendor: tx.vendor_name || "Unknown",
+        amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        status: tx.status,
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item || "—",
+        tracking: tx.tracking || null,
+        industry: tx.industry || null,
+      }));
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
