@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         event: eventType,
         action: "payment_confirmed",
         confirmResult,
-        escrowResult,
+        routingResult,
       });
     }
 
