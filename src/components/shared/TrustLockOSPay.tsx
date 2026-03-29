@@ -535,6 +535,18 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               {(selectedCountry === "ZA" || selectedCountry === "KE") && (
                 <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
               )}
+              {selectedCountry === "EG" && (
+                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" className="mt-1" /></div>
+              )}
+              {(selectedCountry === "SN" || selectedCountry === "CI" || selectedCountry === "ML" || selectedCountry === "BF" || selectedCountry === "BJ" || selectedCountry === "TG") && (
+                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" className="mt-1" /></div>
+              )}
+              {(selectedCountry === "UG" || selectedCountry === "TZ" || selectedCountry === "RW") && (
+                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+              )}
+              {(selectedCountry === "ZM" || selectedCountry === "MW") && (
+                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" className="mt-1" /></div>
+              )}
               {selectedCountry && (
                 <p className="text-[10px] text-muted-foreground">
                   Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
