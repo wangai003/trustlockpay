@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Plus, X, Info, Loader2, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTaxResolver } from "@/hooks/useTaxResolver";
