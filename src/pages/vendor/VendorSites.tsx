@@ -370,16 +370,26 @@ const VendorSites = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-heading font-bold">{site.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
+                        <TLId code={dynTLId("V", "SIT", row, "LBL-NAME")} inline>
+                          <h3 className="font-heading font-bold">{site.name}</h3>
+                        </TLId>
+                        <TLId code={dynTLId("V", "SIT", row, "BDG-PLATFORM")} inline>
+                          <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
+                        </TLId>
                         {isNoCheckoutPlatform ? (
-                          <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
+                          <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
+                            <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
+                          </TLId>
                         ) : (
-                          <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                          <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
+                            <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                          </TLId>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" /> {site.url}
+                        <TLId code={dynTLId("V", "SIT", row, "LBL-URL")} inline>
+                          <span><ExternalLink className="w-3 h-3 inline mr-1" />{site.url}</span>
+                        </TLId>
                       </p>
 
                       {/* No-checkout platform: Standalone Links guidance */}
