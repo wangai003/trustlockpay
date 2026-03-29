@@ -349,4 +349,13 @@ export const SUPPORTED_COUNTRIES = [
 
 export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
 
-export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.5%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (0.5% at deposit, 1.0% at release) for smart contract custody — fully waived on refunds. Gas fees (~$0.02–$0.05) cover Polygon L2 network costs. All-in: 1.5%–2.5% crypto direct, 3.0%–5.9% fiat. All fees displayed before confirmation.`;
+export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.5%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (1.0%) pre-paid at checkout and held with your escrow funds — fully refunded on cancellation before work begins. No TrustLock service fees are charged on refunds.
+
+**What are Gas Fees?** Gas fees are small costs required by the blockchain network (similar to a bank wire transfer fee) to process and verify transactions. They are NOT charged by TrustLock — they go to the network validators who confirm your transaction on the blockchain. Gas fees fluctuate based on network demand, which is why we show an estimated range rather than a fixed price.
+
+**When do Gas Fees apply?**
+• Standard transactions & releases: Gas is covered by TrustLock — you pay $0.
+• Refunds: A small gas fee (~$0.02–$0.05) applies because a new blockchain transaction is required to return your funds. This is the ONLY cost on refunds.
+• Split Payouts (Dispute Resolution): Gas fees (~$0.02–$0.05 total) are split equally between buyer and vendor since both parties receive a payout.
+
+All fees are displayed before you confirm any payment.`;
