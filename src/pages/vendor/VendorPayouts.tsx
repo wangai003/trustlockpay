@@ -59,7 +59,7 @@ const VendorPayouts = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Payout History</CardTitle>
-            <Button variant="outline" size="sm"><Download className="w-3 h-3 mr-1" /> Export</Button>
+            <TLId code="TL-V-PYO-BTN-EXPORT" inline><Button variant="outline" size="sm"><Download className="w-3 h-3 mr-1" /> Export</Button></TLId>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

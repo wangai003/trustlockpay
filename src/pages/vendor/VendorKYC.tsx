@@ -260,9 +260,11 @@ const VendorKYC = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Submitted Documents</CardTitle>
-              <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload} disabled={uploading}>
-                <Upload className="w-3 h-3" /> Upload New
-              </Button>
+              <TLId code="TL-V-KYC-BTN-SUBMIT" inline>
+                <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload} disabled={uploading}>
+                  <Upload className="w-3 h-3" /> Upload New
+                </Button>
+              </TLId>
               <input
                 ref={fileInputRef}
                 type="file"
