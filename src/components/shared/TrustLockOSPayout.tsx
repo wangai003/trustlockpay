@@ -319,8 +319,8 @@ const TrustLockOSPayout = ({
 
     try {
       const providerDetails: Record<string, unknown> = {
-        ...providerFields,
-        ...dynamicFields,
+        ...(providerFields as Record<string, unknown>),
+        ...(dynamicFields as Record<string, unknown>),
       };
 
       if (isCrypto) {
