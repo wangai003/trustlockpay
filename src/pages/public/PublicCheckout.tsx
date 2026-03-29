@@ -107,6 +107,11 @@ const PublicCheckout = () => {
     taxTotal: number;
     grandTotal: number;
     note: string;
+    industry?: string;
+    currency?: string;
+    incoterms?: string;
+    deliveryTerms?: string;
+    documentGates?: Record<string, string>;
   }) => {
     setInvoiceData({
       subtotal: invoice.subtotal,
