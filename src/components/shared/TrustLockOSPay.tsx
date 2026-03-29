@@ -564,7 +564,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-primary">How to Pay with Crypto</p>
                     <p className="text-[10px] text-foreground leading-relaxed">
-                      Send <strong>{selectedToken}</strong> on <strong>Polygon network</strong> to the locked Azix wallet address below, then return here and paste your transaction details to confirm payment and generate your order.
+                      Send <strong>{selectedToken}</strong> on <strong>Polygon network</strong> to the locked receiving wallet address below, then return here and paste your transaction details to confirm payment and generate your order.
                     </p>
                   </div>
                 </div>
