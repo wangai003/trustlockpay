@@ -44,9 +44,47 @@ const BuyerDisputes = () => {
 
   const handleSubmitDispute = async () => {
     if (!txIdInput) return;
-    await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
-    setShowNewDispute(false);
-    setTxIdInput(""); setDescInput("");
+    setUploadingEvidence(true);
+    try {
+      await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
+
+      // Upload evidence files if any
+      if (evidenceFiles.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        for (const file of evidenceFiles) {
+          const path = `${txIdInput}/${Date.now()}_${file.name}`;
+          const { error: uploadErr } = await supabase.storage.from("dispute-evidence").upload(path, file);
+          if (uploadErr) {
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+        if (evidenceFiles.length > 0) toast.success(`${evidenceFiles.length} evidence file(s) uploaded`);
+      }
+
+      setShowNewDispute(false);
+      setTxIdInput(""); setDescInput(""); setEvidenceFiles([]);
+    } catch { /* handled by hook */ }
+    setUploadingEvidence(false);
+  };
+
+  const handleAddEvidence = async (disputeId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = "image/*,.pdf,.doc,.docx";
+    input.onchange = async () => {
+      if (!input.files?.length) return;
+      const files = Array.from(input.files);
+      let uploaded = 0;
+      for (const file of files) {
+        const path = `${disputeId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("dispute-evidence").upload(path, file);
+        if (!error) uploaded++;
+        else toast.error(`Failed to upload ${file.name}`);
+      }
+      if (uploaded > 0) toast.success(`${uploaded} evidence file(s) added to dispute`);
+    };
+    input.click();
   };
 
   return (
