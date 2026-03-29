@@ -698,3 +698,94 @@ export function useActivateCarbonCopy() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ─── Dispute Evidence ───────────────────────────────────────
+export function useDisputeEvidence(disputeId?: string) {
+  return useQuery({
+    queryKey: ["dispute_evidence", disputeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dispute_evidence")
+        .select("*")
+        .eq("dispute_id", disputeId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!disputeId,
+  });
+}
+
+export function useUploadDisputeEvidence() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { disputeId: string; file: File }) => {
+      const path = `${params.disputeId}/${Date.now()}_${params.file.name}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("dispute-evidence")
+        .upload(path, params.file);
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage
+        .from("dispute-evidence")
+        .getPublicUrl(path);
+
+      const session = (await supabase.auth.getSession()).data.session;
+      const { error: insertErr } = await supabase
+        .from("dispute_evidence")
+        .insert({
+          dispute_id: params.disputeId,
+          file_url: urlData.publicUrl || path,
+          file_name: params.file.name,
+          file_type: params.file.type,
+          uploaded_by: session?.user?.id || null,
+        });
+      if (insertErr) throw insertErr;
+      return { success: true };
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["dispute_evidence", variables.disputeId] });
+      toast.success("Evidence uploaded successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ─── Profile Notification Preferences ───────────────────────
+export function useProfileNotifications() {
+  return useQuery({
+    queryKey: ["profile_notifications"],
+    queryFn: async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("notification_channels")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.notification_channels as Record<string, boolean> | null;
+    },
+  });
+}
+
+export function useSaveProfileNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (prefs: Record<string, boolean>) => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ notification_channels: prefs as any })
+        .eq("id", session.user.id);
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profile_notifications"] });
+      toast.success("Notification preferences saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

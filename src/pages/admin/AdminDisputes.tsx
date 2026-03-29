@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck } from "lucide-react";
-import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling } from "@/hooks/useSupabaseData";
+import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image } from "lucide-react";
+import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence } from "@/hooks/useSupabaseData";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pending Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -36,12 +36,15 @@ const AdminDisputes = () => {
   const [arbEmail, setArbEmail] = useState("");
   const [ruling, setRuling] = useState("");
   const [splitPct, setSplitPct] = useState("50");
+  const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
 
   const { data: rawDisputes = [] } = useDisputes();
   const reviewDispute = useReviewDispute();
   const escalateToArb = useEscalateToArbitration();
   const assignArb = useAssignArbitrator();
   const submitRuling = useSubmitRuling();
+  const uploadEvidence = useUploadDisputeEvidence();
+  const { data: evidenceFiles = [] } = useDisputeEvidence(expandedEvidence || undefined);
 
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
@@ -161,7 +164,9 @@ const AdminDisputes = () => {
                     </div>
 
                     <div className="flex lg:flex-col gap-2">
-                      <Button size="sm" variant="outline" className="gap-1"><Eye className="w-3 h-3" /> View</Button>
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => setExpandedEvidence(expandedEvidence === dispute.dbId ? null : dispute.dbId)}>
+                        <Eye className="w-3 h-3" /> {expandedEvidence === dispute.dbId ? "Hide" : "View"}
+                      </Button>
                       {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
                         <Button size="sm" className="gap-1" onClick={() => reviewDispute.mutate(dispute.dbId)}>Review</Button>
                       )}
@@ -182,6 +187,48 @@ const AdminDisputes = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Evidence Panel */}
+                  {expandedEvidence === dispute.dbId && (
+                    <div className="mt-4 border-t border-border pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-semibold flex items-center gap-2">
+                          <FileText className="w-3.5 h-3.5" /> Dispute Evidence ({evidenceFiles.length} files)
+                        </h4>
+                        <Button variant="outline" size="sm" className="text-[10px] h-7 gap-1" onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file"; input.multiple = true;
+                          input.accept = "image/*,.pdf,.doc,.docx";
+                          input.onchange = () => {
+                            if (input.files) Array.from(input.files).forEach(f => uploadEvidence.mutate({ disputeId: dispute.dbId, file: f }));
+                          };
+                          input.click();
+                        }}>
+                          <Upload className="w-3 h-3" /> Upload
+                        </Button>
+                      </div>
+                      {evidenceFiles.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">No evidence files uploaded yet.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {evidenceFiles.map((ev: any) => (
+                            <div key={ev.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/20">
+                              {ev.file_type?.startsWith("image/") ? (
+                                <Image className="w-4 h-4 text-primary shrink-0" />
+                              ) : (
+                                <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{ev.file_name || "Document"}</p>
+                                <p className="text-[10px] text-muted-foreground">{new Date(ev.created_at).toLocaleDateString()}</p>
+                              </div>
+                              <a href={ev.file_url} target="_blank" rel="noopener" className="text-[10px] text-primary hover:underline shrink-0">Open</a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
+import { useTestnetData } from "@/hooks/useTestnetData";
+import { useBuyer } from "@/contexts/BuyerContext";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +23,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 };
 
 const BuyerDisputes = () => {
+  const { isTestnet } = useBuyer();
   const [showNewDispute, setShowNewDispute] = useState(false);
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Item not as described");
@@ -30,17 +33,29 @@ const BuyerDisputes = () => {
   const evidenceInputRef = useRef<HTMLInputElement>(null);
   const { data: rawDisputes = [] } = useDisputes();
   const fileDispute = useFileDispute();
+  const testnet = useTestnetData();
 
-  const disputes = rawDisputes.map(d => ({
-    id: d.dispute_id,
-    txId: d.tx_id || "—",
-    vendor: d.vendor_name || "Unknown",
-    amount: d.amount ? `$${Number(d.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
-    reason: d.reason || "—",
-    status: d.status,
-    filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    lastUpdate: d.ai_recommendation || "Emmanuel AI is analyzing evidence",
-  }));
+  const disputes = isTestnet
+    ? testnet.disputes.map(d => ({
+        id: d.dispute_id,
+        txId: d.tx_id,
+        vendor: d.vendor_name,
+        amount: `$${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        reason: d.reason,
+        status: d.status,
+        filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        lastUpdate: d.ai_recommendation,
+      }))
+    : rawDisputes.map(d => ({
+        id: d.dispute_id,
+        txId: d.tx_id || "—",
+        vendor: d.vendor_name || "Unknown",
+        amount: d.amount ? `$${Number(d.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        reason: d.reason || "—",
+        status: d.status,
+        filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        lastUpdate: d.ai_recommendation || "Emmanuel AI is analyzing evidence",
+      }));
 
   const handleSubmitDispute = async () => {
     if (!txIdInput) return;
