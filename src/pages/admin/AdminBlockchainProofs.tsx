@@ -53,26 +53,29 @@ const AdminBlockchainProofs = () => {
 
   const loadAllProofs = async () => {
     setLoading(true);
-    let query = supabase.from("blockchain_proofs" as string).select("*").order("created_at", { ascending: false }).limit(200);
+    // Use any to bypass strict type checking for new table
+    const sb = supabase as any;
+    let query = sb.from("blockchain_proofs").select("*").order("created_at", { ascending: false }).limit(200);
     if (filterType !== "all") {
       query = query.eq("record_type", filterType);
     }
     const { data, error } = await query;
     if (error) toast.error("Failed to load proofs");
-    setProofs((data as unknown as ProofRecord[]) || []);
+    setProofs((data as ProofRecord[]) || []);
     setLoading(false);
   };
 
   const searchByHash = async () => {
     if (!searchHash.trim()) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("blockchain_proofs" as string)
+    const sb = supabase as any;
+    const { data } = await sb
+      .from("blockchain_proofs")
       .select("*")
       .eq("content_hash", searchHash.trim());
-    if (data && (data as unknown as ProofRecord[]).length > 0) {
+    if (data && data.length > 0) {
       setVerifyResult({ verified: true, message: "✅ Hash found and verified in TrustLock Registry" });
-      setProofs(data as unknown as ProofRecord[]);
+      setProofs(data as ProofRecord[]);
     } else {
       setVerifyResult({ verified: false, message: "❌ Hash NOT found — record may be tampered or not anchored" });
       setProofs([]);
@@ -83,24 +86,26 @@ const AdminBlockchainProofs = () => {
   const searchByTransaction = async () => {
     if (!searchTxId.trim()) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("blockchain_proofs" as string)
+    const sb = supabase as any;
+    const { data } = await sb
+      .from("blockchain_proofs")
       .select("*")
       .eq("transaction_id", searchTxId.trim())
       .order("created_at", { ascending: true });
-    setProofs((data as unknown as ProofRecord[]) || []);
+    setProofs((data as ProofRecord[]) || []);
     setLoading(false);
   };
 
   const checkChainIntegrity = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("blockchain_proofs" as string)
+    const sb = supabase as any;
+    const { data } = await sb
+      .from("blockchain_proofs")
       .select("id, content_hash, prev_hash, created_at")
       .order("created_at", { ascending: true })
       .limit(1000);
 
-    const records = (data as unknown as { content_hash: string; prev_hash: string }[]) || [];
+    const records = (data as { content_hash: string; prev_hash: string }[]) || [];
     let valid = true;
     for (let i = 1; i < records.length; i++) {
       if (records[i].prev_hash !== records[i - 1].content_hash) {

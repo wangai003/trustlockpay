@@ -127,6 +127,7 @@ const App = () => (
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
                 <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="tax-remittance" element={<AdminTaxRemittance />} />
+                <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
