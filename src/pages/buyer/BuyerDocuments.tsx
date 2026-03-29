@@ -36,8 +36,9 @@ const BuyerDocuments = () => {
     <div>
       <BuyerHeader title="Documents" />
       <div className="p-3 sm:p-6 space-y-6">
-        {/* Upload Section */}
+        <TLId code="TL-B-DOC-UPL-MAIN">
         <DocumentUpload label="Upload Documents (Receipts, Photos, Evidence)" />
+        </TLId>
 
         {/* ── Acknowledgement Form Preview ─── */}
         <Card className="border-primary/20">
