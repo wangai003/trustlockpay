@@ -306,8 +306,28 @@ const VendorSites = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template and compliance requirements</p>
+                   <p className="text-[10px] text-muted-foreground">This determines your escrow milestone template, document gates, and compliance requirements</p>
                 </div>
+
+                {/* Industry-specific widget pre-configuration */}
+                {siteIndustry && siteIndustry !== "other" && (
+                  <div className="sm:col-span-2">
+                    <WidgetIndustryConfig
+                      industry={siteIndustry}
+                      onConfigSave={(config) => {
+                        localStorage.setItem(`tl_site_industry_config_${siteIndustry}`, JSON.stringify(config));
+                      }}
+                    />
+                  </div>
+                )}
+
+                {siteIndustry === "other" && (
+                  <div className="sm:col-span-2 p-3 bg-muted/20 rounded-lg border border-border">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Custom Industry:</strong> Your widget will use the default escrow workflow. You can manually configure pricing, documents, and compliance fields from your dashboard after setup.
+                    </p>
+                  </div>
+                )}
 
                 {/* Checkout toggle */}
                 <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/10">
