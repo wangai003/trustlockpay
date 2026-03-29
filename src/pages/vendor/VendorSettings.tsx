@@ -276,9 +276,11 @@ const VendorSettings = () => {
                 <p className="text-sm font-medium text-destructive">Delete Account</p>
                 <p className="text-xs text-muted-foreground">Permanently delete your account and all data. This action cannot be undone. Audit records are retained per compliance policy.</p>
               </div>
-              <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </Button>
+              <TLId code="TL-V-SET-BTN-DELETE" inline>
+                <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </Button>
+              </TLId>
             </div>
           </CardContent>
         </Card>
