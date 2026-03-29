@@ -143,10 +143,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [rateLockActive, setRateLockActive] = useState(false);
 
   const processPayment = useProcessPayment();
-  // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
   const getSeedToken = useGetOrCreateSeedToken("os_pay");
 
-  // Auto-link seed token on mount — no manual button needed
+  // Auto-link seed token on mount
   useEffect(() => {
     if (!isAdmin && !seedTokenLinked) {
       getSeedToken.mutate(undefined, {
@@ -157,6 +156,65 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       });
     }
   }, [isAdmin]);
+
+  // ── Rate Lock: auto-lock when country selected + amount entered in Africa mode ──
+  const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
+
+  const lockRate = () => {
+    if (!currencyInfo || parsedAmount <= 0) return;
+    const expiry = Date.now() + RATE_LOCK_DURATION_MS;
+    setLockedRate(currencyInfo.rate);
+    setLockedCurrencyCode(currencyInfo.code);
+    setLockedCurrencySymbol(currencyInfo.symbol);
+    setRateLockExpiry(expiry);
+    setRateLockActive(true);
+    toast.success(`🔒 Rate locked: 1 USD = ${currencyInfo.symbol}${currencyInfo.rate.toLocaleString()} for 30 minutes`);
+  };
+
+  // Auto-lock when country + amount + Africa mode + non-crypto method are all set
+  useEffect(() => {
+    if (
+      payMode === "local" &&
+      selectedCountry &&
+      currencyInfo &&
+      parsedAmount > 0 &&
+      method &&
+      method !== "azix" &&
+      !rateLockActive
+    ) {
+      lockRate();
+    }
+    // Reset lock when switching away from Africa mode or to crypto
+    if ((payMode !== "local" || method === "azix") && rateLockActive) {
+      setRateLockActive(false);
+      setRateLockExpiry(null);
+      setLockedRate(null);
+    }
+  }, [payMode, selectedCountry, method, parsedAmount > 0]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!rateLockExpiry || !rateLockActive) {
+      setRateLockCountdown("");
+      return;
+    }
+    const interval = setInterval(() => {
+      const remaining = rateLockExpiry - Date.now();
+      if (remaining <= 0) {
+        setRateLockActive(false);
+        setRateLockExpiry(null);
+        setLockedRate(null);
+        setRateLockCountdown("");
+        toast.info("⏰ Rate lock expired. A new rate will be quoted on your next action.");
+        clearInterval(interval);
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      setRateLockCountdown(`${mins}:${secs.toString().padStart(2, "0")}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [rateLockExpiry, rateLockActive]);
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
