@@ -31,6 +31,41 @@ const AdminAnalytics = () => {
   const { data: rawDisputes = [] } = useDisputes();
   const { data: rawPayouts = [] } = usePayouts();
   const { data: rawArchives = [] } = useArchivedReports("admin");
+  const { data: rawRejections = [] } = useVendorRejections();
+
+  // Rejection analytics
+  const rejectionStats = useMemo(() => {
+    const totalRejected = rawRejections.length;
+    const totalLostVolume = rawRejections.reduce((s: number, r: any) => s + Number(r.original_amount || 0), 0);
+    const totalGasSpent = rawRejections.reduce((s: number, r: any) => s + Number(r.gas_deducted || 0), 0);
+    const totalRefunded = rawRejections.reduce((s: number, r: any) => s + Number(r.refund_amount || 0), 0);
+
+    const monthly: Record<string, { count: number; volume: number; gas: number }> = {};
+    rawRejections.forEach((r: any) => {
+      const d = new Date(r.created_at);
+      const key = d.toLocaleString("en-US", { month: "short" });
+      if (!monthly[key]) monthly[key] = { count: 0, volume: 0, gas: 0 };
+      monthly[key].count += 1;
+      monthly[key].volume += Number(r.original_amount || 0);
+      monthly[key].gas += Number(r.gas_deducted || 0);
+    });
+    const trend = Object.entries(monthly).map(([month, data]) => ({ month, ...data }));
+
+    const byIndustry: Record<string, number> = {};
+    rawRejections.forEach((r: any) => {
+      const ind = r.industry || "Other";
+      byIndustry[ind] = (byIndustry[ind] || 0) + 1;
+    });
+    const industryData = Object.entries(byIndustry)
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const totalTx = rawTx.length || 1;
+    const rejectionRate = ((totalRejected / totalTx) * 100).toFixed(1);
+
+    return { totalRejected, totalLostVolume, totalGasSpent, totalRefunded, trend, industryData, rejectionRate };
+  }, [rawRejections, rawTx]);
 
   // Compute monthly volume from real transactions
   const monthlyVolume = useMemo(() => {
