@@ -571,10 +571,10 @@ export const FEE_CATEGORIES = {
     label: "Network Gas Fee",
     shortLabel: "Gas",
     estimate: "$0.00",
-    refundEstimate: "$0.02 – $0.05",
-    splitEstimate: "$0.01 – $0.025 per party",
-    description: "Gas fees are small costs paid to blockchain network validators (not TrustLock) to process and confirm transactions — similar to a bank wire transfer fee. They fluctuate with network demand, which is why we show an estimated range instead of a fixed price.",
-    when: "Standard transactions & vendor releases: $0 (covered by TrustLock). Refunds: ~$0.02–$0.05 deducted from returned funds. Split payouts: ~$0.02–$0.05 total, split equally between buyer and vendor.",
+    refundEstimate: "$0.00 (absorbed from escrow fee)",
+    splitEstimate: "$0.00 per party (absorbed from escrow fee)",
+    description: "Gas fees are small costs paid to blockchain network validators (not TrustLock) to process transactions. TrustLock absorbs ALL gas costs — for standard operations from platform revenue, and for refunds/splits from the pre-paid 1% escrow service fee. Buyers and vendors never pay gas fees directly.",
+    when: "All gas fees are covered. Standard transactions & releases: from platform revenue. Refunds & split payouts: from the pre-paid escrow service fee. You pay $0.00 in gas.",
   },
 } as const;
 
