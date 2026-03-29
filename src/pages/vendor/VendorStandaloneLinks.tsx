@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
+import TLId from "@/components/shared/TLId";
 
 interface GeneratedLink {
   id: string;
