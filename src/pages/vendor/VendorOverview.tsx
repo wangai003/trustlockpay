@@ -227,9 +227,11 @@ const VendorOverview = () => {
                 <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
               </div>
               <div className="flex gap-2">
+                <TLId code="TL-V-OVW-BTN-ACCEPT-CONTRACT" inline>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
                   <Check className="w-3 h-3" /> Accept All
                 </Button>
+                </TLId>
               </div>
             </CardHeader>
             <CardContent className="p-0">
