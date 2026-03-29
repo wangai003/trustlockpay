@@ -7,7 +7,8 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity,
 } from "lucide-react";
-import { useKycQueue, useComplianceFlags } from "@/hooks/useSupabaseData";
+import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs } from "@/hooks/useSupabaseData";
+import { useAdmin } from "@/contexts/AdminContext";
 import { useState } from "react";
 
 const severityColors: Record<string, string> = {
