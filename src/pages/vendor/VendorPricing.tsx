@@ -34,11 +34,10 @@ const VendorPricing = () => {
     navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`TrustLock OS License — ${PLANS[planId].name} (${billing})`)}&amount=${price.toFixed(2)}`);
   };
 
+  const activateTrial = useActivateTrial();
+
   const confirmTrial = () => {
-    localStorage.setItem("tl_vendor_trial_start", new Date().toISOString());
-    localStorage.setItem("tl_vendor_plan", "free");
-    toast.success("🎉 Free trial activated! You have 30 days of Growth-level access.");
-    setActivatingTrial(false);
+    activateTrial.mutateAsync().then(() => setActivatingTrial(false));
   };
 
   return (
