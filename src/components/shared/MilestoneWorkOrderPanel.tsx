@@ -8,6 +8,8 @@ import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, UserPlus } f
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import TLId from "@/components/shared/TLId";
+import { woTLId } from "@/lib/tlIdRegistry";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import {
   useAddTransactionObserver,
@@ -32,6 +34,87 @@ const statusLabel: Record<string, string> = {
   released: "Released",
 };
 
+/* ---------- Sub-components to keep file manageable ---------- */
+
+interface ObserverInviteProps {
+  role: "buyer" | "vendor";
+  row: number;
+  observerName: string;
+  observerEmail: string;
+  setObserverName: (v: string) => void;
+  setObserverEmail: (v: string) => void;
+  onInvite: () => void;
+}
+
+const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite }: ObserverInviteProps) => (
+  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2">
+    <p className="text-[11px] font-medium text-amber-700">Observer required? Invite one before next phase.</p>
+    <div className="grid sm:grid-cols-2 gap-2">
+      <TLId code={woTLId(role, row, "INP-OBS-NAME")} inline>
+        <Input
+          placeholder="Observer name"
+          value={observerName}
+          onChange={(e) => setObserverName(e.target.value)}
+        />
+      </TLId>
+      <TLId code={woTLId(role, row, "INP-OBS-EMAIL")} inline>
+        <Input
+          placeholder="Observer email"
+          value={observerEmail}
+          onChange={(e) => setObserverEmail(e.target.value)}
+        />
+      </TLId>
+    </div>
+    <TLId code={woTLId(role, row, "BTN-OBS-INVITE")} inline>
+      <Button size="sm" variant="outline" onClick={onInvite}>
+        <UserPlus className="w-3 h-3 mr-1" /> Invite Observer + Copy Link
+      </Button>
+    </TLId>
+  </div>
+);
+
+interface ObserverLinkedProps {
+  role: "buyer" | "vendor";
+  row: number;
+  milestoneId: string;
+  observers: any[];
+}
+
+const ObserverLinkedSection = ({ role, row, milestoneId, observers }: ObserverLinkedProps) => (
+  <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
+    <p className="font-medium text-foreground">Observer already linked to this milestone.</p>
+    {observers
+      .filter((obs: any) => (obs.milestone_ids || []).includes(milestoneId))
+      .map((obs: any, obsIdx: number) => {
+        const link = obs.access_token ? `${window.location.origin}/trustlock/audit/${obs.access_token}` : null;
+        return (
+          <TLId key={obs.id} code={woTLId(role, row, "LBL-OBS-INFO")} inline>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>{obs.observer_name} ({obs.observer_email})</span>
+              {link ? (
+                <TLId code={woTLId(role, row, `BTN-OBS-COPY`)} inline>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(link);
+                      toast.success("Observer link copied");
+                    }}
+                  >
+                    <Copy className="w-3 h-3 mr-1" /> Copy Link
+                  </Button>
+                </TLId>
+              ) : null}
+            </div>
+          </TLId>
+        );
+      })}
+  </div>
+);
+
+/* ---------- Main Component ---------- */
+
 const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: MilestoneWorkOrderPanelProps) => {
   const { data: milestones = [] } = useTransactionMilestones(transactionId || undefined);
   const { data: observers = [] } = useTransactionObservers(transactionId || undefined);
@@ -43,6 +126,8 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+
+  const rolePrefix = role === "vendor" ? "V" : "B";
 
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
@@ -84,7 +169,6 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
 
-    // Phase 1: Capture GPS coordinates on milestone completion
     const geo = await capturePosition();
 
     if (geo) {
@@ -140,165 +224,168 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
   if (!transactionId) return null;
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {milestones.length === 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleInitializeMilestones}
-              disabled={createMilestones.isPending}
-            >
-              {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-              Initialize Milestones (Testnet)
-            </Button>
-          </div>
-        )}
+    <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {milestones.length === 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
+              <TLId code={`TL-${rolePrefix}-WO-BTN-INIT`} inline>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleInitializeMilestones}
+                  disabled={createMilestones.isPending}
+                >
+                  {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                  Initialize Milestones (Testnet)
+                </Button>
+              </TLId>
+            </div>
+          )}
 
-        {milestones.map((ms: any, idx) => {
-          const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released";
-          const canBuyerRelease =
-            role === "buyer" &&
-            ms.status === "completed" &&
-            ms.is_payment_milestone &&
-            !ms.payment_released;
+          {milestones.map((ms: any, idx) => {
+            const row = idx + 1;
+            const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released";
+            const canBuyerRelease =
+              role === "buyer" &&
+              ms.status === "completed" &&
+              ms.is_payment_milestone &&
+              !ms.payment_released;
 
-          return (
-            <div key={ms.id} className="rounded-lg border border-border p-3 space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold">#{idx + 1}</span>
-                  <span className="text-sm font-medium">{ms.title}</span>
+            return (
+              <div key={ms.id} className="rounded-lg border border-border p-3 space-y-2">
+                {/* ---- Row Header: Title + Status Column ---- */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold">#{row}</span>
+                    <TLId code={woTLId(role, row, "LBL-TITLE")} inline>
+                      <span className="text-sm font-medium">{ms.title}</span>
+                    </TLId>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TLId code={woTLId(role, row, "STS")} inline>
+                      <Badge variant="outline" className="text-[10px]">
+                        {statusLabel[ms.status] || ms.status}
+                      </Badge>
+                    </TLId>
+                    {ms.is_payment_milestone ? (
+                      <TLId code={woTLId(role, row, "BDG-PAY")} inline>
+                        <Badge className="text-[10px]">Payment Milestone</Badge>
+                      </TLId>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">
-                    {statusLabel[ms.status] || ms.status}
-                  </Badge>
-                  {ms.is_payment_milestone ? (
-                    <Badge className="text-[10px]">Payment Milestone</Badge>
+
+                {/* ---- Info Row: Amount + GPS Column ---- */}
+                <TLId code={woTLId(role, row, "LBL-AMOUNT")} inline>
+                  <div className="text-[11px] text-muted-foreground">
+                    Amount: ${Number(ms.payment_amount || 0).toLocaleString()} · Uploaded docs: {(ms.uploaded_documents || []).length}
+                    {ms.gps_latitude && (
+                      <TLId code={woTLId(role, row, "LBL-GPS")} inline>
+                        <span className="ml-2 inline-flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3 text-primary" />
+                          {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
+                        </span>
+                      </TLId>
+                    )}
+                  </div>
+                </TLId>
+
+                {/* ---- Observer Invite Column ---- */}
+                {role === "vendor" && !ms.observer_id && (
+                  <ObserverInviteSection
+                    role={role}
+                    row={row}
+                    observerName={observerName}
+                    observerEmail={observerEmail}
+                    setObserverName={setObserverName}
+                    setObserverEmail={setObserverEmail}
+                    onInvite={() => handleInviteObserver(ms.id)}
+                  />
+                )}
+
+                {/* ---- Observer Linked Column ---- */}
+                {role === "vendor" && ms.observer_id && (
+                  <ObserverLinkedSection
+                    role={role}
+                    row={row}
+                    milestoneId={ms.id}
+                    observers={observers}
+                  />
+                )}
+
+                {/* ---- Note Column ---- */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium flex items-center gap-1">
+                    <StickyNote className="w-3 h-3" /> Milestone note
+                  </label>
+                  <TLId code={woTLId(role, row, "INP-NOTE")} inline>
+                    <Textarea
+                      rows={2}
+                      value={notes[ms.id] ?? ms.description ?? ""}
+                      onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))}
+                      placeholder="Add implementation notes for this milestone"
+                    />
+                  </TLId>
+                  <TLId code={woTLId(role, row, "BTN-NOTE-SAVE")} inline>
+                    <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>
+                      Save Note
+                    </Button>
+                  </TLId>
+                </div>
+
+                {/* ---- Document Upload Column ---- */}
+                <TLId code={woTLId(role, row, "UPL-EVIDENCE")}>
+                  <DocumentUpload
+                    label="Upload milestone evidence"
+                    context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
+                    onUploadComplete={(files) => {
+                      void (async () => {
+                        const userId = await getUserId();
+                        if (!userId) return;
+                        await updateMilestone.mutateAsync({
+                          milestoneId: ms.id,
+                          userId,
+                          uploadedDocuments: files.map((file) => ({
+                            name: file.name,
+                            url: file.url,
+                            path: file.path,
+                            uploadedAt: new Date().toISOString(),
+                          })),
+                        });
+                      })();
+                    }}
+                  />
+                </TLId>
+
+                {/* ---- Action Column ---- */}
+                <div className="flex gap-2 flex-wrap">
+                  {canVendorFulfill ? (
+                    <TLId code={woTLId(role, row, "BTN-FULFILL")} inline>
+                      <Button size="sm" onClick={() => handleMarkFulfilled(ms.id)}>
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Mark Fulfilled
+                      </Button>
+                    </TLId>
+                  ) : null}
+
+                  {canBuyerRelease ? (
+                    <TLId code={woTLId(role, row, "BTN-RELEASE")} inline>
+                      <Button size="sm" onClick={() => handleReleaseMilestone(ms.id)}>
+                        <FileText className="w-3 h-3 mr-1" /> Release Milestone
+                      </Button>
+                    </TLId>
                   ) : null}
                 </div>
               </div>
-
-              <div className="text-[11px] text-muted-foreground">
-                Amount: ${Number(ms.payment_amount || 0).toLocaleString()} · Uploaded docs: {(ms.uploaded_documents || []).length}
-                {ms.gps_latitude && (
-                  <span className="ml-2 inline-flex items-center gap-0.5">
-                    <MapPin className="w-3 h-3 text-primary" />
-                    {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
-                  </span>
-                )}
-              </div>
-
-              {role === "vendor" && !ms.observer_id && (
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2">
-                  <p className="text-[11px] font-medium text-amber-700">Observer required? Invite one before next phase.</p>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    <Input
-                      placeholder="Observer name"
-                      value={observerName}
-                      onChange={(e) => setObserverName(e.target.value)}
-                    />
-                    <Input
-                      placeholder="Observer email"
-                      value={observerEmail}
-                      onChange={(e) => setObserverEmail(e.target.value)}
-                    />
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => handleInviteObserver(ms.id)}>
-                    <UserPlus className="w-3 h-3 mr-1" /> Invite Observer + Copy Link
-                  </Button>
-                </div>
-              )}
-
-              {role === "vendor" && ms.observer_id && (
-                <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
-                  <p className="font-medium text-foreground">Observer already linked to this milestone.</p>
-                  {observers
-                    .filter((obs: any) => (obs.milestone_ids || []).includes(ms.id))
-                    .map((obs: any) => {
-                      const link = obs.access_token ? `${window.location.origin}/trustlock/audit/${obs.access_token}` : null;
-                      return (
-                        <div key={obs.id} className="flex items-center gap-2 flex-wrap">
-                          <span>{obs.observer_name} ({obs.observer_email})</span>
-                          {link ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2"
-                              onClick={async () => {
-                                await navigator.clipboard.writeText(link);
-                                toast.success("Observer link copied");
-                              }}
-                            >
-                              <Copy className="w-3 h-3 mr-1" /> Copy Link
-                            </Button>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium flex items-center gap-1">
-                  <StickyNote className="w-3 h-3" /> Milestone note
-                </label>
-                <Textarea
-                  rows={2}
-                  value={notes[ms.id] ?? ms.description ?? ""}
-                  onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))}
-                  placeholder="Add implementation notes for this milestone"
-                />
-                <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>
-                  Save Note
-                </Button>
-              </div>
-
-              <DocumentUpload
-                label="Upload milestone evidence"
-                context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
-                onUploadComplete={(files) => {
-                  void (async () => {
-                    const userId = await getUserId();
-                    if (!userId) return;
-                    await updateMilestone.mutateAsync({
-                      milestoneId: ms.id,
-                      userId,
-                      uploadedDocuments: files.map((file) => ({
-                        name: file.name,
-                        url: file.url,
-                        path: file.path,
-                        uploadedAt: new Date().toISOString(),
-                      })),
-                    });
-                  })();
-                }}
-              />
-
-              <div className="flex gap-2 flex-wrap">
-                {canVendorFulfill ? (
-                  <Button size="sm" onClick={() => handleMarkFulfilled(ms.id)}>
-                    <CheckCircle2 className="w-3 h-3 mr-1" /> Mark Fulfilled
-                  </Button>
-                ) : null}
-
-                {canBuyerRelease ? (
-                  <Button size="sm" onClick={() => handleReleaseMilestone(ms.id)}>
-                    <FileText className="w-3 h-3 mr-1" /> Release Milestone
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </TLId>
   );
 };
 
