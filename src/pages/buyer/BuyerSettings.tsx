@@ -34,6 +34,10 @@ const BuyerSettings = () => {
   const { data: savedNotifs } = useProfileNotifications();
   const saveNotifs = useSaveProfileNotifications();
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+  const saveProfile = useSaveProfile();
+  const [profileName, setProfileName] = useState(buyer.name || "");
+  const [profileLocation, setProfileLocation] = useState(buyer.location || "");
+  const [profilePhone, setProfilePhone] = useState("");
 
   useEffect(() => {
     if (savedNotifs && typeof savedNotifs === "object") {
