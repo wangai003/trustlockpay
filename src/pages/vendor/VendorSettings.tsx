@@ -131,7 +131,7 @@ const VendorSettings = () => {
                   When disabled, buyers cannot make payments via TrustLock on your connected sites.
                 </p>
               </div>
-              <Switch checked={payEnabled} onCheckedChange={handlePayToggle} />
+              <TLId code="TL-V-SET-TGL-PAY-WIDGET" inline><Switch checked={payEnabled} onCheckedChange={handlePayToggle} /></TLId>
             </div>
             {!payEnabled && (
               <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5">
