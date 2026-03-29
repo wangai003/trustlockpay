@@ -59,6 +59,47 @@ const TaxBreakdown = ({
 }: TaxBreakdownProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+  const [autoNotes, setAutoNotes] = useState<string>("");
+  const [deMinimisApplied, setDeMinimisApplied] = useState(false);
+  const [blocName, setBlocName] = useState<string | null>(null);
+  const { resolve, loading: taxLoading } = useTaxResolver();
+  const lastResolveKey = useRef("");
+
+  // Auto-resolve taxes when country/amount info changes
+  useEffect(() => {
+    if (!buyerCountry && !vendorCountry) return;
+    if (subtotal <= 0) return;
+
+    const key = `${buyerCountry}-${vendorCountry}-${Math.round(subtotal)}-${industry}-${itemCategory}`;
+    if (key === lastResolveKey.current) return;
+    lastResolveKey.current = key;
+
+    resolve(buyerCountry ?? "", vendorCountry ?? "", subtotal, industry, itemCategory).then((res) => {
+      if (!res || !res.items?.length) {
+        if (res?.summary?.de_minimis_applied) {
+          setDeMinimisApplied(true);
+          setAutoNotes(res.notes);
+        }
+        return;
+      }
+
+      // Convert resolved items to TaxLineItems (only add new auto items, preserve manual ones)
+      const manualItems = taxItems.filter((t) => !(t as any)._auto);
+      const autoItems: TaxLineItem[] = res.items.map((item: any) => ({
+        id: item.id,
+        label: item.label,
+        type: item.type,
+        value: item.value,
+        _auto: true,
+      }));
+
+      onTaxItemsChange([...autoItems, ...manualItems]);
+      setAutoNotes(res.notes);
+      setDeMinimisApplied(res.summary.de_minimis_applied ?? false);
+      setBlocName(res.summary.bloc ?? null);
+      setExpanded(true);
+    });
+  }, [buyerCountry, vendorCountry, subtotal, industry, itemCategory]);
 
   const calcAmount = (item: TaxLineItem) =>
     item.type === "percentage" ? subtotal * (item.value / 100) : item.value;
