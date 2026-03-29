@@ -455,10 +455,11 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
     toast.success("Milestones locked — both parties must agree to any changes");
   };
 
-  const totalPercentage = milestones.reduce((sum, m) => {
-    if (!m.is_payment_milestone || !m.payment_amount) return sum;
-    return sum; // percentages aren't stored directly; we show count instead
-  }, 0);
+  // Calculate total allocated and equal-split info
+  const totalAllocated = milestones.reduce((sum, m) => sum + (Number(m.payment_amount) || 0), 0);
+  const equalSplitHint = milestones.length > 0
+    ? `Equal split: ${(100 / milestones.length).toFixed(1)}% each`
+    : "";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -521,11 +522,23 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 Milestones ({milestones.length})
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </CardTitle>
-              {locked && (role === "vendor" || role === "buyer") && (
-                <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
-                  <RotateCcw className="w-3 h-3" /> Propose Change
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {totalAllocated > 0 && (
+                  <Badge variant="outline" className="text-[10px]">
+                    💰 Total: ${totalAllocated.toLocaleString()}
+                  </Badge>
+                )}
+                {milestones.length > 1 && !locked && (
+                  <Badge variant="secondary" className="text-[9px]">
+                    {equalSplitHint}
+                  </Badge>
+                )}
+                {locked && (role === "vendor" || role === "buyer") && (
+                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => setShowDiff(!showDiff)}>
+                    <RotateCcw className="w-3 h-3" /> Propose Change
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -761,15 +774,20 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 Payment milestone
               </label>
               {newIsPayment && (
-                <Input
-                  type="number"
-                  placeholder="% of total"
-                  value={newPercentage || ""}
-                  onChange={(e) => setNewPercentage(parseInt(e.target.value) || 0)}
-                  className="w-24 text-xs h-7"
-                  min={0}
-                  max={100}
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    placeholder="% (optional)"
+                    value={newPercentage || ""}
+                    onChange={(e) => setNewPercentage(parseInt(e.target.value) || 0)}
+                    className="w-24 text-xs h-7"
+                    min={0}
+                    max={100}
+                  />
+                  <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                    Leave blank for equal split
+                  </span>
+                </div>
               )}
             </div>
             <Button size="sm" className="gap-2" onClick={addCustomMilestone} disabled={saving || !newTitle.trim()}>
