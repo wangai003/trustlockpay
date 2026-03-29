@@ -148,12 +148,24 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   /* ── Country-specific bank & mobile lists ── */
   const COUNTRY_BANKS: Record<string, string[]> = {
-    NG: ["GTBank", "First Bank", "Zenith Bank", "Access Bank", "UBA", "Stanbic IBTC", "Fidelity Bank", "Sterling Bank", "Wema Bank", "Polaris Bank"],
-    KE: ["KCB Bank", "Equity Bank", "Co-operative Bank", "NCBA", "Absa Kenya", "Standard Chartered Kenya", "I&M Bank", "DTB Kenya"],
-    GH: ["GCB Bank", "Ecobank Ghana", "Stanbic Bank Ghana", "Fidelity Bank Ghana", "CalBank", "ADB Ghana", "Absa Ghana"],
-    ZA: ["Standard Bank", "FNB", "Absa", "Nedbank", "Capitec", "Investec", "African Bank"],
-    CM: ["Afriland First Bank", "Ecobank Cameroon", "Société Générale Cameroon", "UBA Cameroon", "BICEC"],
-    EG: ["National Bank of Egypt", "Banque Misr", "CIB Egypt", "QNB Alahli", "Banque du Caire"],
+    NG: ["GTBank", "First Bank", "Zenith Bank", "Access Bank", "UBA", "Stanbic IBTC", "Fidelity Bank", "Sterling Bank", "Wema Bank", "Polaris Bank", "Union Bank", "FCMB", "Keystone Bank", "Heritage Bank", "Jaiz Bank"],
+    KE: ["KCB Bank", "Equity Bank", "Co-operative Bank", "NCBA", "Absa Kenya", "Standard Chartered Kenya", "I&M Bank", "DTB Kenya", "Family Bank", "Stanbic Kenya"],
+    GH: ["GCB Bank", "Ecobank Ghana", "Stanbic Bank Ghana", "Fidelity Bank Ghana", "CalBank", "ADB Ghana", "Absa Ghana", "Republic Bank Ghana"],
+    ZA: ["Standard Bank", "FNB", "Absa", "Nedbank", "Capitec", "Investec", "African Bank", "TymeBank", "Discovery Bank"],
+    CM: ["Afriland First Bank", "Ecobank Cameroon", "Société Générale Cameroon", "UBA Cameroon", "BICEC", "CCA Bank"],
+    EG: ["National Bank of Egypt", "Banque Misr", "CIB Egypt", "QNB Alahli", "Banque du Caire", "HSBC Egypt", "Arab African International Bank"],
+    UG: ["Stanbic Uganda", "DFCU Bank", "Centenary Bank", "Bank of Baroda Uganda", "Absa Uganda", "Equity Bank Uganda"],
+    TZ: ["CRDB Bank", "NMB Bank", "Stanbic Tanzania", "NBC Tanzania", "Equity Bank Tanzania", "Absa Tanzania"],
+    RW: ["Bank of Kigali", "I&M Bank Rwanda", "Equity Bank Rwanda", "BPR Atlas Mara", "Ecobank Rwanda"],
+    SN: ["CBAO", "Société Générale Sénégal", "Ecobank Sénégal", "Banque de Dakar", "UBA Sénégal"],
+    CI: ["Société Générale CI", "Ecobank CI", "NSIA Banque", "BOA Côte d'Ivoire", "Banque Atlantique"],
+    ML: ["BDM SA", "Ecobank Mali", "Banque Atlantique Mali", "BOA Mali"],
+    BF: ["Ecobank Burkina", "Coris Bank", "BOA Burkina Faso", "Banque Atlantique BF"],
+    BJ: ["Ecobank Benin", "BOA Benin", "BIBE Benin", "UBA Benin"],
+    TG: ["Ecobank Togo", "UTB Togo", "BTCI", "BOA Togo"],
+    ZM: ["Zanaco", "Stanbic Zambia", "FNB Zambia", "Absa Zambia", "Indo Zambia Bank"],
+    MW: ["National Bank of Malawi", "Standard Bank Malawi", "FDH Bank", "NBS Bank"],
+    MG: ["BNI Madagascar", "BOA Madagascar", "BFV-Société Générale", "BMOI"],
   };
 
   const COUNTRY_MOBILE: Record<string, string[]> = {
