@@ -265,9 +265,11 @@ const VendorSettings = () => {
                 <p className="text-sm font-medium">Pause Account</p>
                 <p className="text-xs text-muted-foreground">Temporarily deactivate your account. All pending escrows continue processing. You can reactivate anytime.</p>
               </div>
-              <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
-                <Pause className="w-3.5 h-3.5" /> Pause
-              </Button>
+              <TLId code="TL-V-SET-BTN-PAUSE" inline>
+                <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
+                  <Pause className="w-3.5 h-3.5" /> Pause
+                </Button>
+              </TLId>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
               <div>
