@@ -98,7 +98,7 @@ const BuyerOverview = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/buyer/orders")}>View All →</Button>
+            <TLId code="TL-B-OVW-BTN-VIEW-ALL" inline><Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/buyer/orders")}>View All →</Button></TLId>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
