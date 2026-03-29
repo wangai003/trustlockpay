@@ -628,12 +628,18 @@ Deno.serve(async (req) => {
       const mCount = totalMilestoneCount || 1;
       const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_release / 100)); // 1% of full principal
       const fractionalFee = round(totalEscrowFee / mCount);
-      // On last milestone, absorb any rounding remainder
-      const completedCount = (remaining?.length != null)
-        ? (mCount - (remaining?.length ?? 0))
-        : mCount; // fallback
-      const isLastMilestone = completedCount === mCount;
-      const feesAlreadyCharged = round(fractionalFee * (completedCount - 1));
+
+      // Count how many milestones are already completed (before this one)
+      const { count: alreadyCompleted } = await supabase
+        .from("transaction_milestones")
+        .select("id", { count: "exact", head: true })
+        .eq("transaction_id", transactionId)
+        .eq("status", "completed");
+
+      const priorCompleted = alreadyCompleted || 0;
+      const isLastMilestone = (priorCompleted + 1) === mCount;
+      // On last milestone, absorb any rounding remainder so total = exactly 1%
+      const feesAlreadyCharged = round(fractionalFee * priorCompleted);
       const escrowFee = isLastMilestone
         ? round(totalEscrowFee - feesAlreadyCharged)
         : fractionalFee;
