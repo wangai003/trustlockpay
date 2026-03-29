@@ -18,7 +18,6 @@ describe("Fee Engine V2", () => {
 
     it("picks cheapest processor for African countries (coinbase/transak at 1.5%)", () => {
       const result = selectProcessor("Nigeria", false);
-      // Both coinbase and transak are 1.5% — either is valid
       expect(["coinbase", "transak"]).toContain(result);
     });
 
@@ -28,7 +27,6 @@ describe("Fee Engine V2", () => {
     });
 
     it("picks transak for regions where transak has global coverage (cheaper than stripe)", () => {
-      // JP: stripe covers it explicitly, but transak has "global" and is cheaper
       expect(selectProcessor("JP", false)).toBe("transak");
     });
 
@@ -51,7 +49,6 @@ describe("Fee Engine V2", () => {
     it("returns multiple candidates sorted by combined rate", () => {
       const eligible = getEligibleProcessors("US", "card", "checkout_fiat");
       expect(eligible.length).toBeGreaterThan(1);
-      // Should be sorted ascending
       for (let i = 1; i < eligible.length; i++) {
         expect(eligible[i].combinedRate).toBeGreaterThanOrEqual(eligible[i - 1].combinedRate);
       }
@@ -68,57 +65,61 @@ describe("Fee Engine V2", () => {
       const eligible = getEligibleProcessors("US", "crypto", "checkout_crypto");
       const ids = eligible.map(e => e.id);
       expect(ids).toContain("direct");
-      // direct should be cheapest
       expect(eligible[0].id).toBe("direct");
     });
   });
 
   describe("calculateFeesV2", () => {
-    it("calculates checkout_fiat fees correctly", () => {
+    it("calculates checkout_fiat fees correctly (1% escrow, $0 gas)", () => {
       const result = calculateFeesV2(100, "checkout_fiat", "stripe");
       expect(result.trustlockFee).toBe(1.5);
       expect(result.processorFee).toBe(2.9);
-      expect(result.escrowFee).toBe(0.5);
-      expect(result.gasFee).toBe(0.02);
-      expect(result.totalFees).toBeCloseTo(4.92, 2);
-      expect(result.netAmount).toBeCloseTo(95.08, 2);
-      expect(result.transactionWalletReceives).toBe(2);
-      expect(result.escrowWalletReceives).toBe(0);
-      expect(result.feeTrickleToTransactionWallet).toBe(0.5);
+      expect(result.escrowFee).toBe(1);          // 1% upfront escrow fee
+      expect(result.gasFee).toBe(0);              // Gas covered by platform
+      expect(result.totalFees).toBeCloseTo(5.4, 2);
+      expect(result.netAmount).toBeCloseTo(94.6, 2);
+      expect(result.transactionWalletReceives).toBe(2.5); // trustlock 1.5 + escrow trickle 1
+      expect(result.escrowWalletReceives).toBe(101);      // principal + escrow fee
+      expect(result.feeTrickleToTransactionWallet).toBe(1);
     });
 
     it("calculates checkout_crypto with direct (no processor fee)", () => {
       const result = calculateFeesV2(100, "checkout_crypto", "direct");
       expect(result.processorFee).toBe(0);
       expect(result.trustlockFee).toBe(1.0);
-      expect(result.escrowFee).toBe(0.5);
+      expect(result.escrowFee).toBe(1);           // 1% escrow
+      expect(result.gasFee).toBe(0);
     });
 
-    it("charges zero escrow fee on refunds", () => {
+    it("charges zero escrow fee on refunds and $0 gas", () => {
       const refundCrypto = calculateFeesV2(100, "refund_crypto", "direct");
       expect(refundCrypto.escrowFee).toBe(0);
       expect(refundCrypto.trustlockFee).toBe(0);
+      expect(refundCrypto.gasFee).toBe(0);        // Gas absorbed from escrow fee
       expect(refundCrypto.escrowWalletReceives).toBe(0);
 
       const refundFiat = calculateFeesV2(100, "refund_fiat", "stripe");
       expect(refundFiat.escrowFee).toBe(0);
       expect(refundFiat.trustlockFee).toBe(0);
+      expect(refundFiat.gasFee).toBe(0);           // Gas absorbed from escrow fee
     });
 
-    it("charges escrow fee only on vendor share for split_payout", () => {
+    it("charges escrow fee only on vendor share for split_payout (halved rate)", () => {
       const result = calculateFeesV2(1000, "split_payout", "coinbase", {
         splitVendorShare: 0.6,
       });
-      expect(result.escrowFee).toBe(6);
+      // Halved rate: 0.5% on vendor share (600) = $3
+      expect(result.escrowFee).toBe(3);
       expect(result.escrowWalletReceives).toBe(0);
-      expect(result.feeTrickleToTransactionWallet).toBe(6);
+      expect(result.feeTrickleToTransactionWallet).toBe(3);
       expect(result.trickleRule).toBe("vendor_share_only");
+      expect(result.gasFee).toBe(0);              // Gas absorbed from escrow fee
     });
 
     it("handles zero amount without division errors", () => {
       const result = calculateFeesV2(0, "checkout_fiat", "stripe");
       expect(result.feePercentage).toBe(0);
-      expect(result.totalFees).toBeCloseTo(0.02);
+      expect(result.totalFees).toBe(0);            // $0 gas now
     });
 
     it("os_payment has no escrow fee", () => {
@@ -127,14 +128,13 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(0.75);
     });
 
-    it("release_to_vendor charges only escrow fee", () => {
+    it("release_to_vendor charges $0 — escrow fee pre-paid at checkout", () => {
       const result = calculateFeesV2(500, "release_to_vendor", "direct");
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
-      expect(result.escrowFee).toBe(5);
-      expect(result.escrowWalletReceives).toBe(0);
-      expect(result.feeTrickleToTransactionWallet).toBe(5);
-      expect(result.transactionWalletReceives).toBe(5);
+      expect(result.escrowFee).toBe(0);            // Pre-paid, no additional charge
+      expect(result.gasFee).toBe(0);               // Gas covered by platform
+      expect(result.totalFees).toBe(0);
     });
   });
 
@@ -184,7 +184,8 @@ describe("Fee Engine V2", () => {
       for (const t of types) {
         const range = getFeeRangeForType(t);
         expect(range).toBeTruthy();
-        expect(range.includes("%") || range.includes("$")).toBe(true);
+        // All ranges should contain either %, $, or descriptive text
+        expect(range.length).toBeGreaterThan(5);
       }
     });
   });

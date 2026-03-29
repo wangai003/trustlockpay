@@ -82,10 +82,10 @@ const InvoiceFeeCalculator = ({
         <div className="flex items-start gap-2">
           <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <div className="text-[10px] text-muted-foreground leading-relaxed space-y-1">
-            <p><strong className="text-foreground">What are Gas Fees?</strong> Gas fees are small costs paid to blockchain network validators — like a postage stamp to confirm your transaction. They go to the network, NOT TrustLock, and fluctuate with demand.</p>
-            <p>• <strong>Checkout & Release:</strong> $0.00 — covered by TrustLock</p>
-            <p>• <strong>Refunds:</strong> ~$0.02–$0.05 deducted from refund (only cost on refunds)</p>
-            <p>• <strong>Split Payouts:</strong> ~$0.01–$0.025 per party</p>
+            <p><strong className="text-foreground">Gas Fees: $0 to You</strong> Gas fees are small blockchain network costs — like postage stamps. TrustLock absorbs ALL gas fees so you never pay them.</p>
+            <p>• <strong>Checkout & Release:</strong> $0 — covered by TrustLock platform revenue</p>
+            <p>• <strong>Refunds:</strong> $0 — gas absorbed from pre-paid escrow service fee</p>
+            <p>• <strong>Split Payouts:</strong> $0 — gas absorbed from pre-paid escrow service fee</p>
           </div>
         </div>
       </div>
@@ -95,8 +95,8 @@ const InvoiceFeeCalculator = ({
         <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
         <div className="text-[10px] text-foreground leading-relaxed">
           <strong>Refund Policy:</strong> If a refund is issued before work begins, you receive 100% of the escrow principal
-          ({currency} {escrowPrincipal.toFixed(2)}) plus the pre-paid escrow fee ({currency} {calc.escrowFee.toFixed(2)}).
-          Only a small network gas fee (~$0.02–$0.05) is deducted from the refund to cover the blockchain cost of returning your funds. No TrustLock service fees on refunds.
+          ({currency} {escrowPrincipal.toFixed(2)}) plus nearly all of the pre-paid escrow fee.
+          A tiny gas cost (~$0.03) is absorbed from the escrow fee to cover the blockchain transfer — you are never charged gas directly. No TrustLock service fees on refunds.
         </div>
       </div>
 
