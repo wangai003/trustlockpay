@@ -53,9 +53,11 @@ const BuyerDisputes = () => {
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track the status of any disputes you've filed</p>
           </div>
-          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
-            <AlertTriangle className="w-4 h-4" /> File New Dispute
-          </Button>
+          <TLId code="TL-B-DSP-BTN-FILE" inline>
+            <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+              <AlertTriangle className="w-4 h-4" /> File New Dispute
+            </Button>
+          </TLId>
         </div>
 
         {showNewDispute && (
