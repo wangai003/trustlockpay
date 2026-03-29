@@ -62,9 +62,16 @@ interface ObserverInviteProps {
   onDismiss: () => void;
 }
 
-const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite }: ObserverInviteProps) => (
-  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2">
-    <p className="text-[11px] font-medium text-amber-700">Observer required? Invite one before next phase.</p>
+const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite, onDismiss }: ObserverInviteProps) => (
+  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2 relative">
+    <button
+      onClick={onDismiss}
+      className="absolute top-1.5 right-1.5 p-0.5 rounded hover:bg-amber-500/20 transition-colors"
+      aria-label="Dismiss"
+    >
+      <X className="w-3.5 h-3.5 text-amber-700" />
+    </button>
+    <p className="text-[11px] font-medium text-amber-700 pr-5">Observer recommended for this milestone. Invite one before next phase.</p>
     <div className="grid sm:grid-cols-2 gap-2">
       <TLId code={woTLId(role, row, "INP-OBS-NAME")} inline>
         <Input placeholder="Observer name" value={observerName} onChange={(e) => setObserverName(e.target.value)} />
