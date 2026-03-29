@@ -244,6 +244,36 @@ Deno.serve(async (req) => {
         })
         .eq("id", transactionId);
 
+      // 8b) Log tax collection to tax_ledger for admin remittance tracking
+      if (taxAmount > 0 && taxBreakdown) {
+        const now = new Date();
+        const quarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}`;
+        const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+        await supabase.from("tax_ledger").insert({
+          transaction_id: transactionId,
+          order_number: String(tx.order_number || ""),
+          tx_id: tx.tx_id,
+          tax_type: String(taxBreakdown.tax_type || "vat"),
+          tax_jurisdiction: String(taxBreakdown.jurisdiction || tx.vendor_location || "Unknown"),
+          jurisdiction_country_code: String(taxBreakdown.country_code || ""),
+          tax_authority_name: String(taxBreakdown.tax_authority || ""),
+          taxable_amount: escrowPrincipal,
+          tax_rate: Number(taxBreakdown.tax_rate || 0),
+          tax_collected: round(Number(taxBreakdown.tax_amount || 0)),
+          tariff_collected: round(Number(taxBreakdown.tariff_amount || 0)),
+          total_collected: taxAmount,
+          industry: tx.industry || null,
+          item_category: String(taxBreakdown.item_category || tx.item || ""),
+          buyer_country: tx.buyer_location || null,
+          vendor_country: tx.vendor_location || null,
+          corridor_route: tx.corridor_route || null,
+          remittance_status: "pending",
+          collection_period: period,
+          fiscal_quarter: `${now.getFullYear()}-${quarter}`,
+        });
+      }
+
       // 9) Notify
       await notify(
         supabase, tx.vendor_id,
