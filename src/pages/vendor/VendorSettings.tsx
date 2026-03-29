@@ -246,7 +246,7 @@ const VendorSettings = () => {
           </CardContent>
         </Card>
 
-        <Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
+        <TLId code="TL-V-SET-BTN-SAVE" inline><Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button></TLId>
 
         {/* Account Actions */}
         <Card className="border-destructive/20">
