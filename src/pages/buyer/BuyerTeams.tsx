@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBuyer } from "@/contexts/BuyerContext";
+import { useTestnetTeams } from "@/hooks/useTestnetTeams";
+import TestnetTeamsView from "@/components/shared/TestnetTeamsView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +50,8 @@ type RolePreset = { id: string; industry: string; role_name: string; role_key: s
 
 const BuyerTeams = () => {
   const { user } = useAuth();
+  const { isTestnet } = useBuyer();
+  const testnet = useTestnetTeams("buyer");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -203,6 +208,11 @@ const BuyerTeams = () => {
       {pendingCount > 0 && <Badge variant="outline" className="ml-auto">{pendingCount} pending</Badge>}
     </div>
   ) : null;
+
+  // ─── TESTNET MODE ─────────────────────────────────────────
+  if (isTestnet) {
+    return <TestnetTeamsView testnet={testnet} role="buyer" />;
+  }
 
   if (selectedWs) {
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);

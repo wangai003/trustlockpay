@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendor } from "@/contexts/VendorContext";
+import { useTestnetTeams } from "@/hooks/useTestnetTeams";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,8 @@ import TeamTemplateManager from "@/components/shared/TeamTemplateManager";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
-import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi } from "lucide-react";
+import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi, RotateCcw } from "lucide-react";
+import TestnetTeamsView from "@/components/shared/TestnetTeamsView";
 import { cn } from "@/lib/utils";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
@@ -49,6 +52,8 @@ type RolePreset = { id: string; industry: string; role_name: string; role_key: s
 
 const VendorTeams = () => {
   const { user } = useAuth();
+  const { isTestnet } = useVendor();
+  const testnet = useTestnetTeams("vendor");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -207,6 +212,11 @@ const VendorTeams = () => {
       {pendingCount > 0 && <Badge variant="outline" className="ml-auto">{pendingCount} pending</Badge>}
     </div>
   ) : null;
+
+  // ─── TESTNET MODE ─────────────────────────────────────────
+  if (isTestnet) {
+    return <TestnetTeamsView testnet={testnet} role="vendor" />;
+  }
 
   if (selectedWs) {
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
