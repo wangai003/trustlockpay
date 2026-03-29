@@ -217,8 +217,44 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     }
   }
 
-  // Calculate fees
-  const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto);
+  // ── Dynamic Tax Resolution ──
+  // Call tax-resolve engine for jurisdiction-based taxes/tariffs
+  let taxBreakdown: TaxLineResult[] = [];
+  let taxTotal = 0;
+  try {
+    const taxResult = (await callEdgeFunction("tax-resolve", {
+      buyer_country: country,
+      vendor_country: params.vendor_country || country,
+      amount: numAmount,
+      industry: params.industry || "default",
+      item_category: params.item_category || "general",
+      is_cross_border: params.vendor_country ? (String(params.vendor_country) !== country) : false,
+    })) as { taxes?: TaxLineResult[]; total_tax?: number };
+
+    if (taxResult?.taxes && Array.isArray(taxResult.taxes)) {
+      taxBreakdown = taxResult.taxes;
+      taxTotal = round(taxResult.total_tax || taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
+    }
+  } catch {
+    // Non-blocking — proceed without auto-taxes; vendor/buyer can add manually
+    console.log("Tax resolution skipped or failed — proceeding without auto-taxes");
+  }
+
+  // If vendor provided manual tax items, merge them
+  if (params.tax_items && Array.isArray(params.tax_items)) {
+    const manualTaxes = (params.tax_items as { label?: string; value?: number; type?: string }[]).map((t) => ({
+      type: t.type || "percentage",
+      label: t.label || "Tax",
+      rate: t.type === "percentage" ? (t.value || 0) : 0,
+      amount: t.type === "percentage" ? round(numAmount * ((t.value || 0) / 100)) : round(t.value || 0),
+      source: "vendor_manual",
+    }));
+    taxBreakdown = [...taxBreakdown, ...manualTaxes];
+    taxTotal = round(taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
+  }
+
+  // Calculate fees (now includes tax total)
+  const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto, taxTotal);
 
   // Call auto-signature-protocol before creating session
   let contractResult: Record<string, unknown> = {};
@@ -241,7 +277,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     vendorId: String(vendorId),
     amount: numAmount,
     fee: fees.totalFees,
-    total: round(numAmount + fees.totalFees),
+    total: fees.totalBuyerCharge,
     item: String(item),
     buyerEmail: String(buyerEmail),
     buyerName: String(buyerName),
@@ -252,6 +288,11 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     status: "pending",
     createdAt: new Date().toISOString(),
     vendorName,
+    taxBreakdown,
+    taxTotal,
+    escrowFee: fees.escrowFee,
+    platformFee: fees.trustlockFee,
+    processorFee: fees.processorFee,
   };
 
   sessions.set(sessionId, session);
