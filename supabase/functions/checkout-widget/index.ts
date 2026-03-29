@@ -346,7 +346,17 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         name: processor.processorName,
         feeRate: processor.feeRate,
       },
-      feeBreakdown: fees,
+      feeBreakdown: {
+        ...fees,
+        taxBreakdown,
+        taxTotal,
+        gasCoverage: "All gas fees covered by TrustLock — $0 to buyer/vendor",
+      },
+      walletRouting: {
+        escrowWallet: { address: AZIX_ESCROW_WALLET, receives: fees.escrowWalletReceives, description: "Escrow principal + pre-paid 1% escrow fee" },
+        transactionWallet: { address: AZIX_TRANSACTION_WALLET, receives: fees.transactionWalletReceives, description: "Platform fee + taxes/tariffs" },
+        processorReceives: fees.processorFee,
+      },
       walletAddresses: session.walletAddresses,
       vendorName,
       item,
@@ -356,6 +366,13 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         route: contractResult.route || null,
       } : null,
       cryptoVerification,
+      disclosure: {
+        escrowPrincipalPreserved: true,
+        vendorReceives: `100% of escrow principal ($${numAmount.toFixed(2)})`,
+        gasFeePolicy: "All gas fees absorbed by TrustLock — from platform revenue (checkout/release) or escrow fee pool (refund/split)",
+        refundPolicy: "Full principal + escrow fee returned. Gas absorbed from escrow fee — $0 charged to buyer.",
+        splitPayoutPolicy: "Escrow fee halved to 0.5%, applied to vendor share only. Gas absorbed from escrow fee for both parties.",
+      },
     },
   });
 }
