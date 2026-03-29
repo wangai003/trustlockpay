@@ -497,69 +497,64 @@ Deno.serve(async (req) => {
       const vendorGross = round(escrowPrincipal * vendorShare);
 
       // Escrow fee halved from original rate, vendor side only
-      // If original milestone rate was e.g. 0.20%, split rate = 0.10%
       const originalMilestoneRate = body.originalMilestoneEscrowRate ?? FEE_RATES.escrow_service;
       const halvedRate = originalMilestoneRate / 2;
       const vendorEscrowFee = round(vendorGross * (halvedRate / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // Gas split equally between buyer and vendor for crypto-to-crypto
-      const isCryptoSplit = body.isCryptoPayout === true;
-      const gasPerParty = isCryptoSplit ? 0.025 : 0; // ~$0.05 total split 50/50
-      const buyerNetAfterGas = round(buyerAmount - gasPerParty);
-      const vendorNetAfterGas = round(vendorNet - gasPerParty);
-
-      // Remaining escrow fee from pre-paid amount trickles to Transaction Wallet
-      const feeToTrickle = round(prePaidEscrowFee - vendorEscrowFee);
+      // Gas absorbed from pre-paid escrow fee — $0 to buyer and vendor
+      const estimatedGasTotal = 0.05; // ~$0.05 total for 2 transfers
+      // Remaining escrow fee from pre-paid amount: trickle to Transaction Wallet minus gas
+      const feeToTrickle = round(prePaidEscrowFee - vendorEscrowFee - estimatedGasTotal);
 
       const transfers = [];
 
-      // 1) Trickle remaining escrow fee → Transaction Wallet
+      // 1) Trickle remaining escrow fee (minus gas) → Transaction Wallet
       if (feeToTrickle > 0) {
         const trickle = await transferOnChain(
           WALLETS.escrow.address, WALLETS.transaction.address,
           feeToTrickle, token,
-          `Split escrow fee trickle for TX ${tx.tx_id}`
+          `Split escrow fee trickle (gas absorbed) for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: WALLETS.transaction.address,
           amount: feeToTrickle,
-          token, memo: "Split escrow fee trickle-down",
+          token, memo: "Split escrow fee trickle-down (gas absorbed from escrow fee)",
           txHash: trickle.txHash, status: trickle.status,
         });
       }
 
-      // 2) Buyer portion
-      if (buyerNetAfterGas > 0) {
+      // 2) Buyer portion — full amount, $0 gas
+      if (buyerAmount > 0) {
         const buyerWallet = body.buyerWallet || "buyer_pending";
         const buyerTx = await transferOnChain(
           WALLETS.escrow.address, buyerWallet,
-          buyerNetAfterGas, token,
+          buyerAmount, token,
           `Buyer split portion for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: buyerWallet,
-          amount: buyerNetAfterGas,
-          token, memo: `Buyer arbitration share${isCryptoSplit ? ` (gas: -$${gasPerParty.toFixed(3)})` : ""}`,
+          amount: buyerAmount,
+          token, memo: "Buyer arbitration share ($0 gas — absorbed from escrow fee)",
           txHash: buyerTx.txHash, status: buyerTx.status,
         });
       }
 
-      // 3) Vendor net payout
-      if (vendorNetAfterGas > 0) {
+      // 3) Vendor net payout — escrow fee deducted, $0 gas
+      if (vendorNet > 0) {
         const vendorWallet = body.vendorWallet || "vendor_pending";
         const vendorTx = await transferOnChain(
           WALLETS.escrow.address, vendorWallet,
-          vendorNetAfterGas, token,
+          vendorNet, token,
           `Vendor split payout for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: vendorWallet,
-          amount: vendorNetAfterGas,
-          token, memo: `Vendor arbitration share (escrow fee: -$${vendorEscrowFee.toFixed(2)}${isCryptoSplit ? `, gas: -$${gasPerParty.toFixed(3)}` : ""})`,
+          amount: vendorNet,
+          token, memo: `Vendor arbitration share (escrow fee: -$${vendorEscrowFee.toFixed(2)}, $0 gas)`,
           txHash: vendorTx.txHash, status: vendorTx.status,
         });
       }
@@ -582,7 +577,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             action: "split", transactionId,
-            buyerAmount: buyerNetAfterGas, vendorAmount: vendorNetAfterGas,
+            buyerAmount, vendorAmount: vendorNet,
           }),
         });
       } catch (e) {
@@ -591,14 +586,13 @@ Deno.serve(async (req) => {
 
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
-        `You receive $${buyerNetAfterGas.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal).` +
-        `${isCryptoSplit ? ` Gas fee of $${gasPerParty.toFixed(3)} deducted.` : ""} No TrustLock service fees on your portion.`,
+        `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
+        `$0 gas fees — absorbed from the pre-paid escrow fee. No TrustLock service fees on your portion.`,
         "info", transactionId);
       await notify(supabase, tx.vendor_id,
         "Dispute Resolved",
-        `You receive $${vendorNetAfterGas.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
-        `Escrow fee: $${vendorEscrowFee.toFixed(2)} (halved rate: ${halvedRate.toFixed(2)}%).` +
-        `${isCryptoSplit ? ` Gas fee of $${gasPerParty.toFixed(3)} deducted.` : ""}`,
+        `You receive $${vendorNet.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
+        `Escrow fee: $${vendorEscrowFee.toFixed(2)} (halved rate: ${halvedRate.toFixed(2)}%). $0 gas fees — absorbed from escrow fee.`,
         "info", transactionId);
 
       return json({
@@ -609,12 +603,13 @@ Deno.serve(async (req) => {
         prePaidEscrowFee,
         buyerShare,
         vendorShare,
-        buyerAmount: buyerNetAfterGas,
+        buyerAmount,
         vendorGross,
         vendorEscrowFee,
-        vendorNet: vendorNetAfterGas,
+        vendorNet,
         halvedEscrowRate: halvedRate,
-        gasPerParty: isCryptoSplit ? gasPerParty : 0,
+        gasAbsorbedFromEscrowFee: estimatedGasTotal,
+        gasChargedToParties: 0,
         feeToTrickle,
         transfers,
       });
