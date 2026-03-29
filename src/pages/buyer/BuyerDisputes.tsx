@@ -93,14 +93,41 @@ const BuyerDisputes = () => {
               </div>
               <div className="space-y-2">
                 <Label>Evidence (optional)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <input
+                  ref={evidenceInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                  }}
+                />
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => evidenceInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]); }}
+                >
                   <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">Drop photos, screenshots, or documents here</p>
-                  <Button variant="outline" size="sm" className="mt-2">Browse Files</Button>
+                  <Button variant="outline" size="sm" className="mt-2" type="button">Browse Files</Button>
                 </div>
+                {evidenceFiles.length > 0 && (
+                  <div className="space-y-1">
+                    {evidenceFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                        <span className="flex-1 truncate">{f.name}</span>
+                        <button className="text-destructive hover:underline" onClick={() => setEvidenceFiles(prev => prev.filter((_, idx) => idx !== i))}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button className="gap-2" onClick={handleSubmitDispute}><AlertTriangle className="w-4 h-4" /> Submit Dispute</Button>
+                <Button className="gap-2" onClick={handleSubmitDispute} disabled={uploadingEvidence}>
+                  {uploadingEvidence ? <><Upload className="w-4 h-4 animate-spin" /> Uploading...</> : <><AlertTriangle className="w-4 h-4" /> Submit Dispute</>}
+                </Button>
                 <Button variant="outline" onClick={() => setShowNewDispute(false)}>Cancel</Button>
               </div>
             </CardContent>
