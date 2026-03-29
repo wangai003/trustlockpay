@@ -774,15 +774,20 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                 Payment milestone
               </label>
               {newIsPayment && (
-                <Input
-                  type="number"
-                  placeholder="% of total"
-                  value={newPercentage || ""}
-                  onChange={(e) => setNewPercentage(parseInt(e.target.value) || 0)}
-                  className="w-24 text-xs h-7"
-                  min={0}
-                  max={100}
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    placeholder="% (optional)"
+                    value={newPercentage || ""}
+                    onChange={(e) => setNewPercentage(parseInt(e.target.value) || 0)}
+                    className="w-24 text-xs h-7"
+                    min={0}
+                    max={100}
+                  />
+                  <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                    Leave blank for equal split
+                  </span>
+                </div>
               )}
             </div>
             <Button size="sm" className="gap-2" onClick={addCustomMilestone} disabled={saving || !newTitle.trim()}>
