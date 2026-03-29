@@ -44,6 +44,7 @@ const buyerTasks: OnboardingTask[] = [
   { id: "b8", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Digital signature required at checkout for every transaction." },
   { id: "b9", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
   { id: "b10", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
+  { id: "b11", label: "Review rejection & refund policy", frequency: "one-time", description: "Understand that vendor rejections trigger full refund minus nominal gas fee (~$0.01–$0.05)." },
 ];
 
 const adminTasks: OnboardingTask[] = [

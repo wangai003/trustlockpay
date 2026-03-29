@@ -69,6 +69,11 @@ const CONSENT_CLAUSES = [
     title: "Order Analytics Consent",
     text: "I consent to TrustLock analyzing my order history, transaction frequency, and plan utilization metrics solely for the purpose of determining auto-signature eligibility and volume-based routing decisions.",
   },
+  {
+    id: "rejection-gas-policy",
+    title: "Order Rejection & Gas Deduction Acknowledgement",
+    text: "I understand that if I reject an order after escrow funding, the buyer receives a full principal refund with no cancellation fee. A nominal blockchain gas fee (est. $0.01–$0.05 on Polygon) is deducted from the escrowed funds to process the on-chain refund. Rejected orders are logged in TrustLock's analytics system and excessive rejections may trigger compliance review.",
+  },
 ];
 
 // ─── Component ──────────────────────────────────────────

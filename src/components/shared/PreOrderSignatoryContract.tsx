@@ -76,6 +76,11 @@ const CONTRACT_TERMS = [
     text: "Both parties acknowledge that TrustLock is a neutral technology intermediary and is absolved of liability for: product/service quality disputes, shipping delays or carrier damage, regulatory non-compliance by either party, force majeure events, currency fluctuations, and any losses arising from parties' failure to meet their contractual obligations to each other.",
   },
   {
+    id: "rejection-refund-policy",
+    title: "Vendor Rejection & Gas Deduction Policy",
+    text: "Both parties acknowledge: if the vendor rejects an order after escrow funding, 100% of the buyer's principal is refunded with no cancellation fee. However, a nominal blockchain network gas fee (estimated $0.01–$0.05 on Polygon) is deducted from the escrowed principal to process the on-chain refund. This is the only scenario where TrustLock deducts from escrow principal, as gas costs are variable and non-recoverable. The vendor bears no gas cost; TrustLock absorbs the operational overhead beyond the deducted gas.",
+  },
+  {
     id: "governing-law",
     title: "Governing Standards",
     text: "This contract is governed by UNCITRAL Model Law on Electronic Commerce, ICC Incoterms (where applicable), eIDAS/ESIGN Act for electronic signatures, and the dispute resolution framework agreed upon at checkout. Jurisdiction-specific regulations of both parties' domiciles are acknowledged.",
