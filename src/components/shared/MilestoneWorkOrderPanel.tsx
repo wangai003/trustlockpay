@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, UserPlus } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
@@ -43,6 +43,12 @@ const statusLabel: Record<string, string> = {
   released: "Released",
 };
 
+/** Industries where observer is NOT required on any milestone */
+const OBSERVER_FREE_INDUSTRIES = new Set([
+  "ecommerce", "tourism", "freelance", "education",
+  "e-commerce", "digital-services", "hospitality-travel", "professional-services",
+]);
+
 /* ---------- Sub-components ---------- */
 
 interface ObserverInviteProps {
@@ -53,11 +59,19 @@ interface ObserverInviteProps {
   setObserverName: (v: string) => void;
   setObserverEmail: (v: string) => void;
   onInvite: () => void;
+  onDismiss: () => void;
 }
 
-const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite }: ObserverInviteProps) => (
-  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2">
-    <p className="text-[11px] font-medium text-amber-700">Observer required? Invite one before next phase.</p>
+const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite, onDismiss }: ObserverInviteProps) => (
+  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2 relative">
+    <button
+      onClick={onDismiss}
+      className="absolute top-1.5 right-1.5 p-0.5 rounded hover:bg-amber-500/20 transition-colors"
+      aria-label="Dismiss"
+    >
+      <X className="w-3.5 h-3.5 text-amber-700" />
+    </button>
+    <p className="text-[11px] font-medium text-amber-700 pr-5">Observer recommended for this milestone. Invite one before next phase.</p>
     <div className="grid sm:grid-cols-2 gap-2">
       <TLId code={woTLId(role, row, "INP-OBS-NAME")} inline>
         <Input placeholder="Observer name" value={observerName} onChange={(e) => setObserverName(e.target.value)} />
@@ -146,7 +160,10 @@ const MilestoneWorkOrderPanel = ({
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
+  const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+
+  const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
   const rolePrefix = role === "vendor" ? "V" : "B";
 
@@ -355,8 +372,8 @@ const MilestoneWorkOrderPanel = ({
                   <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>
                 )}
 
-                {/* Observer Invite */}
-                {role === "vendor" && !hasObserver && (
+                {/* Observer Invite — only for industries that need observers */}
+                {role === "vendor" && !hasObserver && industryNeedsObservers && !dismissedObserverPrompts.has(ms.id) && (
                   <ObserverInviteSection
                     role={role}
                     row={row}
@@ -365,6 +382,7 @@ const MilestoneWorkOrderPanel = ({
                     setObserverName={setObserverName}
                     setObserverEmail={setObserverEmail}
                     onInvite={() => handleInviteObserver(ms.id)}
+                    onDismiss={() => setDismissedObserverPrompts(prev => new Set(prev).add(ms.id))}
                   />
                 )}
 
@@ -460,6 +478,33 @@ const MilestoneWorkOrderPanel = ({
                       </Button>
                     </TLId>
                   ) : null}
+
+                  {/* Delete — only pending milestones can be removed during negotiation */}
+                  {ms.status === "pending" && (
+                    <TLId code={woTLId(role, row, "BTN-DELETE")} inline>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          if (isTestnet) {
+                            onTestnetUpdateStatus?.(ms.id, "released"); // simulate removal in testnet
+                            toast.success(`Stage "${ms.title}" removed`);
+                            return;
+                          }
+                          const userId = await getUserId();
+                          if (!userId) return toast.error("Sign in required");
+                          const { error } = await supabase.functions.invoke("escrow-manager", {
+                            body: { action: "delete_milestone", milestone_id: ms.id, user_id: userId },
+                          });
+                          if (error) toast.error("Failed to remove milestone");
+                          else toast.success(`Stage "${ms.title}" removed from work order`);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove Stage
+                      </Button>
+                    </TLId>
+                  )}
 
                   {ms.status === "completed" && role === "vendor" && (
                     <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
