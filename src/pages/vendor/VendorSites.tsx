@@ -20,6 +20,8 @@ import {
 import { useState, useEffect } from "react";
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 import WidgetPreviewMockup from "@/components/vendor/WidgetPreviewMockup";
+import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const PLATFORM_OPTIONS = [
   "Shopify", "WooCommerce", "WordPress", "Wix", "Squarespace",
@@ -347,10 +349,11 @@ const VendorSites = () => {
 
         {/* Connected Sites */}
         <div className="grid gap-4">
-          {allSites.map((site) => {
+          {allSites.map((site, siteIdx) => {
             const isWidgetEnabled = siteWidgetStates[site.id] ?? false;
             const isDeleted = widgetState.widgetState === "deleted";
             const isNoCheckoutPlatform = NO_CHECKOUT_PLATFORMS.includes(site.platform || "");
+            const row = siteIdx + 1;
             return (
               <Card key={site.id}>
                 <CardContent className="p-5">
@@ -367,16 +370,26 @@ const VendorSites = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-heading font-bold">{site.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
+                        <TLId code={dynTLId("V", "SIT", row, "LBL-NAME")} inline>
+                          <h3 className="font-heading font-bold">{site.name}</h3>
+                        </TLId>
+                        <TLId code={dynTLId("V", "SIT", row, "BDG-PLATFORM")} inline>
+                          <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
+                        </TLId>
                         {isNoCheckoutPlatform ? (
-                          <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
+                          <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
+                            <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
+                          </TLId>
                         ) : (
-                          <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                          <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
+                            <Badge className="bg-primary/15 text-primary text-[10px]"><CheckCircle className="w-3 h-3 mr-0.5" /> Active</Badge>
+                          </TLId>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" /> {site.url}
+                        <TLId code={dynTLId("V", "SIT", row, "LBL-URL")} inline>
+                          <span><ExternalLink className="w-3 h-3 inline mr-1" />{site.url}</span>
+                        </TLId>
                       </p>
 
                       {/* No-checkout platform: Standalone Links guidance */}
@@ -399,10 +412,12 @@ const VendorSites = () => {
                         <>
                           {/* Widget Toggle */}
                           <div className="mt-3 flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
-                            <Switch
-                              checked={isWidgetEnabled}
-                              onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
-                            />
+                            <TLId code={dynTLId("V", "SIT", row, "TGL-WIDGET")} inline>
+                              <Switch
+                                checked={isWidgetEnabled}
+                                onCheckedChange={(checked) => handleToggleWidget(site.id, checked)}
+                              />
+                            </TLId>
                             <div>
                               <p className="text-xs font-semibold">{isWidgetEnabled ? "Widget Enabled" : "Widget Disabled"}</p>
                               <p className="text-[10px] text-muted-foreground">
@@ -434,9 +449,11 @@ const VendorSites = () => {
                         </>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <TLId code={dynTLId("V", "SIT", row, "BTN-DELETE")} inline>
+                      <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => handleDeleteSite(site.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TLId>
                   </div>
                 </CardContent>
               </Card>

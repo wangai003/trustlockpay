@@ -14,6 +14,8 @@ import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -227,73 +229,100 @@ const BuyerOrders = () => {
               </CardContent>
             </Card>
           )}
-          {filtered.map((order) => {
+          {filtered.map((order, rowIdx) => {
             const cfg = statusConfig[order.status] || statusConfig.locked;
+            const row = rowIdx + 1;
             return (
               <Card key={order.id} className={order.status === "delivered" ? "border-accent/30" : ""}>
                 <CardContent className="p-5">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-mono text-sm font-bold">{order.id}</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                          <cfg.icon className="w-3 h-3" /> {cfg.label}
-                        </span>
+                        <TLId code={dynTLId("B", "BO", row, "LBL-TXID")} inline>
+                          <span className="font-mono text-sm font-bold">{order.id}</span>
+                        </TLId>
+                        <TLId code={dynTLId("B", "BO", row, "STS")} inline>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                            <cfg.icon className="w-3 h-3" /> {cfg.label}
+                          </span>
+                        </TLId>
                       </div>
-                      <p className="text-sm"><strong>{order.item}</strong> from <span className="text-muted-foreground">{order.vendor}</span></p>
+                      <p className="text-sm">
+                        <TLId code={dynTLId("B", "BO", row, "LBL-ITEM")} inline><strong>{order.item}</strong></TLId>
+                        {" "}from{" "}
+                        <TLId code={dynTLId("B", "BO", row, "LBL-VENDOR")} inline><span className="text-muted-foreground">{order.vendor}</span></TLId>
+                      </p>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Amount: {order.amount}</span>
+                        <TLId code={dynTLId("B", "BO", row, "LBL-AMOUNT")} inline><span>Amount: {order.amount}</span></TLId>
                         <span>Date: {order.date}</span>
                         {order.tracking && (
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
+                          <TLId code={dynTLId("B", "BO", row, "LBL-TRACKING")} inline>
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
+                          </TLId>
                         )}
                       </div>
                     </div>
 
                     <div className="lg:w-64">
-                      <div className="flex items-center gap-1">
-                        {["Paid", "Shipped", "Delivered", "Released"].map((step, i) => {
-                          const stepIndex = { locked: 0, shipped: 1, delivered: 2, released: 3, disputed: -1 }[order.status] ?? -1;
-                          const isComplete = i <= stepIndex;
-                          const isCurrent = i === stepIndex;
-                          return (
-                            <div key={step} className="flex items-center gap-1 flex-1">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                                isComplete ? "bg-primary text-primary-foreground" : isCurrent ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-                              }`}>
-                                {isComplete ? "✓" : i + 1}
+                      <TLId code={dynTLId("B", "BO", row, "STEP-PROGRESS")}>
+                        <div className="flex items-center gap-1">
+                          {["Paid", "Shipped", "Delivered", "Released"].map((step, i) => {
+                            const stepIndex = { locked: 0, shipped: 1, delivered: 2, released: 3, disputed: -1 }[order.status] ?? -1;
+                            const isComplete = i <= stepIndex;
+                            const isCurrent = i === stepIndex;
+                            return (
+                              <div key={step} className="flex items-center gap-1 flex-1">
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                                  isComplete ? "bg-primary text-primary-foreground" : isCurrent ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                                }`}>
+                                  {isComplete ? "✓" : i + 1}
+                                </div>
+                                {i < 3 && <div className={`flex-1 h-0.5 ${isComplete && i < stepIndex ? "bg-primary" : "bg-muted"}`} />}
                               </div>
-                              {i < 3 && <div className={`flex-1 h-0.5 ${isComplete && i < stepIndex ? "bg-primary" : "bg-muted"}`} />}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
-                        <span>Paid</span><span>Shipped</span><span>Delivered</span><span>Released</span>
-                      </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+                          <span>Paid</span><span>Shipped</span><span>Delivered</span><span>Released</span>
+                        </div>
+                      </TLId>
                     </div>
 
                     <div className="flex gap-2 shrink-0">
-                      {order.status === "delivered" && <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>}
-                      {order.status === "shipped" && <Button variant="outline" size="sm">Track</Button>}
-                      {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30"
-                          onClick={() => {
-                            const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
-                            const description = window.prompt("Add note/details for dispute (optional):", "") || "";
-                            openDispute.mutate({ txId: order.id, reason, description });
-                          }}
-                        >
-                          Dispute
-                        </Button>
+                      {order.status === "delivered" && (
+                        <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
+                          <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>
+                        </TLId>
                       )}
-                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
-                        {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </Button>
+                      {order.status === "shipped" && (
+                        <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
+                          <Button variant="outline" size="sm">Track</Button>
+                        </TLId>
+                      )}
+                      {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
+                        <TLId code={dynTLId("B", "BO", row, "BTN-DISPUTE")} inline>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30"
+                            onClick={() => {
+                              const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
+                              const description = window.prompt("Add note/details for dispute (optional):", "") || "";
+                              openDispute.mutate({ txId: order.id, reason, description });
+                            }}
+                          >
+                            Dispute
+                          </Button>
+                        </TLId>
+                      )}
+                      <TLId code={dynTLId("B", "BO", row, "BTN-VIEW")} inline>
+                        <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                      </TLId>
+                      <TLId code={dynTLId("B", "BO", row, "BTN-EXPAND")} inline>
+                        <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                          {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </Button>
+                      </TLId>
                     </div>
                   </div>
                   {expandedOrder === order.id && (

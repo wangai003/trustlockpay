@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
+import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -51,9 +53,11 @@ const BuyerDisputes = () => {
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track the status of any disputes you've filed</p>
           </div>
-          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
-            <AlertTriangle className="w-4 h-4" /> File New Dispute
-          </Button>
+          <TLId code="TL-B-DSP-BTN-FILE" inline>
+            <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+              <AlertTriangle className="w-4 h-4" /> File New Dispute
+            </Button>
+          </TLId>
         </div>
 
         {showNewDispute && (
@@ -63,8 +67,9 @@ const BuyerDisputes = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Transaction ID</Label>
+              <TLId code={dynTLId("B", "DSPF", 1, "INP-TXID")} inline>
                 <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
+              </TLId>
               </div>
               <div className="space-y-2">
                 <Label>Reason</Label>
@@ -97,25 +102,38 @@ const BuyerDisputes = () => {
           </Card>
         )}
 
-        {disputes.map((dispute) => {
+        {disputes.map((dispute, rowIdx) => {
           const cfg = statusConfig[dispute.status] || statusConfig.pending;
+          const row = rowIdx + 1;
           return (
             <Card key={dispute.id}>
               <CardContent className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-mono text-sm font-bold">{dispute.id}</span>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                        <cfg.icon className="w-3 h-3" /> {cfg.label}
-                      </span>
+                      <TLId code={dynTLId("B", "DSP", row, "LBL-ID")} inline>
+                        <span className="font-mono text-sm font-bold">{dispute.id}</span>
+                      </TLId>
+                      <TLId code={dynTLId("B", "DSP", row, "STS")} inline>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                          <cfg.icon className="w-3 h-3" /> {cfg.label}
+                        </span>
+                      </TLId>
                     </div>
                     <p className="text-sm">
-                      <strong>vs {dispute.vendor}</strong> — {dispute.reason}
+                      <TLId code={dynTLId("B", "DSP", row, "LBL-VENDOR")} inline>
+                        <strong>vs {dispute.vendor}</strong>
+                      </TLId>
+                      {" — "}
+                      <TLId code={dynTLId("B", "DSP", row, "LBL-REASON")} inline>
+                        <span>{dispute.reason}</span>
+                      </TLId>
                     </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>TX: {dispute.txId}</span>
-                      <span>Amount: {dispute.amount}</span>
+                      <TLId code={dynTLId("B", "DSP", row, "LBL-AMOUNT")} inline>
+                        <span>Amount: {dispute.amount}</span>
+                      </TLId>
                       <span>Filed: {dispute.filed}</span>
                     </div>
                   </div>
@@ -125,13 +143,19 @@ const BuyerDisputes = () => {
                       <Bot className="w-4 h-4 text-primary" />
                       <span className="text-xs font-semibold">Status Update</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{dispute.lastUpdate}</p>
+                    <TLId code={dynTLId("B", "DSP", row, "LBL-AI-STATUS")} inline>
+                      <p className="text-xs text-muted-foreground">{dispute.lastUpdate}</p>
+                    </TLId>
                     <p className="text-[10px] text-muted-foreground">You will be notified when a decision is made</p>
                   </div>
 
                   <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="sm" className="gap-1"><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
-                    <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                    <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
+                      <Button variant="outline" size="sm" className="gap-1"><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
+                    </TLId>
+                    <TLId code={dynTLId("B", "DSP", row, "BTN-VIEW")} inline>
+                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                    </TLId>
                   </div>
                 </div>
               </CardContent>

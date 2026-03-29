@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, Clock, CheckCircle, TrendingUp, Download, ArrowRight } from "lucide-react";
 import { usePayouts } from "@/hooks/useSupabaseData";
 import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   completed: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
@@ -75,20 +76,43 @@ const VendorPayouts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {payouts.map((p) => {
+                  {payouts.map((p, rowIdx) => {
                     const cfg = statusConfig[p.status] || statusConfig.pending;
+                    const row = rowIdx + 1;
                     return (
                       <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                        <td className="p-4 font-mono text-xs">{p.id}</td>
-                        <td className="p-4 hidden md:table-cell font-mono text-xs text-muted-foreground">{p.txId}</td>
-                        <td className="p-4 hidden lg:table-cell text-muted-foreground">{p.method}</td>
-                        <td className="p-4 text-right font-semibold">{p.amount}</td>
-                        <td className="p-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                            <cfg.icon className="w-3 h-3" /> {cfg.label}
-                          </span>
+                        <td className="p-4">
+                          <TLId code={dynTLId("V", "PYO", row, "LBL-ID")} inline>
+                            <span className="font-mono text-xs">{p.id}</span>
+                          </TLId>
                         </td>
-                        <td className="p-4 hidden sm:table-cell text-muted-foreground text-xs">{p.date !== "—" ? p.date : `ETA: ${p.eta}`}</td>
+                        <td className="p-4 hidden md:table-cell">
+                          <TLId code={dynTLId("V", "PYO", row, "LBL-TXID")} inline>
+                            <span className="font-mono text-xs text-muted-foreground">{p.txId}</span>
+                          </TLId>
+                        </td>
+                        <td className="p-4 hidden lg:table-cell">
+                          <TLId code={dynTLId("V", "PYO", row, "LBL-METHOD")} inline>
+                            <span className="text-muted-foreground">{p.method}</span>
+                          </TLId>
+                        </td>
+                        <td className="p-4 text-right">
+                          <TLId code={dynTLId("V", "PYO", row, "LBL-AMOUNT")} inline>
+                            <span className="font-semibold">{p.amount}</span>
+                          </TLId>
+                        </td>
+                        <td className="p-4 text-center">
+                          <TLId code={dynTLId("V", "PYO", row, "STS")} inline>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                              <cfg.icon className="w-3 h-3" /> {cfg.label}
+                            </span>
+                          </TLId>
+                        </td>
+                        <td className="p-4 hidden sm:table-cell">
+                          <TLId code={dynTLId("V", "PYO", row, "LBL-DATE")} inline>
+                            <span className="text-muted-foreground text-xs">{p.date !== "—" ? p.date : `ETA: ${p.eta}`}</span>
+                          </TLId>
+                        </td>
                       </tr>
                     );
                   })}

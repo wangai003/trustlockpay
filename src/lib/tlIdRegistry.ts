@@ -380,6 +380,141 @@ const WO_ELEMENT_PATTERNS: WOPatternDef[] = [
   { element: "LBL-OBS-INFO", label: "Observer Info", description: "Display of linked observer name and email", type: "label" },
 ];
 
+// ============ DYNAMIC LIST PATTERN DEFINITIONS ============
+// Each list type has its own element patterns for row×column diagnostics.
+// Format: TL-{V|B}-{LIST}-R{row}-{ELEMENT}
+
+interface DynPatternDef {
+  element: string;
+  label: string;
+  description: string;
+  type: string;
+}
+
+// Transaction / Work Order Log row elements
+const TX_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "CHK-SELECT", label: "Row Checkbox", description: "Checkbox to select this transaction for bulk actions", type: "checkbox" },
+  { element: "STS", label: "Status Badge", description: "Badge showing transaction status (Locked/Shipped/Released/Disputed)", type: "badge" },
+  { element: "BDG-INDUSTRY", label: "Industry Badge", description: "Badge showing the transaction industry type", type: "badge" },
+  { element: "BDG-TYPE", label: "Type Badge", description: "Badge showing product vs service type", type: "badge" },
+  { element: "BDG-LIMIT", label: "Over Limit Badge", description: "Badge indicating order exceeds plan limit", type: "badge" },
+  { element: "BTN-TRACK", label: "Add Tracking", description: "Button to add a tracking number to this order", type: "button" },
+  { element: "BTN-SHIP", label: "Mark Shipped", description: "Button to mark this order as shipped", type: "button" },
+  { element: "BTN-DELIVERED", label: "Mark Delivered", description: "Button to mark this order as delivered by vendor", type: "button" },
+  { element: "BTN-EXPAND", label: "Expand Row", description: "Toggle to expand/collapse order detail panel", type: "button" },
+  { element: "BTN-VIEW", label: "View Details", description: "Button to view full transaction details", type: "button" },
+  { element: "BTN-WORKORDER", label: "Open Work Order", description: "Button to open the milestone work order panel", type: "button" },
+  { element: "BTN-UPGRADE", label: "Upgrade Plan", description: "Button shown when order exceeds plan limit", type: "button" },
+  { element: "LBL-TXID", label: "Transaction ID", description: "Monospace display of the transaction ID", type: "label" },
+  { element: "LBL-BUYER", label: "Buyer Name", description: "Display of buyer name and location", type: "label" },
+  { element: "LBL-ITEM", label: "Item Name", description: "Display of the ordered item description", type: "label" },
+  { element: "LBL-AMOUNT", label: "Amount", description: "Display of the transaction amount", type: "label" },
+  { element: "LBL-TRACKING", label: "Tracking Number", description: "Display of the tracking/shipping number", type: "label" },
+  { element: "LBL-DATE", label: "Date", description: "Display of the transaction date", type: "label" },
+];
+
+// Buyer Orders row elements
+const BO_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "STS", label: "Status Badge", description: "Badge showing order status", type: "badge" },
+  { element: "BTN-CONFIRM", label: "Confirm Delivery", description: "Button to confirm delivery of this order", type: "button" },
+  { element: "BTN-TRACK", label: "Track Order", description: "Button to track shipment for this order", type: "button" },
+  { element: "BTN-DISPUTE", label: "File Dispute", description: "Button to file a dispute for this order", type: "button" },
+  { element: "BTN-VIEW", label: "View Details", description: "Button to view full order details", type: "button" },
+  { element: "BTN-EXPAND", label: "Expand Order", description: "Toggle to expand/collapse order detail panel", type: "button" },
+  { element: "LBL-TXID", label: "Order ID", description: "Monospace display of the order transaction ID", type: "label" },
+  { element: "LBL-VENDOR", label: "Vendor Name", description: "Display of vendor name", type: "label" },
+  { element: "LBL-ITEM", label: "Item Name", description: "Display of the ordered item", type: "label" },
+  { element: "LBL-AMOUNT", label: "Amount", description: "Display of the order amount", type: "label" },
+  { element: "LBL-TRACKING", label: "Tracking Info", description: "Display of tracking/shipping info", type: "label" },
+  { element: "STEP-PROGRESS", label: "Step Progress", description: "Progress indicator showing order fulfillment steps", type: "indicator" },
+];
+
+// Dispute row elements
+const DSP_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "STS", label: "Status Badge", description: "Badge showing dispute status (Under Review/Resolved)", type: "badge" },
+  { element: "BTN-EVIDENCE", label: "Add Evidence", description: "Button to upload additional evidence for this dispute", type: "button" },
+  { element: "BTN-VIEW", label: "View Dispute", description: "Button to view full dispute details", type: "button" },
+  { element: "LBL-ID", label: "Dispute ID", description: "Monospace display of the dispute ID", type: "label" },
+  { element: "LBL-VENDOR", label: "Opposing Party", description: "Display of the other party in the dispute", type: "label" },
+  { element: "LBL-REASON", label: "Dispute Reason", description: "Display of the reason for the dispute", type: "label" },
+  { element: "LBL-AMOUNT", label: "Amount", description: "Display of the disputed amount", type: "label" },
+  { element: "LBL-AI-STATUS", label: "AI Status Update", description: "Display of Emmanuel AI's analysis status", type: "label" },
+];
+
+// Payout row elements
+const PYO_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "STS", label: "Status Badge", description: "Badge showing payout status (Completed/Pending/Processing)", type: "badge" },
+  { element: "LBL-ID", label: "Payout ID", description: "Monospace display of the payout ID", type: "label" },
+  { element: "LBL-TXID", label: "Transaction Ref", description: "Display of the related transaction ID", type: "label" },
+  { element: "LBL-METHOD", label: "Payout Method", description: "Display of the payout method (Bank Transfer, etc.)", type: "label" },
+  { element: "LBL-AMOUNT", label: "Payout Amount", description: "Display of the payout amount", type: "label" },
+  { element: "LBL-DATE", label: "Date / ETA", description: "Display of the completion date or estimated time", type: "label" },
+];
+
+// Standalone Links row elements
+const LNK_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "STS", label: "Status Badge", description: "Badge showing link status (Active/Paid/Expired)", type: "badge" },
+  { element: "BTN-COPY", label: "Copy Link", description: "Button to copy the payment link URL", type: "button" },
+  { element: "BTN-PREVIEW", label: "Preview Link", description: "Button to open a preview of the payment page", type: "button" },
+  { element: "LBL-TITLE", label: "Link Title", description: "Display of the payment link title", type: "label" },
+  { element: "LBL-AMOUNT", label: "Link Amount", description: "Display of the payment link total", type: "label" },
+  { element: "LBL-URL", label: "Link URL", description: "Display of the full payment link URL", type: "label" },
+];
+
+// Sites row elements
+const SIT_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "TGL-WIDGET", label: "Widget Toggle", description: "Switch to enable/disable TrustLock widget on this site", type: "toggle" },
+  { element: "BTN-DELETE", label: "Delete Site", description: "Button to remove this connected site", type: "button" },
+  { element: "BTN-RESTORE", label: "Restore Widget", description: "Button to restore a deleted widget", type: "button" },
+  { element: "BTN-STANDALONE", label: "Create Standalone Link", description: "Link to create a standalone payment link for no-checkout platforms", type: "button" },
+  { element: "BDG-PLATFORM", label: "Platform Badge", description: "Badge showing the e-commerce platform type", type: "badge" },
+  { element: "BDG-STATUS", label: "Status Badge", description: "Badge showing Active/Standalone Links status", type: "badge" },
+  { element: "LBL-NAME", label: "Site Name", description: "Display of the connected site name", type: "label" },
+  { element: "LBL-URL", label: "Site URL", description: "Display of the site URL", type: "label" },
+];
+
+// Team Members row elements
+const TM_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "TGL-FINALIZE", label: "Finalizer Toggle", description: "Switch to grant/revoke finalizer rights for this member", type: "toggle" },
+  { element: "BTN-REMOVE", label: "Remove Member", description: "Button to remove this member from the workspace", type: "button" },
+  { element: "LBL-NAME", label: "Member Name", description: "Display of the team member name and role", type: "label" },
+  { element: "LBL-USERID", label: "User ID", description: "Truncated display of the member's user ID", type: "label" },
+];
+
+// Team Tasks row elements
+const TT_ELEMENT_PATTERNS: DynPatternDef[] = [
+  { element: "STS", label: "Task Status", description: "Badge showing task status (Pending/Completed)", type: "badge" },
+  { element: "BTN-COMPLETE", label: "Complete Task", description: "Button to mark this task as completed", type: "button" },
+  { element: "LBL-KEY", label: "Task Key", description: "Display of the milestone task key", type: "label" },
+  { element: "LBL-ASSIGNEE", label: "Assignee", description: "Display of the team member assigned to this task", type: "label" },
+  { element: "LBL-DEADLINE", label: "Deadline", description: "Display of the task deadline", type: "label" },
+  { element: "LBL-SLA", label: "SLA Timer", description: "Display of the SLA countdown for this task", type: "label" },
+];
+
+// Dispute form elements (buyer)
+const DSP_FORM_PATTERNS: DynPatternDef[] = [
+  { element: "INP-TXID", label: "Transaction ID Input", description: "Input for the transaction ID to dispute", type: "input" },
+  { element: "DRP-REASON", label: "Reason Dropdown", description: "Dropdown to select the dispute reason", type: "dropdown" },
+  { element: "INP-DESC", label: "Description Input", description: "Textarea for describing the dispute issue", type: "input" },
+  { element: "UPL-EVIDENCE", label: "Evidence Upload", description: "File upload zone for dispute evidence", type: "upload" },
+  { element: "BTN-SUBMIT", label: "Submit Dispute", description: "Button to submit the dispute form", type: "button" },
+  { element: "BTN-CANCEL", label: "Cancel Dispute", description: "Button to cancel the dispute form", type: "button" },
+];
+
+// Master map of all dynamic list patterns
+const DYNAMIC_PATTERN_MAP: Record<string, { patterns: DynPatternDef[]; label: string }> = {
+  WO: { patterns: WO_ELEMENT_PATTERNS, label: "Work Order" },
+  TX: { patterns: TX_ELEMENT_PATTERNS, label: "Transaction" },
+  BO: { patterns: BO_ELEMENT_PATTERNS, label: "Buyer Order" },
+  DSP: { patterns: DSP_ELEMENT_PATTERNS, label: "Dispute" },
+  PYO: { patterns: PYO_ELEMENT_PATTERNS, label: "Payout" },
+  LNK: { patterns: LNK_ELEMENT_PATTERNS, label: "Standalone Link" },
+  SIT: { patterns: SIT_ELEMENT_PATTERNS, label: "Connected Site" },
+  TM: { patterns: TM_ELEMENT_PATTERNS, label: "Team Member" },
+  TT: { patterns: TT_ELEMENT_PATTERNS, label: "Team Task" },
+  DSPF: { patterns: DSP_FORM_PATTERNS, label: "Dispute Form" },
+};
+
 // Global (non-row) work-order panel elements
 const WO_GLOBAL_ELEMENTS: Record<string, Omit<TLIdEntry, "id">> = {
   "TL-V-WO-BTN-INIT": { label: "Initialize Milestones", description: "Button to create the first milestone set for this transaction (testnet)", page: "Work Order", role: "vendor", type: "button" },
@@ -398,8 +533,16 @@ export function woTLId(role: "vendor" | "buyer", row: number, element: string): 
 }
 
 /**
+ * Generate a positional TL-ID for any dynamic list.
+ * Example: dynTLId("V", "TX", 3, "BTN-SHIP") → "TL-V-TX-R3-BTN-SHIP"
+ */
+export function dynTLId(rolePrefix: "V" | "B", listKey: string, row: number, element: string): string {
+  return `TL-${rolePrefix}-${listKey}-R${row}-${element}`;
+}
+
+/**
  * Lookup a TL-ID entry by its code.
- * Supports both static registry entries and dynamic work-order patterns.
+ * Supports both static registry entries and dynamic positional patterns.
  */
 export function lookupTLId(id: string): TLIdEntry | undefined {
   // Check static registry first
@@ -410,22 +553,25 @@ export function lookupTLId(id: string): TLIdEntry | undefined {
     return { id, ...WO_GLOBAL_ELEMENTS[id] };
   }
 
-  // Check dynamic work-order pattern: TL-{V|B}-WO-R{n}-{ELEMENT}
-  const woMatch = id.match(/^TL-([VB])-WO-R(\d+)-(.+)$/);
-  if (woMatch) {
-    const [, roleChar, rowStr, element] = woMatch;
+  // Check dynamic pattern: TL-{V|B}-{LIST}-R{n}-{ELEMENT}
+  const dynMatch = id.match(/^TL-([VB])-([A-Z]+)-R(\d+)-(.+)$/);
+  if (dynMatch) {
+    const [, roleChar, listKey, rowStr, element] = dynMatch;
     const role = roleChar === "V" ? "vendor" : "buyer";
     const row = parseInt(rowStr, 10);
-    const pattern = WO_ELEMENT_PATTERNS.find((p) => p.element === element);
-    if (pattern) {
-      return {
-        id,
-        label: `Row ${row} — ${pattern.label}`,
-        description: `${pattern.description} (Milestone #${row}, ${role} view)`,
-        page: "Work Order",
-        role,
-        type: pattern.type,
-      };
+    const listDef = DYNAMIC_PATTERN_MAP[listKey];
+    if (listDef) {
+      const pattern = listDef.patterns.find((p) => p.element === element);
+      if (pattern) {
+        return {
+          id,
+          label: `Row ${row} — ${pattern.label}`,
+          description: `${pattern.description} (${listDef.label} #${row}, ${role} view)`,
+          page: listDef.label,
+          role,
+          type: pattern.type,
+        };
+      }
     }
   }
 
@@ -470,8 +616,16 @@ export function getTLIdsByPage(page: string): TLIdEntry[] {
 }
 
 /**
- * Get all work-order element pattern definitions (for admin diagnostic views)
+ * Get all dynamic pattern definitions for a given list type (for admin diagnostic views)
  */
-export function getWOPatterns(): WOPatternDef[] {
-  return WO_ELEMENT_PATTERNS;
+export function getDynPatterns(listKey?: string): DynPatternDef[] {
+  if (listKey && DYNAMIC_PATTERN_MAP[listKey]) return DYNAMIC_PATTERN_MAP[listKey].patterns;
+  return Object.values(DYNAMIC_PATTERN_MAP).flatMap((d) => d.patterns);
+}
+
+/**
+ * Get all available dynamic list keys and their labels
+ */
+export function getDynListKeys(): { key: string; label: string }[] {
+  return Object.entries(DYNAMIC_PATTERN_MAP).map(([key, def]) => ({ key, label: def.label }));
 }
