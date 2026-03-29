@@ -341,11 +341,95 @@ export const TL_ID_REGISTRY: Record<string, TLIdEntry> = {
   "TL-B-SB-BTN-MENU": { id: "TL-B-SB-BTN-MENU", label: "Mobile Menu", description: "Mobile hamburger to open buyer sidebar", page: "Buyer Sidebar", role: "buyer", type: "button" },
 };
 
+// ============ DYNAMIC WORK-ORDER PATTERN DEFINITIONS ============
+// These patterns define every possible element in a milestone row/column grid.
+// Format: TL-{V|B}-WO-R{row}-{ELEMENT}
+// The row number is 1-indexed matching the milestone display order.
+
+interface WOPatternDef {
+  element: string;
+  label: string;
+  description: string;
+  type: string;
+}
+
+const WO_ELEMENT_PATTERNS: WOPatternDef[] = [
+  // ---- Status / Display Column ----
+  { element: "STS", label: "Status Badge", description: "Badge showing current milestone status (Pending/In Progress/Fulfilled/Released)", type: "badge" },
+  { element: "BDG-PAY", label: "Payment Badge", description: "Badge indicating this is a payment milestone", type: "badge" },
+  { element: "LBL-TITLE", label: "Milestone Title", description: "Title text for this milestone row", type: "label" },
+  { element: "LBL-AMOUNT", label: "Amount Display", description: "Shows payment amount and uploaded document count", type: "label" },
+  { element: "LBL-GPS", label: "GPS Coordinates", description: "Displays captured GPS coordinates for fulfillment verification", type: "label" },
+
+  // ---- Note Column ----
+  { element: "INP-NOTE", label: "Milestone Note", description: "Textarea for adding implementation notes to this milestone", type: "input" },
+  { element: "BTN-NOTE-SAVE", label: "Save Note", description: "Button to persist the milestone note", type: "button" },
+
+  // ---- Document Upload Column ----
+  { element: "UPL-EVIDENCE", label: "Evidence Upload", description: "File upload for milestone evidence documents (photos, PDFs, receipts)", type: "upload" },
+
+  // ---- Action Column ----
+  { element: "BTN-FULFILL", label: "Mark Fulfilled", description: "Vendor button to mark this milestone as fulfilled (captures GPS)", type: "button" },
+  { element: "BTN-RELEASE", label: "Release Milestone", description: "Buyer button to release escrowed funds for this fulfilled milestone", type: "button" },
+
+  // ---- Observer Sub-Section ----
+  { element: "INP-OBS-NAME", label: "Observer Name", description: "Input field for the observer's name when inviting", type: "input" },
+  { element: "INP-OBS-EMAIL", label: "Observer Email", description: "Input field for the observer's email when inviting", type: "input" },
+  { element: "BTN-OBS-INVITE", label: "Invite Observer", description: "Button to send observer invite and copy access link", type: "button" },
+  { element: "BTN-OBS-COPY", label: "Copy Observer Link", description: "Button to copy an existing observer's audit access link", type: "button" },
+  { element: "LBL-OBS-INFO", label: "Observer Info", description: "Display of linked observer name and email", type: "label" },
+];
+
+// Global (non-row) work-order panel elements
+const WO_GLOBAL_ELEMENTS: Record<string, Omit<TLIdEntry, "id">> = {
+  "TL-V-WO-BTN-INIT": { label: "Initialize Milestones", description: "Button to create the first milestone set for this transaction (testnet)", page: "Work Order", role: "vendor", type: "button" },
+  "TL-B-WO-BTN-INIT": { label: "Initialize Milestones", description: "Button to create the first milestone set for this transaction (testnet)", page: "Work Order", role: "buyer", type: "button" },
+  "TL-V-WO-PANEL": { label: "Work Order Panel", description: "The entire milestone work order panel container", page: "Work Order", role: "vendor", type: "card" },
+  "TL-B-WO-PANEL": { label: "Work Order Panel", description: "The entire milestone work order panel container", page: "Work Order", role: "buyer", type: "card" },
+};
+
 /**
- * Lookup a TL-ID entry by its code
+ * Generate a positional TL-ID for a work-order element.
+ * Example: woTLId("vendor", 2, "BTN-FULFILL") → "TL-V-WO-R2-BTN-FULFILL"
+ */
+export function woTLId(role: "vendor" | "buyer", row: number, element: string): string {
+  const prefix = role === "vendor" ? "V" : "B";
+  return `TL-${prefix}-WO-R${row}-${element}`;
+}
+
+/**
+ * Lookup a TL-ID entry by its code.
+ * Supports both static registry entries and dynamic work-order patterns.
  */
 export function lookupTLId(id: string): TLIdEntry | undefined {
-  return TL_ID_REGISTRY[id];
+  // Check static registry first
+  if (TL_ID_REGISTRY[id]) return TL_ID_REGISTRY[id];
+
+  // Check global work-order elements
+  if (WO_GLOBAL_ELEMENTS[id]) {
+    return { id, ...WO_GLOBAL_ELEMENTS[id] };
+  }
+
+  // Check dynamic work-order pattern: TL-{V|B}-WO-R{n}-{ELEMENT}
+  const woMatch = id.match(/^TL-([VB])-WO-R(\d+)-(.+)$/);
+  if (woMatch) {
+    const [, roleChar, rowStr, element] = woMatch;
+    const role = roleChar === "V" ? "vendor" : "buyer";
+    const row = parseInt(rowStr, 10);
+    const pattern = WO_ELEMENT_PATTERNS.find((p) => p.element === element);
+    if (pattern) {
+      return {
+        id,
+        label: `Row ${row} — ${pattern.label}`,
+        description: `${pattern.description} (Milestone #${row}, ${role} view)`,
+        page: "Work Order",
+        role,
+        type: pattern.type,
+      };
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -353,13 +437,22 @@ export function lookupTLId(id: string): TLIdEntry | undefined {
  */
 export function searchTLIds(query: string): TLIdEntry[] {
   const q = query.toLowerCase();
-  return Object.values(TL_ID_REGISTRY).filter(
+  const results = Object.values(TL_ID_REGISTRY).filter(
     (entry) =>
       entry.id.toLowerCase().includes(q) ||
       entry.label.toLowerCase().includes(q) ||
       entry.description.toLowerCase().includes(q) ||
       entry.page.toLowerCase().includes(q)
   );
+
+  // Also search dynamic WO patterns
+  if ("work order".includes(q) || "wo".includes(q) || "milestone".includes(q)) {
+    for (const [gid, gentry] of Object.entries(WO_GLOBAL_ELEMENTS)) {
+      results.push({ id: gid, ...gentry });
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -374,4 +467,11 @@ export function getTLIdsByRole(role: TLIdEntry["role"]): TLIdEntry[] {
  */
 export function getTLIdsByPage(page: string): TLIdEntry[] {
   return Object.values(TL_ID_REGISTRY).filter((e) => e.page === page);
+}
+
+/**
+ * Get all work-order element pattern definitions (for admin diagnostic views)
+ */
+export function getWOPatterns(): WOPatternDef[] {
+  return WO_ELEMENT_PATTERNS;
 }
