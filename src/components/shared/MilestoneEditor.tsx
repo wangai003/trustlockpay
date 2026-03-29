@@ -455,10 +455,11 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
     toast.success("Milestones locked — both parties must agree to any changes");
   };
 
-  const totalPercentage = milestones.reduce((sum, m) => {
-    if (!m.is_payment_milestone || !m.payment_amount) return sum;
-    return sum; // percentages aren't stored directly; we show count instead
-  }, 0);
+  // Calculate total allocated and equal-split info
+  const totalAllocated = milestones.reduce((sum, m) => sum + (Number(m.payment_amount) || 0), 0);
+  const equalSplitHint = milestones.length > 0
+    ? `Equal split: ${(100 / milestones.length).toFixed(1)}% each`
+    : "";
 
   const getStatusColor = (status: string) => {
     switch (status) {
