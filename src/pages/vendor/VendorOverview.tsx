@@ -119,6 +119,7 @@ const VendorOverview = () => {
         <TLId code="TL-V-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="vendor" /></TLId>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <TLId code="TL-V-OVW-CRD-WELCOME">
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
             <CardContent className="p-4 sm:p-6">
               <h2 className="font-heading text-base sm:text-xl font-bold">Welcome back, {vendor.name}</h2>
@@ -137,6 +138,7 @@ const VendorOverview = () => {
               </div>
             </CardContent>
           </Card>
+          </TLId>
         </motion.div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
