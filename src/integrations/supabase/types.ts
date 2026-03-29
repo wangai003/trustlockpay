@@ -1641,6 +1641,8 @@ export type Database = {
       tax_ledger: {
         Row: {
           buyer_country: string | null
+          buyer_id: string | null
+          buyer_name: string | null
           collection_period: string | null
           corridor_route: string | null
           created_at: string
@@ -1667,9 +1669,13 @@ export type Database = {
           tx_id: string | null
           updated_at: string
           vendor_country: string | null
+          vendor_id: string | null
+          vendor_name: string | null
         }
         Insert: {
           buyer_country?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
           collection_period?: string | null
           corridor_route?: string | null
           created_at?: string
@@ -1696,9 +1702,13 @@ export type Database = {
           tx_id?: string | null
           updated_at?: string
           vendor_country?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
         }
         Update: {
           buyer_country?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
           collection_period?: string | null
           corridor_route?: string | null
           created_at?: string
@@ -1725,6 +1735,8 @@ export type Database = {
           tx_id?: string | null
           updated_at?: string
           vendor_country?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
         }
         Relationships: [
           {
