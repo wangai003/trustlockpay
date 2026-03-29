@@ -510,6 +510,11 @@ export function useProcessPayment() {
       refundReason?: string;
       splitRecipient?: string;
       splitPercentage?: string;
+      // Processor routing params (triggers real API flow)
+      processor?: "stripe" | "coinbase" | "transak" | "direct";
+      direction?: "onramp" | "offramp";
+      currency?: string;
+      walletAddress?: string;
     }) => callEdgeFunction("process-payment", params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["os_payments"] });
