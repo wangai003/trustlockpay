@@ -280,6 +280,56 @@ export type Database = {
         }
         Relationships: []
       }
+      blockchain_proofs: {
+        Row: {
+          anchored_at: string | null
+          chain_status: string
+          content_hash: string
+          created_at: string
+          event_data: Json
+          id: string
+          polygon_tx_hash: string | null
+          prev_hash: string
+          record_type: string
+          transaction_id: string | null
+          tx_ref: string
+        }
+        Insert: {
+          anchored_at?: string | null
+          chain_status?: string
+          content_hash: string
+          created_at?: string
+          event_data?: Json
+          id?: string
+          polygon_tx_hash?: string | null
+          prev_hash?: string
+          record_type: string
+          transaction_id?: string | null
+          tx_ref: string
+        }
+        Update: {
+          anchored_at?: string | null
+          chain_status?: string
+          content_hash?: string
+          created_at?: string
+          event_data?: Json
+          id?: string
+          polygon_tx_hash?: string | null
+          prev_hash?: string
+          record_type?: string
+          transaction_id?: string | null
+          tx_ref?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blockchain_proofs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_flags: {
         Row: {
           created_at: string
