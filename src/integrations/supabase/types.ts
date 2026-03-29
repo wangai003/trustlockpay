@@ -2487,6 +2487,65 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_rejections: {
+        Row: {
+          buyer_id: string | null
+          buyer_name: string | null
+          created_at: string
+          gas_deducted: number
+          id: string
+          industry: string | null
+          original_amount: number
+          refund_amount: number
+          refund_status: string
+          rejection_reason: string | null
+          transaction_id: string | null
+          tx_id: string | null
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          gas_deducted?: number
+          id?: string
+          industry?: string | null
+          original_amount?: number
+          refund_amount?: number
+          refund_status?: string
+          rejection_reason?: string | null
+          transaction_id?: string | null
+          tx_id?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          gas_deducted?: number
+          id?: string
+          industry?: string | null
+          original_amount?: number
+          refund_amount?: number
+          refund_status?: string
+          rejection_reason?: string | null
+          transaction_id?: string | null
+          tx_id?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_rejections_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_settings: {
         Row: {
           auto_delivery: boolean | null
