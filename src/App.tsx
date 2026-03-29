@@ -123,6 +123,7 @@ const App = () => (
                 <Route path="payout" element={<AdminPayout />} />
                 <Route path="audit" element={<AdminAudit />} />
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
+                <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
