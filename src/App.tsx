@@ -33,6 +33,7 @@ const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
 const AdminPayout = lazy(() => import("./pages/admin/AdminPayout"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlaybook"));
+const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -122,6 +123,7 @@ const App = () => (
                 <Route path="payout" element={<AdminPayout />} />
                 <Route path="audit" element={<AdminAudit />} />
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
+                <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

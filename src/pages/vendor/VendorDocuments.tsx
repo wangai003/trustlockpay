@@ -13,6 +13,7 @@ import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import TLId from "@/components/shared/TLId";
 
 const docs = [
   { title: "Vendor Terms of Service", desc: "Your agreement with TrustLock — escrow rules, fee schedule, dispute procedures.", updated: "Mar 2026" },
@@ -39,7 +40,9 @@ const VendorDocuments = () => {
       <VendorHeader title="Documents" />
       <div className="p-3 sm:p-6 space-y-6">
         {/* Upload Section */}
+        <TLId code="TL-V-DOC-UPL-MAIN">
         <DocumentUpload label="Upload Documents (Receipts, Proof of Shipment, etc.)" />
+        </TLId>
 
         {/* ── Acknowledgement Form Preview ─── */}
         <Card className="border-primary/20">

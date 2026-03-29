@@ -16,6 +16,7 @@ import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import TLId from "@/components/shared/TLId";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
@@ -115,9 +116,10 @@ const VendorOverview = () => {
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <OnboardingTaskCard role="vendor" />
+        <TLId code="TL-V-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="vendor" /></TLId>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <TLId code="TL-V-OVW-CRD-WELCOME">
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
             <CardContent className="p-4 sm:p-6">
               <h2 className="font-heading text-base sm:text-xl font-bold">Welcome back, {vendor.name}</h2>
@@ -136,6 +138,7 @@ const VendorOverview = () => {
               </div>
             </CardContent>
           </Card>
+          </TLId>
         </motion.div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
@@ -163,7 +166,7 @@ const VendorOverview = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Transactions</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/vendor/transactions")}>View All →</Button>
+            <TLId code="TL-V-OVW-BTN-VIEW-ALL-TX" inline><Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/vendor/transactions")}>View All →</Button></TLId>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -224,9 +227,11 @@ const VendorOverview = () => {
                 <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
               </div>
               <div className="flex gap-2">
+                <TLId code="TL-V-OVW-BTN-ACCEPT-CONTRACT" inline>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
                   <Check className="w-3 h-3" /> Accept All
                 </Button>
+                </TLId>
               </div>
             </CardHeader>
             <CardContent className="p-0">

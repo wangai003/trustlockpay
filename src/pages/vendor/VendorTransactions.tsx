@@ -35,19 +35,9 @@ const statusConfig = {
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
 };
 
-const industryLabels: Record<string, string> = {
-  ecommerce: "E-Commerce",
-  real_estate: "Real Estate",
-  mining: "Mining",
-  agriculture: "Agriculture",
-  freelance: "Freelance",
-  automotive: "Automotive",
-  construction: "Construction",
-  tourism: "Tourism",
-  logistics: "Logistics",
-  education: "Education",
-  project_management: "Project Mgmt",
-};
+import { INDUSTRY_LABELS } from "@/lib/industryList";
+
+const industryLabels: Record<string, string> = INDUSTRY_LABELS;
 
 const VendorTransactions = () => {
   const navigate = useNavigate();
