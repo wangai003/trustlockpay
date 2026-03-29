@@ -147,7 +147,7 @@ const AdminTaxRemittance = () => {
 
   return (
     <div className="space-y-6">
-      <AdminHeader title="Tax & Tariff Remittance" subtitle="Track collected taxes by jurisdiction and manage manual remittance to authorities" />
+      <AdminHeader title="Tax & Tariff Remittance" />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
