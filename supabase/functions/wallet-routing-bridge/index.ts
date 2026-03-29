@@ -11,12 +11,12 @@ const WALLETS = {
   transaction: {
     address: Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d",
     label: "Azix Transaction Fee Wallet",
-    purpose: "Receives ALL incoming funds first. Deducts TrustLock fees + taxes. Routes escrow principal onward.",
+    purpose: "Receives platform fees + taxes. Routes escrow principal + escrow fee to Escrow Wallet.",
   },
   escrow: {
     address: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
     label: "Azix Escrow Wallet",
-    purpose: "Holds only the escrow principal. Releases to vendor or refunds to buyer.",
+    purpose: "Holds escrow principal + pre-paid escrow fee. Releases principal to vendor, trickles fee to Transaction Wallet.",
   },
 };
 
@@ -24,12 +24,13 @@ const USDC_ADDRESS = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
-// ─── Fee Rate Constants (mirror feeEngine.ts) ─────────────
+// ─── Fee Rate Constants ──────────────────────────────────
+// NEW MODEL: Escrow fee is pre-paid at checkout (added to buyer's total)
+// and sent alongside principal to escrow wallet. NOT deducted from principal.
 const FEE_RATES = {
-  platform_fiat: 1.5,    // TrustLock platform fee for fiat
-  platform_crypto: 1.0,  // TrustLock platform fee for crypto direct
-  escrow_deposit: 0.5,   // Escrow deposit fee at checkout
-  escrow_release: 1.0,   // Escrow service fee at release
+  platform_fiat: 1.5,
+  platform_crypto: 1.0,
+  escrow_service: 1.0,    // 1% escrow fee — pre-paid at checkout, trickled on release
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
@@ -60,7 +61,6 @@ function toContractUnits(amount: number): string {
   return BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS))).toString();
 }
 
-// ─── On-chain transfer (queued until contract deployed) ───
 async function transferOnChain(
   fromWallet: string,
   toWallet: string,
@@ -69,8 +69,6 @@ async function transferOnChain(
   memo: string
 ): Promise<{ txHash: string; status: string }> {
   const privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
-  const rpcUrl = Deno.env.get("POLYGON_RPC_URL") || "https://polygon-rpc.com";
-
   if (!privateKey) {
     console.warn(`Wallet routing queued (no deployer key): ${memo}`);
     return {
@@ -78,20 +76,12 @@ async function transferOnChain(
       status: "queued",
     };
   }
-
-  // Production: Use ethers.js to call ERC-20 transfer
-  // const wallet = new ethers.Wallet(privateKey, new ethers.JsonRpcProvider(rpcUrl));
-  // const tokenContract = new ethers.Contract(token, ERC20_ABI, wallet);
-  // const tx = await tokenContract.transfer(toWallet, toContractUnits(amount));
-  // return { txHash: tx.hash, status: "submitted" };
-
   return {
     txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     status: "queued",
   };
 }
 
-// ─── Notify ───────────────────────────────────────────────
 async function notify(
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
@@ -112,52 +102,43 @@ async function notify(
 }
 
 // ═══════════════════════════════════════════════════════════
-//  ROUTING LOGIC: Transaction Wallet → Escrow Wallet
+//  ROUTING LOGIC — REVISED FEE MODEL
 // ═══════════════════════════════════════════════════════════
 //
-//  FLOW (Fiat via Stripe/Coinbase/Transak):
-//   1. Processor converts fiat to stablecoin
+//  INBOUND (all payment methods):
+//   1. Buyer pays: escrow principal + escrow fee (1%) + platform fee + processor fee + taxes
 //   2. ALL funds land in Transaction Fee Wallet
-//   3. Transaction Wallet deducts:
-//      - TrustLock platform fee (1.5% fiat / 1.0% crypto)
-//      - Processor fee (retained by processor, already deducted)
-//      - Jurisdiction taxes (VAT/GST from invoice)
-//      - Escrow deposit fee (0.5%)
-//   4. Remaining escrow principal → Escrow Wallet
+//   3. Transaction Wallet retains: platform fee + taxes
+//   4. Transaction Wallet routes to Escrow Wallet: escrow principal + escrow fee
+//   5. Escrow Wallet holds both until release or refund
 //
-//  FLOW (Crypto Direct Pay):
-//   1. Buyer sends USDC/USDT to Transaction Fee Wallet
-//   2. Transaction Wallet deducts:
-//      - TrustLock platform fee (1.0%)
-//      - Jurisdiction taxes (from invoice, if applicable)
-//      - Escrow deposit fee (0.5%)
-//   3. Remaining escrow principal → Escrow Wallet
+//  RELEASE:
+//   1. Escrow Wallet sends 100% principal to vendor (preserved, no deductions)
+//   2. Escrow Wallet trickles pre-paid escrow fee → Transaction Wallet
+//   3. Gas covered by platform revenue
 //
-//  FLOW (Release to Vendor):
-//   1. Escrow Wallet releases funds
-//   2. Deducts escrow release fee (1.0%) → trickles to Transaction Wallet
-//   3. Net amount → Vendor
+//  REFUND:
+//   1. Escrow Wallet returns 100% principal to buyer
+//   2. Pre-paid escrow fee also returned to buyer (or absorbed — see below)
+//   3. No TrustLock service fees on refunds. Gas only (~$0.02-$0.05)
 //
-//  FLOW (Refund):
-//   1. Escrow Wallet returns 100% to buyer
-//   2. No trickle-down, no fees
+//  SPLIT (Dispute):
+//   1. Escrow fee halved from original milestone rate, vendor side only
+//   2. Gas split equally between buyer & vendor
 // ═══════════════════════════════════════════════════════════
 
 interface RoutingResult {
   action: string;
   transactionId: string;
   grossAmount: number;
-  // Fee deductions at Transaction Wallet
   platformFee: number;
   processorFee: number;
-  escrowDepositFee: number;
+  escrowFee: number;
   taxAmount: number;
   taxType: string;
   totalDeductions: number;
-  // What moves
   transactionWalletRetains: number;
   escrowWalletReceives: number;
-  // On-chain transfers
   transfers: Array<{
     from: string;
     to: string;
@@ -182,9 +163,9 @@ Deno.serve(async (req) => {
     const {
       action,
       transactionId,
-      processor,      // stripe | coinbase | transak | direct
-      paymentMethod,   // card | bank_transfer | mobile_money | crypto
-      verifiedAmount,  // actual amount received (post-processor)
+      processor,
+      paymentMethod,
+      verifiedAmount,
     } = body;
 
     if (!action) return json({ error: "action is required" }, 400);
@@ -192,7 +173,6 @@ Deno.serve(async (req) => {
 
     const supabase = getSupabase();
 
-    // ── Fetch transaction + tax breakdown ─────────────
     const { data: tx, error: txErr } = await supabase
       .from("transactions")
       .select("*")
@@ -203,27 +183,27 @@ Deno.serve(async (req) => {
 
     const isCrypto = paymentMethod === "crypto" || processor === "direct";
     const usedProcessor = processor || (isCrypto ? "direct" : "stripe");
-    const token = USDC_ADDRESS; // Default to USDC
+    const token = USDC_ADDRESS;
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_INBOUND — Funds received, route to escrow
+    //  ACTION: ROUTE_INBOUND
     // ══════════════════════════════════════════════════
     if (action === "route_inbound") {
-      const grossAmount = verifiedAmount || tx.amount;
+      const escrowPrincipal = verifiedAmount || tx.amount;
       const taxBreakdown = tx.tax_breakdown as Record<string, unknown> | null;
 
-      // 1) Platform fee
+      // 1) Platform fee (retained by Transaction Wallet)
       const platformRate = isCrypto ? FEE_RATES.platform_crypto : FEE_RATES.platform_fiat;
-      const platformFee = round(grossAmount * (platformRate / 100));
+      const platformFee = round(escrowPrincipal * (platformRate / 100));
 
       // 2) Processor fee (already deducted by processor for fiat, 0 for direct)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
-      const processorFee = usedProcessor === "direct" ? 0 : round(grossAmount * (processorRate / 100));
+      const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
 
-      // 3) Escrow deposit fee (0.5% at checkout)
-      const escrowDepositFee = round(grossAmount * (FEE_RATES.escrow_deposit / 100));
+      // 3) Escrow service fee (1% of principal — pre-paid, routed WITH principal)
+      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
 
-      // 4) Jurisdiction taxes (from tax_breakdown on invoice)
+      // 4) Jurisdiction taxes
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -231,80 +211,82 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 5) Calculate what Transaction Wallet retains vs forwards
-      const totalDeductions = round(platformFee + escrowDepositFee + taxAmount);
-      // For fiat: processor already took their cut, so we work with what arrived
-      // For direct crypto: full amount arrived, we deduct everything
-      const escrowPrincipal = round(grossAmount - totalDeductions);
+      // 5) Transaction Wallet retains platform fee + taxes
+      const transactionWalletRetains = round(platformFee + taxAmount);
+
+      // 6) Escrow Wallet receives: full principal + escrow fee
+      const escrowWalletReceives = round(escrowPrincipal + escrowFee);
 
       if (escrowPrincipal <= 0) {
         return json({
-          error: "Escrow principal would be zero or negative after fee deductions",
-          breakdown: { grossAmount, platformFee, processorFee, escrowDepositFee, taxAmount, totalDeductions },
+          error: "Escrow principal would be zero or negative",
+          breakdown: { escrowPrincipal, platformFee, processorFee, escrowFee, taxAmount },
         }, 400);
       }
 
-      // 6) Execute on-chain transfer: Transaction Wallet → Escrow Wallet
+      // 7) Transfer: Transaction Wallet → Escrow Wallet (principal + escrow fee)
+      // Gas for this internal transfer is covered by TrustLock platform revenue
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
         WALLETS.escrow.address,
-        escrowPrincipal,
+        escrowWalletReceives,
         token,
-        `Escrow principal for TX ${tx.tx_id}`
+        `Escrow principal ($${escrowPrincipal}) + escrow fee ($${escrowFee}) for TX ${tx.tx_id}`
       );
 
-      // 7) Record the routing in the transaction
+      // 8) Update transaction
       await supabase
         .from("transactions")
         .update({
           status: "locked",
-          fee: totalDeductions,
+          fee: transactionWalletRetains,
           updated_at: new Date().toISOString(),
         })
         .eq("id", transactionId);
 
-      // 8) Notify both parties
+      // 9) Notify
       await notify(
         supabase, tx.vendor_id,
         "Funds Secured in Escrow",
-        `$${escrowPrincipal.toFixed(2)} has been routed to escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `Fees deducted: $${totalDeductions.toFixed(2)} (Platform: $${platformFee.toFixed(2)}, ` +
-        `Escrow deposit: $${escrowDepositFee.toFixed(2)}${taxAmount > 0 ? `, Tax: $${taxAmount.toFixed(2)}` : ""}).`,
+        `$${escrowPrincipal.toFixed(2)} has been locked in escrow for order #${tx.order_number || tx.tx_id}. ` +
+        `The full escrow amount will be released to you upon completion — no fees deducted from your payout.`,
         "success", transactionId
       );
 
       await notify(
         supabase, tx.buyer_id,
         "Payment Secured",
-        `Your payment of $${grossAmount.toFixed(2)} is secured. ` +
-        `$${escrowPrincipal.toFixed(2)} held in escrow for order #${tx.order_number || tx.tx_id}.`,
+        `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
+        `Fees paid: Platform $${platformFee.toFixed(2)}, Escrow service $${escrowFee.toFixed(2)}` +
+        `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
+        `In case of refund, you receive 100% of the escrow amount — only gas fees apply.`,
         "success", transactionId
       );
 
       const result: RoutingResult = {
         action: "route_inbound",
         transactionId,
-        grossAmount,
+        grossAmount: round(escrowPrincipal + escrowFee + platformFee + processorFee + taxAmount),
         platformFee,
         processorFee,
-        escrowDepositFee,
+        escrowFee,
         taxAmount,
         taxType,
-        totalDeductions,
-        transactionWalletRetains: round(platformFee + escrowDepositFee + taxAmount),
-        escrowWalletReceives: escrowPrincipal,
+        totalDeductions: transactionWalletRetains,
+        transactionWalletRetains,
+        escrowWalletReceives,
         transfers: [{
           from: WALLETS.transaction.address,
           to: WALLETS.escrow.address,
-          amount: escrowPrincipal,
+          amount: escrowWalletReceives,
           token,
-          memo: `Escrow principal for TX ${tx.tx_id}`,
+          memo: `Escrow principal + fee for TX ${tx.tx_id}`,
           txHash: routingTransfer.txHash,
           status: routingTransfer.status,
         }],
       };
 
-      // Forward to escrow-bridge to lock on-chain
+      // Forward to escrow-bridge
       try {
         const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
         await fetch(escrowUrl, {
@@ -323,33 +305,32 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_RELEASE — Release escrow to vendor
+    //  ACTION: ROUTE_RELEASE — Vendor gets 100% principal
     // ══════════════════════════════════════════════════
     if (action === "route_release") {
-      const escrowPrincipal = tx.amount - (tx.fee || 0);
-
-      // Escrow release fee (1.0%) — trickles to Transaction Wallet
-      const escrowReleaseFee = round(escrowPrincipal * (FEE_RATES.escrow_release / 100));
-      const vendorPayout = round(escrowPrincipal - escrowReleaseFee);
+      // Escrow wallet holds: principal + escrow fee
+      // Vendor gets: 100% principal (preserved)
+      // Escrow fee trickles: → Transaction Wallet
+      const escrowPrincipal = tx.amount;
+      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
         WALLETS.escrow.address,
         WALLETS.transaction.address,
-        escrowReleaseFee,
+        escrowFee,
         token,
-        `Escrow release fee trickle-down for TX ${tx.tx_id}`
+        `Escrow fee trickle-down for TX ${tx.tx_id}`
       );
 
-      // Transfer 2: Net payout → Vendor (or to off-ramp for fiat conversion)
-      // In production, this goes to vendor's wallet or to off-ramp bridge
-      const vendorWallet = body.vendorWallet || WALLETS.transaction.address; // Placeholder
+      // Transfer 2: Full principal → Vendor (100%, no deductions)
+      const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTransfer = await transferOnChain(
         WALLETS.escrow.address,
         vendorWallet,
-        vendorPayout,
+        escrowPrincipal,
         token,
-        `Vendor payout for TX ${tx.tx_id}`
+        `Vendor payout (100% principal) for TX ${tx.tx_id}`
       );
 
       await supabase
@@ -361,7 +342,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", transactionId);
 
-      // Forward to escrow-bridge for on-chain release
       try {
         const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
         await fetch(escrowUrl, {
@@ -378,15 +358,16 @@ Deno.serve(async (req) => {
 
       await notify(
         supabase, tx.vendor_id,
-        "Funds Released",
-        `$${vendorPayout.toFixed(2)} released to your account. Escrow fee: $${escrowReleaseFee.toFixed(2)}.`,
+        "Funds Released — Full Amount",
+        `$${escrowPrincipal.toFixed(2)} released to your account (100% of escrow principal, no deductions). ` +
+        `Escrow service fee of $${escrowFee.toFixed(2)} was pre-paid by the buyer at checkout.`,
         "success", transactionId
       );
 
       await notify(
         supabase, tx.buyer_id,
         "Order Completed",
-        `Funds for order #${tx.order_number || tx.tx_id} released to vendor.`,
+        `Funds for order #${tx.order_number || tx.tx_id} have been released to the vendor.`,
         "info", transactionId
       );
 
@@ -395,14 +376,14 @@ Deno.serve(async (req) => {
         action: "route_release",
         transactionId,
         escrowPrincipal,
-        escrowReleaseFee,
-        vendorPayout,
-        trickleToTransactionWallet: escrowReleaseFee,
+        escrowFee,
+        vendorPayout: escrowPrincipal,
+        trickleToTransactionWallet: escrowFee,
         transfers: [
           {
             from: WALLETS.escrow.address,
             to: WALLETS.transaction.address,
-            amount: escrowReleaseFee,
+            amount: escrowFee,
             token,
             memo: "Escrow fee trickle-down",
             txHash: trickleTransfer.txHash,
@@ -411,9 +392,9 @@ Deno.serve(async (req) => {
           {
             from: WALLETS.escrow.address,
             to: vendorWallet,
-            amount: vendorPayout,
+            amount: escrowPrincipal,
             token,
-            memo: "Vendor payout",
+            memo: "Vendor payout (100% principal)",
             txHash: payoutTransfer.txHash,
             status: payoutTransfer.status,
           },
@@ -422,19 +403,22 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_REFUND — Full refund from escrow
+    //  ACTION: ROUTE_REFUND — 100% principal back, gas only
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
-      const escrowPrincipal = tx.amount - (tx.fee || 0);
-      // No fees on refund — 100% back to buyer
+      const escrowPrincipal = tx.amount;
+      // Pre-paid escrow fee is also returned to buyer
+      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const totalRefund = round(escrowPrincipal + escrowFee);
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
+      // Gas is the only cost — covered by platform or minimal
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
         buyerWallet,
-        escrowPrincipal,
+        totalRefund,
         token,
-        `Refund for TX ${tx.tx_id}`
+        `Full refund (principal + escrow fee) for TX ${tx.tx_id}`
       );
 
       await supabase
@@ -445,7 +429,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", transactionId);
 
-      // Forward to escrow-bridge
       try {
         const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
         await fetch(escrowUrl, {
@@ -462,8 +445,10 @@ Deno.serve(async (req) => {
 
       await notify(
         supabase, tx.buyer_id,
-        "Refund Processed",
-        `Full refund of $${escrowPrincipal.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. No fees charged.`,
+        "Refund Processed — No Service Fees",
+        `Full refund of $${totalRefund.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
+        `This includes your escrow principal ($${escrowPrincipal.toFixed(2)}) and pre-paid escrow fee ($${escrowFee.toFixed(2)}). ` +
+        `No TrustLock service fees charged. Only minimal network gas fees (~$0.02-$0.05) apply.`,
         "success", transactionId
       );
 
@@ -471,14 +456,17 @@ Deno.serve(async (req) => {
         success: true,
         action: "route_refund",
         transactionId,
-        refundAmount: escrowPrincipal,
+        refundAmount: totalRefund,
+        escrowPrincipal,
+        escrowFeeReturned: escrowFee,
         feesCharged: 0,
+        gasNote: "Gas fees (~$0.02-$0.05) are the only cost. No TrustLock service fees on refunds.",
         transfers: [{
           from: WALLETS.escrow.address,
           to: buyerWallet,
-          amount: escrowPrincipal,
+          amount: totalRefund,
           token,
-          memo: "Full refund — zero fees",
+          memo: "Full refund — no service fees, gas only",
           txHash: refundTransfer.txHash,
           status: refundTransfer.status,
         }],
@@ -486,7 +474,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_SPLIT — Dispute arbitration split
+    //  ACTION: ROUTE_SPLIT — Dispute resolution
     // ══════════════════════════════════════════════════
     if (action === "route_split") {
       const { buyerShare, vendorShare } = body;
@@ -494,62 +482,77 @@ Deno.serve(async (req) => {
         return json({ error: "buyerShare and vendorShare (0-1) are required" }, 400);
       }
 
-      const escrowPrincipal = tx.amount - (tx.fee || 0);
+      const escrowPrincipal = tx.amount;
+      const prePaidEscrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const totalInEscrow = round(escrowPrincipal + prePaidEscrowFee);
+
       const buyerAmount = round(escrowPrincipal * buyerShare);
       const vendorGross = round(escrowPrincipal * vendorShare);
 
-      // Escrow fee ONLY on vendor's share
-      const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_release / 100));
+      // Escrow fee halved from original rate, vendor side only
+      // If original milestone rate was e.g. 0.20%, split rate = 0.10%
+      const originalMilestoneRate = body.originalMilestoneEscrowRate ?? FEE_RATES.escrow_service;
+      const halvedRate = originalMilestoneRate / 2;
+      const vendorEscrowFee = round(vendorGross * (halvedRate / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
+
+      // Gas split equally between buyer and vendor for crypto-to-crypto
+      const isCryptoSplit = body.isCryptoPayout === true;
+      const gasPerParty = isCryptoSplit ? 0.025 : 0; // ~$0.05 total split 50/50
+      const buyerNetAfterGas = round(buyerAmount - gasPerParty);
+      const vendorNetAfterGas = round(vendorNet - gasPerParty);
+
+      // Remaining escrow fee from pre-paid amount trickles to Transaction Wallet
+      const feeToTrickle = round(prePaidEscrowFee - vendorEscrowFee);
 
       const transfers = [];
 
-      // 1) Escrow fee → Transaction Wallet
-      if (vendorEscrowFee > 0) {
+      // 1) Trickle remaining escrow fee → Transaction Wallet
+      if (feeToTrickle > 0) {
         const trickle = await transferOnChain(
           WALLETS.escrow.address, WALLETS.transaction.address,
-          vendorEscrowFee, token,
-          `Split escrow fee for TX ${tx.tx_id}`
+          feeToTrickle, token,
+          `Split escrow fee trickle for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: WALLETS.transaction.address,
-          amount: vendorEscrowFee,
+          amount: feeToTrickle,
           token, memo: "Split escrow fee trickle-down",
           txHash: trickle.txHash, status: trickle.status,
         });
       }
 
-      // 2) Buyer refund portion
-      if (buyerAmount > 0) {
+      // 2) Buyer portion
+      if (buyerNetAfterGas > 0) {
         const buyerWallet = body.buyerWallet || "buyer_pending";
         const buyerTx = await transferOnChain(
           WALLETS.escrow.address, buyerWallet,
-          buyerAmount, token,
+          buyerNetAfterGas, token,
           `Buyer split portion for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: buyerWallet,
-          amount: buyerAmount,
-          token, memo: "Buyer arbitration share",
+          amount: buyerNetAfterGas,
+          token, memo: `Buyer arbitration share${isCryptoSplit ? ` (gas: -$${gasPerParty.toFixed(3)})` : ""}`,
           txHash: buyerTx.txHash, status: buyerTx.status,
         });
       }
 
       // 3) Vendor net payout
-      if (vendorNet > 0) {
+      if (vendorNetAfterGas > 0) {
         const vendorWallet = body.vendorWallet || "vendor_pending";
         const vendorTx = await transferOnChain(
           WALLETS.escrow.address, vendorWallet,
-          vendorNet, token,
+          vendorNetAfterGas, token,
           `Vendor split payout for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: vendorWallet,
-          amount: vendorNet,
-          token, memo: "Vendor arbitration share (net of fee)",
+          amount: vendorNetAfterGas,
+          token, memo: `Vendor arbitration share (escrow fee: -$${vendorEscrowFee.toFixed(2)}${isCryptoSplit ? `, gas: -$${gasPerParty.toFixed(3)}` : ""})`,
           txHash: vendorTx.txHash, status: vendorTx.status,
         });
       }
@@ -562,7 +565,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", transactionId);
 
-      // Forward to escrow-bridge
       try {
         const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
         await fetch(escrowUrl, {
@@ -573,7 +575,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             action: "split", transactionId,
-            buyerAmount, vendorAmount: vendorNet,
+            buyerAmount: buyerNetAfterGas, vendorAmount: vendorNetAfterGas,
           }),
         });
       } catch (e) {
@@ -581,26 +583,38 @@ Deno.serve(async (req) => {
       }
 
       await notify(supabase, tx.buyer_id,
-        "Dispute Resolved", `You receive $${buyerAmount.toFixed(2)} from arbitration.`, "info", transactionId);
+        "Dispute Resolved",
+        `You receive $${buyerNetAfterGas.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal).` +
+        `${isCryptoSplit ? ` Gas fee of $${gasPerParty.toFixed(3)} deducted.` : ""} No TrustLock service fees on your portion.`,
+        "info", transactionId);
       await notify(supabase, tx.vendor_id,
-        "Dispute Resolved", `You receive $${vendorNet.toFixed(2)} (fee: $${vendorEscrowFee.toFixed(2)}).`, "info", transactionId);
+        "Dispute Resolved",
+        `You receive $${vendorNetAfterGas.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
+        `Escrow fee: $${vendorEscrowFee.toFixed(2)} (halved rate: ${halvedRate.toFixed(2)}%).` +
+        `${isCryptoSplit ? ` Gas fee of $${gasPerParty.toFixed(3)} deducted.` : ""}`,
+        "info", transactionId);
 
       return json({
         success: true,
         action: "route_split",
         transactionId,
         escrowPrincipal,
-        buyerAmount,
+        prePaidEscrowFee,
+        buyerShare,
+        vendorShare,
+        buyerAmount: buyerNetAfterGas,
         vendorGross,
         vendorEscrowFee,
-        vendorNet,
-        trickleToTransactionWallet: vendorEscrowFee,
+        vendorNet: vendorNetAfterGas,
+        halvedEscrowRate: halvedRate,
+        gasPerParty: isCryptoSplit ? gasPerParty : 0,
+        feeToTrickle,
         transfers,
       });
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_MILESTONE — Release single milestone
+    //  ACTION: ROUTE_MILESTONE — Fractional release
     // ══════════════════════════════════════════════════
     if (action === "route_milestone") {
       const { milestoneId } = body;
@@ -616,9 +630,8 @@ Deno.serve(async (req) => {
 
       const milestoneAmount = Number(milestone.amount) || 0;
 
-      // ── Zero-amount checkpoint: no funds move, no fee ─────
+      // Zero-amount checkpoint: no funds move
       if (milestoneAmount <= 0) {
-        // Mark as completed but skip all financial routing
         await supabase
           .from("transaction_milestones")
           .update({ status: "completed", completed_at: new Date().toISOString() })
@@ -661,8 +674,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ── Fractional fee model (payment milestones only) ────
-      // Count only milestones that have payment amounts (skip checkpoints)
+      // Fractional escrow fee trickle (from pre-paid escrow fee pool)
       const { count: paymentMilestoneCount } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -670,10 +682,9 @@ Deno.serve(async (req) => {
         .gt("payment_amount", 0);
 
       const pmCount = paymentMilestoneCount || 1;
-      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_release / 100)); // 1% of full principal
-      const fractionalFee = round(totalEscrowFee / pmCount);
+      const totalPrePaidEscrowFee = round(tx.amount * (FEE_RATES.escrow_service / 100));
+      const fractionalFee = round(totalPrePaidEscrowFee / pmCount);
 
-      // Count already-completed PAYMENT milestones (not checkpoints)
       const { count: completedPaymentMilestones } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -683,31 +694,32 @@ Deno.serve(async (req) => {
 
       const priorCompleted = completedPaymentMilestones || 0;
       const isLastPaymentMilestone = (priorCompleted + 1) === pmCount;
-      // Last payment milestone absorbs rounding remainder so total = exactly 1%
-      const feesAlreadyCharged = round(fractionalFee * priorCompleted);
-      const escrowFee = isLastPaymentMilestone
-        ? round(totalEscrowFee - feesAlreadyCharged)
+      const feesAlreadyTrickled = round(fractionalFee * priorCompleted);
+      const escrowFeeTrickle = isLastPaymentMilestone
+        ? round(totalPrePaidEscrowFee - feesAlreadyTrickled)
         : fractionalFee;
-      const vendorNet = round(milestoneAmount - escrowFee);
+
+      // Vendor receives 100% of milestone amount (no deductions from principal!)
+      const vendorNet = milestoneAmount;
 
       const transfers = [];
 
-      // Trickle escrow fee → Transaction Wallet
-      if (escrowFee > 0) {
+      // Trickle fractional escrow fee → Transaction Wallet
+      if (escrowFeeTrickle > 0) {
         const trickle = await transferOnChain(
           WALLETS.escrow.address, WALLETS.transaction.address,
-          escrowFee, token,
-          `Milestone ${milestone.title} escrow fee for TX ${tx.tx_id}`
+          escrowFeeTrickle, token,
+          `Milestone "${milestone.title}" escrow fee trickle for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address, to: WALLETS.transaction.address,
-          amount: escrowFee, token,
+          amount: escrowFeeTrickle, token,
           memo: `Milestone escrow fee trickle-down`,
           txHash: trickle.txHash, status: trickle.status,
         });
       }
 
-      // Vendor payout for this milestone
+      // Vendor payout — 100% of milestone amount
       const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTx = await transferOnChain(
         WALLETS.escrow.address, vendorWallet,
@@ -717,17 +729,15 @@ Deno.serve(async (req) => {
       transfers.push({
         from: WALLETS.escrow.address, to: vendorWallet,
         amount: vendorNet, token,
-        memo: `Milestone payout`,
+        memo: `Milestone payout (100% principal)`,
         txHash: payoutTx.txHash, status: payoutTx.status,
       });
 
-      // Update milestone status
       await supabase
         .from("transaction_milestones")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", milestoneId);
 
-      // Check if all milestones completed
       const { data: remaining } = await supabase
         .from("transaction_milestones")
         .select("id")
@@ -746,7 +756,6 @@ Deno.serve(async (req) => {
           .eq("id", transactionId);
       }
 
-      // Forward to escrow-bridge for on-chain milestone release
       try {
         const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
         await fetch(escrowUrl, {
@@ -766,8 +775,9 @@ Deno.serve(async (req) => {
       }
 
       await notify(supabase, tx.vendor_id,
-        "Milestone Released",
-        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" (fee: $${escrowFee.toFixed(2)}).`,
+        "Milestone Released — Full Amount",
+        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" — 100% of milestone principal, no deductions. ` +
+        `Escrow service fee ($${escrowFeeTrickle.toFixed(2)}) was pre-paid by the buyer at checkout.`,
         "success", transactionId);
 
       return json({
@@ -776,9 +786,10 @@ Deno.serve(async (req) => {
         transactionId,
         milestoneId,
         milestoneAmount,
-        escrowFee,
+        escrowFeeTrickle,
         vendorNet,
-        trickleToTransactionWallet: escrowFee,
+        vendorReceives100Percent: true,
+        trickleToTransactionWallet: escrowFeeTrickle,
         allCompleted: !remaining?.length,
         transfers,
       });
