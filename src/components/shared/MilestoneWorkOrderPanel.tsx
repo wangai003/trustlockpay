@@ -43,6 +43,12 @@ const statusLabel: Record<string, string> = {
   released: "Released",
 };
 
+/** Industries where observer is NOT required on any milestone */
+const OBSERVER_FREE_INDUSTRIES = new Set([
+  "ecommerce", "tourism", "freelance", "education",
+  "e-commerce", "digital-services", "hospitality-travel", "professional-services",
+]);
+
 /* ---------- Sub-components ---------- */
 
 interface ObserverInviteProps {
@@ -53,6 +59,7 @@ interface ObserverInviteProps {
   setObserverName: (v: string) => void;
   setObserverEmail: (v: string) => void;
   onInvite: () => void;
+  onDismiss: () => void;
 }
 
 const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObserverName, setObserverEmail, onInvite }: ObserverInviteProps) => (
