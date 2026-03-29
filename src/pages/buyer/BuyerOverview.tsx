@@ -42,7 +42,7 @@ const BuyerOverview = () => {
     <div>
       <BuyerHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <OnboardingTaskCard role="buyer" />
+        <TLId code="TL-B-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="buyer" /></TLId>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
