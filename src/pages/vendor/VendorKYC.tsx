@@ -296,9 +296,51 @@ const VendorKYC = () => {
           </CardContent>
         </Card>
 
-        <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground">
-          <strong>To reach Tier 3 (Enterprise):</strong> Submit bank verification documents and complete the due diligence review. This unlocks unlimited transaction amounts.
-        </div>
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">To reach Tier 3 (Enterprise):</strong> Submit bank verification documents and complete the due diligence review. This unlocks unlimited transaction amounts.
+            </p>
+            <Button
+              size="sm"
+              disabled={uploading || documents.filter(d => d.status === "approved").length < 3}
+              onClick={async () => {
+                try {
+                  const session = (await supabase.auth.getSession()).data.session;
+                  if (!session) {
+                    toast.info("Tier upgrade request submitted (testnet simulation)");
+                    return;
+                  }
+                  const res = await fetch(
+                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-kyc`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({ action: "request_tier_upgrade", target_tier: "tier3" }),
+                    }
+                  );
+                  const data = await res.json();
+                  if (data.success) {
+                    toast.success("Tier 3 upgrade request submitted for admin review.");
+                  } else {
+                    toast.error(data.error || "Upgrade request failed");
+                  }
+                } catch {
+                  toast.error("Failed to submit upgrade request");
+                }
+              }}
+            >
+              Request Tier 3 Upgrade
+            </Button>
+            {documents.filter(d => d.status === "approved").length < 3 && (
+              <p className="text-[10px] text-muted-foreground">You need at least 3 approved documents to request a tier upgrade.</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

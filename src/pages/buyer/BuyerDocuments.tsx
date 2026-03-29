@@ -28,7 +28,20 @@ const BuyerDocuments = () => {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
 
-  const handleDownloadForm = () => {
+  const handleDownloadForm = async () => {
+    // Log download request to archived_reports
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("archived_reports").insert({
+          name: "Acknowledgement Form Download",
+          owner_id: user.id,
+          owner_role: "buyer",
+          file_type: "PDF",
+          file_size: "~45 KB",
+        });
+      }
+    } catch { /* best effort */ }
     navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Acknowledgement Form Download`)}&amount=0.50`);
   };
 

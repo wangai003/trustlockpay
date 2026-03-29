@@ -31,8 +31,20 @@ const VendorDocuments = () => {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [previewIndustry, setPreviewIndustry] = useState("default");
 
-  const handleDownloadForm = (formName: string) => {
-    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Acknowledgement Form Download`)}&amount=0.50`);
+  const handleDownloadForm = async (formName: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("archived_reports").insert({
+          name: formName,
+          owner_id: user.id,
+          owner_role: "vendor",
+          file_type: "PDF",
+          file_size: "~45 KB",
+        });
+      }
+    } catch { /* best effort */ }
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`${formName} Download`)}&amount=0.50`);
   };
 
   return (

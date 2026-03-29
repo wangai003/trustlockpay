@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useVendor } from "@/contexts/VendorContext";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
 import { useTransactions, useArchivedReports } from "@/hooks/useSupabaseData";
+import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
@@ -74,8 +75,21 @@ const VendorAnalytics = () => {
 
   const navigate = useNavigate();
 
-  const handleDownloadClick = (reportName: string) => {
-    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent("Data Analytics Print-out")}&amount=1.00`);
+  const handleDownloadClick = async (reportName: string) => {
+    // Insert into archived_reports for audit trail, then route to OS Pay
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("archived_reports").insert({
+          name: reportName,
+          owner_id: user.id,
+          owner_role: "vendor",
+          file_type: "PDF",
+          file_size: "—",
+        });
+      }
+    } catch { /* best effort */ }
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Report: ${reportName}`)}&amount=0.50`);
   };
 
   const handlePaymentComplete = () => {
