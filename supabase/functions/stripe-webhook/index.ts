@@ -177,10 +177,11 @@ Deno.serve(async (req) => {
         confirmResult = await forwardConfirm(sessionId);
       }
 
-      // Lock funds in escrow
-      let escrowResult = null;
+      // Route funds: Transaction Wallet → deduct fees → Escrow Wallet
+      let routingResult = null;
       if (transactionId) {
-        escrowResult = await forwardEscrowLock(transactionId);
+        const amountUsd = (data.amount || 0) / 100;
+        routingResult = await forwardWalletRouting(transactionId, amountUsd, "stripe");
       }
 
       await notify(
