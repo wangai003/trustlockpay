@@ -311,35 +311,115 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                   const prio = toPriority(n.type);
                   const meta = priorityMeta[prio];
                   const PrioIcon = meta.Icon;
+                  const isExpanded = expandedId === n.id;
                   return (
-                    <div
-                      key={n.id}
-                      onClick={() => markRead(n.id)}
-                      className={cn(
-                        "p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer",
-                        !n.is_read && "bg-primary/5",
-                        !n.is_read && meta.borderCls
-                      )}
-                    >
-                      <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className={cn("text-xs flex-1 truncate", !n.is_read && "font-semibold")}>{n.title}</p>
-                          <span className={cn("text-[8px] px-1 py-0.5 rounded font-bold shrink-0", meta.badgeCls)}>
-                            {meta.label}
-                          </span>
+                    <div key={n.id} className="border-b border-border last:border-0">
+                      <div
+                        onClick={() => {
+                          markRead(n.id);
+                          setExpandedId(isExpanded ? null : n.id);
+                        }}
+                        className={cn(
+                          "p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer",
+                          !n.is_read && "bg-primary/5",
+                          !n.is_read && meta.borderCls
+                        )}
+                      >
+                        <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className={cn("text-xs flex-1 truncate", !n.is_read && "font-semibold")}>{n.title}</p>
+                            <span className={cn("text-[8px] px-1 py-0.5 rounded font-bold shrink-0", meta.badgeCls)}>
+                              {meta.label}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-[9px] text-muted-foreground">{formatTimeAgo(n.created_at)}</p>
+                            {n.related_entity_type && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-muted text-muted-foreground">{n.related_entity_type.replace(/_/g, " ")}</span>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-[9px] text-muted-foreground">{formatTimeAgo(n.created_at)}</p>
-                          {n.related_entity_type && (
-                            <span className="text-[8px] px-1 py-0.5 rounded bg-muted text-muted-foreground">{n.related_entity_type.replace(/_/g, " ")}</span>
-                          )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isExpanded ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
+                          <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground">
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground shrink-0">
-                        <X className="w-3 h-3" />
-                      </button>
+
+                      {/* ── Expanded Detail Panel ── */}
+                      {isExpanded && (
+                        <div className="px-4 py-3 bg-muted/20 border-t border-border space-y-3 animate-in slide-in-from-top-1 duration-200">
+                          {/* Full message */}
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Details</p>
+                            <p className="text-xs text-foreground">{n.message || "No additional details available."}</p>
+                          </div>
+
+                          {/* Metadata grid */}
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="bg-background rounded p-2 border border-border">
+                              <p className="text-muted-foreground mb-0.5">Priority</p>
+                              <span className={cn("px-1.5 py-0.5 rounded font-bold text-[9px]", meta.badgeCls)}>{meta.label}</span>
+                            </div>
+                            <div className="bg-background rounded p-2 border border-border">
+                              <p className="text-muted-foreground mb-0.5">Category</p>
+                              <p className="font-medium text-foreground">{n.related_entity_type?.replace(/_/g, " ") || "General"}</p>
+                            </div>
+                            <div className="bg-background rounded p-2 border border-border">
+                              <p className="text-muted-foreground mb-0.5">Timestamp</p>
+                              <p className="font-medium text-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(n.created_at).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="bg-background rounded p-2 border border-border">
+                              <p className="text-muted-foreground mb-0.5">Status</p>
+                              <p className="font-medium text-foreground">{n.is_read ? "Read" : "Unread"}</p>
+                            </div>
+                          </div>
+
+                          {/* Suggested Actions */}
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Actions</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {prio === "critical" && (
+                                <button
+                                  onClick={() => { toast.info("Navigating to related record..."); setOpen(false); }}
+                                  className="text-[10px] px-2 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Investigate
+                                </button>
+                              )}
+                              {prio === "high" && (
+                                <button
+                                  onClick={() => { toast.info("Opening related record..."); setOpen(false); }}
+                                  className="text-[10px] px-2 py-1 rounded bg-orange-500 text-white hover:bg-orange-600 font-medium flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Review
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`[${n.title}] ${n.message || ""} — ${new Date(n.created_at).toISOString()}`);
+                                  toast.success("Notification details copied to clipboard");
+                                }}
+                                className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
+                              >
+                                <Copy className="w-3 h-3" /> Copy
+                              </button>
+                              <button
+                                onClick={() => { dismiss(n.id); setExpandedId(null); }}
+                                className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3 h-3" /> Dismiss
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })
