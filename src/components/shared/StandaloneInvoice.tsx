@@ -151,6 +151,17 @@ const StandaloneInvoice = ({ vendorName = "Vendor", onProceed }: StandaloneInvoi
           taxAmount={taxTotal}
         />
 
+        {/* Note */}
+        <div>
+          <Label className="text-xs text-muted-foreground">Note to buyer (optional)</Label>
+          <Input
+            placeholder="Payment terms, delivery info..."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="mt-1 text-xs"
+          />
+        </div>
+
         <Button
           className="w-full gap-2"
           disabled={!isValid}
