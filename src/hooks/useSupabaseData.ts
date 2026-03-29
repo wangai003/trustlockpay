@@ -622,7 +622,7 @@ export function useInitiatePayout() {
       amount: string;
       paymentCategory: string;
       paymentProvider: string;
-      providerDetails: Record<string, string>;
+      providerDetails: Record<string, unknown>;
       mode: string;
     }) => callEdgeFunction("manage-seed-token", { action: "initiate_payout", ...params }),
     onSuccess: () => {
