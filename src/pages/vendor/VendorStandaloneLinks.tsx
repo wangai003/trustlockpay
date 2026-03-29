@@ -161,45 +161,60 @@ const VendorStandaloneLinks = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {links.map((link) => (
+            {links.map((link, rowIdx) => {
+              const row = rowIdx + 1;
+              return (
               <Card key={link.id}>
                 <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">{link.title}</p>
-                      <Badge
-                        variant={link.status === "paid" ? "default" : link.status === "active" ? "outline" : "secondary"}
-                        className="text-[10px]"
-                      >
-                        {link.status}
-                      </Badge>
+                      <TLId code={dynTLId("V", "LNK", row, "LBL-TITLE")} inline>
+                        <p className="text-sm font-semibold truncate">{link.title}</p>
+                      </TLId>
+                      <TLId code={dynTLId("V", "LNK", row, "STS")} inline>
+                        <Badge
+                          variant={link.status === "paid" ? "default" : link.status === "active" ? "outline" : "secondary"}
+                          className="text-[10px]"
+                        >
+                          {link.status}
+                        </Badge>
+                      </TLId>
                     </div>
-                    <p className="text-xs font-semibold text-primary">${link.grand_total.toFixed(2)}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono truncate">{baseUrl}/pay/{link.link_id}</p>
+                    <TLId code={dynTLId("V", "LNK", row, "LBL-AMOUNT")} inline>
+                      <p className="text-xs font-semibold text-primary">${link.grand_total.toFixed(2)}</p>
+                    </TLId>
+                    <TLId code={dynTLId("V", "LNK", row, "LBL-URL")} inline>
+                      <p className="text-[10px] text-muted-foreground font-mono truncate">{baseUrl}/pay/{link.link_id}</p>
+                    </TLId>
                     <p className="text-[10px] text-muted-foreground">Created {new Date(link.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 text-xs"
-                      onClick={() => handleCopy(link)}
-                    >
-                      {copiedId === link.link_id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {copiedId === link.link_id ? "Copied" : "Copy"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1.5 text-xs"
-                      onClick={() => navigate(`/pay/${link.link_id}`)}
-                    >
-                      <ExternalLink className="w-3 h-3" /> Preview
-                    </Button>
+                    <TLId code={dynTLId("V", "LNK", row, "BTN-COPY")} inline>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs"
+                        onClick={() => handleCopy(link)}
+                      >
+                        {copiedId === link.link_id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copiedId === link.link_id ? "Copied" : "Copy"}
+                      </Button>
+                    </TLId>
+                    <TLId code={dynTLId("V", "LNK", row, "BTN-PREVIEW")} inline>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1.5 text-xs"
+                        onClick={() => navigate(`/pay/${link.link_id}`)}
+                      >
+                        <ExternalLink className="w-3 h-3" /> Preview
+                      </Button>
+                    </TLId>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
