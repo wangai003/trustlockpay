@@ -856,3 +856,18 @@ export function useSaveOnboardingProfile() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ─── Vendor Rejections (Analytics) ──────────────────────────
+export function useVendorRejections() {
+  return useQuery({
+    queryKey: ["vendor_rejections"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendor_rejections" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
