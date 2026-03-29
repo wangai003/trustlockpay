@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Download, FileText, Calendar, Archive, Search, Shield
+  Download, FileText, Calendar, Archive, Search, Shield, XCircle, Fuel, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
-import { useTransactions, useDisputes, usePayouts, useArchivedReports } from "@/hooks/useSupabaseData";
+import { useTransactions, useDisputes, usePayouts, useArchivedReports, useVendorRejections } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
 
 const chartStyle = {
