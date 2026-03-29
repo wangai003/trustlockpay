@@ -318,7 +318,25 @@ const PublicCheckout = () => {
                   <div className="text-center pb-3 border-b border-border">
                     <p className="text-xs text-muted-foreground">Invoice from</p>
                     <p className="font-heading font-bold text-foreground">{vendorName}</p>
+                    {linkData.industry && linkData.industry !== "default" && (
+                      <Badge variant="outline" className="text-[10px] mt-1 capitalize">{linkData.industry.replace(/_/g, " ")}</Badge>
+                    )}
                   </div>
+
+                  {/* Trade terms row */}
+                  {(linkData.incoterms || linkData.delivery_terms || linkData.currency !== "USD") && (
+                    <div className="flex flex-wrap gap-2 text-[10px]">
+                      {linkData.currency && linkData.currency !== "USD" && (
+                        <Badge variant="secondary" className="text-[10px]">Currency: {linkData.currency}</Badge>
+                      )}
+                      {linkData.incoterms && (
+                        <Badge variant="secondary" className="text-[10px]">Incoterms: {linkData.incoterms}</Badge>
+                      )}
+                      {linkData.delivery_terms && (
+                        <Badge variant="secondary" className="text-[10px]">Delivery: {linkData.delivery_terms}</Badge>
+                      )}
+                    </div>
+                  )}
 
                   {/* Line items */}
                   <div className="space-y-2">
@@ -327,9 +345,11 @@ const PublicCheckout = () => {
                       <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg border border-border bg-muted/20 text-xs">
                         <div>
                           <p className="font-medium">{item.description}</p>
-                          <p className="text-muted-foreground">Qty: {item.quantity} × ${Number(item.unitPrice).toFixed(2)}</p>
+                          <p className="text-muted-foreground">
+                            Qty: {item.quantity} {item.unit && item.unit !== "Unit" ? item.unit : ""} × {linkData.currency === "USD" ? "$" : linkData.currency + " "}{Number(item.unitPrice).toFixed(2)}
+                          </p>
                         </div>
-                        <span className="font-semibold">${(item.quantity * item.unitPrice).toFixed(2)}</span>
+                        <span className="font-semibold">{linkData.currency === "USD" ? "$" : linkData.currency + " "}{(item.quantity * item.unitPrice).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
