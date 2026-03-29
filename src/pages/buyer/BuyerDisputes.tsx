@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } fr
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -23,6 +25,9 @@ const BuyerDisputes = () => {
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Item not as described");
   const [descInput, setDescInput] = useState("");
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const evidenceInputRef = useRef<HTMLInputElement>(null);
   const { data: rawDisputes = [] } = useDisputes();
   const fileDispute = useFileDispute();
 
@@ -39,9 +44,47 @@ const BuyerDisputes = () => {
 
   const handleSubmitDispute = async () => {
     if (!txIdInput) return;
-    await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
-    setShowNewDispute(false);
-    setTxIdInput(""); setDescInput("");
+    setUploadingEvidence(true);
+    try {
+      await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
+
+      // Upload evidence files if any
+      if (evidenceFiles.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        for (const file of evidenceFiles) {
+          const path = `${txIdInput}/${Date.now()}_${file.name}`;
+          const { error: uploadErr } = await supabase.storage.from("dispute-evidence").upload(path, file);
+          if (uploadErr) {
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+        if (evidenceFiles.length > 0) toast.success(`${evidenceFiles.length} evidence file(s) uploaded`);
+      }
+
+      setShowNewDispute(false);
+      setTxIdInput(""); setDescInput(""); setEvidenceFiles([]);
+    } catch { /* handled by hook */ }
+    setUploadingEvidence(false);
+  };
+
+  const handleAddEvidence = async (disputeId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = "image/*,.pdf,.doc,.docx";
+    input.onchange = async () => {
+      if (!input.files?.length) return;
+      const files = Array.from(input.files);
+      let uploaded = 0;
+      for (const file of files) {
+        const path = `${disputeId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("dispute-evidence").upload(path, file);
+        if (!error) uploaded++;
+        else toast.error(`Failed to upload ${file.name}`);
+      }
+      if (uploaded > 0) toast.success(`${uploaded} evidence file(s) added to dispute`);
+    };
+    input.click();
   };
 
   return (
@@ -88,14 +131,41 @@ const BuyerDisputes = () => {
               </div>
               <div className="space-y-2">
                 <Label>Evidence (optional)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <input
+                  ref={evidenceInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                  }}
+                />
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => evidenceInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]); }}
+                >
                   <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">Drop photos, screenshots, or documents here</p>
-                  <Button variant="outline" size="sm" className="mt-2">Browse Files</Button>
+                  <Button variant="outline" size="sm" className="mt-2" type="button">Browse Files</Button>
                 </div>
+                {evidenceFiles.length > 0 && (
+                  <div className="space-y-1">
+                    {evidenceFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                        <span className="flex-1 truncate">{f.name}</span>
+                        <button className="text-destructive hover:underline" onClick={() => setEvidenceFiles(prev => prev.filter((_, idx) => idx !== i))}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button className="gap-2" onClick={handleSubmitDispute}><AlertTriangle className="w-4 h-4" /> Submit Dispute</Button>
+                <Button className="gap-2" onClick={handleSubmitDispute} disabled={uploadingEvidence}>
+                  {uploadingEvidence ? <><Upload className="w-4 h-4 animate-spin" /> Uploading...</> : <><AlertTriangle className="w-4 h-4" /> Submit Dispute</>}
+                </Button>
                 <Button variant="outline" onClick={() => setShowNewDispute(false)}>Cancel</Button>
               </div>
             </CardContent>
@@ -151,7 +221,7 @@ const BuyerDisputes = () => {
 
                   <div className="flex gap-2 shrink-0">
                     <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
-                      <Button variant="outline" size="sm" className="gap-1"><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
                     </TLId>
                     <TLId code={dynTLId("B", "DSP", row, "BTN-VIEW")} inline>
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>

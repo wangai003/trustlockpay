@@ -21,12 +21,23 @@ import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 
+const notificationKeys = [
+  { key: "new_escrow", label: "New escrow created" },
+  { key: "buyer_confirms", label: "Buyer confirms delivery" },
+  { key: "funds_released", label: "Funds released" },
+  { key: "dispute_opened", label: "Dispute opened against you" },
+  { key: "kyc_update", label: "KYC status update" },
+  { key: "plan_expiry", label: "Plan expiry reminder" },
+  { key: "order_limit", label: "Order limit warning" },
+];
+
 const VendorSettings = () => {
   const { vendor } = useVendor();
   const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
@@ -46,6 +57,7 @@ const VendorSettings = () => {
     if (settings) {
       if (settings.auto_delivery !== null) setAutoDelivery(settings.auto_delivery);
       if (settings.pay_enabled !== null) setPayEnabled(settings.pay_enabled);
+      if (settings.notifications) setNotifPrefs(settings.notifications as Record<string, boolean>);
     }
   }, [settings]);
 
@@ -75,7 +87,7 @@ const VendorSettings = () => {
   };
 
   const handleSave = async () => {
-    await saveSettings.mutateAsync({ autoDelivery, payEnabled });
+    await saveSettings.mutateAsync({ autoDelivery, payEnabled, notifications: notifPrefs });
   };
 
   return (
@@ -226,20 +238,22 @@ const VendorSettings = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { label: "New escrow created", email: true, inApp: true },
-              { label: "Buyer confirms delivery", email: true, inApp: true },
-              { label: "Funds released", email: true, inApp: true },
-              { label: "Dispute opened against you", email: true, inApp: true },
-              { label: "KYC status update", email: true, inApp: true },
-              { label: "Plan expiry reminder", email: true, inApp: true },
-              { label: "Order limit warning", email: true, inApp: true },
-            ].map((n) => (
-              <div key={n.label} className="flex items-center justify-between">
+            {notificationKeys.map((n) => (
+              <div key={n.key} className="flex items-center justify-between">
                 <span className="text-sm">{n.label}</span>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.email} /> Email</label>
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.inApp} /> In-App</label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_email`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_email`]: checked }))}
+                    /> Email
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_inapp`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_inapp`]: checked }))}
+                    /> In-App
+                  </label>
                 </div>
               </div>
             ))}

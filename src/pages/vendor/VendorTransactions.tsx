@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { getVendorPlanState, getRequiredPlanForOrders, PLANS, PLAN_ORDER, getOrderRangeLabel } from "@/hooks/useVendorPlan";
 import { useTransactions, useRejectOrders, useAddTracking, useMarkDelivered } from "@/hooks/useSupabaseData";
+import { useTestnetData } from "@/hooks/useTestnetData";
+import { useVendor } from "@/contexts/VendorContext";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
@@ -43,6 +45,7 @@ const industryLabels: Record<string, string> = INDUSTRY_LABELS;
 
 const VendorTransactions = () => {
   const navigate = useNavigate();
+  const { isTestnet } = useVendor();
   const [filter, setFilter] = useState<TxStatus>("all");
   const [industryFilter, setIndustryFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -50,30 +53,52 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
 
+  // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
-  const rejectOrders = useRejectOrders();
-  const addTracking = useAddTracking();
-  const markDelivered = useMarkDelivered();
+  const rejectOrdersHook = useRejectOrders();
+  const addTrackingHook = useAddTracking();
+  const markDeliveredHook = useMarkDelivered();
+
+  // Testnet mock hooks
+  const testnet = useTestnetData();
 
   const planState = getVendorPlanState();
   const orderMax = planState.orderMax;
   const isUnlimited = orderMax === -1;
 
-  const allTx = rawTransactions.map((tx, i) => ({
-    dbId: tx.id,
-    id: tx.tx_id,
-    buyer: tx.buyer_name || "Unknown",
-    amount: Number(tx.amount),
-    status: tx.status as "locked" | "shipped" | "released" | "disputed",
-    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    item: tx.item || "—",
-    tracking: tx.tracking || null,
-    order: tx.order_number ?? (i + 1),
-    industry: tx.industry || null,
-    type: tx.type || "product",
-    buyerLocation: tx.buyer_location || "—",
-    vendorLocation: tx.vendor_location || "—",
-  }));
+  const sourceData = isTestnet
+    ? testnet.transactions.map((tx, i) => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        buyer: tx.buyer_name,
+        amount: tx.amount,
+        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item,
+        tracking: tx.tracking,
+        order: tx.order_number,
+        industry: tx.industry,
+        type: tx.type,
+        buyerLocation: tx.buyer_location,
+        vendorLocation: tx.vendor_location,
+      }))
+    : rawTransactions.map((tx, i) => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        buyer: tx.buyer_name || "Unknown",
+        amount: Number(tx.amount),
+        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item || "—",
+        tracking: tx.tracking || null,
+        order: tx.order_number ?? (i + 1),
+        industry: tx.industry || null,
+        type: tx.type || "product",
+        buyerLocation: tx.buyer_location || "—",
+        vendorLocation: tx.vendor_location || "—",
+      }));
+
+  const allTx = sourceData;
 
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -92,9 +117,11 @@ const VendorTransactions = () => {
   const toggleSelect = (id: string) => setSelected((p) => p.includes(id) ? p.filter((s) => s !== id) : [...p, id]);
 
   const handleRejectSelected = async () => {
-    try {
-      await rejectOrders.mutateAsync(selected);
-    } catch { /* handled by hook */ }
+    if (isTestnet) {
+      testnet.rejectOrders(selected);
+    } else {
+      try { await rejectOrdersHook.mutateAsync(selected); } catch { /* handled */ }
+    }
     setSelected([]);
     setRejectDialog(false);
   };
@@ -102,19 +129,31 @@ const VendorTransactions = () => {
   const handleAddTracking = async (txId: string) => {
     const tracking = prompt("Enter tracking number:");
     if (tracking) {
-      await addTracking.mutateAsync({ txId, tracking });
+      if (isTestnet) {
+        testnet.addTracking(txId, tracking);
+      } else {
+        await addTrackingHook.mutateAsync({ txId, tracking });
+      }
     }
   };
 
   const handleMarkShipped = (txId: string) => {
     void (async () => {
       const tracking = prompt("Optional tracking number (leave blank for manual ship):")?.trim() || `MANUAL-${Date.now()}`;
-      await addTracking.mutateAsync({ txId, tracking });
+      if (isTestnet) {
+        testnet.addTracking(txId, tracking);
+      } else {
+        await addTrackingHook.mutateAsync({ txId, tracking });
+      }
     })();
   };
 
   const handleMarkDelivered = async (txId: string) => {
-    await markDelivered.mutateAsync(txId);
+    if (isTestnet) {
+      testnet.markDelivered(txId);
+    } else {
+      await markDeliveredHook.mutateAsync(txId);
+    }
   };
 
   return (

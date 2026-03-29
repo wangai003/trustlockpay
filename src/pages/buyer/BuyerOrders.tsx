@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2 } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import { useTestnetData } from "@/hooks/useTestnetData";
+import { useBuyer } from "@/contexts/BuyerContext";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
@@ -28,14 +30,16 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 };
 
 const BuyerOrders = () => {
+  const { isTestnet } = useBuyer();
   const [filter, setFilter] = useState<OrderStatus>("all");
   const [search, setSearch] = useState("");
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
-  const confirmDelivery = useConfirmDelivery();
-  const openDispute = useOpenDispute();
+  const confirmDeliveryHook = useConfirmDelivery();
+  const openDisputeHook = useOpenDispute();
+  const testnet = useTestnetData();
 
   const handleClaimOrder = async () => {
     const code = claimCode.trim();
@@ -153,17 +157,29 @@ const BuyerOrders = () => {
     }
   };
 
-  const allOrders = rawTransactions.map(tx => ({
-    dbId: tx.id,
-    id: tx.tx_id,
-    vendor: tx.vendor_name || "Unknown",
-    amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-    status: tx.status,
-    date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    item: tx.item || "—",
-    tracking: tx.tracking || null,
-    industry: tx.industry || null,
-  }));
+  const allOrders = isTestnet
+    ? testnet.transactions.map(tx => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        vendor: tx.vendor_name,
+        amount: `$${tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        status: tx.status,
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item,
+        tracking: tx.tracking,
+        industry: tx.industry,
+      }))
+    : rawTransactions.map(tx => ({
+        dbId: tx.id,
+        id: tx.tx_id,
+        vendor: tx.vendor_name || "Unknown",
+        amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        status: tx.status,
+        date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item: tx.item || "—",
+        tracking: tx.tracking || null,
+        industry: tx.industry || null,
+      }));
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
@@ -291,7 +307,10 @@ const BuyerOrders = () => {
                     <div className="flex gap-2 shrink-0">
                       {order.status === "delivered" && (
                         <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
-                          <Button size="sm" onClick={() => confirmDelivery.mutate(order.id)}>Confirm Delivery</Button>
+                          <Button size="sm" onClick={() => {
+                            if (isTestnet) { testnet.confirmDelivery(order.id); }
+                            else { confirmDeliveryHook.mutate(order.id); }
+                          }}>Confirm Delivery</Button>
                         </TLId>
                       )}
                       {order.status === "shipped" && (
@@ -308,7 +327,8 @@ const BuyerOrders = () => {
                             onClick={() => {
                               const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
                               const description = window.prompt("Add note/details for dispute (optional):", "") || "";
-                              openDispute.mutate({ txId: order.id, reason, description });
+                              if (isTestnet) { testnet.openDispute(order.id, reason); }
+                              else { openDisputeHook.mutate({ txId: order.id, reason, description }); }
                             }}
                           >
                             Dispute
