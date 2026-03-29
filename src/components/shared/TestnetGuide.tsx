@@ -59,6 +59,7 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { resetTestnetData } = useTestnetData();
   const [completed, setCompleted] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(storageKey(role)) || "[]"); } catch { return []; }
   });
