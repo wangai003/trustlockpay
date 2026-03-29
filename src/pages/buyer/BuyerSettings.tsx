@@ -81,25 +81,33 @@ const BuyerSettings = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { label: "Order status updates", email: true, sms: true },
-              { label: "Delivery confirmation reminders", email: true, sms: true },
-              { label: "Auto-release countdown (48h)", email: true, sms: true },
-              { label: "Dispute updates", email: true, sms: false },
-              { label: "Funds released", email: true, sms: false },
-            ].map((n) => (
-              <div key={n.label} className="flex items-center justify-between">
+            {buyerNotificationKeys.map((n) => (
+              <div key={n.key} className="flex items-center justify-between">
                 <span className="text-sm">{n.label}</span>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.email} /> Email</label>
-                  <label className="flex items-center gap-1.5 text-xs"><Switch defaultChecked={n.sms} /> SMS</label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_email`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_email`]: checked }))}
+                    /> Email
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <Switch
+                      checked={notifPrefs[`${n.key}_sms`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_sms`]: checked }))}
+                    /> SMS
+                  </label>
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <TLId code="TL-B-SET-BTN-SAVE" inline><Button className="gap-2"><Save className="w-4 h-4" /> Save Changes</Button></TLId>
+        <TLId code="TL-B-SET-BTN-SAVE" inline>
+          <Button className="gap-2" onClick={() => saveNotifs.mutateAsync(notifPrefs)}>
+            <Save className="w-4 h-4" /> Save Changes
+          </Button>
+        </TLId>
 
         {/* Account Actions */}
         <Card className="border-destructive/20">

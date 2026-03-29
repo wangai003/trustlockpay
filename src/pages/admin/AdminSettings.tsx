@@ -84,21 +84,21 @@ const AdminSettings = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { label: "New dispute filed", email: true, inApp: true },
-              { label: "KYC review needed", email: true, inApp: true },
-              { label: "Large transaction (>$5,000)", email: true, inApp: true },
-              { label: "Flagged activity alert", email: true, inApp: true },
-              { label: "Emmanuel AI escalation", email: true, inApp: true },
-            ].map((n) => (
-              <div key={n.label} className="flex items-center justify-between">
+            {adminNotifKeys.map((n) => (
+              <div key={n.key} className="flex items-center justify-between">
                 <span className="text-sm">{n.label}</span>
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-1.5 text-xs">
-                    <Switch checked={n.email} /> Email
+                    <Switch
+                      checked={notifPrefs[`${n.key}_email`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_email`]: checked }))}
+                    /> Email
                   </label>
                   <label className="flex items-center gap-1.5 text-xs">
-                    <Switch checked={n.inApp} /> In-App
+                    <Switch
+                      checked={notifPrefs[`${n.key}_inapp`] !== false}
+                      onCheckedChange={(checked) => setNotifPrefs(prev => ({ ...prev, [`${n.key}_inapp`]: checked }))}
+                    /> In-App
                   </label>
                 </div>
               </div>
