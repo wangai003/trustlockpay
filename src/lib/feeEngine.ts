@@ -598,7 +598,7 @@ Processor fees (${FEE_CATEGORIES.processor.range}) are paid to the external paym
 
 All-in fee ranges: Crypto direct (${ALL_IN_RANGES.cryptoDirect.range}), Fiat (${ALL_IN_RANGES.fiat.range}), Refunds (${ALL_IN_RANGES.refund.range}).`;
 
-export const FEE_DISCLOSURE_SHORT = `All fees are charged upfront at checkout and added to the invoice total — the escrow principal is never reduced. Platform: ${FEE_CATEGORIES.platform.range} · Processor: ${FEE_CATEGORIES.processor.range} · Escrow: ${FEE_CATEGORIES.escrow.display}. Refunds: gas only, no service fees. Gas for internal transfers covered by TrustLock.`;
+export const FEE_DISCLOSURE_SHORT = `All fees are charged upfront at checkout and added to the invoice total — the escrow principal is never reduced. Platform: ${FEE_CATEGORIES.platform.range} · Processor: ${FEE_CATEGORIES.processor.range} · Escrow: ${FEE_CATEGORIES.escrow.display}. Refunds: $0 fees — gas absorbed from escrow fee. All gas covered by TrustLock.`;
 
 export const FEE_DISCLOSURE_FULL = `TrustLock Pay fees are transparently added to your invoice total so the vendor receives 100% of the agreed escrow amount:
 
@@ -610,14 +610,12 @@ export const FEE_DISCLOSURE_FULL = `TrustLock Pay fees are transparently added t
 
 4. **Network Gas Fees**: ${FEE_CATEGORIES.gas.description}
 
-**What are Gas Fees?** Think of gas fees like a small postage cost to send a package — except instead of a physical package, you're sending money on the blockchain. These fees go to the network, NOT to TrustLock.
+**Gas Fee Coverage:**
+• ✅ **Checkout & Vendor Release:** $0 — TrustLock covers gas from platform revenue
+• ✅ **Refunds:** $0 to buyer — gas absorbed from the pre-paid 1% escrow service fee
+• ✅ **Split Payouts (Dispute Resolution):** $0 to both parties — gas absorbed from the pre-paid escrow service fee
 
-**When Gas Fees Apply:**
-• ✅ **Standard checkout & vendor release:** $0 — TrustLock covers all gas from platform revenue
-• ⚠️ **Refunds:** ~$0.02–$0.05 deducted from the refund amount (the ONLY cost on refunds — no TrustLock service fees)
-• ⚠️ **Split payouts (dispute resolution):** ~$0.02–$0.05 total, split equally between buyer and vendor (~$0.01–$0.025 each)
-
-**Why can't we show an exact gas amount upfront?** Gas fees fluctuate based on how busy the blockchain network is at the moment of your transaction — similar to how ride-sharing prices change during peak hours. The range shown ($0.02–$0.05) represents typical costs on the Polygon network, which is one of the most affordable blockchain networks available.
+TrustLock absorbs ALL blockchain gas fees so buyers and vendors never see gas as a line item. For standard operations, gas comes from platform revenue. For refunds and splits, gas is absorbed from the 1% escrow service fee that was pre-paid at checkout.
 
 **Split Payouts (Dispute Resolution):** The escrow fee is halved from the original milestone rate and applied only to the vendor's share.`;
 
