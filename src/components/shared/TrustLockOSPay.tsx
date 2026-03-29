@@ -134,6 +134,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
+  // ── Rate Lock State ──
+  const [rateLockExpiry, setRateLockExpiry] = useState<number | null>(null);
+  const [lockedRate, setLockedRate] = useState<number | null>(null);
+  const [lockedCurrencyCode, setLockedCurrencyCode] = useState<string>("");
+  const [lockedCurrencySymbol, setLockedCurrencySymbol] = useState<string>("");
+  const [rateLockCountdown, setRateLockCountdown] = useState<string>("");
+  const [rateLockActive, setRateLockActive] = useState(false);
+
   const processPayment = useProcessPayment();
   // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
   const getSeedToken = useGetOrCreateSeedToken("os_pay");
