@@ -789,7 +789,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     Your payment was received but does not cover the full amount. This is likely due to a network or withdrawal fee deducted by your exchange or wallet.
                   </p>
                   <p className="text-[10px] text-foreground font-semibold">
-                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same Azix wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
+                    Please send the remaining <strong>${((parseFloat(total) || parsedAmount) - cumulativeReceived).toFixed(2)} {selectedToken}</strong> to the same wallet address above using the same Polygon network. Then enter your new Transaction ID and amount below and click "Submit Additional Payment."
                   </p>
                   {shortfallTxIds.length > 0 && (
                     <div className="p-1.5 rounded bg-muted text-[9px] text-muted-foreground">
