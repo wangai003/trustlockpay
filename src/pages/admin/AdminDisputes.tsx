@@ -36,12 +36,15 @@ const AdminDisputes = () => {
   const [arbEmail, setArbEmail] = useState("");
   const [ruling, setRuling] = useState("");
   const [splitPct, setSplitPct] = useState("50");
+  const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
 
   const { data: rawDisputes = [] } = useDisputes();
   const reviewDispute = useReviewDispute();
   const escalateToArb = useEscalateToArbitration();
   const assignArb = useAssignArbitrator();
   const submitRuling = useSubmitRuling();
+  const uploadEvidence = useUploadDisputeEvidence();
+  const { data: evidenceFiles = [] } = useDisputeEvidence(expandedEvidence || undefined);
 
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
