@@ -18,6 +18,8 @@ import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskC
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
 import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
+import TLId from "@/components/shared/TLId";
+import { dynTLId } from "@/lib/tlIdRegistry";
 
 const INDUSTRIES = [
   { key: "mining", label: "Mining" },
