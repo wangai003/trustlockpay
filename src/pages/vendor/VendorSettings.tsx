@@ -212,7 +212,7 @@ const VendorSettings = () => {
                 <p className="text-sm font-medium">Tier B — Self-Custody</p>
                 <p className="text-xs text-muted-foreground">Direct to your Polygon wallet (1.0% fee)</p>
               </div>
-              <Button variant="outline" size="sm">Switch</Button>
+              <TLId code="TL-V-SET-BTN-PAYOUT-SWITCH" inline><Button variant="outline" size="sm">Switch</Button></TLId>
             </div>
           </CardContent>
         </Card>
