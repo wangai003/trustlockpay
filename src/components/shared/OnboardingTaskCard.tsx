@@ -44,6 +44,7 @@ const buyerTasks: OnboardingTask[] = [
   { id: "b8", label: "Sign Pre-Order Signatory Contract", frequency: "always", description: "Digital signature required at checkout for every transaction." },
   { id: "b9", label: "Confirm delivery within 14 days", frequency: "always", description: "Confirm receipt to release vendor funds. Auto-release after 14 days." },
   { id: "b10", label: "File dispute with evidence (if needed)", frequency: "sometimes", description: "Open a dispute within the 14-day window with supporting documents." },
+  { id: "b11", label: "Review rejection & refund policy", frequency: "one-time", description: "Understand that vendor rejections trigger full refund minus nominal gas fee (~$0.01–$0.05)." },
 ];
 
 const adminTasks: OnboardingTask[] = [
@@ -55,6 +56,7 @@ const adminTasks: OnboardingTask[] = [
   { id: "a6", label: "Audit dispute evidence for resolved cases", frequency: "sometimes", description: "Cross-reference uploaded evidence with resolution outcomes." },
   { id: "a7", label: "Generate compliance reports (monthly)", frequency: "always", description: "Export transaction, dispute, and KYC data for regulatory filing." },
   { id: "a8", label: "Review 7-year retention compliance", frequency: "future", description: "Audit cross-border trade docs against 7-year immutable retention policy." },
+  { id: "a9", label: "Monitor vendor rejection analytics", frequency: "always", description: "Review rejection rates, gas costs absorbed, and revenue impact in Analytics → Rejections tab." },
 ];
 
 const frequencyBadge: Record<TaskFrequency, { label: string; color: string }> = {
