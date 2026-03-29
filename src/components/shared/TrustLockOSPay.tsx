@@ -21,6 +21,29 @@ type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_trans
 type AdminAction = "refund" | "split" | null;
 type PayMode = "local" | "diaspora";
 
+/* ── African Currency Exchange Rates (indicative, would be fetched from API in production) ── */
+const AFRICAN_CURRENCIES: Record<string, { code: string; name: string; symbol: string; rate: number }> = {
+  NG: { code: "NGN", name: "Nigerian Naira", symbol: "₦", rate: 1580.00 },
+  KE: { code: "KES", name: "Kenyan Shilling", symbol: "KSh", rate: 153.50 },
+  GH: { code: "GHS", name: "Ghanaian Cedi", symbol: "GH₵", rate: 15.80 },
+  ZA: { code: "ZAR", name: "South African Rand", symbol: "R", rate: 18.25 },
+  CM: { code: "XAF", name: "CFA Franc (CEMAC)", symbol: "FCFA", rate: 610.00 },
+  EG: { code: "EGP", name: "Egyptian Pound", symbol: "E£", rate: 50.85 },
+  UG: { code: "UGX", name: "Ugandan Shilling", symbol: "USh", rate: 3780.00 },
+  TZ: { code: "TZS", name: "Tanzanian Shilling", symbol: "TSh", rate: 2650.00 },
+  RW: { code: "RWF", name: "Rwandan Franc", symbol: "FRw", rate: 1350.00 },
+  SN: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  CI: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  ML: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  BF: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  BJ: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  TG: { code: "XOF", name: "CFA Franc (WAEMU)", symbol: "FCFA", rate: 610.00 },
+  ZM: { code: "ZMW", name: "Zambian Kwacha", symbol: "ZK", rate: 27.50 },
+  MW: { code: "MWK", name: "Malawian Kwacha", symbol: "MK", rate: 1720.00 },
+  MG: { code: "MGA", name: "Malagasy Ariary", symbol: "Ar", rate: 4550.00 },
+};
+const RATE_LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
 interface TrustLockOSPayProps {
   role: "admin" | "vendor" | "buyer";
   prefillService?: string;
@@ -111,11 +134,18 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
+  // ── Rate Lock State ──
+  const [rateLockExpiry, setRateLockExpiry] = useState<number | null>(null);
+  const [lockedRate, setLockedRate] = useState<number | null>(null);
+  const [lockedCurrencyCode, setLockedCurrencyCode] = useState<string>("");
+  const [lockedCurrencySymbol, setLockedCurrencySymbol] = useState<string>("");
+  const [rateLockCountdown, setRateLockCountdown] = useState<string>("");
+  const [rateLockActive, setRateLockActive] = useState(false);
+
   const processPayment = useProcessPayment();
-  // OS Pay token → hardwired to Transaction Fee Wallet (revenue/fees collection)
   const getSeedToken = useGetOrCreateSeedToken("os_pay");
 
-  // Auto-link seed token on mount — no manual button needed
+  // Auto-link seed token on mount
   useEffect(() => {
     if (!isAdmin && !seedTokenLinked) {
       getSeedToken.mutate(undefined, {
@@ -128,6 +158,66 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   }, [isAdmin]);
 
   const parsedAmount = amount ? parseFloat(amount) : 0;
+
+  // ── Rate Lock: auto-lock when country selected + amount entered in Africa mode ──
+  const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
+
+  const lockRate = () => {
+    if (!currencyInfo || parsedAmount <= 0) return;
+    const expiry = Date.now() + RATE_LOCK_DURATION_MS;
+    setLockedRate(currencyInfo.rate);
+    setLockedCurrencyCode(currencyInfo.code);
+    setLockedCurrencySymbol(currencyInfo.symbol);
+    setRateLockExpiry(expiry);
+    setRateLockActive(true);
+    toast.success(`🔒 Rate locked: 1 USD = ${currencyInfo.symbol}${currencyInfo.rate.toLocaleString()} for 30 minutes`);
+  };
+
+  // Auto-lock when country + amount + Africa mode + non-crypto method are all set
+  useEffect(() => {
+    if (
+      payMode === "local" &&
+      selectedCountry &&
+      currencyInfo &&
+      parsedAmount > 0 &&
+      method &&
+      method !== "azix" &&
+      !rateLockActive
+    ) {
+      lockRate();
+    }
+    // Reset lock when switching away from Africa mode or to crypto
+    if ((payMode !== "local" || method === "azix") && rateLockActive) {
+      setRateLockActive(false);
+      setRateLockExpiry(null);
+      setLockedRate(null);
+    }
+  }, [payMode, selectedCountry, method, parsedAmount > 0]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!rateLockExpiry || !rateLockActive) {
+      setRateLockCountdown("");
+      return;
+    }
+    const interval = setInterval(() => {
+      const remaining = rateLockExpiry - Date.now();
+      if (remaining <= 0) {
+        setRateLockActive(false);
+        setRateLockExpiry(null);
+        setLockedRate(null);
+        setRateLockCountdown("");
+        toast.info("⏰ Rate lock expired. A new rate will be quoted on your next action.");
+        clearInterval(interval);
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      setRateLockCountdown(`${mins}:${secs.toString().padStart(2, "0")}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [rateLockExpiry, rateLockActive]);
+
   const taxTotal = isAdmin ? 0 : taxItems.reduce((sum, t) => sum + (t.type === "percentage" ? parsedAmount * (t.value / 100) : t.value), 0);
 
   // Dynamic fee calculation using the cost-optimization engine
@@ -385,7 +475,83 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
-          {/* ─── ADMIN ACTIONS ─── */}
+          {/* ─── RATE LOCK BANNER (Africa mode, non-crypto) ─── */}
+          {!isAdmin && rateLockActive && lockedRate && parsedAmount > 0 && (
+            <div className="p-3 rounded-xl border-2 border-primary/40 bg-primary/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold text-primary">Rate Locked</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-xs font-mono font-bold text-primary">{rateLockCountdown}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-background border border-border space-y-1.5">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">Exchange Rate</span>
+                  <span className="font-bold">1 USD = {lockedCurrencySymbol}{lockedRate.toLocaleString()} {lockedCurrencyCode}</span>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted-foreground">Amount (USD)</span>
+                  <span className="font-semibold">${parsedAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs border-t border-border pt-1.5 mt-1">
+                  <span className="font-bold">You Pay ({lockedCurrencyCode})</span>
+                  <span className="font-bold text-primary text-sm">{lockedCurrencySymbol}{(parsedAmount * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                {feeBreakdown && feeBreakdown.totalFees > 0 && (
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-muted-foreground">Incl. Fees ({lockedCurrencyCode})</span>
+                    <span className="text-muted-foreground">{lockedCurrencySymbol}{(feeBreakdown.totalFees * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+                {taxTotal > 0 && (
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-muted-foreground">Incl. Taxes ({lockedCurrencyCode})</span>
+                    <span className="text-muted-foreground">{lockedCurrencySymbol}{(taxTotal * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs border-t border-border pt-1.5 mt-1">
+                  <span className="font-bold">Total ({lockedCurrencyCode})</span>
+                  <span className="font-bold text-primary text-sm">{lockedCurrencySymbol}{(parseFloat(total) * lockedRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              <p className="text-[9px] text-muted-foreground text-center">
+                🔒 This rate is guaranteed for 30 minutes from lock time. Send the exact {lockedCurrencyCode} amount shown above via your selected payment method.
+              </p>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-[10px] gap-1"
+                onClick={() => {
+                  setRateLockActive(false);
+                  setRateLockExpiry(null);
+                  setLockedRate(null);
+                  toast.info("Rate lock cleared. A new rate will be quoted.");
+                }}
+              >
+                🔄 Refresh Rate
+              </Button>
+            </div>
+          )}
+
+          {/* Rate lock prompt — show when country is selected but rate not yet locked */}
+          {!isAdmin && payMode === "local" && selectedCountry && currencyInfo && parsedAmount > 0 && method && method !== "azix" && !rateLockActive && (
+            <div className="p-2.5 rounded-lg border border-accent/30 bg-accent/5 text-center space-y-2">
+              <p className="text-[10px] text-foreground">
+                Current rate: <strong>1 USD = {currencyInfo.symbol}{currencyInfo.rate.toLocaleString()} {currencyInfo.code}</strong>
+              </p>
+              <Button type="button" size="sm" className="text-[10px] gap-1" onClick={lockRate}>
+                <Lock className="w-3 h-3" /> Lock Rate for 30 Minutes
+              </Button>
+            </div>
+          )}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Admin Actions</p>
             <div className="grid grid-cols-2 gap-2">
