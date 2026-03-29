@@ -286,11 +286,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="local" className="gap-1.5 text-xs">
                   <MapPin className="w-3.5 h-3.5" />
-                  Local Africa
+                  Africa
                 </TabsTrigger>
                 <TabsTrigger value="diaspora" className="gap-1.5 text-xs">
                   <Globe className="w-3.5 h-3.5" />
-                  Diaspora
+                  International
                 </TabsTrigger>
               </TabsList>
             </Tabs>
