@@ -577,7 +577,7 @@ const TrustLockOSPayout = ({
           )}
         >
           <Smartphone className="w-4 h-4" />
-          Local (Africa)
+          Africa
         </button>
         <button
           onClick={() => { setMode("diaspora"); setSelectedProvider(null); setProviderFields({}); }}
