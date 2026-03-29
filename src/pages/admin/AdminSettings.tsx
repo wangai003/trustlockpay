@@ -1,3 +1,4 @@
+import { useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Bell, Globe, Lock, Save } from "lucide-react";
+import { toast } from "sonner";
 
+const adminNotifKeys = [
+  { key: "new_dispute", label: "New dispute filed" },
+  { key: "kyc_review", label: "KYC review needed" },
+  { key: "large_tx", label: "Large transaction (>$5,000)" },
+  { key: "flagged_activity", label: "Flagged activity alert" },
+  { key: "ai_escalation", label: "Emmanuel AI escalation" },
+];
 
 const AdminSettings = () => {
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+
+  const handleSave = () => {
+    // Admin settings are stored differently (admin_accounts table or localStorage for now)
+    localStorage.setItem("tl_admin_notif_prefs", JSON.stringify(notifPrefs));
+    toast.success("Admin settings saved");
+  };
   return (
     <div>
       <AdminHeader title="Settings" />
