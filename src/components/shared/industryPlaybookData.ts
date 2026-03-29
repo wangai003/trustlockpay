@@ -165,17 +165,17 @@ export const industries: IndustryEntry[] = [
   // Original industries kept below
   {
     id: "tourism", name: "Tourism & Hospitality", icon: Plane, color: "text-sky-600",
-    desc: "Booking-based escrow for tours, hotels, and travel experiences with date-triggered releases.",
-    stages: ["Booking Confirmation & Deposit", "Pre-Trip Documentation", "Service Delivery (Check-In)", "Mid-Experience Check", "Service Completion", "Review & Feedback", "Final Payout Release"],
-    buyerCaps: ["Book with escrow protection", "Upload travel documents", "Dispute before or after experience", "Rate and review service providers", "Request partial refund for service gaps", "Auto-release after experience completion"],
-    vendorCaps: ["Receive confirmed bookings with escrow", "Upload service itineraries", "Date-triggered payout release", "Seasonal pricing tools", "Customer review management", "Analytics on booking trends"],
+    desc: "Booking-based escrow for tours, hotels, event tickets, and travel experiences with date-triggered releases.",
+    stages: ["Booking Confirmation & Deposit", "Pre-Event Documentation & Voucher Issuance", "Access Granted / Check-In", "Experience Delivery / Event Day", "Service Completion & Satisfaction Check", "Review & Feedback", "Final Payout Release"],
+    buyerCaps: ["Book with escrow protection", "Receive digital vouchers and e-tickets", "Dispute before or after experience", "Rate and review service providers", "Request partial refund for service gaps", "Auto-release after experience completion"],
+    vendorCaps: ["Receive confirmed bookings with escrow", "Issue digital vouchers and tickets", "Date-triggered payout release", "Seasonal pricing tools", "Customer review management", "Analytics on booking trends"],
   },
   {
     id: "retail", name: "Retail & E-Commerce", icon: ShoppingBag, color: "text-purple-600",
-    desc: "Atomic escrow for product purchases with shipping-based milestone tracking.",
-    stages: ["Order Placement & Payment", "Seller Confirmation", "Packaging & Dispatch", "Shipping & Tracking", "Delivery Confirmation", "Inspection Window (48h)", "Auto-Release or Dispute"],
-    buyerCaps: ["Track shipment in real-time", "48-hour inspection window after delivery", "One-click dispute filing", "Photo evidence upload for damaged goods", "Access order carbon copies", "Automatic refund on seller no-show"],
-    vendorCaps: ["Instant order notifications", "Upload tracking numbers", "Auto-release after confirmation", "Bulk order management", "Return handling workflow", "Widget installation for any website"],
+    desc: "Atomic escrow for product purchases — physical goods with shipping tracking or digital goods with instant access.",
+    stages: ["Order Placement & Payment", "Seller Confirmation & Preparation", "Fulfillment (Ship / Digital Delivery)", "Delivery Confirmation / Access Granted", "Inspection Window (48h)", "Buyer Acceptance or Dispute", "Auto-Release or Resolution"],
+    buyerCaps: ["Track shipment or download digital goods", "48-hour inspection window after delivery", "One-click dispute filing", "Photo evidence upload for damaged goods", "Access order carbon copies", "Automatic refund on seller no-show"],
+    vendorCaps: ["Instant order notifications", "Upload tracking numbers or delivery links", "Auto-release after confirmation", "Bulk order management", "Return handling workflow", "Widget installation for any website"],
   },
   {
     id: "freelance", name: "Freelance & Professional Services", icon: Briefcase, color: "text-indigo-600",
@@ -193,8 +193,8 @@ export const industries: IndustryEntry[] = [
   },
   {
     id: "education", name: "Education & Training", icon: GraduationCap, color: "text-rose-600",
-    desc: "Subscription and course-based escrow for tuition and training programs.",
-    stages: ["Enrollment & Tuition Deposit", "Course Material Access", "Module 1 Completion", "Mid-Program Assessment", "Module 2+ Progression", "Final Assessment & Certification", "Certificate Issuance & Payout"],
+    desc: "Subscription and course-based escrow for tuition, training programs, and certifications.",
+    stages: ["Enrollment & Tuition Deposit", "Course Material Access / Orientation", "Module Progression & Assessments", "Mid-Program Review", "Final Assessment / Examination", "Certification & Transcript Issuance", "Payout Release"],
     buyerCaps: ["Escrow-protected tuition payments", "Track course module progress", "Dispute if content not delivered", "Access certificates and transcripts", "Partial refund for incomplete programs", "Auto-release per module completion"],
     vendorCaps: ["Structured tuition collection", "Upload course materials per module", "Student progress tracking", "Certificate generation tools", "Multi-cohort management", "Subscription billing support"],
   },
