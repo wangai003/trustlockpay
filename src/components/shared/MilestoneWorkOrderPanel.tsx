@@ -479,6 +479,33 @@ const MilestoneWorkOrderPanel = ({
                     </TLId>
                   ) : null}
 
+                  {/* Delete — only pending milestones can be removed during negotiation */}
+                  {ms.status === "pending" && (
+                    <TLId code={woTLId(role, row, "BTN-DELETE")} inline>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          if (isTestnet) {
+                            onTestnetUpdateStatus?.(ms.id, "released"); // simulate removal in testnet
+                            toast.success(`Stage "${ms.title}" removed`);
+                            return;
+                          }
+                          const userId = await getUserId();
+                          if (!userId) return toast.error("Sign in required");
+                          const { error } = await supabase.functions.invoke("escrow-manager", {
+                            body: { action: "delete_milestone", milestone_id: ms.id, user_id: userId },
+                          });
+                          if (error) toast.error("Failed to remove milestone");
+                          else toast.success(`Stage "${ms.title}" removed from work order`);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove Stage
+                      </Button>
+                    </TLId>
+                  )}
+
                   {ms.status === "completed" && role === "vendor" && (
                     <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
                       <CheckCircle2 className="w-3 h-3 mr-0.5" /> Awaiting buyer release
