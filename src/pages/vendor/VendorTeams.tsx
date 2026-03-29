@@ -212,7 +212,11 @@ const VendorTeams = () => {
     </div>
   ) : null;
 
-  if (selectedWs) {
+  // ─── TESTNET MODE ─────────────────────────────────────────
+  if (isTestnet) {
+    return <TestnetTeamsView testnet={testnet} role="vendor" />;
+  }
+
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
 
     return (
