@@ -35,6 +35,7 @@ const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlaybook"));
 const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
 const AdminTaxRemittance = lazy(() => import("./pages/admin/AdminTaxRemittance"));
+const AdminBlockchainProofs = lazy(() => import("./pages/admin/AdminBlockchainProofs"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -126,6 +127,7 @@ const App = () => (
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
                 <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="tax-remittance" element={<AdminTaxRemittance />} />
+                <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
