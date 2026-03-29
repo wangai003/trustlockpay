@@ -415,7 +415,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           <>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pay With — {payMode === "local" ? "Local Africa" : "Diaspora / International"}
+              Pay With — {payMode === "local" ? "Africa" : "International"}
             </p>
             {activeMethods.map(m => (
               <button
