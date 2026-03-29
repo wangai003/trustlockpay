@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } fr
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },

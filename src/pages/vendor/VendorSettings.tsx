@@ -87,7 +87,7 @@ const VendorSettings = () => {
   };
 
   const handleSave = async () => {
-    await saveSettings.mutateAsync({ autoDelivery, payEnabled });
+    await saveSettings.mutateAsync({ autoDelivery, payEnabled, notifications: notifPrefs });
   };
 
   return (
