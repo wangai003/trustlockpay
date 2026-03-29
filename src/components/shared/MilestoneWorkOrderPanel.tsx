@@ -19,12 +19,21 @@ import {
   useTransactionObservers,
   useUpdateMilestone,
 } from "@/hooks/useSupabaseData";
+import type { MockMilestone } from "@/hooks/useTestnetData";
 
 interface MilestoneWorkOrderPanelProps {
   transactionId?: string | null;
   txId: string;
   industry?: string | null;
   role: "buyer" | "vendor";
+  isTestnet?: boolean;
+  testnetMilestones?: MockMilestone[];
+  onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
+  onTestnetSaveNote?: (milestoneId: string, note: string) => void;
+  onTestnetAddDocument?: (milestoneId: string, doc: { name: string; url: string }) => void;
+  onTestnetInviteObserver?: (milestoneId: string, name: string, email: string) => string | void;
+  onTestnetRelease?: (milestoneId: string) => void;
+  onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number) => void;
 }
 
 const statusLabel: Record<string, string> = {
@@ -34,7 +43,7 @@ const statusLabel: Record<string, string> = {
   released: "Released",
 };
 
-/* ---------- Sub-components to keep file manageable ---------- */
+/* ---------- Sub-components ---------- */
 
 interface ObserverInviteProps {
   role: "buyer" | "vendor";
@@ -51,18 +60,10 @@ const ObserverInviteSection = ({ role, row, observerName, observerEmail, setObse
     <p className="text-[11px] font-medium text-amber-700">Observer required? Invite one before next phase.</p>
     <div className="grid sm:grid-cols-2 gap-2">
       <TLId code={woTLId(role, row, "INP-OBS-NAME")} inline>
-        <Input
-          placeholder="Observer name"
-          value={observerName}
-          onChange={(e) => setObserverName(e.target.value)}
-        />
+        <Input placeholder="Observer name" value={observerName} onChange={(e) => setObserverName(e.target.value)} />
       </TLId>
       <TLId code={woTLId(role, row, "INP-OBS-EMAIL")} inline>
-        <Input
-          placeholder="Observer email"
-          value={observerEmail}
-          onChange={(e) => setObserverEmail(e.target.value)}
-        />
+        <Input placeholder="Observer email" value={observerEmail} onChange={(e) => setObserverEmail(e.target.value)} />
       </TLId>
     </div>
     <TLId code={woTLId(role, row, "BTN-OBS-INVITE")} inline>
@@ -84,11 +85,17 @@ const ObserverLinkedSection = ({ role, row, milestoneId, observers }: ObserverLi
   <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
     <p className="font-medium text-foreground">Observer already linked to this milestone.</p>
     {observers
-      .filter((obs: any) => (obs.milestone_ids || []).includes(milestoneId))
-      .map((obs: any, obsIdx: number) => {
-        const link = obs.access_token ? `${window.location.origin}/trustlock/audit/${obs.access_token}` : null;
+      .filter((obs: any) => {
+        if (obs.milestone_ids) return obs.milestone_ids.includes(milestoneId);
+        if (obs.milestoneId === milestoneId) return true;
+        return false;
+      })
+      .map((obs: any) => {
+        const link = obs.access_token || obs.observer_access_token
+          ? `${window.location.origin}/trustlock/audit/${obs.access_token || obs.observer_access_token}`
+          : null;
         return (
-          <TLId key={obs.id} code={woTLId(role, row, "LBL-OBS-INFO")} inline>
+          <TLId key={obs.id || obs.observer_email} code={woTLId(role, row, "LBL-OBS-INFO")} inline>
             <div className="flex items-center gap-2 flex-wrap">
               <span>{obs.observer_name} ({obs.observer_email})</span>
               {link ? (
@@ -115,9 +122,23 @@ const ObserverLinkedSection = ({ role, row, milestoneId, observers }: ObserverLi
 
 /* ---------- Main Component ---------- */
 
-const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: MilestoneWorkOrderPanelProps) => {
-  const { data: milestones = [] } = useTransactionMilestones(transactionId || undefined);
-  const { data: observers = [] } = useTransactionObservers(transactionId || undefined);
+const MilestoneWorkOrderPanel = ({
+  transactionId,
+  txId,
+  industry,
+  role,
+  isTestnet = false,
+  testnetMilestones,
+  onTestnetUpdateStatus,
+  onTestnetSaveNote,
+  onTestnetAddDocument,
+  onTestnetInviteObserver,
+  onTestnetRelease,
+  onTestnetAddGps,
+}: MilestoneWorkOrderPanelProps) => {
+  // Mainnet hooks (only run when NOT testnet)
+  const { data: dbMilestones = [] } = useTransactionMilestones(isTestnet ? undefined : (transactionId || undefined));
+  const { data: dbObservers = [] } = useTransactionObservers(isTestnet ? undefined : (transactionId || undefined));
   const createMilestones = useCreateMilestones();
   const updateMilestone = useUpdateMilestone();
   const releaseMilestonePayment = useReleaseMilestonePayment();
@@ -129,48 +150,67 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
 
   const rolePrefix = role === "vendor" ? "V" : "B";
 
+  // Select data source
+  const milestones = isTestnet ? (testnetMilestones || []) : dbMilestones;
+
+  // Build observers list for testnet
+  const observers = isTestnet
+    ? (testnetMilestones || [])
+        .filter(ms => ms.observer_id)
+        .map(ms => ({
+          id: ms.observer_id,
+          observer_name: ms.observer_name,
+          observer_email: ms.observer_email,
+          access_token: ms.observer_access_token,
+          milestoneId: ms.id,
+        }))
+    : dbObservers;
+
   const getUserId = async () => {
     const { data } = await supabase.auth.getUser();
     return data.user?.id ?? null;
   };
 
   const handleInitializeMilestones = async () => {
+    if (isTestnet) {
+      toast.info("Milestones auto-populated from industry template in testnet mode");
+      return;
+    }
     if (!transactionId) return;
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
-
     await createMilestones.mutateAsync({
       transactionId,
       userId,
-      customMilestones: [
-        {
-          title: `${industry || "General"} fulfillment`,
-          description: "Primary milestone for this work order",
-          is_payment_milestone: true,
-          payment_percentage: 100,
-          required_documents: [],
-          assigned_to: "vendor",
-        },
-      ],
+      customMilestones: [{
+        title: `${industry || "General"} fulfillment`,
+        description: "Primary milestone for this work order",
+        is_payment_milestone: true,
+        payment_percentage: 100,
+        required_documents: [],
+        assigned_to: "vendor",
+      }],
     });
   };
 
   const handleSaveNote = async (milestoneId: string) => {
+    if (isTestnet) {
+      onTestnetSaveNote?.(milestoneId, notes[milestoneId] ?? "");
+      return;
+    }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
-    await updateMilestone.mutateAsync({
-      milestoneId,
-      userId,
-      description: notes[milestoneId] ?? "",
-    });
+    await updateMilestone.mutateAsync({ milestoneId, userId, description: notes[milestoneId] ?? "" });
   };
 
   const handleMarkFulfilled = async (milestoneId: string) => {
+    if (isTestnet) {
+      onTestnetUpdateStatus?.(milestoneId, "completed");
+      return;
+    }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
-
     const geo = await capturePosition();
-
     if (geo) {
       await supabase.from("transaction_milestones").update({
         gps_latitude: geo.latitude,
@@ -180,27 +220,34 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
       } as any).eq("id", milestoneId);
       toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
     }
-
-    await updateMilestone.mutateAsync({
-      milestoneId,
-      userId,
-      status: "completed",
-    });
+    await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
 
   const handleReleaseMilestone = async (milestoneId: string) => {
+    if (isTestnet) {
+      onTestnetRelease?.(milestoneId);
+      return;
+    }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     await releaseMilestonePayment.mutateAsync({ milestoneId, userId });
   };
 
   const handleInviteObserver = async (milestoneId: string) => {
+    if (isTestnet) {
+      if (!observerName.trim() || !observerEmail.trim()) {
+        return toast.error("Observer name and email are required");
+      }
+      onTestnetInviteObserver?.(milestoneId, observerName.trim(), observerEmail.trim());
+      setObserverName("");
+      setObserverEmail("");
+      return;
+    }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     if (!observerName.trim() || !observerEmail.trim()) {
       return toast.error("Observer name and email are required");
     }
-
     const response = await addObserver.mutateAsync({
       transactionId,
       observerName: observerName.trim(),
@@ -209,45 +256,51 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
       milestoneIds: [milestoneId],
       userId,
     });
-
     const token = (response as any)?.accessToken;
     if (token) {
       const inviteLink = `${window.location.origin}/trustlock/audit/${token}`;
       await navigator.clipboard.writeText(inviteLink);
       toast.success("Observer invite link copied");
     }
-
     setObserverName("");
     setObserverEmail("");
   };
 
-  if (!transactionId) return null;
+  if (!isTestnet && !transactionId) return null;
+  if (milestones.length === 0 && !isTestnet) {
+    return (
+      <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
+            <TLId code={`TL-${rolePrefix}-WO-BTN-INIT`} inline>
+              <Button size="sm" variant="outline" className="mt-2" onClick={handleInitializeMilestones} disabled={createMilestones.isPending}>
+                {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                Initialize Milestones
+              </Button>
+            </TLId>
+          </CardContent>
+        </Card>
+      </TLId>
+    );
+  }
+
+  if (milestones.length === 0) return null;
 
   return (
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+            {isTestnet && <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">Testnet Simulation</Badge>}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {milestones.length === 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
-              <TLId code={`TL-${rolePrefix}-WO-BTN-INIT`} inline>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleInitializeMilestones}
-                  disabled={createMilestones.isPending}
-                >
-                  {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                  Initialize Milestones (Testnet)
-                </Button>
-              </TLId>
-            </div>
-          )}
-
-          {milestones.map((ms: any, idx) => {
+          {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
             const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released";
             const canBuyerRelease =
@@ -256,9 +309,11 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
               ms.is_payment_milestone &&
               !ms.payment_released;
 
+            const hasObserver = isTestnet ? !!ms.observer_id : !!ms.observer_id;
+
             return (
               <div key={ms.id} className="rounded-lg border border-border p-3 space-y-2">
-                {/* ---- Row Header: Title + Status Column ---- */}
+                {/* Row Header */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold">#{row}</span>
@@ -280,7 +335,7 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
                   </div>
                 </div>
 
-                {/* ---- Info Row: Amount + GPS Column ---- */}
+                {/* Info Row */}
                 <TLId code={woTLId(role, row, "LBL-AMOUNT")} inline>
                   <div className="text-[11px] text-muted-foreground">
                     Amount: ${Number(ms.payment_amount || 0).toLocaleString()} · Uploaded docs: {(ms.uploaded_documents || []).length}
@@ -295,8 +350,13 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
                   </div>
                 </TLId>
 
-                {/* ---- Observer Invite Column ---- */}
-                {role === "vendor" && !ms.observer_id && (
+                {/* Description */}
+                {ms.description && (
+                  <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>
+                )}
+
+                {/* Observer Invite */}
+                {role === "vendor" && !hasObserver && (
                   <ObserverInviteSection
                     role={role}
                     row={row}
@@ -308,17 +368,12 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
                   />
                 )}
 
-                {/* ---- Observer Linked Column ---- */}
-                {role === "vendor" && ms.observer_id && (
-                  <ObserverLinkedSection
-                    role={role}
-                    row={row}
-                    milestoneId={ms.id}
-                    observers={observers}
-                  />
+                {/* Observer Linked */}
+                {role === "vendor" && hasObserver && (
+                  <ObserverLinkedSection role={role} row={row} milestoneId={ms.id} observers={observers} />
                 )}
 
-                {/* ---- Note Column ---- */}
+                {/* Note */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium flex items-center gap-1">
                     <StickyNote className="w-3 h-3" /> Milestone note
@@ -338,31 +393,57 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
                   </TLId>
                 </div>
 
-                {/* ---- Document Upload Column ---- */}
-                <TLId code={woTLId(role, row, "UPL-EVIDENCE")}>
-                  <DocumentUpload
-                    label="Upload milestone evidence"
-                    context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
-                    onUploadComplete={(files) => {
-                      void (async () => {
-                        const userId = await getUserId();
-                        if (!userId) return;
-                        await updateMilestone.mutateAsync({
-                          milestoneId: ms.id,
-                          userId,
-                          uploadedDocuments: files.map((file) => ({
-                            name: file.name,
-                            url: file.url,
-                            path: file.path,
-                            uploadedAt: new Date().toISOString(),
-                          })),
-                        });
-                      })();
-                    }}
-                  />
-                </TLId>
+                {/* Document Upload */}
+                {isTestnet ? (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium">Upload milestone evidence</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => {
+                        const name = `Evidence-${ms.title.replace(/\s/g, "_")}-${Date.now()}.pdf`;
+                        onTestnetAddDocument?.(ms.id, { name, url: `testnet://mock/${name}` });
+                      }}
+                    >
+                      <FileText className="w-3 h-3 mr-1" /> Simulate Upload
+                    </Button>
+                    {(ms.uploaded_documents || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {ms.uploaded_documents.map((doc: any, i: number) => (
+                          <Badge key={i} variant="outline" className="text-[9px]">
+                            <FileText className="w-2.5 h-2.5 mr-0.5" /> {doc.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <TLId code={woTLId(role, row, "UPL-EVIDENCE")}>
+                    <DocumentUpload
+                      label="Upload milestone evidence"
+                      context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
+                      onUploadComplete={(files) => {
+                        void (async () => {
+                          const userId = await getUserId();
+                          if (!userId) return;
+                          await updateMilestone.mutateAsync({
+                            milestoneId: ms.id,
+                            userId,
+                            uploadedDocuments: files.map((file) => ({
+                              name: file.name,
+                              url: file.url,
+                              path: file.path,
+                              uploadedAt: new Date().toISOString(),
+                            })),
+                          });
+                        })();
+                      }}
+                    />
+                  </TLId>
+                )}
 
-                {/* ---- Action Column ---- */}
+                {/* Actions */}
                 <div className="flex gap-2 flex-wrap">
                   {canVendorFulfill ? (
                     <TLId code={woTLId(role, row, "BTN-FULFILL")} inline>
@@ -379,6 +460,18 @@ const MilestoneWorkOrderPanel = ({ transactionId, txId, industry, role }: Milest
                       </Button>
                     </TLId>
                   ) : null}
+
+                  {ms.status === "completed" && role === "vendor" && (
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                      <CheckCircle2 className="w-3 h-3 mr-0.5" /> Awaiting buyer release
+                    </Badge>
+                  )}
+
+                  {ms.status === "released" && (
+                    <Badge className="text-[10px] bg-primary/15 text-primary">
+                      <CheckCircle2 className="w-3 h-3 mr-0.5" /> Payment Released
+                    </Badge>
+                  )}
                 </div>
               </div>
             );
