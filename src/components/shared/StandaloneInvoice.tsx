@@ -146,11 +146,28 @@ const StandaloneInvoice = ({ vendorName = "Vendor", onProceed }: StandaloneInvoi
           editable
         />
 
+        {/* Payment method toggle for fee calculation */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment Method</p>
+          <Tabs value={paymentType} onValueChange={(v) => setPaymentType(v as "fiat" | "crypto")}>
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="fiat" className="gap-1.5 text-xs">
+                <CreditCard className="w-3.5 h-3.5" />
+                Fiat (Card / Bank)
+              </TabsTrigger>
+              <TabsTrigger value="crypto" className="gap-1.5 text-xs">
+                <Wallet className="w-3.5 h-3.5" />
+                Crypto (USDC/USDT)
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         {/* Fee Calculator — mandatory disclosure */}
         <InvoiceFeeCalculator
           escrowPrincipal={subtotal}
-          processorId={selectProcessor("global", false)}
-          isCrypto={false}
+          processorId={paymentType === "crypto" ? "direct" : selectProcessor("global", false)}
+          isCrypto={paymentType === "crypto"}
           taxAmount={taxTotal}
         />
 
