@@ -436,6 +436,14 @@ const VendorTransactions = () => {
                                 txId={tx.id}
                                 transactionId={tx.dbId}
                                 industry={tx.industry}
+                                isTestnet={isTestnet}
+                                testnetMilestones={isTestnet ? testnet.getMilestones(tx.dbId) : undefined}
+                                onTestnetUpdateStatus={testnet.updateMilestoneStatus}
+                                onTestnetSaveNote={testnet.updateMilestoneNote}
+                                onTestnetAddDocument={testnet.addMilestoneDocument}
+                                onTestnetInviteObserver={testnet.inviteObserver}
+                                onTestnetRelease={testnet.releaseMilestonePayment}
+                                onTestnetAddGps={testnet.addGpsToMilestone}
                               />
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments

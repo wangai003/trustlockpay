@@ -384,6 +384,14 @@ const BuyerOrders = () => {
                         txId={order.id}
                         transactionId={order.dbId}
                         industry={order.industry}
+                        isTestnet={isTestnet}
+                        testnetMilestones={isTestnet ? testnet.getMilestones(order.dbId) : undefined}
+                        onTestnetUpdateStatus={testnet.updateMilestoneStatus}
+                        onTestnetSaveNote={testnet.updateMilestoneNote}
+                        onTestnetAddDocument={testnet.addMilestoneDocument}
+                        onTestnetInviteObserver={testnet.inviteObserver}
+                        onTestnetRelease={testnet.releaseMilestonePayment}
+                        onTestnetAddGps={testnet.addGpsToMilestone}
                       />
                       <div className="pt-2 border-t border-border">
                         <TransactionDocuments
