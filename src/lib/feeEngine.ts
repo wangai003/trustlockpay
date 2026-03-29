@@ -322,21 +322,21 @@ const FEE_RULES: Record<TransactionType, FeeRule> = {
   refund_crypto: {
     trustlockRate: 0,
     escrowRate: 0,
-    gasEstimate: 0.05,     // Gas only fee on refunds — disclosed upfront
+    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to buyer
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   refund_fiat: {
     trustlockRate: 0,
     escrowRate: 0,
-    gasEstimate: 0.02,
+    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to buyer
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   split_payout: {
     trustlockRate: 0,
     escrowRate: 1.0,       // Halved from original milestone rate, vendor side only
-    gasEstimate: 0.04,     // 2x gas — split between buyer & vendor, NOT platform
+    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to parties
     escrowApplies: true,
     escrowVendorOnly: true,
   },
