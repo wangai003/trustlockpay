@@ -372,8 +372,8 @@ const MilestoneWorkOrderPanel = ({
                   <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>
                 )}
 
-                {/* Observer Invite */}
-                {role === "vendor" && !hasObserver && (
+                {/* Observer Invite — only for industries that need observers */}
+                {role === "vendor" && !hasObserver && industryNeedsObservers && !dismissedObserverPrompts.has(ms.id) && (
                   <ObserverInviteSection
                     role={role}
                     row={row}
@@ -382,6 +382,7 @@ const MilestoneWorkOrderPanel = ({
                     setObserverName={setObserverName}
                     setObserverEmail={setObserverEmail}
                     onInvite={() => handleInviteObserver(ms.id)}
+                    onDismiss={() => setDismissedObserverPrompts(prev => new Set(prev).add(ms.id))}
                   />
                 )}
 
