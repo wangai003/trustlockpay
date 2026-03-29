@@ -158,13 +158,23 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const COUNTRY_MOBILE: Record<string, string[]> = {
     KE: ["M-Pesa (Safaricom)", "Airtel Money"],
-    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money"],
-    NG: ["OPay", "PalmPay", "Kuda"],
-    ZA: ["FNB eWallet", "Standard Bank Instant Money"],
+    GH: ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money", "Wave"],
+    NG: ["MTN Mobile Money", "OPay", "PalmPay", "Kuda", "Airtel Money"],
+    ZA: ["FNB eWallet", "Standard Bank Instant Money", "Vodacom M-Pesa"],
     UG: ["MTN Mobile Money", "Airtel Money"],
-    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money"],
+    TZ: ["M-Pesa (Vodacom)", "Tigo Pesa", "Airtel Money", "HaloPesa"],
     CM: ["Orange Money", "MTN Mobile Money"],
     RW: ["MTN Mobile Money", "Airtel Money"],
+    EG: ["M-Pesa (Vodafone Egypt)", "Orange Money Egypt"],
+    SN: ["Orange Money", "Wave", "Free Money"],
+    CI: ["Orange Money", "MTN Mobile Money", "Wave"],
+    ML: ["Orange Money", "Wave"],
+    BF: ["Orange Money", "Wave"],
+    BJ: ["MTN Mobile Money"],
+    TG: ["Tmoney TG", "Togocell Money"],
+    ZM: ["MTN Mobile Money", "Airtel Money", "Zamtel Money"],
+    MW: ["Airtel Money"],
+    MG: ["Orange Money"],
   };
 
   const bankList = COUNTRY_BANKS[selectedCountry] || [];
