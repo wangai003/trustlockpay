@@ -1186,15 +1186,15 @@ const TrustLockOSPayout = ({
                   )}
                 </div>
 
-                {/* Wallet Address */}
                 <div>
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
+                  <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.cryptoWalletAddress ? "text-destructive" : "text-muted-foreground")}>Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
                   <Input
                     placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
                     value={cryptoWalletAddress}
                     onChange={(e) => { setCryptoWalletAddress(e.target.value); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
-                    className="mt-1 text-sm font-mono"
+                    className={cn("mt-1 text-sm font-mono", fieldErrors.cryptoWalletAddress && "border-destructive ring-destructive/30 ring-2")}
                   />
+                  {fieldErrors.cryptoWalletAddress && <p className="text-[9px] text-destructive mt-1 font-medium">Wallet address is required</p>}
                 </div>
 
                 {/* Address Confirmation Gate */}
