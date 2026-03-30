@@ -99,7 +99,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
   },
   {
     id: "crypto_wallet_diaspora",
-    name: "Crypto Wallet (USDC)",
+    name: "Other Wallet (USDC)",
     category: "crypto_wallet",
     mode: "diaspora",
     processor: "direct",
