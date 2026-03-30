@@ -28,7 +28,7 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
-const AdminOSPay = lazy(() => import("./pages/admin/AdminOSPay"));
+
 const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
 const AdminPayout = lazy(() => import("./pages/admin/AdminPayout"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
