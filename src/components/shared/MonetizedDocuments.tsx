@@ -272,6 +272,81 @@ const MonetizedDocuments = ({ role }: MonetizedDocumentsProps) => {
       <p className="text-[9px] text-muted-foreground text-center">
         Documents refresh with latest data on each access cycle. After 30 days, re-purchase to access updated reports.
       </p>
+
+      {/* ── Preview Dialog — shows page 1 teaser before purchase ── */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-5 h-5 text-primary" />
+            {previewDoc?.title}
+          </DialogTitle>
+
+          {previewDoc && (
+            <div className="space-y-4">
+              {/* Simulated page 1 */}
+              <div className="border border-border rounded-lg bg-muted/20 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-[9px]">Page 1 of 4</Badge>
+                  <Badge variant="secondary" className="text-[9px]">Preview</Badge>
+                </div>
+
+                <div className="text-center py-2 border-b border-border">
+                  <p className="text-xs font-bold text-primary tracking-wide">TRUSTLOCK PAY</p>
+                  <p className="text-sm font-bold mt-1">{previewDoc.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Generated {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+
+                {(DOC_PREVIEWS[previewDoc.key]?.sections || []).map((section, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <p className="text-xs font-bold">{section.heading}</p>
+                    {section.lines.map((line, j) => (
+                      <p key={j} className={cn(
+                        "text-[11px] pl-3",
+                        line.startsWith("—")
+                          ? "text-muted-foreground italic"
+                          : "text-foreground"
+                      )}>
+                        {line.startsWith("—") ? line : `• ${line}`}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Blurred remaining pages hint */}
+              <div className="relative rounded-lg border border-border overflow-hidden h-20">
+                <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Lock className="w-4 h-4" />
+                    <span className="text-xs font-medium">Pages 2–4 available after purchase</span>
+                  </div>
+                </div>
+                <div className="p-3 opacity-20">
+                  <div className="h-2 bg-muted-foreground/30 rounded w-3/4 mb-2" />
+                  <div className="h-2 bg-muted-foreground/30 rounded w-1/2 mb-2" />
+                  <div className="h-2 bg-muted-foreground/30 rounded w-2/3" />
+                </div>
+              </div>
+
+              {/* Purchase CTA */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div>
+                  <p className="text-sm font-bold">${previewDoc.price.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">30-day full access</p>
+                </div>
+                <Button
+                  className="gap-2"
+                  onClick={() => handlePurchase(previewDoc)}
+                >
+                  Purchase Full Report <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
