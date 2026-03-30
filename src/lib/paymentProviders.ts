@@ -281,7 +281,7 @@ const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
 const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
   {
     id: "crypto_wallet_local",
-    name: "Crypto Wallet (USDC Direct)",
+    name: "Other Wallet (USDC Direct)",
     category: "crypto_wallet",
     mode: "local",
     processor: "direct",
