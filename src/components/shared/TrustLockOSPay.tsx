@@ -293,6 +293,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     return "stripe"; // card, applepay
   };
 
+  // ─── Generate mock confirmation code ─────────────────────
+  const generateConfirmationCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  };
+
+  const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
+
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
@@ -302,6 +310,18 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
     setProcessing(true);
     try {
+      // ═══ TESTNET SIMULATION — bypass edge function, simulate seamless execution ═══
+      if (isTestnet) {
+        await new Promise((r) => setTimeout(r, 1500)); // Simulate processing delay
+        const mockCode = generateConfirmationCode();
+        const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
+        toast.success(`✅ ${label} of $${amount} processed successfully`);
+        setOsPayResult({ confirmationCode: mockCode });
+        onComplete?.();
+        return;
+      }
+
+      // ═══ MAINNET — real processor calls ═══
       const processorId = getProcessorForMethod(method);
       const isCryptoPayment = method === "azix";
 
@@ -316,14 +336,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           method: method!,
           role,
           payMode,
-          // Processor routing params — triggers real API flow in process-payment
           processor: processorId,
           direction: "onramp",
           currency: "USD",
           walletAddress: AZIX_WALLETS.transaction.publicKey,
         });
 
-        // If processor returned a hosted URL (Coinbase) or client secret (Stripe), handle it
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
         if (procResult?.hostedUrl) {
           window.open(procResult.hostedUrl as string, "_blank");
@@ -336,7 +354,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           toast.success(`✅ Payment of $${amount} initiated via ${processorId}`);
         }
       } else {
-        // Admin actions or crypto direct pay — original flow
         await processPayment.mutateAsync({
           action: isAdmin && adminAction ? adminAction : "payment",
           service,
