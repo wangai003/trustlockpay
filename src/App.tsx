@@ -30,7 +30,7 @@ const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
-const AdminPayout = lazy(() => import("./pages/admin/AdminPayout"));
+const AdminOSPay = lazy(() => import("./pages/admin/AdminPayout"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlaybook"));
 const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
@@ -51,8 +51,7 @@ const BuyerConfirmation = lazy(() => import("./pages/buyer/BuyerConfirmation"));
 const BuyerAssistant = lazy(() => import("./pages/buyer/BuyerAssistant"));
 const BuyerHelpCenter = lazy(() => import("./pages/buyer/BuyerHelpCenter"));
 const BuyerAnalytics = lazy(() => import("./pages/buyer/BuyerAnalytics"));
-const BuyerOSPay = lazy(() => import("./pages/buyer/BuyerOSPay"));
-const BuyerPayout = lazy(() => import("./pages/buyer/BuyerPayout"));
+const BuyerOSPay = lazy(() => import("./pages/buyer/BuyerPayout"));
 const BuyerBillPayments = lazy(() => import("./pages/buyer/BuyerBillPayments"));
 const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlaybook"));
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
@@ -74,8 +73,7 @@ const VendorHelpCenter = lazy(() => import("./pages/vendor/VendorHelpCenter"));
 const VendorPricing = lazy(() => import("./pages/vendor/VendorPricing"));
 const VendorCheckout = lazy(() => import("./pages/vendor/VendorCheckout"));
 const VendorAnalytics = lazy(() => import("./pages/vendor/VendorAnalytics"));
-const VendorOSPay = lazy(() => import("./pages/vendor/VendorOSPay"));
-const VendorPayout = lazy(() => import("./pages/vendor/VendorPayout"));
+const VendorOSPay = lazy(() => import("./pages/vendor/VendorPayout"));
 const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"));
 const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
@@ -122,7 +120,7 @@ const App = () => (
                 <Route path="documents" element={<AdminDocuments />} />
                 <Route path="workflow" element={<AdminWorkflow />} />
                 
-                <Route path="payout" element={<AdminPayout />} />
+                <Route path="os-pay" element={<AdminOSPay />} />
                 <Route path="audit" element={<AdminAudit />} />
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
                 <Route path="tl-id" element={<AdminTLIdSearch />} />
@@ -153,7 +151,6 @@ const App = () => (
                 <Route path="checkout" element={<VendorCheckout />} />
                 <Route path="analytics" element={<VendorAnalytics />} />
                 <Route path="os-pay" element={<VendorOSPay />} />
-                <Route path="payout" element={<VendorPayout />} />
                 <Route path="standalone-links" element={<VendorStandaloneLinks />} />
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
@@ -177,7 +174,6 @@ const App = () => (
                 <Route path="help" element={<BuyerHelpCenter />} />
                 <Route path="analytics" element={<BuyerAnalytics />} />
                 <Route path="os-pay" element={<BuyerOSPay />} />
-                <Route path="payout" element={<BuyerPayout />} />
                 <Route path="teams" element={<BuyerTeams />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
                 <Route path="settings" element={<BuyerSettings />} />

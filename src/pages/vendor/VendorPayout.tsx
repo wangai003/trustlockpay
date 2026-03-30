@@ -7,7 +7,7 @@ const VendorPayout = () => {
   const { isTestnet } = useVendor();
   return (
     <div>
-      <VendorHeader title="TrustLock OS Payout" />
+      <VendorHeader title="TrustLock OS Pay" />
       <div className="p-3 sm:p-6">
         <TLId code="TL-V-PYO-BTN-REQUEST">
           <TrustLockOSPayout role="vendor" isTestnet={isTestnet} />

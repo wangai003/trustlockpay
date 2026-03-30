@@ -21,7 +21,7 @@ const navItems = [
   { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports" },
   { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence" },
   
-  { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/admin/payout", tip: "Manage fund withdrawals and disbursements" },
+  { label: "TrustLock OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements" },
   { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview" },
   { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support" },

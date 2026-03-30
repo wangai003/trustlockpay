@@ -6,7 +6,7 @@ const AdminPayout = () => {
   const { isTestnet } = useAdmin();
   return (
     <div>
-      <AdminHeader title="TrustLock OS Payout" />
+      <AdminHeader title="TrustLock OS Pay" />
       <div className="p-3 sm:p-6">
         <TrustLockOSPayout role="admin" isTestnet={isTestnet} />
       </div>
