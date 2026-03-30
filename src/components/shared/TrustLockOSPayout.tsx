@@ -665,7 +665,7 @@ const TrustLockOSPayout = ({
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Action *</Label>
               <div className="flex gap-2 mt-1 flex-wrap">
-                {(["release", "refund", "split"] as const).map((action) => (
+                {(["refund", "split"] as const).map((action) => (
                   <button
                     key={action}
                     onClick={() => setAdminAction(action)}
@@ -676,7 +676,7 @@ const TrustLockOSPayout = ({
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {action === "release" ? "Release" : action === "refund" ? "Refund" : "Split Pay"}
+                    {action === "refund" ? "Refund" : "Split Pay"}
                   </button>
                 ))}
               </div>
