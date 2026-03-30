@@ -165,6 +165,21 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   }, [isAdmin]);
 
+  // ── Plan-aware amount resolution ──
+  const isPlanService = service.startsWith("plan:");
+  const selectedPlanId = isPlanService ? service.replace("plan:", "") as PlanId : null;
+  const selectedPlan = selectedPlanId ? PLANS[selectedPlanId] : null;
+
+  // Auto-resolve amount when service or billing cycle changes
+  useEffect(() => {
+    if (isPlanService && selectedPlan) {
+      const price = billingCycle === "monthly" ? selectedPlan.monthly : selectedPlan.yearly;
+      setAmount(price > 0 ? String(price) : "0");
+    }
+  }, [service, billingCycle]);
+
+  const isAmountLocked = isPlanService || (!!service && serviceList.find(s => s.label === service)?.amount !== "");
+
   const parsedAmount = amount ? parseFloat(amount) : 0;
 
   // ── Rate Lock: auto-lock when country selected + amount entered in Africa mode ──
