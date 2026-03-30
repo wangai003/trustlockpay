@@ -596,7 +596,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </p>
             )}
           </div>
-          </div>
 
           {/* Seed token is auto-linked in the background — UI hidden, backend logic intact */}
 
