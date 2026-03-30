@@ -675,7 +675,30 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
-      {/* ═══ ADMIN CONTROL PANEL ═══ */}
+      {/* ═══ INLINE FUND MOVEMENT TRACKER ═══ */}
+      {orderNumber?.trim() && (
+        <FundMovementTracker
+          flowType={
+            isAdmin
+              ? payoutType === "refund" ? "payout_refund" : "payout_split"
+              : role === "buyer" && initialPayoutType === "release"
+                ? "buyer_release"
+                : isCrypto && selectedChain === "polygon"
+                  ? "payout_crypto_direct"
+                  : isCrypto
+                    ? "payout_crypto_bridge"
+                    : "payout_release"
+          }
+          role={role}
+          method={selectedProvider?.name || selectedMethod}
+          chain={SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}
+          providerName={selectedProvider?.name || activeConfig?.provider}
+          splitVendorPercent={splitVendorPercent}
+          splitBuyerPercent={splitBuyerPercent}
+          amount={amountNum}
+        />
+      )}
+
       {isAdmin && (
         <Card className="border-2 border-primary/30">
           <CardContent className="p-4 space-y-4">
