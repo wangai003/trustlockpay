@@ -143,7 +143,11 @@ const BuyerAnalytics = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="archives" className="space-y-4">
+          <TabsContent value="reports" className="space-y-4">
+            <MonetizedDocuments role="buyer" />
+          </TabsContent>
+
+
             <div>
               <p className="text-sm font-semibold flex items-center gap-2"><Archive className="w-4 h-4" /> Report Archives</p>
             </div>
