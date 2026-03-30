@@ -10,7 +10,12 @@ const VendorPayout = () => {
       <VendorHeader title="TrustLock OS Payout" />
       <div className="p-3 sm:p-6">
         <TLId code="TL-V-PYO-BTN-REQUEST">
-          <TrustLockOSPayout role="vendor" isTestnet={isTestnet} />
+          <TrustLockOSPayout
+            role="vendor"
+            isTestnet={isTestnet}
+            prefillOrderNumber={isTestnet ? "TL-00042" : ""}
+            prefillAmount={isTestnet ? "4500.00" : ""}
+          />
         </TLId>
       </div>
     </div>
