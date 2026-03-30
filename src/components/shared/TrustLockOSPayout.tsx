@@ -183,15 +183,7 @@ const TrustLockOSPayout = ({
     });
   }, []);
 
-  // ─── Testnet auto-fill: pre-select crypto payout so simulation completes ───
-  useEffect(() => {
-    if (isTestnet && role !== "admin" && !cryptoWalletAddress) {
-      setSelectedCountry("GLOBAL");
-      setCryptoWalletAddress("0x7A3b1234567890abcdef1234567890abcdefF92d");
-      setCryptoAddressConfirmed(true);
-      setLiabilityAccepted(true);
-    }
-  }, [isTestnet, role]);
+  // ─── Testnet auto-fill: no longer pre-selects crypto; simulation uses provider search ───
 
   // For admin, auto-lock crypto method and wallet
   const isAdmin = role === "admin";
@@ -234,7 +226,8 @@ const TrustLockOSPayout = ({
   const activeFields = activeConfig?.required_fields ?? [];
 
   const amountNum = parseFloat(amount) || 0;
-  const isCrypto = isAdmin || selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto" || selectedCountry === "GLOBAL";
+  const isCrypto = isAdmin || selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
+  const showCryptoDetails = !isAdmin && (selectedProvider?.category === "crypto_wallet");
   const txType: TransactionType = payoutType === "refund"
     ? (isCrypto ? "refund_crypto" : "refund_fiat")
     : payoutType === "split"
@@ -1157,7 +1150,7 @@ const TrustLockOSPayout = ({
           )}
 
           {/* ═══ CRYPTO CHAIN SELECTION & ADDRESS GATE ═══ */}
-          {isCrypto && (
+          {showCryptoDetails && (
             <Card className="border-2 border-primary/20">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
