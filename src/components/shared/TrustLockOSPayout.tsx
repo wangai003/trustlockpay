@@ -369,7 +369,6 @@ const TrustLockOSPayout = ({
   };
 
   const handleConfirmAndPay = async () => {
-    setConfirmDialog(false);
     setProcessing(true);
     // Keep reviewStep = true so the user sees the loading state
 
