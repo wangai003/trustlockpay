@@ -1100,7 +1100,7 @@ const TrustLockOSPayout = ({
                     <p className="text-xs font-semibold text-foreground">Required Information</p>
                     {activeFields.map((field) => (
                       <div key={field.field_name}>
-                        <Label className="text-[10px] text-muted-foreground">
+                        <Label className={cn("text-[10px]", fieldErrors[`dynamic_${field.field_name}`] ? "text-destructive" : "text-muted-foreground")}>
                           {field.label}{field.is_required && " *"}
                         </Label>
                         {field.type === "select" ? (
@@ -1108,7 +1108,7 @@ const TrustLockOSPayout = ({
                             value={dynamicFields[field.field_name] || ""}
                             onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
                           >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className={cn("mt-1", fieldErrors[`dynamic_${field.field_name}`] && "border-destructive ring-destructive/30 ring-2")}>
                               <SelectValue placeholder={field.placeholder} />
                             </SelectTrigger>
                             <SelectContent>
@@ -1128,9 +1128,10 @@ const TrustLockOSPayout = ({
                             placeholder={field.placeholder}
                             value={dynamicFields[field.field_name] || ""}
                             onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
-                            className="mt-1 text-sm"
+                            className={cn("mt-1 text-sm", fieldErrors[`dynamic_${field.field_name}`] && "border-destructive ring-destructive/30 ring-2")}
                           />
                         )}
+                        {fieldErrors[`dynamic_${field.field_name}`] && <p className="text-[9px] text-destructive mt-1 font-medium">This field is required</p>}
                       </div>
                     ))}
                   </div>
