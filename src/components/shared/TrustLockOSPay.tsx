@@ -73,11 +73,15 @@ const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: str
 ];
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
+/* Plan services use a "plan:" prefix so we can detect and resolve pricing dynamically */
 const VENDOR_SERVICES = [
-  { label: "Plan Upgrade (Starter / Growth / Pro / Enterprise)", amount: "" },
-  { label: "AI Query Pack (50 queries — $2.50)", amount: "2.50" },
-  { label: "AI Query Pack (200 queries — $10.00)", amount: "10.00" },
-  { label: "AI Query Pack (500 queries — $25.00)", amount: "25.00" },
+  { label: "plan:starter", displayLabel: "Plan — Starter", amount: "" },
+  { label: "plan:growth", displayLabel: "Plan — Growth", amount: "" },
+  { label: "plan:professional", displayLabel: "Plan — Professional", amount: "" },
+  { label: "plan:enterprise", displayLabel: "Plan — Enterprise", amount: "" },
+  { label: "AI Query Pack (50 queries)", amount: "2.50" },
+  { label: "AI Query Pack (200 queries)", amount: "10.00" },
+  { label: "AI Query Pack (500 queries)", amount: "25.00" },
   { label: "Widget Restoration Fee", amount: "10.00" },
   { label: "Data Analytics Print-out", amount: "1.00" },
   { label: "Acknowledgement Form Download", amount: "0.50" },
@@ -86,10 +90,10 @@ const VENDOR_SERVICES = [
 ];
 
 const BUYER_SERVICES = [
-  { label: "Analytics Report Download ($0.50/report)", amount: "0.50" },
-  { label: "AI Query Pack (50 queries — $2.50)", amount: "2.50" },
-  { label: "AI Query Pack (200 queries — $10.00)", amount: "10.00" },
-  { label: "AI Query Pack (500 queries — $25.00)", amount: "25.00" },
+  { label: "Analytics Report Download", amount: "0.50" },
+  { label: "AI Query Pack (50 queries)", amount: "2.50" },
+  { label: "AI Query Pack (200 queries)", amount: "10.00" },
+  { label: "AI Query Pack (500 queries)", amount: "25.00" },
   { label: "Acknowledgement Form Download", amount: "0.50" },
   { label: "Custom Report Generation", amount: "5.00" },
 ];
