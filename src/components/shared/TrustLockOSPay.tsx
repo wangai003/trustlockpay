@@ -378,7 +378,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       const msg = err?.message || "An unexpected error occurred while processing your payment.";
       setOsPayFailure({ message: msg });
     } finally {
-    } finally {
       setProcessing(false);
     }
   };

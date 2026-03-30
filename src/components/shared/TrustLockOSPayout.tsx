@@ -471,7 +471,6 @@ const TrustLockOSPayout = ({
       const msg = err?.message || "An unexpected error occurred while processing your payout.";
       setFailureState({ message: msg });
     } finally {
-    } finally {
       setProcessing(false);
     }
   };
