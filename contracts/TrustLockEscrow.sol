@@ -14,8 +14,12 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *
  *      Fee routing:
  *        • Platform fee  → deducted at lock time, sent to transactionFeeWallet
- *        • Escrow service fee (1%) → deducted at release time, sent to escrowFeeWallet
+ *        • Escrow service fee (1%) → deducted at END OF RELEASE (post buyer-authorization),
+ *          atomically split in the same transaction block:
+ *            - 99% principal → vendor (direct or via processor for fiat conversion)
+ *            - 1% fee → trickles to transactionFeeWallet (USDC, no conversion)
  *        • Refunds → 0% fee, full principal returned to buyer
+ *        • Splits → 1% fee from vendor's share only, buyer receives full split amount
  */
 contract TrustLockEscrow is ReentrancyGuard {
     // ──────────────────────────────────────────────
