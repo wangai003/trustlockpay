@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import MonetizedDocuments from "@/components/shared/MonetizedDocuments";
 import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
