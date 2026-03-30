@@ -487,7 +487,7 @@ const TrustLockOSPayout = ({
         method={selectedMethod || selectedProvider?.name || (isCrypto ? `Crypto (${selectedChain})` : undefined)}
         onRetry={() => {
           setFailureState(null);
-          handleConfirmSubmit();
+          handleConfirmAndPay();
         }}
         onBack={() => {
           setFailureState(null);
