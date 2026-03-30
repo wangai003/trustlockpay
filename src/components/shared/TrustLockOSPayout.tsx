@@ -640,12 +640,12 @@ const TrustLockOSPayout = ({
             {isAdmin
               ? payoutType === "refund"
                 ? "Escrow Wallet → Buyer account (0% fee)"
-                : payoutType === "split"
-                  ? "Escrow Wallet → Both Parties (% based)"
-                  : "Escrow Wallet → Vendor account"
-              : role === "vendor"
-                ? "Escrow Wallet → Your account · Escrow fee trickles down"
-                : "Escrow Wallet → Your account (0% fee refund)"
+                : "Escrow Wallet → Both Parties (% based)"
+              : role === "buyer" && initialPayoutType === "release"
+                ? "Escrow Wallet → Vendor account · Buyer-authorized release"
+                : role === "vendor"
+                  ? "Escrow Wallet → Your account · Escrow fee trickles down"
+                  : "Escrow Wallet → Your account (0% fee refund)"
             }
           </span>
           <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
