@@ -234,7 +234,8 @@ const TrustLockOSPayout = ({
   const activeFields = activeConfig?.required_fields ?? [];
 
   const amountNum = parseFloat(amount) || 0;
-  const isCrypto = isAdmin || selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto" || selectedCountry === "GLOBAL";
+  const isCrypto = isAdmin || selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto";
+  const showCryptoDetails = !isAdmin && (selectedProvider?.category === "crypto_wallet");
   const txType: TransactionType = payoutType === "refund"
     ? (isCrypto ? "refund_crypto" : "refund_fiat")
     : payoutType === "split"
