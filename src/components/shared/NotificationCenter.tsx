@@ -149,7 +149,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
 
     init();
     return () => { if (channel) supabase.removeChannel(channel); };
-  }, [role, fetchTriaged, showCriticalToast]);
+  }, [role, fetchTriaged]);
 
   // Show toasts for unread critical on load
   useEffect(() => {
