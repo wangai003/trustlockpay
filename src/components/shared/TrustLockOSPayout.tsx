@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
-  Check, Copy, Info, Loader2,
+  Check, Copy, Info, Loader2, X, Home,
   Wallet, ArrowDown, ExternalLink, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
