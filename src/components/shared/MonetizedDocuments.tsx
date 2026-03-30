@@ -159,12 +159,16 @@ const MonetizedDocuments = ({ role }: MonetizedDocumentsProps) => {
   const handleDocClick = (doc: MonetizedDoc) => {
     const access = getAccess(doc.key);
     if (access) {
-      // Already paid — open/download the document
       setSelectedDoc(doc.key);
       toast.success(`Opening ${doc.title}...`);
       return;
     }
-    // Route to OS Pay with return URL
+    // Show preview dialog first instead of routing directly
+    setPreviewDoc(doc);
+  };
+
+  const handlePurchase = (doc: MonetizedDoc) => {
+    setPreviewDoc(null);
     const returnUrl = `${basePath}/analytics?doc_purchased=${doc.key}`;
     navigate(`${basePath}/os-pay?service=${encodeURIComponent(doc.title)}&amount=${doc.price}&return_url=${encodeURIComponent(returnUrl)}`);
   };
