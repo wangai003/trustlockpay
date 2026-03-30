@@ -1131,7 +1131,7 @@ const TrustLockOSPayout = ({
                   <Input
                     placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
                     value={cryptoWalletAddress}
-                    onChange={(e) => { setCryptoWalletAddress(e.target.value); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
+                    onChange={(e) => { const cleaned = e.target.value.replace(/[^a-fA-F0-9x]/g, "").slice(0, 42); setCryptoWalletAddress(cleaned); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
                     className={cn("mt-1 text-sm font-mono", fieldErrors.cryptoWalletAddress && "border-destructive ring-destructive/30 ring-2")}
                   />
                   {fieldErrors.cryptoWalletAddress && <p className="text-[9px] text-destructive mt-1 font-medium">Wallet address is required</p>}
