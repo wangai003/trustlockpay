@@ -20,6 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from "recharts";
+import MonetizedDocuments from "@/components/shared/MonetizedDocuments";
 
 const chartStyle = {
   background: "hsl(0,0%,100%)", border: "1px solid hsl(45,10%,90%)", borderRadius: "8px", fontSize: "12px",
@@ -179,48 +180,7 @@ const VendorAnalytics = () => {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
-            <p className="text-sm text-muted-foreground">Generate and download branded reports. Each report includes the TrustLock Pay logo and is personalized with your business name.</p>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 text-xs" />
-              <span className="text-xs text-muted-foreground">to</span>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 text-xs" />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {[
-                { name: "Revenue Statement", desc: "Complete revenue breakdown with escrow details, fees, and net payouts.", icon: DollarSign },
-                { name: "Transaction Summary", desc: "All transactions within the selected date range with status and amounts.", icon: Package },
-                { name: "Order History Export", desc: "CSV export of all orders for accounting and record-keeping.", icon: FileText },
-                { name: "Payout Report", desc: "Detailed payout history with dates, amounts, and settlement methods.", icon: TrendingUp },
-              ].map(r => (
-                <Card key={r.name}>
-                  <CardContent className="p-4 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <r.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{r.name}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">{r.desc}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <Badge variant="outline" className="text-[9px]">
-                          <Shield className="w-2.5 h-2.5 mr-1" /> TrustLock Pay
-                        </Badge>
-                        <Badge variant="outline" className="text-[9px]">For: {vendor.name}</Badge>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => handleDownloadClick(r.name)}>
-                      <Download className="w-3 h-3 mr-1" /> PDF
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <p className="text-[10px] text-muted-foreground text-center">
-              Reports are generated with the TrustLock Pay logo in the header. $0.50 per download applies on paid plans.
-            </p>
+            <MonetizedDocuments role="vendor" />
           </TabsContent>
 
           <TabsContent value="archives" className="space-y-4">

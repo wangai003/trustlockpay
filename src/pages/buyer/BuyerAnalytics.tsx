@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import MonetizedDocuments from "@/components/shared/MonetizedDocuments";
 import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,8 +107,9 @@ const BuyerAnalytics = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 max-w-sm">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="analytics">Spending</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="archives">Archives</TabsTrigger>
           </TabsList>
 
@@ -139,6 +141,10 @@ const BuyerAnalytics = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            <MonetizedDocuments role="buyer" />
           </TabsContent>
 
           <TabsContent value="archives" className="space-y-4">

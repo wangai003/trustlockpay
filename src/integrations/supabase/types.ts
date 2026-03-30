@@ -544,6 +544,39 @@ export type Database = {
           },
         ]
       }
+      document_access: {
+        Row: {
+          created_at: string
+          document_key: string
+          expires_at: string
+          id: string
+          os_payment_id: string | null
+          price: number
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_key: string
+          expires_at?: string
+          id?: string
+          os_payment_id?: string | null
+          price?: number
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_key?: string
+          expires_at?: string
+          id?: string
+          os_payment_id?: string | null
+          price?: number
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       industry_templates: {
         Row: {
           compliance_requirements: string[] | null
