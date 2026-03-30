@@ -36,6 +36,7 @@ const BuyerOrders = () => {
   const [search, setSearch] = useState("");
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
+  const [releaseOrderId, setReleaseOrderId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
