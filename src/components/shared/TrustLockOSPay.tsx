@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
+import FundMovementTracker from "./FundMovementTracker";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -1133,6 +1134,25 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <span className="font-medium">{payMode === "local" ? "🌍 Africa" : "🌐 International"} · {feeBreakdown.processorUsed}</span>
               </div>
             </div>
+           )}
+
+          {/* Fund Movement Tracker — shows when method is selected */}
+          {method && parsedAmount > 0 && (
+            <FundMovementTracker
+              flowType={method === "azix" ? "os_pay_crypto" : "os_pay_fiat"}
+              role={role}
+              method={method || undefined}
+              providerName={
+                method === "mobile_money" ? (mobileProvider || "Mobile Money")
+                : method === "bank_transfer" ? (bankName || "Bank Transfer")
+                : method === "azix" ? "Crypto (USDC/USDT)"
+                : method === "coinbase" ? "Coinbase"
+                : method === "transak" ? "Transak"
+                : method === "applepay" ? "Apple Pay / Google Pay"
+                : "Card"
+              }
+              amount={parsedAmount}
+            />
           )}
 
           {/* Admin summary — no fees */}
