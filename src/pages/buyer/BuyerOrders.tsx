@@ -308,12 +308,28 @@ const BuyerOrders = () => {
 
                     <div className="flex gap-2 shrink-0">
                       {order.status === "delivered" && (
-                        <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
-                          <Button size="sm" onClick={() => {
-                            if (isTestnet) { testnet.confirmDelivery(order.id); }
-                            else { confirmDeliveryHook.mutate(order.id); }
-                          }}>Confirm Delivery</Button>
-                        </TLId>
+                        <>
+                          <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
+                            <Button size="sm" onClick={() => {
+                              if (isTestnet) { testnet.confirmDelivery(order.id); }
+                              else { confirmDeliveryHook.mutate(order.id); }
+                            }}>Confirm Delivery</Button>
+                          </TLId>
+                          <TLId code={dynTLId("B", "BO", row, "BTN-RELEASE")} inline>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="gap-1 bg-primary"
+                              onClick={() => {
+                                setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
+                                if (expandedOrder !== order.id) setExpandedOrder(order.id);
+                              }}
+                            >
+                              <Unlock className="w-3.5 h-3.5" />
+                              Release Funds
+                            </Button>
+                          </TLId>
+                        </>
                       )}
                       {order.status === "shipped" && (
                         <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
