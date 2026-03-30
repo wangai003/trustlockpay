@@ -118,7 +118,7 @@ const PAYOUT_COUNTRIES = [
 ];
 
 // Admin escrow custodian wallet (locked)
-const ADMIN_ESCROW_WALLET = AZIX_WALLETS?.escrow || "0x7A3b...F92d";
+const ADMIN_ESCROW_WALLET = (typeof AZIX_WALLETS?.escrow === "object" ? AZIX_WALLETS.escrow.publicKey : AZIX_WALLETS?.escrow) || "0x4E1c...A83b";
 
 const TrustLockOSPayout = ({
   role,
