@@ -370,8 +370,8 @@ const TrustLockOSPayout = ({
 
   const handleConfirmAndPay = async () => {
     setConfirmDialog(false);
-    setReviewStep(false);
     setProcessing(true);
+    // Keep reviewStep = true so the user sees the loading state
 
     const providerName = isAdmin
       ? "TrustLock Escrow Wallet"
