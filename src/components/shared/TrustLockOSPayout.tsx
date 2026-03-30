@@ -355,11 +355,49 @@ const TrustLockOSPayout = ({
   };
 
   // ─── Review step: confirm details before submission ─────
+  // Helper to check individual field validity for red highlighting
+  const getFieldErrors = () => {
+    const errors: Record<string, boolean> = {};
+    if (!orderNumber?.trim()) errors.orderNumber = true;
+    if (isAdmin && payoutType === "split") {
+      const bp = parseFloat(splitBuyerPercent);
+      const vp = parseFloat(splitVendorPercent);
+      if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
+      if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
+      if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
+        errors.splitBuyerPercent = true;
+        errors.splitVendorPercent = true;
+      }
+    }
+    if (!isAdmin) {
+      if (isCrypto) {
+        if (!cryptoWalletAddress.trim()) errors.cryptoWalletAddress = true;
+        if (!cryptoAddressConfirmed) errors.cryptoAddressConfirmed = true;
+        if (!liabilityAccepted) errors.liabilityAccepted = true;
+      } else if (selectedCountry && activeFields.length > 0) {
+        activeFields.filter(f => f.is_required).forEach(f => {
+          if (!dynamicFields[f.field_name]?.trim()) errors[`dynamic_${f.field_name}`] = true;
+        });
+      } else if (selectedProvider) {
+        selectedProvider.fields.filter(f => f.required).forEach(f => {
+          if (!providerFields[f.key]?.trim()) errors[`provider_${f.key}`] = true;
+        });
+      } else if (!selectedProvider && !isCrypto && !(selectedCountry && activeFields.length > 0)) {
+        errors.paymentMethod = true;
+      }
+    }
+    return errors;
+  };
+
+  const fieldErrors = validationAttempted ? getFieldErrors() : {};
+
   const handleProceedToReview = () => {
     if (!isFormValid()) {
-      toast.error("Please complete all required fields");
+      setValidationAttempted(true);
+      toast.error("Please complete all highlighted fields before proceeding");
       return;
     }
+    setValidationAttempted(false);
     setReviewStep(true);
   };
 
