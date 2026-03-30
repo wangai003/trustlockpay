@@ -382,6 +382,26 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   };
 
+  // ─── OS Pay Failure Screen ──────────────────────────────
+  if (osPayFailure) {
+    return (
+      <TransactionFailureState
+        flow="os_pay"
+        role={role}
+        errorMessage={osPayFailure.message}
+        amount={amount}
+        method={method?.replace(/_/g, " ") || undefined}
+        onRetry={() => {
+          setOsPayFailure(null);
+          handleSubmit();
+        }}
+        onBack={() => {
+          setOsPayFailure(null);
+        }}
+      />
+    );
+  }
+
   // ─── OS Pay Success Screen (testnet) ──────────────────────
   if (osPayResult) {
     return (
