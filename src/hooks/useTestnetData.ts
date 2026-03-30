@@ -460,6 +460,7 @@ export function useTestnetData() {
     addTracking,
     markDelivered,
     confirmDelivery,
+    releaseFunds,
     openDispute,
     rejectOrders,
     // Milestone actions
