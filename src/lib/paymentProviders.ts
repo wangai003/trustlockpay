@@ -130,19 +130,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "account_number", label: "Account Number", placeholder: "1234567890", type: "text", required: true },
     ],
   },
-  {
-    id: "transak_fiat",
-    name: "Buy with Card (Transak)",
-    category: "card",
-    mode: "diaspora",
-    processor: "transak",
-    fields: [
-      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
-      { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
-      { key: "cvv", label: "CVV", placeholder: "123", type: "text", required: true },
-      { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
-    ],
-  },
+  // Transak removed as user-facing option — used only as behind-the-scenes off-ramp processor
 ];
 
 // ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
