@@ -65,25 +65,25 @@ const getFlowSteps = (
     // ─── OS PAYOUT (fund disbursements) ───
     case "payout_release":
       return [
-        { label: "Escrow Wallet", sublabel: "Funds held in escrow", icon: Shield, status: "completed" },
+        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
         { label: "Buyer Authorization", sublabel: "Buyer confirmed delivery", icon: CheckCircle2, status: "completed" },
-        { label: "Smart Contract Split", sublabel: "Atomic on-chain settlement", icon: Coins, status: "active" },
+        { label: "Automated Settlement", sublabel: "Secure fund distribution", icon: Coins, status: "active" },
         ...(chain === "polygon" ? [
-          { label: "Vendor Payout (99%)", sublabel: "Direct USDC → Vendor Wallet", icon: Wallet, status: "pending" as const },
+          { label: "Vendor Payout", sublabel: "Direct to vendor wallet", icon: Wallet, status: "pending" as const },
         ] : [
-          { label: "Vendor Payout (99%)", sublabel: providerName || "Processor converts to fiat", icon: Building2, status: "pending" as const },
-          { label: "Vendor's Account", sublabel: providerName || "Bank / Mobile / Wallet", icon: role === "vendor" ? Wallet : Smartphone, status: "pending" as const },
+          { label: "Vendor Payout", sublabel: "Converted and delivered", icon: Building2, status: "pending" as const },
+          { label: "Vendor's Account", sublabel: "Bank / Mobile / Wallet", icon: role === "vendor" ? Wallet : Smartphone, status: "pending" as const },
         ]),
-        { label: "Platform Fee (1%)", sublabel: "Escrow fee → Revenue Wallet", icon: Shield, status: "pending" },
+        { label: "Platform Settlement", sublabel: "Service fee processed", icon: Shield, status: "pending" },
         { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
       ];
 
     case "buyer_release":
       return [
         { label: "Your Authorization", sublabel: "You confirmed delivery", icon: CheckCircle2, status: "completed" },
-        { label: "Smart Contract Split", sublabel: "Atomic on-chain settlement", icon: Coins, status: "active" },
-        { label: "Vendor Payout (99%)", sublabel: "Routed via processor or direct", icon: Building2, status: "pending" },
-        { label: "Platform Fee (1%)", sublabel: "Escrow fee → Revenue Wallet", icon: Shield, status: "pending" },
+        { label: "Automated Settlement", sublabel: "Secure fund distribution", icon: Coins, status: "active" },
+        { label: "Vendor Payout", sublabel: "Funds delivered to vendor", icon: Building2, status: "pending" },
+        { label: "Platform Settlement", sublabel: "Service fee processed", icon: Shield, status: "pending" },
         { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
       ];
 
