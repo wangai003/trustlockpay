@@ -552,17 +552,15 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </Button>
             </div>
           )}
+          {isAdmin && (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Admin Actions</p>
             <div className="grid grid-cols-2 gap-2">
               <button
-                disabled={!isAdmin}
                 onClick={() => setAdminAction(adminAction === "refund" ? null : "refund")}
                 className={cn(
                   "flex items-center gap-2 p-3 rounded-lg border-2 text-left text-xs transition-all",
-                  !isAdmin && "opacity-40 cursor-not-allowed bg-muted",
-                  isAdmin && adminAction === "refund" && "border-primary bg-primary/5",
-                  isAdmin && adminAction !== "refund" && "border-border hover:border-muted-foreground/40"
+                  adminAction === "refund" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40"
                 )}
               >
                 <Undo2 className="w-4 h-4 text-destructive shrink-0" />
@@ -570,13 +568,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 {adminAction === "refund" && <Check className="w-3 h-3 text-primary ml-auto" />}
               </button>
               <button
-                disabled={!isAdmin}
                 onClick={() => setAdminAction(adminAction === "split" ? null : "split")}
                 className={cn(
                   "flex items-center gap-2 p-3 rounded-lg border-2 text-left text-xs transition-all",
-                  !isAdmin && "opacity-40 cursor-not-allowed bg-muted",
-                  isAdmin && adminAction === "split" && "border-primary bg-primary/5",
-                  isAdmin && adminAction !== "split" && "border-border hover:border-muted-foreground/40"
+                  adminAction === "split" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40"
                 )}
               >
                 <Split className="w-4 h-4 text-accent shrink-0" />
@@ -585,13 +580,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </button>
             </div>
 
-            {isAdmin && adminAction === "refund" && (
+            {adminAction === "refund" && (
               <div className="space-y-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
                 <div><Label className="text-xs">Recipient Email</Label><Input placeholder="buyer@email.com" value={refundEmail} onChange={e => setRefundEmail(e.target.value)} className="mt-1" /></div>
                 <div><Label className="text-xs">Reason</Label><Input placeholder="Dispute resolution, product return..." value={refundReason} onChange={e => setRefundReason(e.target.value)} className="mt-1" /></div>
               </div>
             )}
-            {isAdmin && adminAction === "split" && (
+            {adminAction === "split" && (
               <div className="space-y-2 p-3 rounded-lg bg-accent/5 border border-accent/20">
                 <div><Label className="text-xs">Recipient (Buyer email or ID)</Label><Input placeholder="BYR-2026-0102 or email" value={splitRecipient} onChange={e => setSplitRecipient(e.target.value)} className="mt-1" /></div>
                 <div>
@@ -606,6 +601,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </div>
             )}
           </div>
+          )}
 
           {/* ─── PAYMENT METHODS (vendor/buyer only) ─── */}
           {!isAdmin && (
