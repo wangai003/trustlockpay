@@ -995,7 +995,7 @@ const TrustLockOSPayout = ({
           </div>
 
           {/* Payment Method Selection */}
-          <Card className={cn("border-2 transition-all border-primary/30 shadow-md")}>
+          <Card className={cn("border-2 transition-all", fieldErrors.paymentMethod ? "border-destructive ring-destructive/30 ring-2 shadow-destructive/20" : "border-primary/30 shadow-md")}>
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-2">
                 {mode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
