@@ -758,58 +758,7 @@ const TrustLockOSPayout = ({
         </div>
       )}
 
-      {/* Role indicator */}
-      <div className="flex items-center justify-center">
-        <Badge variant="outline" className="text-xs px-4 py-1.5">
-          {getRoleLabel()}
-        </Badge>
-      </div>
-
       {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
-
-      {/* ═══ FLOW CONNECTOR ═══ */}
-      <div className="flex flex-col items-center gap-1 -my-2 relative z-10">
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
-          <span className="font-semibold">
-            {isAdmin
-              ? payoutType === "refund"
-                ? "Escrow Wallet → Buyer account (0% fee)"
-                : "Escrow Wallet → Both Parties (% based)"
-              : role === "buyer" && initialPayoutType === "release"
-                ? "Escrow Wallet → Vendor account · Buyer-authorized release"
-                : role === "vendor"
-                  ? "Escrow Wallet → Your account · Escrow fee trickles down"
-                  : "Escrow Wallet → Your account (0% fee refund)"
-            }
-          </span>
-          <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
-        </div>
-      </div>
-
-      {/* ═══ INLINE FUND MOVEMENT TRACKER ═══ */}
-      {orderNumber?.trim() && (
-        <FundMovementTracker
-          flowType={
-            isAdmin
-              ? payoutType === "refund" ? "payout_refund" : "payout_split"
-              : role === "buyer" && initialPayoutType === "release"
-                ? "buyer_release"
-                : isCrypto && selectedChain === "polygon"
-                  ? "payout_crypto_direct"
-                  : isCrypto
-                    ? "payout_crypto_bridge"
-                    : "payout_release"
-          }
-          role={role}
-          method={selectedProvider?.name || selectedMethod}
-          chain={SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}
-          providerName={selectedProvider?.name || activeConfig?.provider}
-          splitVendorPercent={splitVendorPercent}
-          splitBuyerPercent={splitBuyerPercent}
-          amount={amountNum}
-        />
-      )}
 
       {isAdmin && (
         <Card className="border-2 border-primary/30">
