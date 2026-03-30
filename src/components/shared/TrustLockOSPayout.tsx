@@ -360,6 +360,12 @@ const TrustLockOSPayout = ({
     setReviewStep(true);
   };
 
+  // ─── Generate mock confirmation code ─────────────────────
+  const generateConfirmationCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  };
+
   const handleConfirmAndPay = async () => {
     setConfirmDialog(false);
     setReviewStep(false);
@@ -373,6 +379,22 @@ const TrustLockOSPayout = ({
       : selectedProvider?.category ?? selectedMethod ?? (isCrypto ? "crypto_wallet" : "unknown");
 
     try {
+      // ═══ TESTNET SIMULATION — bypass edge function, simulate seamless execution ═══
+      if (isTestnet) {
+        await new Promise((r) => setTimeout(r, 1800)); // Simulate processing delay
+        const mockCode = generateConfirmationCode();
+        setResult({ confirmationCode: mockCode, status: "completed" });
+
+        if (isAdmin) {
+          toast.success(`${payoutType === "refund" ? "Refund" : payoutType === "split" ? "Split payout" : "Release"} processed successfully`);
+        } else {
+          toast.success("Payout submitted — funds will be deposited within 24–48 hours");
+        }
+        onComplete?.(mockCode);
+        return;
+      }
+
+      // ═══ MAINNET — real edge function call ═══
       const providerDetails: Record<string, unknown> = {
         ...(providerFields as Record<string, unknown>),
         ...(dynamicFields as Record<string, unknown>),
