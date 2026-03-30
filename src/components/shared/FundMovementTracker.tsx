@@ -81,9 +81,10 @@ const getFlowSteps = (
     case "buyer_release":
       return [
         { label: "Your Authorization", sublabel: "You confirmed delivery", icon: CheckCircle2, status: "completed" },
-        { label: "Escrow Wallet", sublabel: "Smart contract releases funds", icon: Shield, status: "active" },
-        { label: "Payment Processor", sublabel: "Routes to vendor's method", icon: Building2, status: "pending" },
-        { label: "Vendor Receives", sublabel: "Deposited within 24–48 hrs", icon: Wallet, status: "pending" },
+        { label: "Smart Contract Split", sublabel: "Atomic on-chain settlement", icon: Coins, status: "active" },
+        { label: "Vendor Payout (99%)", sublabel: "Routed via processor or direct", icon: Building2, status: "pending" },
+        { label: "Platform Fee (1%)", sublabel: "Escrow fee → Revenue Wallet", icon: Shield, status: "pending" },
+        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
       ];
 
     case "payout_refund":
