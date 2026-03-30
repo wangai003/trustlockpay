@@ -1010,15 +1010,21 @@ const TrustLockOSPayout = ({
                 }
               </p>
               <ProviderSearch mode={mode === "local" ? "local" : "diaspora"} onSelect={setSelectedProvider} selected={selectedProvider} />
+              {fieldErrors.paymentMethod && (
+                <p className="text-[10px] text-destructive font-semibold flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Please select a payment method to continue
+                </p>
+              )}
               {selectedProvider && selectedProvider.fields.length > 0 && (
                 <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
                   <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
                   {selectedProvider.fields.map((field) => (
                     <div key={field.key}>
-                      <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                      <Label className={cn("text-[10px]", fieldErrors[`provider_${field.key}`] ? "text-destructive" : "text-muted-foreground")}>{field.label}{field.required && " *"}</Label>
                       {field.type === "select" ? (
                         <select
-                          className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          className={cn("w-full mt-1 rounded-md border bg-background px-3 py-2 text-sm", fieldErrors[`provider_${field.key}`] ? "border-destructive ring-destructive/30 ring-2" : "border-border")}
                           value={providerFields[field.key] || ""}
                           onChange={(e) => handleFieldChange(field.key, e.target.value)}
                         >
@@ -1032,9 +1038,10 @@ const TrustLockOSPayout = ({
                           placeholder={field.placeholder}
                           value={providerFields[field.key] || ""}
                           onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          className="mt-1 text-sm"
+                          className={cn("mt-1 text-sm", fieldErrors[`provider_${field.key}`] && "border-destructive ring-destructive/30 ring-2")}
                         />
                       )}
+                      {fieldErrors[`provider_${field.key}`] && <p className="text-[9px] text-destructive mt-1 font-medium">This field is required</p>}
                     </div>
                   ))}
                 </div>
