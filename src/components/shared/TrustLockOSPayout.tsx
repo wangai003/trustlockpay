@@ -238,8 +238,94 @@ const TrustLockOSPayout = ({
     splitVendorShare: payoutType === "split" && splitVendorPercent ? parseFloat(splitVendorPercent) / 100 : undefined,
   }) : null;
 
+  // ─── Input sanitization & auto-correction per field type ──
+  const sanitizeField = (key: string, raw: string): string => {
+    const stripped = raw;
+
+    // Card number: digits only, spaces every 4, max 19 digits
+    if (key === "card_number") {
+      const digits = stripped.replace(/\D/g, "").slice(0, 19);
+      return digits.replace(/(.{4})/g, "$1 ").trim();
+    }
+
+    // Expiry date: digits only, auto-insert slash, MM/YY
+    if (key === "expiry" || key === "card_expiry") {
+      const digits = stripped.replace(/\D/g, "").slice(0, 4);
+      if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      return digits;
+    }
+
+    // CVV / CVC: digits only, max 4
+    if (key === "cvv" || key === "card_cvc") {
+      return stripped.replace(/\D/g, "").slice(0, 4);
+    }
+
+    // Phone number: allow digits, +, spaces, hyphens only — max 20 chars
+    if (key === "phone_number") {
+      return stripped.replace(/[^\d+\-\s]/g, "").slice(0, 20);
+    }
+
+    // BVN (Nigeria): digits only, max 11
+    if (key === "bvn") {
+      return stripped.replace(/\D/g, "").slice(0, 11);
+    }
+
+    // NUBAN / Account number: digits only, max 20
+    if (key === "account_number") {
+      return stripped.replace(/\D/g, "").slice(0, 20);
+    }
+
+    // Routing number: digits only, max 9
+    if (key === "routing_number") {
+      return stripped.replace(/\D/g, "").slice(0, 9);
+    }
+
+    // Branch code: alphanumeric, max 10
+    if (key === "branch_code") {
+      return stripped.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+    }
+
+    // SWIFT/BIC: uppercase alphanumeric, max 11
+    if (key === "swift_bic") {
+      return stripped.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 11);
+    }
+
+    // National ID: alphanumeric, max 20
+    if (key === "national_id" || key === "id_number") {
+      return stripped.replace(/[^a-zA-Z0-9]/g, "").slice(0, 20);
+    }
+
+    // Wallet address: hex chars + 0x prefix, max 42 for EVM
+    if (key === "wallet_address") {
+      // Allow hex chars and 0x prefix
+      const cleaned = stripped.replace(/[^a-fA-F0-9x]/g, "");
+      // Auto-prepend 0x if user starts typing hex without it
+      if (cleaned.length > 0 && !cleaned.startsWith("0x") && !cleaned.startsWith("0X")) {
+        // Don't force prefix if user is clearly typing a Solana address (base58)
+        if (/^[0-9a-fA-F]+$/.test(cleaned)) {
+          return `0x${cleaned}`.slice(0, 42);
+        }
+      }
+      return cleaned.slice(0, 42);
+    }
+
+    // Email: trim whitespace, lowercase
+    if (key === "email") {
+      return stripped.trim().toLowerCase();
+    }
+
+    // Cardholder / Account holder name: letters, spaces, hyphens, apostrophes, max 80
+    if (key === "cardholder" || key === "account_holder" || key === "account_name") {
+      return stripped.replace(/[^a-zA-ZÀ-ÿ\s\-'.]/g, "").slice(0, 80);
+    }
+
+    // Default: trim, max 100
+    return stripped.slice(0, 100);
+  };
+
   const handleFieldChange = (key: string, value: string) => {
-    setProviderFields((prev) => ({ ...prev, [key]: value }));
+    const sanitized = sanitizeField(key, value);
+    setProviderFields((prev) => ({ ...prev, [key]: sanitized }));
   };
 
   const handleDynamicFieldChange = (fieldName: string, value: string) => {
