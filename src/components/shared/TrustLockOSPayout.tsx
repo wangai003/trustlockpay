@@ -15,7 +15,7 @@ import {
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
   Check, Copy, Info, Loader2,
-  Wallet, ArrowDown, Link2, ExternalLink,
+  Wallet, ArrowDown, ExternalLink, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -117,24 +117,37 @@ const PAYOUT_COUNTRIES = [
   { code: "GLOBAL", name: "Crypto (Any Country)" },
 ];
 
+// Admin escrow custodian wallet (locked)
+const ADMIN_ESCROW_WALLET = AZIX_WALLETS?.escrow || "0x7A3b...F92d";
+
 const TrustLockOSPayout = ({
   role,
   prefillAmount = "",
   prefillOrderNumber = "",
-  payoutType = "release",
+  payoutType: initialPayoutType = "release",
   transactionId,
   onComplete,
   isTestnet = true,
 }: TrustLockOSPayoutProps) => {
+  // ─── Admin can select payout action type ──────────────
+  const [adminAction, setAdminAction] = useState<"release" | "refund" | "split">(
+    role === "admin" ? initialPayoutType : initialPayoutType
+  );
+  const payoutType = role === "admin" ? adminAction : initialPayoutType;
+
   const [mode, setMode] = useState<"diaspora" | "local">("local");
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
   const [amount] = useState(prefillAmount);
   const [processing, setProcessing] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(false);
+  const [reviewStep, setReviewStep] = useState(false);
   const [result, setResult] = useState<{ confirmationCode: string; status: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+
+  // Order number (required for all roles)
+  const [orderNumber, setOrderNumber] = useState(prefillOrderNumber);
 
   // Dynamic payout fields state
   const [selectedCountry, setSelectedCountry] = useState<string>("");
@@ -150,11 +163,9 @@ const TrustLockOSPayout = ({
   const [liabilityAccepted, setLiabilityAccepted] = useState(false);
   const [showLiabilityDialog, setShowLiabilityDialog] = useState(false);
 
-  // ─── Split payout state ─────────────────────────────────
+  // ─── Split payout state (admin only) ────────────────────
   const [splitBuyerPercent, setSplitBuyerPercent] = useState("");
   const [splitVendorPercent, setSplitVendorPercent] = useState("");
-  const [splitOrderNumber, setSplitOrderNumber] = useState(prefillOrderNumber);
-  const [splitAccepted, setSplitAccepted] = useState(false);
 
   // OS Payout token → hardwired to Escrow Wallet (escrow disbursement)
   const getSeedToken = useGetOrCreateSeedToken("os_payout");
@@ -167,6 +178,9 @@ const TrustLockOSPayout = ({
       onSuccess: (data) => setSeedToken(data?.token?.token || "TL-DEMO-TOKEN-XXXX"),
     });
   }, []);
+
+  // For admin, auto-lock crypto method and wallet
+  const isAdmin = role === "admin";
 
   // Fetch payout field configs when country changes
   const fetchPayoutFields = useCallback(async (countryCode: string) => {
@@ -197,16 +211,16 @@ const TrustLockOSPayout = ({
   }, []);
 
   useEffect(() => {
-    if (selectedCountry) {
+    if (selectedCountry && !isAdmin) {
       fetchPayoutFields(selectedCountry);
     }
-  }, [selectedCountry, fetchPayoutFields]);
+  }, [selectedCountry, fetchPayoutFields, isAdmin]);
 
   const activeConfig = payoutConfigs.find((c) => c.payout_method === selectedMethod);
   const activeFields = activeConfig?.required_fields ?? [];
 
   const amountNum = parseFloat(amount) || 0;
-  const isCrypto = selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto" || selectedCountry === "GLOBAL";
+  const isCrypto = isAdmin || selectedProvider?.category === "crypto_wallet" || selectedMethod === "crypto" || selectedCountry === "GLOBAL";
   const txType: TransactionType = payoutType === "refund"
     ? (isCrypto ? "refund_crypto" : "refund_fiat")
     : payoutType === "split"
@@ -248,13 +262,13 @@ const TrustLockOSPayout = ({
         body: {
           user_id: (await supabase.auth.getUser()).data.user?.id || "anonymous",
           role,
-          order_number: splitOrderNumber || prefillOrderNumber,
+          order_number: orderNumber,
           transaction_id: transactionId,
-          wallet_address: cryptoWalletAddress,
+          wallet_address: isAdmin ? ADMIN_ESCROW_WALLET : cryptoWalletAddress,
           chain: selectedChain,
           consent_type: "crypto_payout_liability",
           disclaimer_text: CRYPTO_LIABILITY_DISCLAIMER,
-          ip_address: null, // captured server-side ideally
+          ip_address: null,
           user_agent: navigator.userAgent,
           metadata: {
             is_testnet: isTestnet,
@@ -275,23 +289,47 @@ const TrustLockOSPayout = ({
     toast.success("Liability acknowledgement recorded and archived");
   };
 
-  const isFormValid = () => {
-    if (amountNum <= 0) return false;
+  // ─── Role-specific labels ───────────────────────────────
+  const getRoleLabel = () => {
+    if (isAdmin) {
+      if (payoutType === "refund") return "Admin — Process Refund";
+      if (payoutType === "split") return "Admin — Process Split Pay";
+      return "Admin — Process Release";
+    }
+    if (role === "vendor") return "Vendor — Receive Released Funds";
+    return "Buyer — Receive Refund";
+  };
 
-    // Split payout validation
-    if (payoutType === "split") {
-      const bp = parseFloat(splitBuyerPercent);
-      const vp = parseFloat(splitVendorPercent);
-      if (isNaN(bp) || isNaN(vp) || bp < 0 || vp < 0 || Math.abs(bp + vp - 100) > 0.01) return false;
-      if (!splitOrderNumber?.trim()) return false;
-      if (!splitAccepted) return false;
+  const getActionBadge = () => {
+    if (isAdmin) {
+      if (payoutType === "refund") return "Refund Authorization";
+      if (payoutType === "split") return "Split Pay Authorization";
+      return "Release Authorization";
+    }
+    if (role === "vendor") return "Fund Release";
+    return "Refund";
+  };
+
+  const isFormValid = () => {
+    // Order number always required
+    if (!orderNumber?.trim()) return false;
+
+    // Admin: just needs order number + action (split needs percentages)
+    if (isAdmin) {
+      if (payoutType === "split") {
+        const bp = parseFloat(splitBuyerPercent);
+        const vp = parseFloat(splitVendorPercent);
+        if (isNaN(bp) || isNaN(vp) || bp < 0 || vp < 0 || Math.abs(bp + vp - 100) > 0.01) return false;
+      }
+      return true;
     }
 
-    // Crypto payout requires chain selection + address + liability
+    // Vendor/Buyer: needs payment method + financial details
     if (isCrypto) {
       if (!cryptoWalletAddress.trim()) return false;
       if (!cryptoAddressConfirmed) return false;
       if (!liabilityAccepted) return false;
+      return true;
     }
 
     // If dynamic fields are active, validate those
@@ -301,7 +339,7 @@ const TrustLockOSPayout = ({
     }
 
     // Otherwise fall back to provider-based validation
-    if (!selectedProvider && !isCrypto) return false;
+    if (!selectedProvider) return false;
     if (selectedProvider) {
       const required = selectedProvider.fields.filter((f) => f.required);
       return required.every((f) => providerFields[f.key]?.trim());
@@ -310,12 +348,26 @@ const TrustLockOSPayout = ({
     return true;
   };
 
+  // ─── Review step: confirm details before submission ─────
+  const handleProceedToReview = () => {
+    if (!isFormValid()) {
+      toast.error("Please complete all required fields");
+      return;
+    }
+    setReviewStep(true);
+  };
+
   const handleConfirmAndPay = async () => {
     setConfirmDialog(false);
+    setReviewStep(false);
     setProcessing(true);
 
-    const providerName = selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? "Direct Crypto" : "Direct");
-    const providerCategory = selectedProvider?.category ?? selectedMethod ?? (isCrypto ? "crypto_wallet" : "unknown");
+    const providerName = isAdmin
+      ? "TrustLock Escrow Wallet"
+      : selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? "Direct Crypto" : "Direct");
+    const providerCategory = isAdmin
+      ? "crypto_wallet"
+      : selectedProvider?.category ?? selectedMethod ?? (isCrypto ? "crypto_wallet" : "unknown");
 
     try {
       const providerDetails: Record<string, unknown> = {
@@ -323,7 +375,7 @@ const TrustLockOSPayout = ({
         ...(dynamicFields as Record<string, unknown>),
       };
 
-      if (isCrypto) {
+      if (isCrypto && !isAdmin) {
         providerDetails.wallet_address = cryptoWalletAddress;
         providerDetails.chain = selectedChain;
         providerDetails.is_native_polygon = selectedChain === "polygon";
@@ -331,11 +383,16 @@ const TrustLockOSPayout = ({
         providerDetails.liability_accepted_at = new Date().toISOString();
       }
 
+      if (isAdmin) {
+        providerDetails.admin_wallet_address = ADMIN_ESCROW_WALLET;
+        providerDetails.chain = "polygon";
+        providerDetails.is_native_polygon = true;
+        providerDetails.admin_action = payoutType;
+      }
+
       if (payoutType === "split") {
         providerDetails.split_buyer_percent = parseFloat(splitBuyerPercent);
         providerDetails.split_vendor_percent = parseFloat(splitVendorPercent);
-        providerDetails.split_order_number = splitOrderNumber;
-        providerDetails.split_accepted = splitAccepted;
       }
 
       const res = await initiatePayout.mutateAsync({
@@ -343,7 +400,7 @@ const TrustLockOSPayout = ({
         role,
         payoutType,
         transactionId,
-        orderNumber: splitOrderNumber || prefillOrderNumber,
+        orderNumber,
         amount: String(amountNum),
         paymentCategory: providerCategory,
         paymentProvider: providerName,
@@ -352,7 +409,7 @@ const TrustLockOSPayout = ({
       });
 
       // For non-Polygon crypto payouts, initiate Transak offramp
-      if (isCrypto && selectedChain !== "polygon") {
+      if (isCrypto && !isAdmin && selectedChain !== "polygon") {
         try {
           const { data: offrampData } = await supabase.functions.invoke("transak-offramp", {
             body: {
@@ -365,7 +422,7 @@ const TrustLockOSPayout = ({
             },
           });
           if (offrampData?.transak_widget_url) {
-            toast.info("Non-Polygon chain selected — Transak offramp initiated for cross-chain transfer");
+            toast.info("Non-Polygon chain — cross-chain transfer initiated via Transak");
           }
         } catch (err) {
           console.warn("Transak offramp initiation (non-blocking):", err);
@@ -377,7 +434,11 @@ const TrustLockOSPayout = ({
         status: "completed",
       });
 
-      toast.success("Funds are being transferred to your account");
+      if (isAdmin) {
+        toast.success(`${payoutType === "refund" ? "Refund" : payoutType === "split" ? "Split payout" : "Release"} processed successfully`);
+      } else {
+        toast.success("Payout submitted — funds will be deposited within 24–48 hours");
+      }
       onComplete?.(res.confirmationCode);
     } catch {
       // handled by hook
@@ -388,16 +449,22 @@ const TrustLockOSPayout = ({
 
   // ─── Success Screen ──────────────────────────────────────
   if (result) {
+    const isAdminSuccess = isAdmin;
     return (
       <div className="max-w-lg mx-auto space-y-4">
         <Card className="border-2 border-primary/30">
           <CardContent className="p-6 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Check className="w-8 h-8 text-primary" />
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Transaction Successful</h3>
+            <h3 className="text-lg font-bold text-foreground">
+              {isAdminSuccess ? "Payout Authorized Successfully" : "Submission Successful"}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              Your funds are being transferred via {selectedProvider?.name ?? (isCrypto ? `${selectedChain.toUpperCase()} direct` : "Direct")}. You will receive a notification once the transfer is complete.
+              {isAdminSuccess
+                ? `The ${payoutType === "split" ? "split payout" : payoutType} has been authorized. Funds are being transferred from the TrustLock escrow custodian wallet to the designated recipient(s).`
+                : `Your payout details have been submitted and verified. Funds will be deposited into your ${isCrypto ? (selectedChain === "polygon" ? "Polygon wallet" : `${SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} wallet`) : "selected account"} within 24–48 business hours.`
+              }
             </p>
             <div className="bg-muted rounded-lg p-4 space-y-2">
               <p className="text-xs text-muted-foreground">Confirmation Code</p>
@@ -413,13 +480,28 @@ const TrustLockOSPayout = ({
               <p className="text-[10px] text-muted-foreground">Save this code for your records. Use it for any disputes or inquiries.</p>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Amount: <span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></p>
-              {fees && <p>Fees: <span className="font-semibold text-foreground">${fees.totalFees.toFixed(2)}</span></p>}
+              <p>Order: <span className="font-semibold text-foreground">{orderNumber}</span></p>
+              {amountNum > 0 && <p>Amount: <span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></p>}
               {fees && <p>Net received: <span className="font-semibold text-primary">${fees.netAmount.toFixed(2)}</span></p>}
-              <p>Provider: <span className="font-semibold text-foreground">{selectedProvider?.name ?? activeConfig?.provider ?? "Direct"}</span></p>
-              {isCrypto && <p>Chain: <span className="font-semibold text-foreground">{SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}</span></p>}
-              {isCrypto && selectedChain !== "polygon" && (
+              {!isAdmin && <p>Method: <span className="font-semibold text-foreground">{selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? "Direct Crypto" : "Direct")}</span></p>}
+              {isCrypto && !isAdmin && <p>Chain: <span className="font-semibold text-foreground">{SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}</span></p>}
+              {isCrypto && !isAdmin && selectedChain !== "polygon" && (
                 <p className="text-accent font-semibold">Cross-chain via Transak — additional processing time may apply</p>
+              )}
+              {payoutType === "split" && (
+                <p>Split: <span className="font-semibold text-foreground">Vendor {splitVendorPercent}% · Buyer {splitBuyerPercent}%</span></p>
+              )}
+            </div>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+              <p className="font-semibold text-foreground mb-1">📋 What happens next?</p>
+              {isAdmin ? (
+                <p>The escrow smart contract has been instructed to disburse funds. Recipients will receive funds via their selected payment method within 24–48 hours. Both parties will be notified via email and in-app notification.</p>
+              ) : isCrypto && selectedChain === "polygon" ? (
+                <p>Funds will transfer directly from the TrustLock escrow custodian wallet to your Polygon wallet address. No intermediary processor is required. You will receive a blockchain confirmation once the transaction is finalized on-chain.</p>
+              ) : isCrypto ? (
+                <p>Funds will travel from the TrustLock escrow custodian wallet through our payment processor (Transak) to bridge to your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} wallet. Processing typically takes 24–48 hours.</p>
+              ) : (
+                <p>Funds will travel from the TrustLock escrow custodian wallet through our payment processor to your {selectedProvider?.name || "selected account"}. Processing typically takes 24–48 business hours. You will receive a confirmation notification once complete.</p>
               )}
             </div>
           </CardContent>
@@ -428,6 +510,91 @@ const TrustLockOSPayout = ({
     );
   }
 
+  // ─── Review Step (pre-submission confirmation) ───────────
+  if (reviewStep) {
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <Card className="border-2 border-accent/30">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-accent" />
+              <h3 className="text-sm font-bold text-foreground">Review & Confirm Your Details</h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Please carefully review all details below before submitting. Once submitted, the payout request is final.
+            </p>
+
+            <div className="space-y-2 p-4 rounded-lg bg-muted/50 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Role</span><span className="font-semibold text-foreground capitalize">{role}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Action</span><span className="font-semibold text-foreground capitalize">{payoutType}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Order Number</span><span className="font-semibold text-foreground">{orderNumber}</span></div>
+              {amountNum > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">${amountNum.toFixed(2)}</span></div>
+              )}
+              {isAdmin && payoutType === "split" && (
+                <>
+                  <Separator />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Vendor Share</span><span className="font-semibold text-foreground">{splitVendorPercent}%</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Buyer Share</span><span className="font-semibold text-foreground">{splitBuyerPercent}%</span></div>
+                </>
+              )}
+              {!isAdmin && (
+                <>
+                  <Separator />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-semibold text-foreground">{mode === "local" ? "Africa" : "International"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span className="font-semibold text-foreground">{selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? "Crypto" : "—")}</span></div>
+                  {isCrypto && (
+                    <>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Chain</span><span className="font-semibold text-foreground">{SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}</span></div>
+                      <div className="flex justify-between flex-wrap"><span className="text-muted-foreground">Wallet</span><span className="font-semibold text-foreground font-mono text-[10px] break-all">{cryptoWalletAddress}</span></div>
+                    </>
+                  )}
+                  {/* Show filled dynamic fields */}
+                  {Object.entries(dynamicFields).filter(([, v]) => v).map(([k, v]) => (
+                    <div key={k} className="flex justify-between"><span className="text-muted-foreground">{k.replace(/_/g, " ")}</span><span className="font-semibold text-foreground">{v}</span></div>
+                  ))}
+                  {/* Show filled provider fields */}
+                  {Object.entries(providerFields).filter(([, v]) => v).map(([k, v]) => (
+                    <div key={k} className="flex justify-between"><span className="text-muted-foreground">{k.replace(/_/g, " ")}</span><span className="font-semibold text-foreground">{v}</span></div>
+                  ))}
+                </>
+              )}
+              {isAdmin && (
+                <>
+                  <Separator />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Admin Wallet</span><span className="font-semibold text-foreground font-mono text-[10px]">{ADMIN_ESCROW_WALLET}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Network</span><span className="font-semibold text-foreground">Polygon</span></div>
+                </>
+              )}
+              {fees && (
+                <>
+                  <Separator />
+                  {fees.totalFees > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Total Fees</span><span className="text-muted-foreground">-${fees.totalFees.toFixed(2)}</span></div>}
+                  <div className="flex justify-between text-primary"><span className="font-semibold">Net Amount</span><span className="font-bold">${fees.netAmount.toFixed(2)}</span></div>
+                </>
+              )}
+            </div>
+
+            <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-[10px] text-foreground">
+              <strong>⚠️ Please confirm:</strong> All financial details above are correct. Once you submit, the payout request will be processed and funds will be disbursed accordingly. This action cannot be reversed.
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setReviewStep(false)}>
+                ← Go Back & Edit
+              </Button>
+              <Button className="flex-1 gap-2" onClick={() => setConfirmDialog(true)} disabled={processing}>
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Confirm & Submit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ─── Main Form ───────────────────────────────────────────
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       {/* Testnet Banner */}
@@ -449,9 +616,16 @@ const TrustLockOSPayout = ({
             {isTestnet ? "TEST" : "LIVE"}
           </Badge>
           <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">
-            {payoutType === "refund" ? "Refund" : payoutType === "split" ? "Split Pay" : "Fund Release"}
+            {getActionBadge()}
           </Badge>
         </div>
+      </div>
+
+      {/* Role indicator */}
+      <div className="flex items-center justify-center">
+        <Badge variant="outline" className="text-xs px-4 py-1.5">
+          {getRoleLabel()}
+        </Badge>
       </div>
 
       {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
@@ -461,452 +635,468 @@ const TrustLockOSPayout = ({
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
           <span className="font-semibold">
-            {payoutType === "refund"
-              ? "Funds → Buyer (no fees deducted)"
-              : payoutType === "split"
-                ? "Funds → Both Parties · Vendor fees ↓ trickle down"
-                : "Vendor paid first · Escrow fee ↓ trickles down"}
+            {isAdmin
+              ? payoutType === "refund"
+                ? "Escrow Wallet → Buyer account (0% fee)"
+                : payoutType === "split"
+                  ? "Escrow Wallet → Both Parties (% based)"
+                  : "Escrow Wallet → Vendor account"
+              : role === "vendor"
+                ? "Escrow Wallet → Your account · Escrow fee trickles down"
+                : "Escrow Wallet → Your account (0% fee refund)"
+            }
           </span>
           <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
         </div>
       </div>
 
-      {/* ═══ SPLIT PAYOUT PANEL ═══ */}
-      {payoutType === "split" && (
-        <Card className="border-2 border-accent/40">
+      {/* ═══ ADMIN CONTROL PANEL ═══ */}
+      {isAdmin && (
+        <Card className="border-2 border-primary/30">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-accent" />
-              <h3 className="text-sm font-bold text-foreground">Dispute Resolution — Split Payout</h3>
+              <Shield className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Admin Escrow Control Panel</h3>
             </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Enter the agreed split percentages from arbitration. Both parties must independently enter matching order numbers and accept the resolution for funds to be released.
-            </p>
+
+            {/* Action Selector */}
+            <div>
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Action *</Label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {(["release", "refund", "split"] as const).map((action) => (
+                  <button
+                    key={action}
+                    onClick={() => setAdminAction(action)}
+                    className={cn(
+                      "px-4 py-2 rounded-full text-xs font-semibold transition-all",
+                      adminAction === action
+                        ? "bg-primary text-primary-foreground shadow-lg"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {action === "release" ? "Release" : action === "refund" ? "Refund" : "Split Pay"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Split percentage fields (only when split selected) */}
+            {adminAction === "split" && (
+              <div className="space-y-3 p-3 rounded-lg bg-accent/5 border border-accent/30">
+                <p className="text-[10px] font-bold text-foreground">Split Pay Percentage</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Vendor Share (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g., 40"
+                      value={splitVendorPercent}
+                      onChange={(e) => handleSplitVendorChange(e.target.value)}
+                      className="mt-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Buyer Share (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g., 60"
+                      value={splitBuyerPercent}
+                      onChange={(e) => handleSplitBuyerChange(e.target.value)}
+                      className="mt-1 text-sm"
+                    />
+                  </div>
+                </div>
+                {splitBuyerPercent && splitVendorPercent && (
+                  <div className={cn(
+                    "p-2 rounded-lg text-[10px]",
+                    Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01
+                      ? "bg-primary/10 text-primary"
+                      : "bg-destructive/10 text-destructive"
+                  )}>
+                    {Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01
+                      ? `✓ Valid: Vendor ${splitVendorPercent}% · Buyer ${splitBuyerPercent}%`
+                      : `✗ Must equal 100%. Current: ${(parseFloat(splitBuyerPercent || "0") + parseFloat(splitVendorPercent || "0")).toFixed(2)}%`
+                    }
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Admin wallet (locked) */}
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin Escrow Wallet (Locked)</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  value={ADMIN_ESCROW_WALLET}
+                  disabled
+                  className="text-sm font-mono bg-muted cursor-not-allowed"
+                />
+                <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+              </div>
+              <p className="text-[9px] text-muted-foreground mt-1">
+                Method: Crypto (Polygon) · This wallet is directly linked to the TrustLock escrow custodian smart contract.
+              </p>
+            </div>
 
             {/* Order Number */}
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Order Number *</Label>
               <Input
-                placeholder="Enter the disputed order number (e.g., TL-00042)"
-                value={splitOrderNumber}
-                onChange={(e) => setSplitOrderNumber(e.target.value)}
+                placeholder="Enter exact order number (e.g., TL-00042)"
+                value={orderNumber}
+                onChange={(e) => setOrderNumber(e.target.value)}
                 className="mt-1 text-sm"
               />
               <p className="text-[9px] text-muted-foreground mt-1">
-                This must match the order number the other party enters. Mismatched orders will show status "dispute_unresolved".
+                {adminAction === "release"
+                  ? "Must match the vendor's order number. This triggers release from the escrow smart contract."
+                  : adminAction === "refund"
+                    ? "Must match the buyer's order number. Admin approval triggers refund from escrow to buyer."
+                    : "Must match both vendor and buyer order numbers. Split percentages will be applied to this order."
+                }
               </p>
             </div>
 
-            {/* Split Percentage Inputs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Buyer's Share (%)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  placeholder="e.g., 60"
-                  value={splitBuyerPercent}
-                  onChange={(e) => handleSplitBuyerChange(e.target.value)}
-                  className="mt-1 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Vendor's Share (%)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  placeholder="e.g., 40"
-                  value={splitVendorPercent}
-                  onChange={(e) => handleSplitVendorChange(e.target.value)}
-                  className="mt-1 text-sm"
-                />
-              </div>
+            {/* Admin visual feedback for escrow flow */}
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">🔐 Escrow Flow Preview</p>
+              {adminAction === "release" && (
+                <p>TrustLock Escrow Wallet → Payment Processor API → Vendor's selected payment method (linked to seed token)</p>
+              )}
+              {adminAction === "refund" && (
+                <p>TrustLock Escrow Wallet → Payment Processor API → Buyer's selected payment method (linked to seed token)</p>
+              )}
+              {adminAction === "split" && (
+                <p>TrustLock Escrow Wallet → Payment Processor API → Vendor ({splitVendorPercent || "?"}%) + Buyer ({splitBuyerPercent || "?"}%) via their respective payment methods</p>
+              )}
             </div>
-
-            {/* Split validation */}
-            {splitBuyerPercent && splitVendorPercent && (
-              <div className={cn(
-                "p-2 rounded-lg text-[10px]",
-                Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01
-                  ? "bg-primary/10 text-primary"
-                  : "bg-destructive/10 text-destructive"
-              )}>
-                {Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01
-                  ? `✓ Split valid: Buyer ${splitBuyerPercent}% ($${(amountNum * parseFloat(splitBuyerPercent) / 100).toFixed(2)}) · Vendor ${splitVendorPercent}% ($${(amountNum * parseFloat(splitVendorPercent) / 100).toFixed(2)})`
-                  : `✗ Percentages must add up to 100%. Current total: ${(parseFloat(splitBuyerPercent || "0") + parseFloat(splitVendorPercent || "0")).toFixed(2)}%`
-                }
-              </div>
-            )}
-
-            {/* Fee disclosure for split */}
-            {fees && amountNum > 0 && splitVendorPercent && (
-              <div className="p-2 rounded-lg bg-muted/50 text-[10px] text-muted-foreground space-y-0.5">
-                <p><strong>Escrow fee:</strong> Halved rate applied to vendor's share only — ${fees.escrowFee.toFixed(2)}</p>
-                {isCrypto && <p><strong>Gas fees:</strong> Split 50/50 between buyer and vendor — ~$0.025 each</p>}
-                <p><strong>Buyer's portion:</strong> No TrustLock service fees</p>
-              </div>
-            )}
-
-            {/* Acceptance checkbox */}
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={splitAccepted}
-                onChange={(e) => setSplitAccepted(e.target.checked)}
-                className="mt-1 rounded border-border"
-              />
-              <span className="text-[10px] text-muted-foreground leading-relaxed">
-                I confirm the split percentages above reflect the arbitration/admin resolution. I understand the other party must independently enter matching details for funds to be released. Once both parties confirm, the payout is processed automatically and is irreversible.
-              </span>
-            </label>
           </CardContent>
         </Card>
       )}
 
-      {/* Dual Mode Toggle */}
-      <div className="flex items-center justify-center gap-3">
-        <button
-          onClick={() => { setMode("local"); setSelectedProvider(null); setProviderFields({}); }}
-          className={cn(
-            "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
-            mode === "local" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Smartphone className="w-4 h-4" />
-          Africa
-        </button>
-        <button
-          onClick={() => { setMode("diaspora"); setSelectedProvider(null); setProviderFields({}); }}
-          className={cn(
-            "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
-            mode === "diaspora" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Globe className="w-4 h-4" />
-          International
-        </button>
-      </div>
-
-      {/* Dual Mode Panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Local Panel */}
-        <Card className={cn("border-2 transition-all", mode === "local" ? "border-primary/30 shadow-md" : "border-border opacity-50 pointer-events-none")}>
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Africa Payment</h3>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Select your payment method to receive funds. Banks, mobile wallets, and crypto wallets from across Africa are supported.
-            </p>
-            {mode === "local" && (
-              <>
-                <ProviderSearch mode="local" onSelect={setSelectedProvider} selected={selectedProvider} />
-                {selectedProvider && selectedProvider.fields.length > 0 && (
-                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
-                    <p className="text-xs font-semibold text-foreground">{selectedProvider.name}</p>
-                    {selectedProvider.fields.map((field) => (
-                      <div key={field.key}>
-                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
-                        {field.type === "select" ? (
-                          <select
-                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          >
-                            <option value="">{field.placeholder}</option>
-                            {field.options?.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Input
-                            placeholder={field.placeholder}
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                            className="mt-1 text-sm"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* International Panel */}
-        <Card className={cn("border-2 transition-all", mode === "diaspora" ? "border-primary/30 shadow-md" : "border-border opacity-50 pointer-events-none")}>
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">International Payment</h3>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Receive funds via card, PayPal, Apple Pay, Google Pay, or direct crypto transfer.
-            </p>
-            {mode === "diaspora" && (
-              <>
-                <ProviderSearch mode="diaspora" onSelect={setSelectedProvider} selected={selectedProvider} />
-                {selectedProvider && selectedProvider.fields.length > 0 && (
-                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
-                    <p className="text-xs font-semibold text-foreground">{selectedProvider.name}</p>
-                    {selectedProvider.fields.map((field) => (
-                      <div key={field.key}>
-                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
-                        {field.type === "select" ? (
-                          <select
-                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          >
-                            <option value="">{field.placeholder}</option>
-                            {field.options?.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Input
-                            placeholder={field.placeholder}
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                            className="mt-1 text-sm"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Dynamic Payout Fields — Country-Specific */}
-      <Card className="border-2 border-primary/20">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">Payout Destination</h3>
-          </div>
-
-          {/* Country Selector */}
-          <div>
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Country</Label>
-            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Choose your country" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYOUT_COUNTRIES.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Loading */}
-          {loadingFields && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-xs">Loading payout fields...</span>
-            </div>
-          )}
-
-          {/* Method Selector (if multiple methods available) */}
-          {payoutConfigs.length > 1 && (
-            <div>
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Method</Label>
-              <div className="flex gap-2 mt-1 flex-wrap">
-                {[...new Set(payoutConfigs.map((c) => c.payout_method))].map((method) => (
-                  <button
-                    key={method}
-                    onClick={() => { setSelectedMethod(method); setDynamicFields({}); }}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
-                      selectedMethod === method
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </button>
-                ))}
+      {/* ═══ VENDOR / BUYER FLOW ═══ */}
+      {!isAdmin && (
+        <>
+          {/* Order Number Field */}
+          <Card className="border-2 border-primary/20">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-bold text-foreground">Order Details</h3>
               </div>
-            </div>
-          )}
-
-          {/* Dynamic Fields */}
-          {activeFields.length > 0 && (
-            <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-foreground">
-                  {activeConfig?.provider && (
-                    <Badge variant="outline" className="mr-2 text-[10px]">via {activeConfig.provider}</Badge>
-                  )}
-                  Required Information
+              <div>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Order Number *</Label>
+                <Input
+                  placeholder="Enter your order number (e.g., TL-00042)"
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(e.target.value)}
+                  className="mt-1 text-sm"
+                />
+                <p className="text-[9px] text-muted-foreground mt-1">
+                  {role === "vendor"
+                    ? "Enter the order number for the released/completed order. For milestone-based orders, use the same order number for each milestone release."
+                    : "Enter the order number for the refunded order. This must match the order approved for refund by admin."
+                  }
                 </p>
               </div>
-              {activeFields.map((field) => (
-                <div key={field.field_name}>
-                  <Label className="text-[10px] text-muted-foreground">
-                    {field.label}{field.is_required && " *"}
-                  </Label>
-                  {field.type === "select" ? (
-                    <Select
-                      value={dynamicFields[field.field_name] || ""}
-                      onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={field.placeholder} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.validation_regex
-                          .replace(/^\^?\(?/, "")
-                          .replace(/\)?\$$/, "")
-                          .split("|")
-                          .filter(Boolean)
-                          .map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      type={field.type === "tel" ? "tel" : "text"}
-                      placeholder={field.placeholder}
-                      value={dynamicFields[field.field_name] || ""}
-                      onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
-                      className="mt-1 text-sm"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {selectedCountry && !loadingFields && payoutConfigs.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              No specific payout configuration found for this country. Please use the provider search above.
-            </p>
+          {/* Dual Mode Toggle */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => { setMode("local"); setSelectedProvider(null); setProviderFields({}); }}
+              className={cn(
+                "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
+                mode === "local" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Smartphone className="w-4 h-4" />
+              Africa
+            </button>
+            <button
+              onClick={() => { setMode("diaspora"); setSelectedProvider(null); setProviderFields({}); }}
+              className={cn(
+                "flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all",
+                mode === "diaspora" ? "bg-primary text-primary-foreground shadow-lg" : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Globe className="w-4 h-4" />
+              International
+            </button>
+          </div>
+
+          {/* Payment Method Selection */}
+          <Card className={cn("border-2 transition-all border-primary/30 shadow-md")}>
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                {mode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
+                <h3 className="text-sm font-bold text-foreground">
+                  {mode === "local" ? "Africa Payment Method" : "International Payment Method"}
+                </h3>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {mode === "local"
+                  ? "Select how you want to receive funds — bank transfer, mobile wallet, or crypto."
+                  : "Select how you want to receive funds — card, PayPal, Apple Pay, Google Pay, bank, or crypto."
+                }
+              </p>
+              <ProviderSearch mode={mode === "local" ? "local" : "diaspora"} onSelect={setSelectedProvider} selected={selectedProvider} />
+              {selectedProvider && selectedProvider.fields.length > 0 && (
+                <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                  <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
+                  {selectedProvider.fields.map((field) => (
+                    <div key={field.key}>
+                      <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                      {field.type === "select" ? (
+                        <select
+                          className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          value={providerFields[field.key] || ""}
+                          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                        >
+                          <option value="">{field.placeholder}</option>
+                          {field.options?.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          placeholder={field.placeholder}
+                          value={providerFields[field.key] || ""}
+                          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          className="mt-1 text-sm"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Dynamic Payout Fields — Country-Specific */}
+          {!isCrypto && (
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-bold text-foreground">Payout Destination</h3>
+                </div>
+
+                {/* Country Selector */}
+                <div>
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Country</Label>
+                  <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Choose your country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYOUT_COUNTRIES.filter(c => c.code !== "GLOBAL").map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {loadingFields && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-xs">Loading payout fields...</span>
+                  </div>
+                )}
+
+                {payoutConfigs.length > 1 && (
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Method</Label>
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {[...new Set(payoutConfigs.map((c) => c.payout_method))].map((method) => (
+                        <button
+                          key={method}
+                          onClick={() => { setSelectedMethod(method); setDynamicFields({}); }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
+                            selectedMethod === method
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeFields.length > 0 && (
+                  <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+                    <p className="text-xs font-semibold text-foreground">Required Information</p>
+                    {activeFields.map((field) => (
+                      <div key={field.field_name}>
+                        <Label className="text-[10px] text-muted-foreground">
+                          {field.label}{field.is_required && " *"}
+                        </Label>
+                        {field.type === "select" ? (
+                          <Select
+                            value={dynamicFields[field.field_name] || ""}
+                            onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder={field.placeholder} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {field.validation_regex
+                                .replace(/^\^?\(?/, "")
+                                .replace(/\)?\$$/, "")
+                                .split("|")
+                                .filter(Boolean)
+                                .map((opt) => (
+                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            type={field.type === "tel" ? "tel" : "text"}
+                            placeholder={field.placeholder}
+                            value={dynamicFields[field.field_name] || ""}
+                            onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
+                            className="mt-1 text-sm"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {selectedCountry && !loadingFields && payoutConfigs.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No specific payout configuration found for this country. Please use the provider search above.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* ═══ CRYPTO CHAIN SELECTION & ADDRESS GATE ═══ */}
           {isCrypto && (
-            <div className="space-y-4">
-              <Separator />
-              <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-primary" />
-                <h4 className="text-sm font-bold text-foreground">Crypto Payout Details</h4>
-              </div>
+            <Card className="border-2 border-primary/20">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-bold text-foreground">Crypto Payout Details</h4>
+                </div>
 
-              {/* Chain Selector */}
-              <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Blockchain Network *</Label>
-                <Select value={selectedChain} onValueChange={(val) => { setSelectedChain(val); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUPPORTED_CHAINS.map((chain) => (
-                      <SelectItem key={chain.id} value={chain.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{chain.name}</span>
-                          {chain.native && <Badge className="text-[8px] bg-primary/20 text-primary border-0">Native</Badge>}
-                          {!chain.native && <Badge className="text-[8px] bg-accent/20 text-accent border-0">via Transak</Badge>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedChain !== "polygon" && (
-                  <p className="text-[9px] text-accent mt-1 flex items-center gap-1">
-                    <ExternalLink className="w-3 h-3" />
-                    Non-Polygon chains use Transak for cross-chain bridging. Additional processing time and fees may apply.
-                  </p>
-                )}
-              </div>
-
-              {/* Wallet Address */}
-              <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
-                <Input
-                  placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
-                  value={cryptoWalletAddress}
-                  onChange={(e) => { setCryptoWalletAddress(e.target.value); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
-                  className="mt-1 text-sm font-mono"
-                />
-              </div>
-
-              {/* Address Confirmation Gate */}
-              {cryptoWalletAddress.trim() && (
-                <div className="p-3 rounded-lg border-2 border-accent/40 bg-accent/5 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-accent">⚠️ Confirm Your Wallet Address</p>
-                      <p className="text-[9px] text-foreground leading-relaxed">
-                        Please verify the following details carefully. <strong>This transaction is IRREVERSIBLE once executed.</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-2 rounded bg-muted text-[10px] space-y-1 font-mono">
-                    <p><strong>Network:</strong> {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}</p>
-                    <p><strong>Address:</strong> {cryptoWalletAddress}</p>
-                    <p><strong>Token:</strong> USDC</p>
-                    <p><strong>Amount:</strong> ${amountNum.toFixed(2)}</p>
-                    {selectedChain !== "polygon" && (
-                      <p className="text-accent"><strong>Bridge:</strong> Transak (cross-chain)</p>
-                    )}
-                  </div>
-
-                  <p className="text-[9px] text-foreground font-semibold">
-                    Is the above information correct? TrustLock is NOT liable for funds sent to an incorrect address.
-                  </p>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={cryptoAddressConfirmed}
-                      onChange={(e) => {
-                        setCryptoAddressConfirmed(e.target.checked);
-                        if (e.target.checked && !liabilityAccepted) {
-                          setShowLiabilityDialog(true);
-                        }
-                      }}
-                      className="rounded border-border"
-                    />
-                    <span className="text-[10px] text-foreground">
-                      Yes, I confirm this address is correct and supports USDC on {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}
-                    </span>
-                  </label>
-
-                  {cryptoAddressConfirmed && liabilityAccepted && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-primary">
-                      <Check className="w-3.5 h-3.5" />
-                      <span className="font-semibold">Liability disclaimer accepted and archived</span>
-                    </div>
+                {/* Chain Selector */}
+                <div>
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Blockchain Network *</Label>
+                  <Select value={selectedChain} onValueChange={(val) => { setSelectedChain(val); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_CHAINS.map((chain) => (
+                        <SelectItem key={chain.id} value={chain.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{chain.name}</span>
+                            {chain.native && <Badge className="text-[8px] bg-primary/20 text-primary border-0">Direct</Badge>}
+                            {!chain.native && <Badge className="text-[8px] bg-accent/20 text-accent border-0">via Processor</Badge>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedChain === "polygon" ? (
+                    <p className="text-[9px] text-primary mt-1 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Polygon — funds transfer directly from escrow wallet to your wallet. No intermediary.
+                    </p>
+                  ) : (
+                    <p className="text-[9px] text-accent mt-1 flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3" />
+                      Non-Polygon chain — funds travel from escrow wallet through payment processor API to your wallet.
+                    </p>
                   )}
                 </div>
-              )}
 
-              {/* General crypto notice */}
-              <div className="p-2 rounded-lg bg-muted/50 text-[9px] text-muted-foreground space-y-0.5">
-                <p><strong>Source:</strong> Azix Escrow Wallet (Polygon)</p>
-                <p><strong>Support:</strong> support@azix.world</p>
-                <p>Payouts do not require a $1 test transaction. The escrow wallet follows smart contract release procedures.</p>
-              </div>
-            </div>
+                {/* Wallet Address */}
+                <div>
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
+                  <Input
+                    placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
+                    value={cryptoWalletAddress}
+                    onChange={(e) => { setCryptoWalletAddress(e.target.value); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
+                    className="mt-1 text-sm font-mono"
+                  />
+                </div>
+
+                {/* Address Confirmation Gate */}
+                {cryptoWalletAddress.trim() && (
+                  <div className="p-3 rounded-lg border-2 border-accent/40 bg-accent/5 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-accent">⚠️ Confirm Your Wallet Address</p>
+                        <p className="text-[9px] text-foreground leading-relaxed">
+                          Verify carefully. <strong>This transaction is IRREVERSIBLE.</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded bg-muted text-[10px] space-y-1 font-mono">
+                      <p><strong>Network:</strong> {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}</p>
+                      <p><strong>Address:</strong> {cryptoWalletAddress}</p>
+                      <p><strong>Token:</strong> USDC</p>
+                      {amountNum > 0 && <p><strong>Amount:</strong> ${amountNum.toFixed(2)}</p>}
+                      {selectedChain !== "polygon" && (
+                        <p className="text-accent"><strong>Route:</strong> Escrow → Payment Processor → Your Wallet</p>
+                      )}
+                      {selectedChain === "polygon" && (
+                        <p className="text-primary"><strong>Route:</strong> Escrow → Your Wallet (direct)</p>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cryptoAddressConfirmed}
+                        onChange={(e) => {
+                          setCryptoAddressConfirmed(e.target.checked);
+                          if (e.target.checked && !liabilityAccepted) {
+                            setShowLiabilityDialog(true);
+                          }
+                        }}
+                        className="rounded border-border"
+                      />
+                      <span className="text-[10px] text-foreground">
+                        Yes, I confirm this address is correct and supports USDC on {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}
+                      </span>
+                    </label>
+
+                    {cryptoAddressConfirmed && liabilityAccepted && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-primary">
+                        <Check className="w-3.5 h-3.5" />
+                        <span className="font-semibold">Liability disclaimer accepted and archived</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="p-2 rounded-lg bg-muted/50 text-[9px] text-muted-foreground space-y-0.5">
+                  <p><strong>Source:</strong> TrustLock Escrow Custodian Wallet (Polygon)</p>
+                  <p><strong>Seed Token:</strong> Linked to your OS Payout account</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
+
       {/* Fee Summary */}
       {fees && amountNum > 0 && (
         <Card>
@@ -929,16 +1119,18 @@ const TrustLockOSPayout = ({
                 <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee{payoutType === "split" ? " (halved, vendor only)" : ""}</span><span className="text-muted-foreground">-${fees.escrowFee.toFixed(2)}</span></div>
               )}
               {fees.gasFee > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas{payoutType === "split" ? " (split 50/50)" : ""}</span><span className="text-muted-foreground">-${fees.gasFee.toFixed(4)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gasFee.toFixed(4)}</span></div>
               )}
-              {payoutType === "release" && (
+              {payoutType === "release" && role === "vendor" && (
                 <div className="flex justify-between text-primary">
                   <span className="text-muted-foreground">Escrow Fee</span>
                   <span className="font-medium">Pre-paid at checkout ✓</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-border pt-1 mt-1">
-                <span className="font-bold text-sm text-foreground">You Receive</span>
+                <span className="font-bold text-sm text-foreground">
+                  {isAdmin ? "Disbursement Total" : "You Receive"}
+                </span>
                 <span className="font-bold text-sm text-primary">${fees.netAmount.toFixed(2)}</span>
               </div>
             </div>
@@ -948,8 +1140,6 @@ const TrustLockOSPayout = ({
           </CardContent>
         </Card>
       )}
-
-      {/* Transaction fee wallet seed token auto-linked in background — UI hidden, backend logic intact */}
 
       {/* Privacy Disclaimer */}
       <div className="bg-muted/50 rounded-lg p-3 space-y-1">
@@ -965,12 +1155,17 @@ const TrustLockOSPayout = ({
       <div className="flex gap-2">
         <Button
           className="flex-1 h-12 gap-2 font-semibold"
-          onClick={() => setConfirmDialog(true)}
+          onClick={handleProceedToReview}
           disabled={processing || !isFormValid()}
         >
-          {processing ? "Processing..." : (
+          {processing ? (
             <>
-              {payoutType === "split" ? "Accept Resolution & Receive Funds" : "Confirm & Receive Funds"}
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              Review & Submit
               <ArrowRight className="w-4 h-4" />
             </>
           )}
@@ -979,7 +1174,7 @@ const TrustLockOSPayout = ({
 
       <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
         <Lock className="w-3 h-3" />
-        <span>Dual-wallet system: Escrow Wallet → Client Payout → Fee trickle → Transaction Wallet · Secured by Azix on Polygon</span>
+        <span>Dual-wallet system: Escrow Wallet → {isAdmin ? "Payment Processor → Recipient" : "Your Account"} · Secured by TrustLock on Polygon</span>
       </div>
 
       {/* Confirmation Dialog */}
@@ -987,36 +1182,37 @@ const TrustLockOSPayout = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {payoutType === "split" ? "Confirm Split Payout" : "Confirm Payout"}
+              {isAdmin
+                ? `Confirm ${payoutType === "split" ? "Split Payout" : payoutType === "refund" ? "Refund" : "Release"} Authorization`
+                : "Confirm Payout Submission"
+              }
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {payoutType === "split" ? (
+              {isAdmin ? (
                 <>
-                  Are you sure you want to accept the split resolution?{" "}
-                  <strong>Buyer: {splitBuyerPercent}%</strong> · <strong>Vendor: {splitVendorPercent}%</strong> of{" "}
-                  <strong>${amountNum.toFixed(2)}</strong> for order <strong>{splitOrderNumber}</strong>.
-                  {fees && <> After fees, you will receive <strong className="text-primary">${fees.netAmount.toFixed(2)}</strong>.</>}
-                  {" "}The other party must also confirm for funds to be released.
+                  You are about to authorize a <strong>{payoutType}</strong> for order <strong>{orderNumber}</strong>.
+                  {payoutType === "split" && (
+                    <> Split: <strong>Vendor {splitVendorPercent}%</strong> · <strong>Buyer {splitBuyerPercent}%</strong>.</>
+                  )}
+                  {" "}Funds will be transferred from the TrustLock escrow custodian wallet to the designated recipient(s) via their selected payment methods.
+                  {" "}<strong>This action is irreversible.</strong>
                 </>
               ) : (
                 <>
-                  Are you sure you want to receive <strong>${amountNum.toFixed(2)}</strong> via{" "}
-                  <strong>{selectedProvider?.name ?? activeConfig?.provider ?? (isCrypto ? `${selectedChain.toUpperCase()} direct` : "Direct")}</strong>?
-                  {fees && <> After fees, you will receive <strong className="text-primary">${fees.netAmount.toFixed(2)}</strong>.</>}
-                  {" "}This action will instruct the escrow wallet to release funds to your selected payment method.
+                  Your payout details for order <strong>{orderNumber}</strong> will be submitted.
+                  {" "}Funds will be transferred from the TrustLock escrow custodian wallet to your{" "}
+                  <strong>{selectedProvider?.name ?? (isCrypto ? `${SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} wallet` : "account")}</strong>.
+                  {isCrypto && selectedChain === "polygon" && " Funds will travel directly — no intermediary processor."}
+                  {isCrypto && selectedChain !== "polygon" && " Funds will travel through our payment processor for cross-chain transfer."}
+                  {" "}You will receive a confirmation and funds will be deposited within 24–48 hours.
                 </>
-              )}
-              {isCrypto && (
-                <span className="block mt-2 text-accent font-semibold">
-                  ⚠️ Crypto payouts are irreversible. Ensure your wallet address and chain are correct.
-                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmAndPay}>
-              {payoutType === "split" ? "Yes, Accept & Release" : "Yes, Release Funds"}
+              {isAdmin ? "Authorize & Process" : "Yes, Submit Payout"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1040,7 +1236,7 @@ const TrustLockOSPayout = ({
                 </div>
                 <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 text-[10px] text-foreground">
                   <strong>This acknowledgement will be timestamped, hashed, and archived</strong> as a legal record
-                  under your account for a minimum retention period of 7 years, in accordance with TrustLock's compliance policy.
+                  under your account for a minimum retention period of 7 years.
                 </div>
               </div>
             </AlertDialogDescription>
