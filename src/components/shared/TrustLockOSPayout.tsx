@@ -965,7 +965,7 @@ const TrustLockOSPayout = ({
                   Please select a payment method to continue
                 </p>
               )}
-              {selectedProvider && selectedProvider.fields.length > 0 && (
+              {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
                 <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
                   <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
                   {selectedProvider.fields.map((field) => (
