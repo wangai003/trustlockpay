@@ -249,6 +249,34 @@ function buildMobileMoneyProviders(): PaymentProvider[] {
   });
 }
 
+// Local card options — Visa/Mastercard via cheapest processor per Africa
+const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
+  {
+    id: "card_africa_visa",
+    name: "Visa / Mastercard",
+    category: "card",
+    mode: "local",
+    processor: "coinbase",
+    fields: [
+      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
+      { key: "card_expiry", label: "Expiry (MM/YY)", placeholder: "12/27", type: "text", required: true },
+      { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
+    ],
+  },
+  {
+    id: "card_africa_transak",
+    name: "Debit Card (Transak)",
+    category: "card",
+    mode: "local",
+    processor: "transak",
+    fields: [
+      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
+      { key: "card_expiry", label: "Expiry (MM/YY)", placeholder: "12/27", type: "text", required: true },
+      { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
+    ],
+  },
+];
+
 // Local crypto options — Direct + cheapest off-ramp processors
 const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
   {
@@ -298,6 +326,7 @@ const LOCAL_BANK_PROVIDERS: PaymentProvider[] = [
 export const ALL_PROVIDERS: PaymentProvider[] = [
   ...DIASPORA_PROVIDERS,
   ...LOCAL_BANK_PROVIDERS,
+  ...LOCAL_CARD_PROVIDERS,
   ...buildMobileMoneyProviders(),
   ...LOCAL_CRYPTO_PROVIDERS,
 ];
