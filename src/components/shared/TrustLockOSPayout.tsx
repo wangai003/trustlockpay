@@ -975,14 +975,17 @@ const TrustLockOSPayout = ({
             </CardContent>
           </Card>
 
-          {/* Dynamic Payout Fields — Country-Specific */}
-          {!isCrypto && (
+          {/* Dynamic Payout Fields — only shown as fallback when no provider selected and not crypto */}
+          {!isCrypto && !selectedProvider && (
             <Card className="border-2 border-primary/20">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
                   <Globe className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-bold text-foreground">Payout Destination</h3>
+                  <h3 className="text-sm font-bold text-foreground">Or Select by Country</h3>
                 </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Can't find your provider above? Select your country to see available payout methods.
+                </p>
 
                 {/* Country Selector */}
                 <div>
@@ -1071,7 +1074,7 @@ const TrustLockOSPayout = ({
 
                 {selectedCountry && !loadingFields && payoutConfigs.length === 0 && (
                   <p className="text-xs text-muted-foreground">
-                    No specific payout configuration found for this country. Please use the provider search above.
+                    No specific payout configuration found for this country.
                   </p>
                 )}
               </CardContent>
