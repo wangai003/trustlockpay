@@ -77,7 +77,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   const [isMainnet, setIsMainnet] = useState(false);
   const [loading, setLoading] = useState(false);
   const userIdRef = useRef<string | null>(null);
-  const shownCriticalRef = useRef<Set<string>>(new Set());
+  
 
   /* ── Fetch via edge function ──────────────────────────── */
   const fetchTriaged = useCallback(async (userId: string, fallbackRole: string) => {
@@ -106,16 +106,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
     }
   }, []);
 
-  /* ── Show persistent toast for critical ───────────────── */
-  const showCriticalToast = useCallback((n: DbNotification) => {
-    if (shownCriticalRef.current.has(n.id)) return;
-    shownCriticalRef.current.add(n.id);
-    toast.error(n.title, {
-      description: n.message || undefined,
-      duration: Infinity,
-      action: { label: "View", onClick: () => setOpen(true) },
-    });
-  }, []);
+  /* ── Critical notifications are only shown inside the notification panel ── */
 
   /* ── Init + realtime ──────────────────────────────────── */
   useEffect(() => {
@@ -151,24 +142,15 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
             if (prev.some((x) => x.id === n.id)) return prev;
             return [n, ...prev];
           });
-          // Critical persistent toast
-          if (toPriority(n.type) === "critical" && !n.is_read) {
-            showCriticalToast(n);
-          }
+          // Critical notifications handled inside panel only
         })
         .subscribe();
     };
 
     init();
     return () => { if (channel) supabase.removeChannel(channel); };
-  }, [role, fetchTriaged, showCriticalToast]);
+  }, [role, fetchTriaged]);
 
-  // Show toasts for unread critical on load
-  useEffect(() => {
-    notifications
-      .filter((n) => !n.is_read && toPriority(n.type) === "critical")
-      .forEach(showCriticalToast);
-  }, [notifications, showCriticalToast]);
 
   /* ── Counts ───────────────────────────────────────────── */
   const counts = useMemo(() => {
