@@ -475,6 +475,28 @@ const TrustLockOSPayout = ({
     }
   };
 
+  // ─── Failure Screen ──────────────────────────────────────
+  if (failureState) {
+    return (
+      <TransactionFailureState
+        flow="os_payout"
+        role={role}
+        errorMessage={failureState.message}
+        orderNumber={orderNumber}
+        amount={amount}
+        method={selectedMethod || selectedProvider?.name || (isCrypto ? `Crypto (${selectedChain})` : undefined)}
+        onRetry={() => {
+          setFailureState(null);
+          handleConfirmSubmit();
+        }}
+        onBack={() => {
+          setFailureState(null);
+          setReviewStep(false);
+        }}
+      />
+    );
+  }
+
   // ─── Success Screen ──────────────────────────────────────
   if (result) {
     const isAdminSuccess = isAdmin;
