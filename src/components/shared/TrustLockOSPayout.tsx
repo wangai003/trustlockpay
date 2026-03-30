@@ -983,8 +983,8 @@ const TrustLockOSPayout = ({
             </CardContent>
           </Card>
 
-          {/* Dynamic Payout Fields — only shown as fallback when no provider selected and not crypto */}
-          {!isCrypto && !selectedProvider && (
+          {/* Dynamic Payout Fields — fallback only when no provider is actively selected */}
+          {!isCrypto && !selectedProvider && !isAdmin && (
             <Card className="border-2 border-primary/20">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
