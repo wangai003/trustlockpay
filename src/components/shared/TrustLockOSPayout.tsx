@@ -183,6 +183,16 @@ const TrustLockOSPayout = ({
     });
   }, []);
 
+  // ─── Testnet auto-fill: pre-select crypto payout so simulation completes ───
+  useEffect(() => {
+    if (isTestnet && role !== "admin" && !cryptoWalletAddress) {
+      setSelectedCountry("GLOBAL");
+      setCryptoWalletAddress("0x7A3b1234567890abcdef1234567890abcdefF92d");
+      setCryptoAddressConfirmed(true);
+      setLiabilityAccepted(true);
+    }
+  }, [isTestnet, role]);
+
   // For admin, auto-lock crypto method and wallet
   const isAdmin = role === "admin";
 
