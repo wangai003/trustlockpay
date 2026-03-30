@@ -700,6 +700,22 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
+      {/* Upfront Fee Disclosure */}
+      {!isAdmin && (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-accent shrink-0" />
+            <span className="text-xs font-semibold text-foreground">Payout Fee Notice</span>
+          </div>
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            Your payout may include deductions for <strong className="text-foreground">Processor Fees</strong> (1.5–2.9% for fiat; $0 for direct crypto) 
+            and <strong className="text-foreground">Network Gas</strong> (variable, absorbed by TrustLock on standard releases). 
+            The <strong className="text-foreground">1% Escrow Fee</strong> was pre-paid at checkout and trickles back to TrustLock after you receive your funds — it is <em>not</em> deducted from your payout.
+            A full breakdown will be shown before you confirm.
+          </p>
+        </div>
+      )}
+
       {/* Role indicator */}
       <div className="flex items-center justify-center">
         <Badge variant="outline" className="text-xs px-4 py-1.5">
