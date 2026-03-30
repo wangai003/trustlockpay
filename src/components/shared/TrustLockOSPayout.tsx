@@ -651,15 +651,23 @@ const TrustLockOSPayout = ({
               <strong>⚠️ Please confirm:</strong> All financial details above are correct. Once you submit, the payout request will be processed and funds will be disbursed accordingly. This action cannot be reversed.
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setReviewStep(false)}>
-                ← Go Back & Edit
-              </Button>
-              <Button className="flex-1 gap-2" onClick={() => setConfirmDialog(true)} disabled={processing}>
-                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                Confirm & Submit
-              </Button>
-            </div>
+            {processing ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-sm font-semibold text-foreground">Processing your payout...</p>
+                <p className="text-[10px] text-muted-foreground">Please wait while we securely process your transaction.</p>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setReviewStep(false)}>
+                  ← Go Back & Edit
+                </Button>
+                <Button className="flex-1 gap-2" onClick={() => setConfirmDialog(true)}>
+                  <Check className="w-4 h-4" />
+                  Confirm & Submit
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
