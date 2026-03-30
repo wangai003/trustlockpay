@@ -903,13 +903,14 @@ const TrustLockOSPayout = ({
 
             {/* Order Number */}
             <div>
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Order Number *</Label>
+              <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.orderNumber ? "text-destructive" : "text-muted-foreground")}>Order Number *</Label>
               <Input
                 placeholder="Enter exact order number (e.g., TL-00042)"
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
-                className="mt-1 text-sm"
+                className={cn("mt-1 text-sm", fieldErrors.orderNumber && "border-destructive ring-destructive/30 ring-2")}
               />
+              {fieldErrors.orderNumber && <p className="text-[9px] text-destructive mt-1 font-medium">Order number is required</p>}
               <p className="text-[9px] text-muted-foreground mt-1">
                 {adminAction === "release"
                   ? "Must match the vendor's order number. This triggers release from the escrow smart contract."
