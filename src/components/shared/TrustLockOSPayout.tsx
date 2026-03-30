@@ -1319,7 +1319,7 @@ const TrustLockOSPayout = ({
         <Button
           className="flex-1 h-12 gap-2 font-semibold"
           onClick={handleProceedToReview}
-          disabled={processing || !isFormValid()}
+          disabled={processing}
         >
           {processing ? (
             <>
