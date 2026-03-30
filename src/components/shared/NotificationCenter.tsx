@@ -151,12 +151,6 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
     return () => { if (channel) supabase.removeChannel(channel); };
   }, [role, fetchTriaged]);
 
-  // Show toasts for unread critical on load
-  useEffect(() => {
-    notifications
-      .filter((n) => !n.is_read && toPriority(n.type) === "critical")
-      .forEach(showCriticalToast);
-  }, [notifications, showCriticalToast]);
 
   /* ── Counts ───────────────────────────────────────────── */
   const counts = useMemo(() => {
