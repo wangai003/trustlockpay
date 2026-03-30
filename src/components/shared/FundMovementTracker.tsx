@@ -48,17 +48,17 @@ const getFlowSteps = (
     // ─── OS PAY (service payments) ───
     case "os_pay_fiat":
       return [
-        { label: "Your Payment", sublabel: providerName || method || "Card/Bank/Mobile", icon: CreditCard, status: "completed" },
-        { label: "Payment Processor", sublabel: "Stripe / Coinbase API", icon: Building2, status: "active" },
-        { label: "Transaction Fee Wallet", sublabel: "TrustLock receives payment", icon: Shield, status: "pending" },
+        { label: "Your Payment", sublabel: method || "Card/Bank/Mobile", icon: CreditCard, status: "completed" },
+        { label: "Secure Processing", sublabel: "Payment verified", icon: Building2, status: "active" },
+        { label: "TrustLock Platform", sublabel: "Payment received", icon: Shield, status: "pending" },
         { label: "Service Activated", sublabel: "Credits applied to your account", icon: CheckCircle2, status: "pending" },
       ];
 
     case "os_pay_crypto":
       return [
-        { label: "Your Wallet", sublabel: "USDC/USDT sent", icon: Wallet, status: "completed" },
-        { label: "Polygon Network", sublabel: "On-chain verification", icon: Globe, status: "active" },
-        { label: "Transaction Fee Wallet", sublabel: "TrustLock receives payment", icon: Shield, status: "pending" },
+        { label: "Your Wallet", sublabel: "Stablecoin sent", icon: Wallet, status: "completed" },
+        { label: "Network Verification", sublabel: "On-chain confirmation", icon: Globe, status: "active" },
+        { label: "TrustLock Platform", sublabel: "Payment received", icon: Shield, status: "pending" },
         { label: "Service Activated", sublabel: "Credits applied to your account", icon: CheckCircle2, status: "pending" },
       ];
 
