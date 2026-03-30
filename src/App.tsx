@@ -30,7 +30,7 @@ const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
-const AdminPayout = lazy(() => import("./pages/admin/AdminPayout"));
+const AdminOSPay = lazy(() => import("./pages/admin/AdminPayout"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlaybook"));
 const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
