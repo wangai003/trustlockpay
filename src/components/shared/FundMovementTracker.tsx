@@ -64,67 +64,15 @@ const getFlowSteps = (
 
     // ─── OS PAYOUT (fund disbursements) ───
     case "payout_release":
-      return [
-        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
-        { label: "Buyer Authorization", sublabel: "Buyer confirmed delivery", icon: CheckCircle2, status: "completed" },
-        { label: "Automated Settlement", sublabel: "Secure fund distribution", icon: Coins, status: "active" },
-        ...(chain === "polygon" ? [
-          { label: "Vendor Payout", sublabel: "Direct to vendor wallet", icon: Wallet, status: "pending" as const },
-        ] : [
-          { label: "Vendor Payout", sublabel: "Converted and delivered", icon: Building2, status: "pending" as const },
-          { label: "Vendor's Account", sublabel: "Bank / Mobile / Wallet", icon: role === "vendor" ? Wallet : Smartphone, status: "pending" as const },
-        ]),
-        { label: "Platform Settlement", sublabel: "Service fee processed", icon: Shield, status: "pending" },
-        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
-      ];
-
     case "buyer_release":
-      return [
-        { label: "Your Authorization", sublabel: "You confirmed delivery", icon: CheckCircle2, status: "completed" },
-        { label: "Automated Settlement", sublabel: "Secure fund distribution", icon: Coins, status: "active" },
-        { label: "Vendor Payout", sublabel: "Funds delivered to vendor", icon: Building2, status: "pending" },
-        { label: "Platform Settlement", sublabel: "Service fee processed", icon: Shield, status: "pending" },
-        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
-      ];
-
     case "payout_refund":
-      return [
-        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
-        { label: "Admin Authorization", sublabel: "Refund approved", icon: CheckCircle2, status: "completed" },
-        ...(chain === "polygon" ? [
-          { label: "Direct Transfer", sublabel: "Returning to buyer wallet", icon: Wallet, status: "active" as const },
-        ] : [
-          { label: "Secure Processing", sublabel: "Refund being processed", icon: Building2, status: "active" as const },
-        ]),
-        { label: "Buyer Receives", sublabel: "Refunded within 24–48 hrs", icon: CheckCircle2, status: "pending" },
-      ];
-
-    case "payout_split": {
-      const vAmt = amount && splitVendorPercent ? (amount * parseFloat(splitVendorPercent) / 100).toFixed(2) : "?";
-      const bAmt = amount && splitBuyerPercent ? (amount * parseFloat(splitBuyerPercent) / 100).toFixed(2) : "?";
-      return [
-        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
-        { label: "Admin Split Authorization", sublabel: `Vendor ${splitVendorPercent || "?"}% · Buyer ${splitBuyerPercent || "?"}%`, icon: CheckCircle2, status: "completed" },
-        { label: "Secure Processing", sublabel: "Distributing to both parties", icon: Building2, status: "active" },
-        { label: `Vendor: $${vAmt}`, sublabel: "Via vendor's payout method", icon: Wallet, status: "pending" },
-        { label: `Buyer: $${bAmt}`, sublabel: "Via buyer's payout method", icon: Coins, status: "pending" },
-      ];
-    }
-
+    case "payout_split":
     case "payout_crypto_direct":
-      return [
-        { label: "Secure Escrow", sublabel: "Funds held on-chain", icon: Shield, status: "completed" },
-        { label: "On-Chain Transfer", sublabel: "Direct stablecoin transfer", icon: Globe, status: "active" },
-        { label: "Your Wallet", sublabel: "No intermediary needed", icon: Wallet, status: "pending" },
-        { label: "Blockchain Confirmed", sublabel: "Finalized on-chain", icon: CheckCircle2, status: "pending" },
-      ];
-
     case "payout_crypto_bridge":
       return [
-        { label: "Secure Escrow", sublabel: "Funds held on-chain", icon: Shield, status: "completed" },
-        { label: "Cross-Chain Routing", sublabel: `Delivering to ${chain || "target chain"}`, icon: Building2, status: "active" },
-        { label: `Your ${chain || "Crypto"} Wallet`, sublabel: "Cross-chain delivery", icon: Wallet, status: "pending" },
-        { label: "Transfer Complete", sublabel: "24–48 hrs processing", icon: CheckCircle2, status: "pending" },
+        { label: "Secure Escrow", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
+        { label: "Processing", sublabel: "Transaction in progress", icon: Coins, status: "active" },
+        { label: "Settlement", sublabel: "Funds delivered", icon: CheckCircle2, status: "pending" },
       ];
 
     default:
