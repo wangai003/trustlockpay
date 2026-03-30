@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
-  Check, Copy, Info, Loader2,
+  Check, Copy, Info, Loader2, X, Home,
   Wallet, ArrowDown, ExternalLink, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -702,6 +702,39 @@ const TrustLockOSPayout = ({
               ) : (
                 <p>Funds will travel from the TrustLock escrow custodian wallet through our payment processor to your {selectedProvider?.name || "selected account"}. Processing typically takes 24–48 business hours. You will receive a confirmation notification once complete.</p>
               )}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setResult(null);
+                  setReviewStep(false);
+                  setOrderNumber("");
+                  setSelectedProvider(null);
+                  setProviderFields({});
+                  setCryptoWalletAddress("");
+                  setCryptoAddressConfirmed(false);
+                  setLiabilityAccepted(false);
+                  setValidationAttempted(false);
+                }}
+                className="gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                Close
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const basePath = role === "admin" ? "/trustlock/admin" : role === "buyer" ? "/trustlock/buyer" : "/trustlock/vendor";
+                  window.location.href = basePath;
+                }}
+                className="gap-1.5"
+              >
+                <Home className="w-3.5 h-3.5" />
+                Return to Dashboard
+              </Button>
             </div>
           </CardContent>
         </Card>
