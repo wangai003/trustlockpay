@@ -369,7 +369,6 @@ const TrustLockOSPayout = ({
   };
 
   const handleConfirmAndPay = async () => {
-    setConfirmDialog(false);
     setProcessing(true);
     // Keep reviewStep = true so the user sees the loading state
 
@@ -659,10 +658,10 @@ const TrustLockOSPayout = ({
               </div>
             ) : (
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setReviewStep(false)}>
+                <Button variant="outline" className="flex-1" onClick={() => setReviewStep(false)} disabled={processing}>
                   ← Go Back & Edit
                 </Button>
-                <Button className="flex-1 gap-2" onClick={() => setConfirmDialog(true)}>
+                <Button className="flex-1 gap-2" onClick={handleConfirmAndPay} disabled={processing}>
                   <Check className="w-4 h-4" />
                   Confirm & Submit
                 </Button>
