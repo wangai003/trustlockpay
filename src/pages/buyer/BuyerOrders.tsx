@@ -427,6 +427,33 @@ const BuyerOrders = () => {
                           compact
                         />
                       </div>
+
+                      {/* ═══ BUYER RELEASE FUNDS PANEL ═══ */}
+                      {releaseOrderId === order.id && order.status === "delivered" && (
+                        <div className="pt-3 border-t-2 border-primary/30">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Unlock className="w-4 h-4 text-primary" />
+                            <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
+                            <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setReleaseOrderId(null)}>Cancel</Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            By releasing funds, you confirm that you have received the goods/services as described and authorize TrustLock to transfer the escrowed amount to the vendor's account.
+                          </p>
+                          <TrustLockOSPayout
+                            role="buyer"
+                            payoutType="release"
+                            prefillOrderNumber={order.id}
+                            prefillAmount={order.amount.replace(/[$,]/g, "")}
+                            transactionId={order.dbId}
+                            isTestnet={isTestnet}
+                            onComplete={(code) => {
+                              toast.success(`Funds released! Confirmation: ${code}`);
+                              setReleaseOrderId(null);
+                              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
