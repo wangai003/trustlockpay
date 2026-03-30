@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Lock, Download, Clock, CheckCircle2, ShoppingCart } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FileText, Lock, Download, Clock, CheckCircle2, ShoppingCart, Eye, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,6 +35,58 @@ const BUYER_PREMIUM_DOCS: MonetizedDoc[] = [
   { key: "compliance_certificate", title: "Compliance Certificate", description: "AML/KYC compliance summary and sanctions screening status for your records.", price: 2.50 },
 ];
 
+/* ── Page 1 preview content for each document ── */
+const DOC_PREVIEWS: Record<string, { sections: { heading: string; lines: string[] }[] }> = {
+  tax_audit_report: {
+    sections: [
+      { heading: "1. Tax Summary Overview", lines: ["Total taxable revenue for the reporting period", "Applicable VAT/GST rates by jurisdiction", "Withholding tax obligations and status"] },
+      { heading: "2. Jurisdiction Breakdown", lines: ["Country-by-country tax liability analysis", "Cross-border transaction tax treatment", "— Remaining sections available after purchase —"] },
+    ],
+  },
+  bill_payments_summary: {
+    sections: [
+      { heading: "1. Payment Activity Overview", lines: ["Total payments processed in the period", "Platform fees and service charges breakdown", "Payment method distribution (card, crypto, mobile)"] },
+      { heading: "2. Monthly Breakdown", lines: ["Chronological payment timeline with amounts", "Fee categorization by service type", "— Remaining sections available after purchase —"] },
+    ],
+  },
+  transaction_history_export: {
+    sections: [
+      { heading: "1. Export Summary", lines: ["Total transactions in selected date range", "Status distribution: completed, locked, disputed, refunded", "Average transaction value and volume trends"] },
+      { heading: "2. Transaction Details", lines: ["Order #, date, counterparty, amount, status", "Escrow lock/release timestamps", "— Full data table available after purchase —"] },
+    ],
+  },
+  payout_reconciliation: {
+    sections: [
+      { heading: "1. Payout Summary", lines: ["Total payouts processed and pending", "Net amount after processor and platform fees", "Settlement method breakdown"] },
+      { heading: "2. Fee Reconciliation", lines: ["Processor fee itemization per payout", "Platform escrow fee trickle-back records", "— Detailed line items available after purchase —"] },
+    ],
+  },
+  revenue_statement: {
+    sections: [
+      { heading: "1. Revenue Overview", lines: ["Gross revenue for the reporting period", "Escrow-held vs. released funds summary", "Net revenue after all deductions"] },
+      { heading: "2. Monthly Trend", lines: ["Month-over-month revenue comparison", "Order volume correlation analysis", "— Full statement available after purchase —"] },
+    ],
+  },
+  compliance_certificate: {
+    sections: [
+      { heading: "1. Compliance Status", lines: ["KYC verification tier and status", "AML screening results summary", "Sanctions check clearance record"] },
+      { heading: "2. Audit Trail", lines: ["Last screening date and source", "Risk score and flagged items (if any)", "— Full certificate available after purchase —"] },
+    ],
+  },
+  purchase_history_export: {
+    sections: [
+      { heading: "1. Purchase Summary", lines: ["Total purchases in selected date range", "Status distribution: delivered, in-escrow, disputed", "Average purchase value and vendor count"] },
+      { heading: "2. Order Details", lines: ["Order #, vendor, amount, delivery status", "Escrow protection and release dates", "— Full data export available after purchase —"] },
+    ],
+  },
+  escrow_protection_summary: {
+    sections: [
+      { heading: "1. Protection Overview", lines: ["Total funds protected by escrow", "Dispute outcomes and resolution rates", "Average escrow hold duration"] },
+      { heading: "2. Release History", lines: ["Fund release timeline and confirmations", "Refund and split-pay records", "— Complete history available after purchase —"] },
+    ],
+  },
+};
+
 interface MonetizedDocumentsProps {
   role: "vendor" | "buyer";
 }
@@ -43,6 +96,7 @@ const MonetizedDocuments = ({ role }: MonetizedDocumentsProps) => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<MonetizedDoc | null>(null);
 
   const docs = role === "vendor" ? VENDOR_PREMIUM_DOCS : BUYER_PREMIUM_DOCS;
   const basePath = role === "vendor" ? "/trustlock/vendor" : "/trustlock/buyer";
@@ -105,12 +159,16 @@ const MonetizedDocuments = ({ role }: MonetizedDocumentsProps) => {
   const handleDocClick = (doc: MonetizedDoc) => {
     const access = getAccess(doc.key);
     if (access) {
-      // Already paid — open/download the document
       setSelectedDoc(doc.key);
       toast.success(`Opening ${doc.title}...`);
       return;
     }
-    // Route to OS Pay with return URL
+    // Show preview dialog first instead of routing directly
+    setPreviewDoc(doc);
+  };
+
+  const handlePurchase = (doc: MonetizedDoc) => {
+    setPreviewDoc(null);
     const returnUrl = `${basePath}/analytics?doc_purchased=${doc.key}`;
     navigate(`${basePath}/os-pay?service=${encodeURIComponent(doc.title)}&amount=${doc.price}&return_url=${encodeURIComponent(returnUrl)}`);
   };
@@ -214,6 +272,81 @@ const MonetizedDocuments = ({ role }: MonetizedDocumentsProps) => {
       <p className="text-[9px] text-muted-foreground text-center">
         Documents refresh with latest data on each access cycle. After 30 days, re-purchase to access updated reports.
       </p>
+
+      {/* ── Preview Dialog — shows page 1 teaser before purchase ── */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-5 h-5 text-primary" />
+            {previewDoc?.title}
+          </DialogTitle>
+
+          {previewDoc && (
+            <div className="space-y-4">
+              {/* Simulated page 1 */}
+              <div className="border border-border rounded-lg bg-muted/20 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-[9px]">Page 1 of 4</Badge>
+                  <Badge variant="secondary" className="text-[9px]">Preview</Badge>
+                </div>
+
+                <div className="text-center py-2 border-b border-border">
+                  <p className="text-xs font-bold text-primary tracking-wide">TRUSTLOCK PAY</p>
+                  <p className="text-sm font-bold mt-1">{previewDoc.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Generated {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+
+                {(DOC_PREVIEWS[previewDoc.key]?.sections || []).map((section, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <p className="text-xs font-bold">{section.heading}</p>
+                    {section.lines.map((line, j) => (
+                      <p key={j} className={cn(
+                        "text-[11px] pl-3",
+                        line.startsWith("—")
+                          ? "text-muted-foreground italic"
+                          : "text-foreground"
+                      )}>
+                        {line.startsWith("—") ? line : `• ${line}`}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Blurred remaining pages hint */}
+              <div className="relative rounded-lg border border-border overflow-hidden h-20">
+                <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Lock className="w-4 h-4" />
+                    <span className="text-xs font-medium">Pages 2–4 available after purchase</span>
+                  </div>
+                </div>
+                <div className="p-3 opacity-20">
+                  <div className="h-2 bg-muted-foreground/30 rounded w-3/4 mb-2" />
+                  <div className="h-2 bg-muted-foreground/30 rounded w-1/2 mb-2" />
+                  <div className="h-2 bg-muted-foreground/30 rounded w-2/3" />
+                </div>
+              </div>
+
+              {/* Purchase CTA */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div>
+                  <p className="text-sm font-bold">${previewDoc.price.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">30-day full access</p>
+                </div>
+                <Button
+                  className="gap-2"
+                  onClick={() => handlePurchase(previewDoc)}
+                >
+                  Purchase Full Report <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
