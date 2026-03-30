@@ -379,6 +379,55 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   };
 
+  // ─── OS Pay Success Screen (testnet) ──────────────────────
+  if (osPayResult) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <Card className="border-2 border-primary/30">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">Payment Successful</h3>
+            <p className="text-sm text-muted-foreground">
+              Your payment of <strong>${parsedAmount.toFixed(2)}</strong> for <strong>{service || "TrustLock Service"}</strong> has been processed.
+            </p>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <p className="text-xs text-muted-foreground">Confirmation Code</p>
+              <div className="flex items-center justify-center gap-2">
+                <code className="text-lg font-bold font-mono text-primary">{osPayResult.confirmationCode}</code>
+                <button onClick={() => { navigator.clipboard.writeText(osPayResult.confirmationCode); toast.success("Copied!"); }} className="text-muted-foreground hover:text-foreground">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Fund Movement Tracker */}
+            <FundMovementTracker
+              flowType={method === "azix" ? "os_pay_crypto" : "os_pay_fiat"}
+              role={role}
+              method={method || undefined}
+              providerName={
+                method === "mobile_money" ? (mobileProvider || "Mobile Money")
+                : method === "bank_transfer" ? (bankName || "Bank Transfer")
+                : method === "azix" ? "Crypto (USDC/USDT)"
+                : method === "coinbase" ? "Coinbase"
+                : method === "transak" ? "Transak"
+                : method === "applepay" ? "Apple Pay / Google Pay"
+                : "Card"
+              }
+              amount={parsedAmount}
+            />
+
+            <Button variant="outline" onClick={() => setOsPayResult(null)} className="w-full">
+              Make Another Payment
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-xl mx-auto space-y-4">
       {/* Testnet Banner */}
