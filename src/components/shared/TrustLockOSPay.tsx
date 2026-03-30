@@ -165,6 +165,19 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   }, [isAdmin]);
 
+  // ─── Testnet auto-fill: pre-select service and method so simulation completes ───
+  useEffect(() => {
+    if (isTestnet && !isAdmin && !service && !method) {
+      // Pick a simple fixed-price service for testnet demo
+      setService("AI Query Pack (50 queries)");
+      setAmount("2.50");
+      setMethod("card");
+      setCardNumber("4242 4242 4242 4242");
+      setCardExpiry("12/28");
+      setCardCvc("123");
+    }
+  }, [isTestnet, isAdmin]);
+
   // ── Plan-aware amount resolution ──
   const isPlanService = service.startsWith("plan:");
   const selectedPlanId = isPlanService ? service.replace("plan:", "") as PlanId : null;
