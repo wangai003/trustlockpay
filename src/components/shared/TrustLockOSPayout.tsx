@@ -305,9 +305,10 @@ const TrustLockOSPayout = ({
     if (isAdmin) {
       if (payoutType === "refund") return "Refund Authorization";
       if (payoutType === "split") return "Split Pay Authorization";
-      return "Release Authorization";
+      return "Refund Authorization";
     }
     if (role === "vendor") return "Fund Release";
+    if (role === "buyer" && initialPayoutType === "release") return "Release Authorization";
     return "Refund";
   };
 
