@@ -326,6 +326,7 @@ const LOCAL_BANK_PROVIDERS: PaymentProvider[] = [
 export const ALL_PROVIDERS: PaymentProvider[] = [
   ...DIASPORA_PROVIDERS,
   ...LOCAL_BANK_PROVIDERS,
+  ...LOCAL_CARD_PROVIDERS,
   ...buildMobileMoneyProviders(),
   ...LOCAL_CRYPTO_PROVIDERS,
 ];
