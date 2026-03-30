@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, Wallet, GitBranch, Banknote, Info, BookOpen, Tag, Landmark
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ const navItems = [
   { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts" },
   { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports" },
   { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence" },
-  { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/admin/os-pay", tip: "Process internal payments, refunds, and splits" },
+  
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/admin/payout", tip: "Manage fund withdrawals and disbursements" },
   { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview" },
