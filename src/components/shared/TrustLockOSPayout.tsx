@@ -945,7 +945,7 @@ const TrustLockOSPayout = ({
               <Input
                 placeholder="Enter exact order number (e.g., TL-00042)"
                 value={orderNumber}
-                onChange={(e) => setOrderNumber(e.target.value)}
+                onChange={(e) => setOrderNumber(e.target.value.replace(/[^a-zA-Z0-9\-_]/g, "").toUpperCase().slice(0, 20))}
                 className={cn("mt-1 text-sm", fieldErrors.orderNumber && "border-destructive ring-destructive/30 ring-2")}
               />
               {fieldErrors.orderNumber && <p className="text-[9px] text-destructive mt-1 font-medium">Order number is required</p>}
