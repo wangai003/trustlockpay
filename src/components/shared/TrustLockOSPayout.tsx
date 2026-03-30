@@ -1051,6 +1051,7 @@ const TrustLockOSPayout = ({
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Dynamic Payout Fields — fallback only when no provider is actively selected */}
           {!isCrypto && !selectedProvider && !isAdmin && (
