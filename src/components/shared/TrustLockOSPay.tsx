@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import FundMovementTracker from "./FundMovementTracker";
+import TransactionFailureState from "./TransactionFailureState";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
 

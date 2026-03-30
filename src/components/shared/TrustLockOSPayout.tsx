@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import FundMovementTracker, { type FundFlowType } from "@/components/shared/FundMovementTracker";
+import TransactionFailureState from "@/components/shared/TransactionFailureState";
 import {
   type PaymentProvider,
   PRIVACY_DISCLAIMER,
