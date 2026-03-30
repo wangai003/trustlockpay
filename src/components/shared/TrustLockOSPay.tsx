@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseData";
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import FundMovementTracker from "./FundMovementTracker";
+import TransactionFailureState from "./TransactionFailureState";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -300,6 +301,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   };
 
   const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
+  const [osPayFailure, setOsPayFailure] = useState<{ message: string } | null>(null);
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
@@ -372,12 +374,33 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
       }
       onComplete?.();
-    } catch {
-      // error handled by hook
+    } catch (err: any) {
+      const msg = err?.message || "An unexpected error occurred while processing your payment.";
+      setOsPayFailure({ message: msg });
     } finally {
       setProcessing(false);
     }
   };
+
+  // ─── OS Pay Failure Screen ──────────────────────────────
+  if (osPayFailure) {
+    return (
+      <TransactionFailureState
+        flow="os_pay"
+        role={role}
+        errorMessage={osPayFailure.message}
+        amount={amount}
+        method={method?.replace(/_/g, " ") || undefined}
+        onRetry={() => {
+          setOsPayFailure(null);
+          handleSubmit();
+        }}
+        onBack={() => {
+          setOsPayFailure(null);
+        }}
+      />
+    );
+  }
 
   // ─── OS Pay Success Screen (testnet) ──────────────────────
   if (osPayResult) {

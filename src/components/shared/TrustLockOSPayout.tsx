@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import FundMovementTracker, { type FundFlowType } from "@/components/shared/FundMovementTracker";
+import TransactionFailureState from "@/components/shared/TransactionFailureState";
 import {
   type PaymentProvider,
   PRIVACY_DISCLAIMER,
@@ -144,6 +145,7 @@ const TrustLockOSPayout = ({
   const [confirmDialog, setConfirmDialog] = useState(false);
   const [reviewStep, setReviewStep] = useState(false);
   const [result, setResult] = useState<{ confirmationCode: string; status: string } | null>(null);
+  const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
 
@@ -465,12 +467,35 @@ const TrustLockOSPayout = ({
         toast.success("Payout submitted — funds will be deposited within 24–48 hours");
       }
       onComplete?.(res.confirmationCode);
-    } catch {
-      // handled by hook
+    } catch (err: any) {
+      const msg = err?.message || "An unexpected error occurred while processing your payout.";
+      setFailureState({ message: msg });
     } finally {
       setProcessing(false);
     }
   };
+
+  // ─── Failure Screen ──────────────────────────────────────
+  if (failureState) {
+    return (
+      <TransactionFailureState
+        flow="os_payout"
+        role={role}
+        errorMessage={failureState.message}
+        orderNumber={orderNumber}
+        amount={amount}
+        method={selectedMethod || selectedProvider?.name || (isCrypto ? `Crypto (${selectedChain})` : undefined)}
+        onRetry={() => {
+          setFailureState(null);
+          handleConfirmAndPay();
+        }}
+        onBack={() => {
+          setFailureState(null);
+          setReviewStep(false);
+        }}
+      />
+    );
+  }
 
   // ─── Success Screen ──────────────────────────────────────
   if (result) {
