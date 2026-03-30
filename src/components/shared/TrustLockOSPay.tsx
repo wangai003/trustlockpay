@@ -300,6 +300,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   };
 
   const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
+  const [osPayFailure, setOsPayFailure] = useState<{ message: string } | null>(null);
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }

@@ -144,6 +144,7 @@ const TrustLockOSPayout = ({
   const [confirmDialog, setConfirmDialog] = useState(false);
   const [reviewStep, setReviewStep] = useState(false);
   const [result, setResult] = useState<{ confirmationCode: string; status: string } | null>(null);
+  const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
 
