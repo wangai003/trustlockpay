@@ -148,6 +148,7 @@ const TrustLockOSPayout = ({
   const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   // Order number (required for all roles)
   const [orderNumber, setOrderNumber] = useState(prefillOrderNumber);
@@ -354,11 +355,49 @@ const TrustLockOSPayout = ({
   };
 
   // ─── Review step: confirm details before submission ─────
+  // Helper to check individual field validity for red highlighting
+  const getFieldErrors = () => {
+    const errors: Record<string, boolean> = {};
+    if (!orderNumber?.trim()) errors.orderNumber = true;
+    if (isAdmin && payoutType === "split") {
+      const bp = parseFloat(splitBuyerPercent);
+      const vp = parseFloat(splitVendorPercent);
+      if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
+      if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
+      if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
+        errors.splitBuyerPercent = true;
+        errors.splitVendorPercent = true;
+      }
+    }
+    if (!isAdmin) {
+      if (isCrypto) {
+        if (!cryptoWalletAddress.trim()) errors.cryptoWalletAddress = true;
+        if (!cryptoAddressConfirmed) errors.cryptoAddressConfirmed = true;
+        if (!liabilityAccepted) errors.liabilityAccepted = true;
+      } else if (selectedCountry && activeFields.length > 0) {
+        activeFields.filter(f => f.is_required).forEach(f => {
+          if (!dynamicFields[f.field_name]?.trim()) errors[`dynamic_${f.field_name}`] = true;
+        });
+      } else if (selectedProvider) {
+        selectedProvider.fields.filter(f => f.required).forEach(f => {
+          if (!providerFields[f.key]?.trim()) errors[`provider_${f.key}`] = true;
+        });
+      } else if (!selectedProvider && !isCrypto && !(selectedCountry && activeFields.length > 0)) {
+        errors.paymentMethod = true;
+      }
+    }
+    return errors;
+  };
+
+  const fieldErrors = validationAttempted ? getFieldErrors() : {};
+
   const handleProceedToReview = () => {
     if (!isFormValid()) {
-      toast.error("Please complete all required fields");
+      setValidationAttempted(true);
+      toast.error("Please complete all highlighted fields before proceeding");
       return;
     }
+    setValidationAttempted(false);
     setReviewStep(true);
   };
 
@@ -864,13 +903,14 @@ const TrustLockOSPayout = ({
 
             {/* Order Number */}
             <div>
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Order Number *</Label>
+              <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.orderNumber ? "text-destructive" : "text-muted-foreground")}>Order Number *</Label>
               <Input
                 placeholder="Enter exact order number (e.g., TL-00042)"
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
-                className="mt-1 text-sm"
+                className={cn("mt-1 text-sm", fieldErrors.orderNumber && "border-destructive ring-destructive/30 ring-2")}
               />
+              {fieldErrors.orderNumber && <p className="text-[9px] text-destructive mt-1 font-medium">Order number is required</p>}
               <p className="text-[9px] text-muted-foreground mt-1">
                 {adminAction === "release"
                   ? "Must match the vendor's order number. This triggers release from the escrow smart contract."
@@ -909,13 +949,14 @@ const TrustLockOSPayout = ({
                 <h3 className="text-sm font-bold text-foreground">Order Details</h3>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Order Number *</Label>
-                <Input
-                  placeholder="Enter your order number (e.g., TL-00042)"
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                  className="mt-1 text-sm"
-                />
+              <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.orderNumber ? "text-destructive" : "text-muted-foreground")}>Order Number *</Label>
+              <Input
+                placeholder="Enter your order number (e.g., TL-00042)"
+                value={orderNumber}
+                onChange={(e) => setOrderNumber(e.target.value)}
+                className={cn("mt-1 text-sm", fieldErrors.orderNumber && "border-destructive ring-destructive/30 ring-2")}
+              />
+              {fieldErrors.orderNumber && <p className="text-[9px] text-destructive mt-1 font-medium">Order number is required</p>}
                 <p className="text-[9px] text-muted-foreground mt-1">
                   {role === "vendor"
                     ? "Enter the order number for the released/completed order. For milestone-based orders, use the same order number for each milestone release."
@@ -1059,7 +1100,7 @@ const TrustLockOSPayout = ({
                     <p className="text-xs font-semibold text-foreground">Required Information</p>
                     {activeFields.map((field) => (
                       <div key={field.field_name}>
-                        <Label className="text-[10px] text-muted-foreground">
+                        <Label className={cn("text-[10px]", fieldErrors[`dynamic_${field.field_name}`] ? "text-destructive" : "text-muted-foreground")}>
                           {field.label}{field.is_required && " *"}
                         </Label>
                         {field.type === "select" ? (
@@ -1067,7 +1108,7 @@ const TrustLockOSPayout = ({
                             value={dynamicFields[field.field_name] || ""}
                             onValueChange={(val) => handleDynamicFieldChange(field.field_name, val)}
                           >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className={cn("mt-1", fieldErrors[`dynamic_${field.field_name}`] && "border-destructive ring-destructive/30 ring-2")}>
                               <SelectValue placeholder={field.placeholder} />
                             </SelectTrigger>
                             <SelectContent>
@@ -1087,9 +1128,10 @@ const TrustLockOSPayout = ({
                             placeholder={field.placeholder}
                             value={dynamicFields[field.field_name] || ""}
                             onChange={(e) => handleDynamicFieldChange(field.field_name, e.target.value)}
-                            className="mt-1 text-sm"
+                            className={cn("mt-1 text-sm", fieldErrors[`dynamic_${field.field_name}`] && "border-destructive ring-destructive/30 ring-2")}
                           />
                         )}
+                        {fieldErrors[`dynamic_${field.field_name}`] && <p className="text-[9px] text-destructive mt-1 font-medium">This field is required</p>}
                       </div>
                     ))}
                   </div>
@@ -1145,15 +1187,15 @@ const TrustLockOSPayout = ({
                   )}
                 </div>
 
-                {/* Wallet Address */}
                 <div>
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
+                  <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.cryptoWalletAddress ? "text-destructive" : "text-muted-foreground")}>Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
                   <Input
                     placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
                     value={cryptoWalletAddress}
                     onChange={(e) => { setCryptoWalletAddress(e.target.value); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
-                    className="mt-1 text-sm font-mono"
+                    className={cn("mt-1 text-sm font-mono", fieldErrors.cryptoWalletAddress && "border-destructive ring-destructive/30 ring-2")}
                   />
+                  {fieldErrors.cryptoWalletAddress && <p className="text-[9px] text-destructive mt-1 font-medium">Wallet address is required</p>}
                 </div>
 
                 {/* Address Confirmation Gate */}
@@ -1277,7 +1319,7 @@ const TrustLockOSPayout = ({
         <Button
           className="flex-1 h-12 gap-2 font-semibold"
           onClick={handleProceedToReview}
-          disabled={processing || !isFormValid()}
+          disabled={processing}
         >
           {processing ? (
             <>
