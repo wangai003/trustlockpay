@@ -1224,7 +1224,7 @@ const TrustLockOSPayout = ({
 
                 <div className="p-2 rounded-lg bg-muted/50 text-[9px] text-muted-foreground space-y-0.5">
                   <p><strong>Source:</strong> TrustLock Escrow Custodian Wallet (Polygon)</p>
-                  <p><strong>Seed Token:</strong> Linked to your OS Payout account</p>
+                  <p><strong>Status:</strong> Verified & linked to your account</p>
                 </div>
               </CardContent>
             </Card>
