@@ -1150,7 +1150,7 @@ const TrustLockOSPayout = ({
           )}
 
           {/* ═══ CRYPTO CHAIN SELECTION & ADDRESS GATE ═══ */}
-          {isCrypto && (
+          {showCryptoDetails && (
             <Card className="border-2 border-primary/20">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
