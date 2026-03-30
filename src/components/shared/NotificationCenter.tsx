@@ -77,7 +77,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   const [isMainnet, setIsMainnet] = useState(false);
   const [loading, setLoading] = useState(false);
   const userIdRef = useRef<string | null>(null);
-  const shownCriticalRef = useRef<Set<string>>(new Set());
+  
 
   /* ── Fetch via edge function ──────────────────────────── */
   const fetchTriaged = useCallback(async (userId: string, fallbackRole: string) => {
