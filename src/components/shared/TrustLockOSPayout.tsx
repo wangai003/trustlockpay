@@ -996,7 +996,7 @@ const TrustLockOSPayout = ({
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground space-y-1">
               <p className="font-semibold text-foreground">🔐 Escrow Flow Preview</p>
               {adminAction === "release" && (
-                <p>TrustLock Escrow Wallet → Payment Processor API → Vendor's selected payment method (linked to seed token)</p>
+                <p>TrustLock Escrow Wallet → Payment Processor API → Vendor's selected payment method</p>
               )}
               {adminAction === "refund" && (
                 <p>TrustLock Escrow Wallet → Payment Processor API → Buyer's selected payment method (linked to seed token)</p>
