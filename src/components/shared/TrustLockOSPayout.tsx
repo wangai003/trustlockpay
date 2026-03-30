@@ -353,7 +353,7 @@ const TrustLockOSPayout = ({
     try {
       await supabase.functions.invoke("archive-payout-consent", {
         body: {
-          user_id: (await supabase.auth.getUser()).data.user?.id || "anonymous",
+          user_id: (await supabase.auth.getUser()).data.user?.id || "00000000-0000-0000-0000-000000000000",
           role,
           order_number: orderNumber,
           transaction_id: transactionId,
