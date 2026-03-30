@@ -467,8 +467,10 @@ const TrustLockOSPayout = ({
         toast.success("Payout submitted — funds will be deposited within 24–48 hours");
       }
       onComplete?.(res.confirmationCode);
-    } catch {
-      // handled by hook
+    } catch (err: any) {
+      const msg = err?.message || "An unexpected error occurred while processing your payout.";
+      setFailureState({ message: msg });
+    } finally {
     } finally {
       setProcessing(false);
     }

@@ -374,8 +374,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
       }
       onComplete?.();
-    } catch {
-      // error handled by hook
+    } catch (err: any) {
+      const msg = err?.message || "An unexpected error occurred while processing your payment.";
+      setOsPayFailure({ message: msg });
+    } finally {
     } finally {
       setProcessing(false);
     }
