@@ -107,8 +107,9 @@ const BuyerAnalytics = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 max-w-sm">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="analytics">Spending</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="archives">Archives</TabsTrigger>
           </TabsList>
 
