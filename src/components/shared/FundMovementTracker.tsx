@@ -74,7 +74,7 @@ const getFlowSteps = (
           { label: "Vendor's Account", sublabel: providerName || "Bank / Mobile / Wallet", icon: role === "vendor" ? Wallet : Smartphone, status: "pending" as const },
         ]),
         { label: "Funds Received", sublabel: "Vendor paid within 24–48 hrs", icon: CheckCircle2, status: "pending" },
-        { label: "Escrow Fee → TrustLock", sublabel: "1% fee trickles back to Revenue Wallet", icon: Shield, status: "pending" },
+        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: Shield, status: "pending" },
       ];
 
     case "buyer_release":
