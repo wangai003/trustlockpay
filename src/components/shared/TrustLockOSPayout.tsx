@@ -129,9 +129,9 @@ const TrustLockOSPayout = ({
   onComplete,
   isTestnet = true,
 }: TrustLockOSPayoutProps) => {
-  // ─── Admin can select payout action type ──────────────
+   // ─── Admin can select payout action type ──────────────
   const [adminAction, setAdminAction] = useState<"release" | "refund" | "split">(
-    role === "admin" ? initialPayoutType : initialPayoutType
+    role === "admin" ? (initialPayoutType === "release" ? "refund" : initialPayoutType) : initialPayoutType
   );
   const payoutType = role === "admin" ? adminAction : initialPayoutType;
 
