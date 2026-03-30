@@ -532,24 +532,70 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             <select
               value={service}
               onChange={e => {
-                const selected = serviceList.find(s => s.label === e.target.value);
-                setService(e.target.value);
-                if (selected?.amount) setAmount(selected.amount);
+                const val = e.target.value;
+                const selected = serviceList.find(s => s.label === val);
+                setService(val);
+                if (selected?.amount) {
+                  setAmount(selected.amount);
+                } else if (!val.startsWith("plan:")) {
+                  setAmount("");
+                }
+                // Plan amounts are resolved via the useEffect above
               }}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">Select a service...</option>
-              {serviceList.map(s => (
-                <option key={s.label} value={s.label}>{s.label}</option>
-              ))}
+              {serviceList.map(s => {
+                const display = (s as any).displayLabel || s.label;
+                const priceTag = s.amount ? ` — $${s.amount}` : "";
+                return (
+                  <option key={s.label} value={s.label}>{display}{priceTag}</option>
+                );
+              })}
             </select>
+
+            {/* Billing cycle selector for plan services */}
+            {isPlanService && selectedPlan && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
+                <p className="text-xs font-semibold text-foreground">{selectedPlan.name} Plan</p>
+                <p className="text-[10px] text-muted-foreground">{selectedPlan.orderMin}–{selectedPlan.orderMax === -1 ? "Unlimited" : selectedPlan.orderMax} orders/month</p>
+                <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+                  <TabsList className="w-full grid grid-cols-2">
+                    <TabsTrigger value="monthly" className="text-xs">
+                      Monthly — ${selectedPlan.monthly}/mo
+                    </TabsTrigger>
+                    <TabsTrigger value="yearly" className="text-xs">
+                      Yearly — ${selectedPlan.yearly}/yr
+                      {selectedPlan.monthly > 0 && (
+                        <Badge className="ml-1 text-[8px] bg-primary/20 text-primary border-0">
+                          Save {Math.round((1 - selectedPlan.yearly / (selectedPlan.monthly * 12)) * 100)}%
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            )}
           </div>
           )}
 
           {/* Amount */}
           <div>
             <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
-            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 text-lg font-bold" />
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={amount}
+              onChange={e => { if (!isAmountLocked) setAmount(e.target.value); }}
+              readOnly={isAmountLocked}
+              className={cn("mt-1 text-lg font-bold", isAmountLocked && "bg-muted cursor-not-allowed")}
+            />
+            {isAmountLocked && service && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Amount auto-calculated based on selected service
+              </p>
+            )}
+          </div>
           </div>
 
           {/* Seed token is auto-linked in the background — UI hidden, backend logic intact */}
