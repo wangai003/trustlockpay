@@ -38,8 +38,23 @@ Deno.serve(async (req) => {
         const { data, error } = await supabase
           .from("transactions")
           .update({
-            status: "released",
+            status: "delivered",
             delivered_date: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (error) throw error;
+        result = data;
+        break;
+      }
+
+      case "release_funds": {
+        const { data, error } = await supabase
+          .from("transactions")
+          .update({
+            status: "released",
             released_date: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })

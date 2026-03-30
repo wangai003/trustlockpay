@@ -3,7 +3,7 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2 } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -13,6 +13,7 @@ import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContra
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import TrustLockOSPayout from "@/components/shared/TrustLockOSPayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,6 +36,7 @@ const BuyerOrders = () => {
   const [search, setSearch] = useState("");
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
+  const [releaseOrderId, setReleaseOrderId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
@@ -306,12 +308,28 @@ const BuyerOrders = () => {
 
                     <div className="flex gap-2 shrink-0">
                       {order.status === "delivered" && (
-                        <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
-                          <Button size="sm" onClick={() => {
-                            if (isTestnet) { testnet.confirmDelivery(order.id); }
-                            else { confirmDeliveryHook.mutate(order.id); }
-                          }}>Confirm Delivery</Button>
-                        </TLId>
+                        <>
+                          <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
+                            <Button size="sm" onClick={() => {
+                              if (isTestnet) { testnet.confirmDelivery(order.id); }
+                              else { confirmDeliveryHook.mutate(order.id); }
+                            }}>Confirm Delivery</Button>
+                          </TLId>
+                          <TLId code={dynTLId("B", "BO", row, "BTN-RELEASE")} inline>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="gap-1 bg-primary"
+                              onClick={() => {
+                                setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
+                                if (expandedOrder !== order.id) setExpandedOrder(order.id);
+                              }}
+                            >
+                              <Unlock className="w-3.5 h-3.5" />
+                              Release Funds
+                            </Button>
+                          </TLId>
+                        </>
                       )}
                       {order.status === "shipped" && (
                         <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
@@ -409,6 +427,33 @@ const BuyerOrders = () => {
                           compact
                         />
                       </div>
+
+                      {/* ═══ BUYER RELEASE FUNDS PANEL ═══ */}
+                      {releaseOrderId === order.id && order.status === "delivered" && (
+                        <div className="pt-3 border-t-2 border-primary/30">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Unlock className="w-4 h-4 text-primary" />
+                            <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
+                            <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setReleaseOrderId(null)}>Cancel</Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            By releasing funds, you confirm that you have received the goods/services as described and authorize TrustLock to transfer the escrowed amount to the vendor's account.
+                          </p>
+                          <TrustLockOSPayout
+                            role="buyer"
+                            payoutType="release"
+                            prefillOrderNumber={order.id}
+                            prefillAmount={order.amount.replace(/[$,]/g, "")}
+                            transactionId={order.dbId}
+                            isTestnet={isTestnet}
+                            onComplete={(code) => {
+                              toast.success(`Funds released! Confirmation: ${code}`);
+                              setReleaseOrderId(null);
+                              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

@@ -337,10 +337,18 @@ export function useTestnetData() {
 
   const confirmDelivery = useCallback((txId: string) => {
     const updated = transactions.map(tx =>
+      tx.tx_id === txId ? { ...tx, status: "delivered" as const } : tx
+    );
+    persist(updated, disputes);
+    toast.success("✅ Delivery confirmed — you may now release funds to vendor");
+  }, [transactions, disputes, persist]);
+
+  const releaseFunds = useCallback((txId: string) => {
+    const updated = transactions.map(tx =>
       tx.tx_id === txId ? { ...tx, status: "released" as const } : tx
     );
     persist(updated, disputes);
-    toast.success("✅ Delivery confirmed — funds released to vendor!");
+    toast.success("✅ Funds released to vendor!");
   }, [transactions, disputes, persist]);
 
   const openDispute = useCallback((txId: string, reason: string) => {
@@ -452,6 +460,7 @@ export function useTestnetData() {
     addTracking,
     markDelivered,
     confirmDelivery,
+    releaseFunds,
     openDispute,
     rejectOrders,
     // Milestone actions

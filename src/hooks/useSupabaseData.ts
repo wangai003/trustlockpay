@@ -80,7 +80,20 @@ export function useConfirmDelivery() {
       callEdgeFunction("manage-transaction", { action: "confirm_delivery", txId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Delivery confirmed — funds released to vendor");
+      toast.success("Delivery confirmed — you may now release funds to vendor");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useReleaseFunds() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (txId: string) =>
+      callEdgeFunction("manage-transaction", { action: "release_funds", txId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Funds released to vendor successfully");
     },
     onError: (e: Error) => toast.error(e.message),
   });

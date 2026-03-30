@@ -129,9 +129,9 @@ const TrustLockOSPayout = ({
   onComplete,
   isTestnet = true,
 }: TrustLockOSPayoutProps) => {
-  // ─── Admin can select payout action type ──────────────
+   // ─── Admin can select payout action type ──────────────
   const [adminAction, setAdminAction] = useState<"release" | "refund" | "split">(
-    role === "admin" ? initialPayoutType : initialPayoutType
+    role === "admin" ? (initialPayoutType === "release" ? "refund" : initialPayoutType) : initialPayoutType
   );
   const payoutType = role === "admin" ? adminAction : initialPayoutType;
 
@@ -294,9 +294,10 @@ const TrustLockOSPayout = ({
     if (isAdmin) {
       if (payoutType === "refund") return "Admin — Process Refund";
       if (payoutType === "split") return "Admin — Process Split Pay";
-      return "Admin — Process Release";
+      return "Admin — Process Refund";
     }
     if (role === "vendor") return "Vendor — Receive Released Funds";
+    if (role === "buyer" && initialPayoutType === "release") return "Buyer — Release & Transfer Funds to Vendor";
     return "Buyer — Receive Refund";
   };
 
@@ -304,9 +305,10 @@ const TrustLockOSPayout = ({
     if (isAdmin) {
       if (payoutType === "refund") return "Refund Authorization";
       if (payoutType === "split") return "Split Pay Authorization";
-      return "Release Authorization";
+      return "Refund Authorization";
     }
     if (role === "vendor") return "Fund Release";
+    if (role === "buyer" && initialPayoutType === "release") return "Release Authorization";
     return "Refund";
   };
 
@@ -638,12 +640,12 @@ const TrustLockOSPayout = ({
             {isAdmin
               ? payoutType === "refund"
                 ? "Escrow Wallet → Buyer account (0% fee)"
-                : payoutType === "split"
-                  ? "Escrow Wallet → Both Parties (% based)"
-                  : "Escrow Wallet → Vendor account"
-              : role === "vendor"
-                ? "Escrow Wallet → Your account · Escrow fee trickles down"
-                : "Escrow Wallet → Your account (0% fee refund)"
+                : "Escrow Wallet → Both Parties (% based)"
+              : role === "buyer" && initialPayoutType === "release"
+                ? "Escrow Wallet → Vendor account · Buyer-authorized release"
+                : role === "vendor"
+                  ? "Escrow Wallet → Your account · Escrow fee trickles down"
+                  : "Escrow Wallet → Your account (0% fee refund)"
             }
           </span>
           <ArrowDown className="w-4 h-4 text-primary animate-bounce" />
@@ -663,7 +665,7 @@ const TrustLockOSPayout = ({
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Action *</Label>
               <div className="flex gap-2 mt-1 flex-wrap">
-                {(["release", "refund", "split"] as const).map((action) => (
+                {(["refund", "split"] as const).map((action) => (
                   <button
                     key={action}
                     onClick={() => setAdminAction(action)}
@@ -674,7 +676,7 @@ const TrustLockOSPayout = ({
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {action === "release" ? "Release" : action === "refund" ? "Refund" : "Split Pay"}
+                    {action === "refund" ? "Refund" : "Split Pay"}
                   </button>
                 ))}
               </div>
