@@ -106,16 +106,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
     }
   }, []);
 
-  /* ── Show persistent toast for critical ───────────────── */
-  const showCriticalToast = useCallback((n: DbNotification) => {
-    if (shownCriticalRef.current.has(n.id)) return;
-    shownCriticalRef.current.add(n.id);
-    toast.error(n.title, {
-      description: n.message || undefined,
-      duration: Infinity,
-      action: { label: "View", onClick: () => setOpen(true) },
-    });
-  }, []);
+  /* ── Critical notifications are only shown inside the notification panel ── */
 
   /* ── Init + realtime ──────────────────────────────────── */
   useEffect(() => {
