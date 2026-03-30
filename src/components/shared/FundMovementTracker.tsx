@@ -113,16 +113,16 @@ const getFlowSteps = (
 
     case "payout_crypto_direct":
       return [
-        { label: "Escrow Wallet", sublabel: "Smart contract on Polygon", icon: Shield, status: "completed" },
-        { label: "On-Chain Transfer", sublabel: "Direct USDC transfer", icon: Globe, status: "active" },
-        { label: "Your Polygon Wallet", sublabel: "No intermediary needed", icon: Wallet, status: "pending" },
+        { label: "Secure Escrow", sublabel: "Funds held on-chain", icon: Shield, status: "completed" },
+        { label: "On-Chain Transfer", sublabel: "Direct stablecoin transfer", icon: Globe, status: "active" },
+        { label: "Your Wallet", sublabel: "No intermediary needed", icon: Wallet, status: "pending" },
         { label: "Blockchain Confirmed", sublabel: "Finalized on-chain", icon: CheckCircle2, status: "pending" },
       ];
 
     case "payout_crypto_bridge":
       return [
-        { label: "Escrow Wallet", sublabel: "Smart contract on Polygon", icon: Shield, status: "completed" },
-        { label: "Bridge / Swap", sublabel: `Transak routes to ${chain || "target chain"}`, icon: Building2, status: "active" },
+        { label: "Secure Escrow", sublabel: "Funds held on-chain", icon: Shield, status: "completed" },
+        { label: "Cross-Chain Routing", sublabel: `Delivering to ${chain || "target chain"}`, icon: Building2, status: "active" },
         { label: `Your ${chain || "Crypto"} Wallet`, sublabel: "Cross-chain delivery", icon: Wallet, status: "pending" },
         { label: "Transfer Complete", sublabel: "24–48 hrs processing", icon: CheckCircle2, status: "pending" },
       ];
