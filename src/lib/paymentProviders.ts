@@ -251,18 +251,7 @@ const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
       { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
     ],
   },
-  {
-    id: "card_africa_transak",
-    name: "Debit Card (Transak)",
-    category: "card",
-    mode: "local",
-    processor: "transak",
-    fields: [
-      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
-      { key: "card_expiry", label: "Expiry (MM/YY)", placeholder: "12/27", type: "text", required: true },
-      { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
-    ],
-  },
+  // Transak card removed — behind-the-scenes processor only
 ];
 
 // Local crypto options — Direct + cheapest off-ramp processors
