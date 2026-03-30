@@ -293,6 +293,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     return "stripe"; // card, applepay
   };
 
+  // ─── Generate mock confirmation code ─────────────────────
+  const generateConfirmationCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  };
+
+  const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
+
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
     if (!amount || parseFloat(amount) <= 0) { toast.error("Enter a valid amount"); return; }
@@ -302,6 +310,18 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
     setProcessing(true);
     try {
+      // ═══ TESTNET SIMULATION — bypass edge function, simulate seamless execution ═══
+      if (isTestnet) {
+        await new Promise((r) => setTimeout(r, 1500)); // Simulate processing delay
+        const mockCode = generateConfirmationCode();
+        const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
+        toast.success(`✅ ${label} of $${amount} processed successfully`);
+        setOsPayResult({ confirmationCode: mockCode });
+        onComplete?.();
+        return;
+      }
+
+      // ═══ MAINNET — real processor calls ═══
       const processorId = getProcessorForMethod(method);
       const isCryptoPayment = method === "azix";
 
@@ -316,14 +336,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           method: method!,
           role,
           payMode,
-          // Processor routing params — triggers real API flow in process-payment
           processor: processorId,
           direction: "onramp",
           currency: "USD",
           walletAddress: AZIX_WALLETS.transaction.publicKey,
         });
 
-        // If processor returned a hosted URL (Coinbase) or client secret (Stripe), handle it
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
         if (procResult?.hostedUrl) {
           window.open(procResult.hostedUrl as string, "_blank");
@@ -336,7 +354,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           toast.success(`✅ Payment of $${amount} initiated via ${processorId}`);
         }
       } else {
-        // Admin actions or crypto direct pay — original flow
         await processPayment.mutateAsync({
           action: isAdmin && adminAction ? adminAction : "payment",
           service,
@@ -361,6 +378,55 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       setProcessing(false);
     }
   };
+
+  // ─── OS Pay Success Screen (testnet) ──────────────────────
+  if (osPayResult) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <Card className="border-2 border-primary/30">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">Payment Successful</h3>
+            <p className="text-sm text-muted-foreground">
+              Your payment of <strong>${parsedAmount.toFixed(2)}</strong> for <strong>{service || "TrustLock Service"}</strong> has been processed.
+            </p>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <p className="text-xs text-muted-foreground">Confirmation Code</p>
+              <div className="flex items-center justify-center gap-2">
+                <code className="text-lg font-bold font-mono text-primary">{osPayResult.confirmationCode}</code>
+                <button onClick={() => { navigator.clipboard.writeText(osPayResult.confirmationCode); toast.success("Copied!"); }} className="text-muted-foreground hover:text-foreground">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Fund Movement Tracker */}
+            <FundMovementTracker
+              flowType={method === "azix" ? "os_pay_crypto" : "os_pay_fiat"}
+              role={role}
+              method={method || undefined}
+              providerName={
+                method === "mobile_money" ? (mobileProvider || "Mobile Money")
+                : method === "bank_transfer" ? (bankName || "Bank Transfer")
+                : method === "azix" ? "Crypto (USDC/USDT)"
+                : method === "coinbase" ? "Coinbase"
+                : method === "transak" ? "Transak"
+                : method === "applepay" ? "Apple Pay / Google Pay"
+                : "Card"
+              }
+              amount={parsedAmount}
+            />
+
+            <Button variant="outline" onClick={() => setOsPayResult(null)} className="w-full">
+              Make Another Payment
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto space-y-4">
