@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
-  Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2
+  Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2,
+  X, Home
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -476,9 +477,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               amount={parsedAmount}
             />
 
-            <Button variant="outline" onClick={() => setOsPayResult(null)} className="w-full">
-              Make Another Payment
-            </Button>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                setOsPayResult(null);
+                setService("");
+                setAmount("");
+                setMethod(null);
+              }}>
+                <X className="w-3.5 h-3.5" /> Close
+              </Button>
+              <Button size="sm" onClick={() => {
+                const basePath = role === "admin" ? "/trustlock/admin" : role === "buyer" ? "/trustlock/buyer" : "/trustlock/vendor";
+                window.location.href = basePath;
+              }}>
+                <Home className="w-3.5 h-3.5" /> Return to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
