@@ -331,7 +331,7 @@ export const TL_ID_REGISTRY: Record<string, TLIdEntry> = {
   "TL-B-SB-NAV-DOCUMENTS": { id: "TL-B-SB-NAV-DOCUMENTS", label: "Documents Nav", description: "Sidebar link to Buyer Documents page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
   "TL-B-SB-NAV-HELP": { id: "TL-B-SB-NAV-HELP", label: "Help Center Nav", description: "Sidebar link to Buyer Help Center", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
   "TL-B-SB-NAV-OSPAY": { id: "TL-B-SB-NAV-OSPAY", label: "OS Pay Nav", description: "Sidebar link to TrustLock OS Pay page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
-  "TL-B-SB-NAV-PAYOUT": { id: "TL-B-SB-NAV-PAYOUT", label: "OS Payout Nav", description: "Sidebar link to TrustLock OS Payout page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
+  "TL-B-SB-NAV-PAYOUT": { id: "TL-B-SB-NAV-PAYOUT", label: "OS Pay Nav", description: "Sidebar link to TrustLock OS Pay page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
   "TL-B-SB-NAV-TEAMS": { id: "TL-B-SB-NAV-TEAMS", label: "Teams Nav", description: "Sidebar link to Buyer Teams page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
   "TL-B-SB-NAV-PLAYBOOK": { id: "TL-B-SB-NAV-PLAYBOOK", label: "Playbook Nav", description: "Sidebar link to Industry Playbook page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
   "TL-B-SB-NAV-SETTINGS": { id: "TL-B-SB-NAV-SETTINGS", label: "Settings Nav", description: "Sidebar link to Buyer Settings page", page: "Buyer Sidebar", role: "buyer", type: "navigation" },
