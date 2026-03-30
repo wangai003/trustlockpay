@@ -148,6 +148,7 @@ const TrustLockOSPayout = ({
   const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   // Order number (required for all roles)
   const [orderNumber, setOrderNumber] = useState(prefillOrderNumber);
