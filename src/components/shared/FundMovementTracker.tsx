@@ -89,12 +89,12 @@ const getFlowSteps = (
 
     case "payout_refund":
       return [
-        { label: "Escrow Wallet", sublabel: "Funds held in escrow", icon: Shield, status: "completed" },
+        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
         { label: "Admin Authorization", sublabel: "Refund approved", icon: CheckCircle2, status: "completed" },
         ...(chain === "polygon" ? [
-          { label: "Direct Transfer", sublabel: "Polygon → Buyer Wallet", icon: Wallet, status: "active" as const },
+          { label: "Direct Transfer", sublabel: "Returning to buyer wallet", icon: Wallet, status: "active" as const },
         ] : [
-          { label: "Payment Processor", sublabel: "Processor API refunds buyer", icon: Building2, status: "active" as const },
+          { label: "Secure Processing", sublabel: "Refund being processed", icon: Building2, status: "active" as const },
         ]),
         { label: "Buyer Receives", sublabel: "Refunded within 24–48 hrs", icon: CheckCircle2, status: "pending" },
       ];
