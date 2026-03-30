@@ -495,6 +495,28 @@ const TrustLockOSPayout = ({
                 <p>Split: <span className="font-semibold text-foreground">Vendor {splitVendorPercent}% · Buyer {splitBuyerPercent}%</span></p>
               )}
             </div>
+            {/* Fund Movement Tracker */}
+            <FundMovementTracker
+              flowType={
+                isAdmin
+                  ? payoutType === "refund" ? "payout_refund" : "payout_split"
+                  : role === "buyer" && initialPayoutType === "release"
+                    ? "buyer_release"
+                    : isCrypto && selectedChain === "polygon"
+                      ? "payout_crypto_direct"
+                      : isCrypto
+                        ? "payout_crypto_bridge"
+                        : "payout_release"
+              }
+              role={role}
+              method={selectedProvider?.name || selectedMethod}
+              chain={SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name}
+              providerName={selectedProvider?.name || activeConfig?.provider}
+              splitVendorPercent={splitVendorPercent}
+              splitBuyerPercent={splitBuyerPercent}
+              amount={amountNum}
+            />
+
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
               <p className="font-semibold text-foreground mb-1">📋 What happens next?</p>
               {isAdmin ? (
