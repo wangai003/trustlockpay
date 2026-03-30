@@ -103,9 +103,9 @@ const getFlowSteps = (
       const vAmt = amount && splitVendorPercent ? (amount * parseFloat(splitVendorPercent) / 100).toFixed(2) : "?";
       const bAmt = amount && splitBuyerPercent ? (amount * parseFloat(splitBuyerPercent) / 100).toFixed(2) : "?";
       return [
-        { label: "Escrow Wallet", sublabel: "Funds held in escrow", icon: Shield, status: "completed" },
+        { label: "Secure Escrow", sublabel: "Funds held in protection", icon: Shield, status: "completed" },
         { label: "Admin Split Authorization", sublabel: `Vendor ${splitVendorPercent || "?"}% · Buyer ${splitBuyerPercent || "?"}%`, icon: CheckCircle2, status: "completed" },
-        { label: "Payment Processor", sublabel: "Routes split to both parties", icon: Building2, status: "active" },
+        { label: "Secure Processing", sublabel: "Distributing to both parties", icon: Building2, status: "active" },
         { label: `Vendor: $${vAmt}`, sublabel: "Via vendor's payout method", icon: Wallet, status: "pending" },
         { label: `Buyer: $${bAmt}`, sublabel: "Via buyer's payout method", icon: Coins, status: "pending" },
       ];
