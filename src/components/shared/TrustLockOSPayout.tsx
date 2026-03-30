@@ -1001,8 +1001,10 @@ const TrustLockOSPayout = ({
               International
             </button>
           </div>
+          )}
 
-          {/* Payment Method Selection */}
+          {/* Payment Method Selection — hide when crypto is active */}
+          {!isCrypto && (
           <Card className={cn("border-2 transition-all border-primary/30 shadow-md")}>
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-2">
