@@ -277,17 +277,7 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
       { key: "email", label: "Coinbase Email", placeholder: "your@coinbase.com", type: "text", required: true },
     ],
   },
-  {
-    id: "transak_offramp_local",
-    name: "Transak Off-Ramp",
-    category: "crypto_wallet",
-    mode: "local",
-    countries: ["Nigeria", "Kenya", "Ghana", "South Africa", "Egypt"],
-    processor: "transak",
-    fields: [
-      { key: "email", label: "Transak Email", placeholder: "your@email.com", type: "text", required: true },
-    ],
-  },
+  // Transak off-ramp removed from user-facing list — used internally for non-Polygon payouts
 ];
 
 // ─── FULL REGISTRY ─────────────────────────────────────────
