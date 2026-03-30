@@ -3,7 +3,7 @@ import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2 } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -13,6 +13,7 @@ import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContra
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import TrustLockOSPayout from "@/components/shared/TrustLockOSPayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
