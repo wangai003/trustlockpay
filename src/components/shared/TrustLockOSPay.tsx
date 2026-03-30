@@ -107,6 +107,7 @@ const ADMIN_SERVICES = [
 const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
   const isAdmin = role === "admin";
   const serviceList = role === "vendor" ? VENDOR_SERVICES : role === "buyer" ? BUYER_SERVICES : ADMIN_SERVICES;
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
 
   const [payMode, setPayMode] = useState<PayMode>("local");
   const [method, setMethod] = useState<PaymentMethod>(null);
