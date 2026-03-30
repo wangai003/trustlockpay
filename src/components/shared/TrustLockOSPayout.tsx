@@ -977,7 +977,8 @@ const TrustLockOSPayout = ({
             </CardContent>
           </Card>
 
-          {/* Dual Mode Toggle */}
+          {/* Dual Mode Toggle — hide when crypto is active */}
+          {!isCrypto && (
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => { setMode("local"); setSelectedProvider(null); setProviderFields({}); }}
