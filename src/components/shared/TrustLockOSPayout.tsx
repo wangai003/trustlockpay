@@ -977,7 +977,8 @@ const TrustLockOSPayout = ({
             </CardContent>
           </Card>
 
-          {/* Dual Mode Toggle */}
+          {/* Dual Mode Toggle — hide when crypto is active */}
+          {!isCrypto && (
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => { setMode("local"); setSelectedProvider(null); setProviderFields({}); }}
@@ -1000,8 +1001,10 @@ const TrustLockOSPayout = ({
               International
             </button>
           </div>
+          )}
 
-          {/* Payment Method Selection */}
+          {/* Payment Method Selection — hide when crypto is active */}
+          {!isCrypto && (
           <Card className={cn("border-2 transition-all border-primary/30 shadow-md")}>
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-2">
@@ -1048,6 +1051,7 @@ const TrustLockOSPayout = ({
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Dynamic Payout Fields — fallback only when no provider is actively selected */}
           {!isCrypto && !selectedProvider && !isAdmin && (
