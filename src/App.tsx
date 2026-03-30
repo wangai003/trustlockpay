@@ -153,6 +153,7 @@ const App = () => (
                 <Route path="checkout" element={<VendorCheckout />} />
                 <Route path="analytics" element={<VendorAnalytics />} />
                 <Route path="os-pay" element={<VendorOSPay />} />
+                <Route path="payout" element={<VendorPayout />} />
                 <Route path="standalone-links" element={<VendorStandaloneLinks />} />
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
