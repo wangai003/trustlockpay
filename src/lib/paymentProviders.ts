@@ -130,19 +130,7 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "account_number", label: "Account Number", placeholder: "1234567890", type: "text", required: true },
     ],
   },
-  {
-    id: "transak_fiat",
-    name: "Buy with Card (Transak)",
-    category: "card",
-    mode: "diaspora",
-    processor: "transak",
-    fields: [
-      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
-      { key: "expiry", label: "Expiry Date", placeholder: "MM/YY", type: "text", required: true },
-      { key: "cvv", label: "CVV", placeholder: "123", type: "text", required: true },
-      { key: "cardholder", label: "Cardholder Name", placeholder: "John Doe", type: "text", required: true },
-    ],
-  },
+  // Transak removed as user-facing option — used only as behind-the-scenes off-ramp processor
 ];
 
 // ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
@@ -263,18 +251,7 @@ const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
       { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
     ],
   },
-  {
-    id: "card_africa_transak",
-    name: "Debit Card (Transak)",
-    category: "card",
-    mode: "local",
-    processor: "transak",
-    fields: [
-      { key: "card_number", label: "Card Number", placeholder: "4242 4242 4242 4242", type: "text", required: true },
-      { key: "card_expiry", label: "Expiry (MM/YY)", placeholder: "12/27", type: "text", required: true },
-      { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
-    ],
-  },
+  // Transak card removed — behind-the-scenes processor only
 ];
 
 // Local crypto options — Direct + cheapest off-ramp processors
@@ -300,17 +277,7 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
       { key: "email", label: "Coinbase Email", placeholder: "your@coinbase.com", type: "text", required: true },
     ],
   },
-  {
-    id: "transak_offramp_local",
-    name: "Transak Off-Ramp",
-    category: "crypto_wallet",
-    mode: "local",
-    countries: ["Nigeria", "Kenya", "Ghana", "South Africa", "Egypt"],
-    processor: "transak",
-    fields: [
-      { key: "email", label: "Transak Email", placeholder: "your@email.com", type: "text", required: true },
-    ],
-  },
+  // Transak off-ramp removed from user-facing list — used internally for non-Polygon payouts
 ];
 
 // ─── FULL REGISTRY ─────────────────────────────────────────
