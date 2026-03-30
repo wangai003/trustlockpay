@@ -67,14 +67,15 @@ const getFlowSteps = (
       return [
         { label: "Escrow Wallet", sublabel: "Funds held in escrow", icon: Shield, status: "completed" },
         { label: "Buyer Authorization", sublabel: "Buyer confirmed delivery", icon: CheckCircle2, status: "completed" },
+        { label: "Smart Contract Split", sublabel: "Atomic on-chain settlement", icon: Coins, status: "active" },
         ...(chain === "polygon" ? [
-          { label: "Direct Transfer", sublabel: "Polygon → Vendor Wallet", icon: Wallet, status: "active" as const },
+          { label: "Vendor Payout (99%)", sublabel: "Direct USDC → Vendor Wallet", icon: Wallet, status: "pending" as const },
         ] : [
-          { label: "Payment Processor", sublabel: providerName || "Processor API routes funds", icon: Building2, status: "active" as const },
+          { label: "Vendor Payout (99%)", sublabel: providerName || "Processor converts to fiat", icon: Building2, status: "pending" as const },
           { label: "Vendor's Account", sublabel: providerName || "Bank / Mobile / Wallet", icon: role === "vendor" ? Wallet : Smartphone, status: "pending" as const },
         ]),
-        { label: "Funds Received", sublabel: "Vendor paid within 24–48 hrs", icon: CheckCircle2, status: "pending" },
-        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: Shield, status: "pending" },
+        { label: "Platform Fee (1%)", sublabel: "Escrow fee → Revenue Wallet", icon: Shield, status: "pending" },
+        { label: "Settlement Complete", sublabel: "All parties reconciled", icon: CheckCircle2, status: "pending" },
       ];
 
     case "buyer_release":
