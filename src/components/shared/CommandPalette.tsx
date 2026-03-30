@@ -61,7 +61,8 @@ const vendorItems: CommandEntry[] = [
   { label: "Help Center", to: "/trustlock/vendor/help", icon: HelpCircle, keywords: "faq guides documentation", group: "Vendor" },
   { label: "Plans & Pricing", to: "/trustlock/vendor/pricing", icon: CreditCard, keywords: "upgrade subscription plan", group: "Vendor" },
   { label: "Standalone Links", to: "/trustlock/vendor/standalone-links", icon: Link2, keywords: "p2p payment link invoice share", group: "Vendor" },
-  { label: "OS Pay", to: "/trustlock/vendor/os-pay", icon: Wallet, keywords: "withdraw funds local diaspora internal payment", group: "Vendor" },
+  { label: "OS Pay", to: "/trustlock/vendor/os-pay", icon: Wallet, keywords: "internal payment service", group: "Vendor" },
+  { label: "OS Payout", to: "/trustlock/vendor/payout", icon: Banknote, keywords: "withdraw funds local diaspora", group: "Vendor" },
   { label: "Settings", to: "/trustlock/vendor/settings", icon: Settings, keywords: "preferences notifications account", group: "Vendor" },
   { label: "Industry Playbook", to: "/trustlock/vendor/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Vendor" },
 ];
@@ -75,7 +76,8 @@ const buyerItems: CommandEntry[] = [
   { label: "Analytics", to: "/trustlock/buyer/analytics", icon: BarChart3, keywords: "spending trends reports", group: "Buyer" },
   { label: "Documents", to: "/trustlock/buyer/documents", icon: FileText, keywords: "receipts invoices evidence acknowledgement form", group: "Buyer" },
   { label: "Help Center", to: "/trustlock/buyer/help", icon: HelpCircle, keywords: "faq guides documentation", group: "Buyer" },
-  { label: "OS Pay", to: "/trustlock/buyer/os-pay", icon: Wallet, keywords: "withdraw refund funds internal payment", group: "Buyer" },
+  { label: "OS Pay", to: "/trustlock/buyer/os-pay", icon: Wallet, keywords: "internal payment", group: "Buyer" },
+  { label: "OS Payout", to: "/trustlock/buyer/payout", icon: Banknote, keywords: "withdraw refund funds", group: "Buyer" },
   { label: "Settings", to: "/trustlock/buyer/settings", icon: Settings, keywords: "preferences notifications", group: "Buyer" },
   { label: "Industry Playbook", to: "/trustlock/buyer/industry-playbook", icon: BookOpen, keywords: "industries capabilities workflow construction mining agriculture real estate tourism retail", group: "Buyer" },
 ];

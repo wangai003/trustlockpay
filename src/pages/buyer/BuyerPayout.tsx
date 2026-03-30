@@ -7,7 +7,7 @@ const BuyerPayout = () => {
   const { isTestnet } = useBuyer();
   return (
     <div>
-      <BuyerHeader title="TrustLock OS Pay" />
+      <BuyerHeader title="TrustLock OS Payout" />
       <div className="p-3 sm:p-6">
         <TLId code="TL-B-PYO-BTN-REQUEST">
           <TrustLockOSPayout role="buyer" isTestnet={isTestnet} />
