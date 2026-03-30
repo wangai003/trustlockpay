@@ -121,7 +121,7 @@ const App = () => (
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="documents" element={<AdminDocuments />} />
                 <Route path="workflow" element={<AdminWorkflow />} />
-                <Route path="os-pay" element={<AdminOSPay />} />
+                
                 <Route path="payout" element={<AdminPayout />} />
                 <Route path="audit" element={<AdminAudit />} />
                 <Route path="industry-playbook" element={<AdminIndustryPlaybook />} />
