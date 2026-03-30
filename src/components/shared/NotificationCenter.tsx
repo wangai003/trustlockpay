@@ -142,10 +142,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
             if (prev.some((x) => x.id === n.id)) return prev;
             return [n, ...prev];
           });
-          // Critical persistent toast
-          if (toPriority(n.type) === "critical" && !n.is_read) {
-            showCriticalToast(n);
-          }
+          // Critical notifications handled inside panel only
         })
         .subscribe();
     };
