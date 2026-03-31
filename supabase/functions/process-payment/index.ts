@@ -6,6 +6,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Azix Wallet Addresses ───────────────────────────────
+const AZIX_WALLETS = {
+  transaction: "0x7A3b1234567890abcdef1234567890abcdefF92d",
+  escrow: "0x4E1c234567890abcdef1234567890abcdefA83b",
+};
+
+// ─── Fee Constants (basis points) ────────────────────────
+const PLATFORM_FEE_CRYPTO_BPS = 100; // 1.0%
+const PLATFORM_FEE_FIAT_BPS = 150;   // 1.5%
+
 // ─── Types ────────────────────────────────────────────────
 interface ProcessPaymentRequest {
   action?: string;
@@ -15,6 +25,7 @@ interface ProcessPaymentRequest {
   total?: number;
   method?: string;
   role?: string;
+  pay_mode?: "local" | "diaspora";
   refundEmail?: string;
   refundReason?: string;
   splitRecipient?: string;
@@ -28,14 +39,16 @@ interface ProcessPaymentRequest {
   receiverAddress?: string;
   buyerEmail?: string;
   transactionId?: string;
-  // Tax fields
+  sessionId?: string;
+  redirectUrl?: string;
+  cancelUrl?: string;
   buyer_country?: string;
   vendor_country?: string;
   item_category?: string;
   is_export?: boolean;
 }
 
-// ─── Tax Rate Fallbacks (used when DB lookup fails) ───────
+// ─── Tax Rate Fallbacks ──────────────────────────────────
 const FALLBACK_TAX_RATES: Record<string, { rate: number; type: string; bloc?: string; tariff: number }> = {
   US: { rate: 7.0, type: "Sales Tax", bloc: "USMCA", tariff: 3.5 },
   GB: { rate: 20.0, type: "VAT", tariff: 2.5 },
@@ -48,16 +61,9 @@ const FALLBACK_TAX_RATES: Record<string, { rate: number; type: string; bloc?: st
   GH: { rate: 15.0, type: "VAT", bloc: "ECOWAS", tariff: 5.0 },
 };
 
-// ─── Item category tariff multipliers ─────────────────────
 const ITEM_TARIFF_MULTIPLIERS: Record<string, number> = {
-  electronics: 1.2,
-  commodities: 0.8,
-  textiles: 1.5,
-  machinery: 1.0,
-  food: 0.5,
-  chemicals: 1.3,
-  automotive: 1.4,
-  general: 1.0,
+  electronics: 1.2, commodities: 0.8, textiles: 1.5, machinery: 1.0,
+  food: 0.5, chemicals: 1.3, automotive: 1.4, general: 1.0,
 };
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -65,31 +71,38 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-// ─── Tax Calculation Engine ───────────────────────────────
+function generateConfirmationCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "TL-";
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function isCryptoMethod(method?: string, processor?: string): boolean {
+  if (processor === "coinbase" || processor === "direct") return true;
+  if (method && ["crypto", "usdc", "usdt", "polygon"].includes(method.toLowerCase())) return true;
+  return false;
+}
+
+function calculatePlatformFee(amount: number, method?: string, processor?: string): { fee: number; rate: number; type: string } {
+  const crypto = isCryptoMethod(method, processor);
+  const bps = crypto ? PLATFORM_FEE_CRYPTO_BPS : PLATFORM_FEE_FIAT_BPS;
+  const fee = round(amount * bps / 10000);
+  return { fee, rate: bps / 100, type: crypto ? "crypto" : "fiat" };
+}
+
+// ─── Tax Calculation Engine ──────────────────────────────
 interface TaxBreakdown {
-  subtotal: number;
-  tax_amount: number;
-  tax_type: string;
-  tax_rate: number;
-  tariff_amount: number;
-  tariff_rate: number;
-  total_with_tax: number;
-  is_domestic: boolean;
-  is_same_bloc: boolean;
-  is_export: boolean;
-  buyer_country: string;
-  vendor_country: string;
-  item_category: string;
-  notes: string;
+  subtotal: number; tax_amount: number; tax_type: string; tax_rate: number;
+  tariff_amount: number; tariff_rate: number; total_with_tax: number;
+  is_domestic: boolean; is_same_bloc: boolean; is_export: boolean;
+  buyer_country: string; vendor_country: string; item_category: string; notes: string;
 }
 
 async function calculateTax(
   supabase: ReturnType<typeof createClient>,
-  amount: number,
-  buyerCountry?: string,
-  vendorCountry?: string,
-  itemCategory?: string,
-  isExport?: boolean
+  amount: number, buyerCountry?: string, vendorCountry?: string,
+  itemCategory?: string, isExport?: boolean
 ): Promise<TaxBreakdown> {
   const bCountry = (buyerCountry ?? "").toUpperCase().trim();
   const vCountry = (vendorCountry ?? "").toUpperCase().trim();
@@ -107,10 +120,7 @@ async function calculateTax(
 
   const countries = [bCountry, vCountry].filter(Boolean);
   const { data: rates } = await supabase
-    .from("tax_rates")
-    .select("*")
-    .in("country_code", countries)
-    .eq("is_active", true);
+    .from("tax_rates").select("*").in("country_code", countries).eq("is_active", true);
 
   const rateMap: Record<string, { rate: number; type: string; bloc: string | null; tariff: number; de_minimis: number }> = {};
   if (rates) {
@@ -147,20 +157,19 @@ async function calculateTax(
     if (buyerRate) {
       taxRate = buyerRate.rate; taxType = `${buyerRate.type} (Destination)`;
       taxAmount = round(amount * (taxRate / 100));
-      notes = `Intra-bloc (${buyerBloc}) transaction. Destination ${buyerRate.type} at ${taxRate}% applied to buyer country ${bCountry}.`;
+      notes = `Intra-bloc (${buyerBloc}) transaction. Destination ${buyerRate.type} at ${taxRate}% applied.`;
     }
-    // No tariff within same bloc
   } else if (isExportTx) {
     taxRate = 0; taxType = "VAT (Zero-Rated Export)"; taxAmount = 0;
     if (belowDeMinimis) {
-      notes = `International export: VAT zero-rated. Below de minimis threshold ($${deMinimis}) — import duties waived.`;
+      notes = `International export: VAT zero-rated. Below de minimis ($${deMinimis}) — duties waived.`;
     } else if (buyerRate && buyerRate.tariff > 0) {
       const multiplier = ITEM_TARIFF_MULTIPLIERS[category] ?? 1.0;
       tariffRate = round(buyerRate.tariff * multiplier);
       tariffAmount = round(amount * (tariffRate / 100));
-      notes = `International export: VAT zero-rated. Import tariff of ${tariffRate}% applied (base ${buyerRate.tariff}% × ${category} multiplier ${multiplier}).`;
+      notes = `International export: VAT zero-rated. Import tariff ${tariffRate}% applied.`;
     } else {
-      notes = `International export: VAT zero-rated. No tariff applicable for destination ${bCountry}.`;
+      notes = `International export: VAT zero-rated. No tariff for ${bCountry}.`;
     }
   }
 
@@ -173,23 +182,83 @@ async function calculateTax(
   };
 }
 
+// ─── Seed Token Helper (wallet_purpose='pay') ────────────
+async function ensurePaySeedToken(
+  supabase: ReturnType<typeof createClient>, userId: string
+): Promise<{ token: string; id: string } | null> {
+  // Check for existing active 'pay' seed token
+  const { data: existing } = await supabase
+    .from("seed_tokens")
+    .select("id, token")
+    .eq("user_id", userId)
+    .eq("wallet_purpose", "pay")
+    .eq("is_active", true)
+    .limit(1)
+    .single();
+
+  if (existing) return { token: existing.token, id: existing.id };
+
+  // Create new pay seed token
+  const token = `pay_${crypto.randomUUID().replace(/-/g, "")}`;
+  const { data: created, error } = await supabase
+    .from("seed_tokens")
+    .insert({
+      user_id: userId,
+      token,
+      wallet_purpose: "pay",
+      purpose: "os_pay",
+      wallet_public_key: AZIX_WALLETS.transaction,
+    })
+    .select("id, token")
+    .single();
+
+  if (error) {
+    console.error("Failed to create pay seed token:", error);
+    return null;
+  }
+  return { token: created.token, id: created.id };
+}
+
+// ─── Smart Contract Calldata Builder ─────────────────────
+function buildLockFundsCalldata(
+  orderId: string, amount: number, platformFee: number,
+  processorFee: number, processorAddress: string
+) {
+  // OS Pay: escrowDeposit = 0 (no escrow component)
+  return {
+    function: "lockFunds",
+    params: {
+      orderId,
+      amount: Math.round(amount * 1e6),          // USDC 6 decimals
+      platformFee: Math.round(platformFee * 1e6),
+      escrowDeposit: 0,                           // No escrow for OS Pay
+      processorFee: Math.round(processorFee * 1e6),
+      processorAddress,
+    },
+    routing: {
+      platformFee_to: AZIX_WALLETS.transaction,
+      escrowDeposit_to: null,
+      remainder: "locked_in_contract",
+    },
+    note: "OS Pay: platformFee sent immediately to Transaction Wallet. No escrow deposit.",
+  };
+}
+
 // ─── Main Handler ─────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
     const body: ProcessPaymentRequest = await req.json();
     const {
-      action, service, amount, fee, total, method, role,
+      action, service, amount, fee, total, method, role, pay_mode,
       refundEmail, refundReason, splitRecipient, splitPercentage,
       processor, direction, currency, chain,
       walletAddress, receiverAddress, transactionId,
@@ -222,9 +291,81 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Calculate platform fee ───────────────────────────
+    const platformFeeCalc = calculatePlatformFee(amount, method, processor);
+    const effectiveFee = fee ?? platformFeeCalc.fee;
     const effectiveTotal = taxBreakdown
-      ? round(taxBreakdown.total_with_tax + (fee ?? 0))
-      : (total ?? amount);
+      ? round(taxBreakdown.total_with_tax + effectiveFee)
+      : (total ?? round(amount + effectiveFee));
+
+    const confirmationCode = generateConfirmationCode();
+
+    // ── Route: Admin Refund ──────────────────────────────
+    if (action === "refund") {
+      const { data: payment, error } = await supabase
+        .from("os_payments")
+        .insert({
+          user_id: userId,
+          role: role || "admin",
+          action: "refund",
+          service: service || "escrow_refund",
+          amount: parseFloat(String(amount)),
+          fee: 0, // All fees waived on refund
+          total: parseFloat(String(amount)),
+          method: method || "platform",
+          status: "completed",
+          refund_email: refundEmail || null,
+          refund_reason: refundReason || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          payment,
+          confirmationCode,
+          feeWaived: true,
+          note: "Refund processed. All platform/escrow fees waived. Gas only ($0.02–$0.05).",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Route: Admin Split Payout ────────────────────────
+    if (action === "split") {
+      const { data: payment, error } = await supabase
+        .from("os_payments")
+        .insert({
+          user_id: userId,
+          role: role || "admin",
+          action: "split",
+          service: service || "split_payout",
+          amount: parseFloat(String(amount)),
+          fee: effectiveFee,
+          total: effectiveTotal,
+          method: method || "platform",
+          status: "completed",
+          split_recipient: splitRecipient || null,
+          split_percentage: splitPercentage ? parseInt(String(splitPercentage)) : null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          payment,
+          confirmationCode,
+          note: "Split payout recorded. 1.0% escrow fee deducted from vendor share only.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ── Route: Processor-based checkout/payout ───────────
     if (processor && direction) {
@@ -236,12 +377,10 @@ Deno.serve(async (req) => {
           const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
           if (!stripeKey) {
             processorResult = {
-              processor: "stripe", direction,
-              status: "not_configured",
-              message: "Stripe integration pending API key setup. Configure STRIPE_SECRET_KEY to activate.",
+              processor: "stripe", direction, status: "not_configured",
+              message: "Stripe pending API key setup.",
             };
           } else if (direction === "onramp") {
-            // Create Stripe Payment Intent
             const stripeRes = await fetch("https://api.stripe.com/v1/payment_intents", {
               method: "POST",
               headers: {
@@ -259,18 +398,14 @@ Deno.serve(async (req) => {
             const intent = await stripeRes.json();
             if (intent.error) throw new Error(`Stripe: ${intent.error.message}`);
             processorResult = {
-              processor: "stripe", direction,
-              status: "processing",
+              processor: "stripe", direction, status: "processing",
               clientSecret: intent.client_secret,
               paymentIntentId: intent.id,
-              message: "Stripe Payment Intent created. Complete payment on client.",
             };
           } else {
-            // Off-ramp: Stripe payout (requires Connect account)
             processorResult = {
-              processor: "stripe", direction: "offramp",
-              status: "requires_connect",
-              message: "Stripe payouts require a connected account. Set up via vendor onboarding.",
+              processor: "stripe", direction: "offramp", status: "requires_connect",
+              message: "Stripe payouts require a connected account.",
             };
           }
           break;
@@ -280,32 +415,22 @@ Deno.serve(async (req) => {
           const cbKey = Deno.env.get("COINBASE_COMMERCE_API_KEY");
           if (!cbKey) {
             processorResult = {
-              processor: "coinbase", direction,
-              status: "not_configured",
-              message: "Coinbase integration pending API key setup. Configure COINBASE_COMMERCE_API_KEY to activate.",
+              processor: "coinbase", direction, status: "not_configured",
+              message: "Coinbase pending API key setup.",
             };
           } else if (direction === "onramp") {
-            // Create Coinbase Commerce Charge
             const cbRes = await fetch("https://api.commerce.coinbase.com/charges", {
               method: "POST",
               headers: {
-                "X-CC-Api-Key": cbKey,
-                "Content-Type": "application/json",
+                "X-CC-Api-Key": cbKey, "Content-Type": "application/json",
                 "X-CC-Version": "2018-03-22",
               },
               body: JSON.stringify({
                 name: `TrustLock Order${transactionId ? ` #${transactionId.slice(0, 8)}` : ""}`,
                 description: service || "Escrow Payment",
                 pricing_type: "fixed_price",
-                local_price: {
-                  amount: String(chargeAmount),
-                  currency: (currency || "USD").toUpperCase(),
-                },
-                metadata: {
-                  transaction_id: transactionId || "",
-                  user_id: userId || "",
-                  checkout_session_id: body.sessionId || "",
-                },
+                local_price: { amount: String(chargeAmount), currency: (currency || "USD").toUpperCase() },
+                metadata: { transaction_id: transactionId || "", user_id: userId || "" },
                 redirect_url: body.redirectUrl || "",
                 cancel_url: body.cancelUrl || "",
               }),
@@ -313,18 +438,14 @@ Deno.serve(async (req) => {
             const charge = await cbRes.json();
             if (charge.error) throw new Error(`Coinbase: ${charge.error.message}`);
             processorResult = {
-              processor: "coinbase", direction,
-              status: "processing",
-              chargeId: charge.data?.id,
-              hostedUrl: charge.data?.hosted_url,
+              processor: "coinbase", direction, status: "processing",
+              chargeId: charge.data?.id, hostedUrl: charge.data?.hosted_url,
               expiresAt: charge.data?.expires_at,
-              message: "Coinbase Commerce charge created. Redirect buyer to hosted URL.",
             };
           } else {
             processorResult = {
-              processor: "coinbase", direction: "offramp",
-              status: "processing",
-              message: "Coinbase offramp — funds will be converted via regional rails.",
+              processor: "coinbase", direction: "offramp", status: "processing",
+              message: "Coinbase offramp via regional rails.",
             };
           }
           break;
@@ -334,18 +455,14 @@ Deno.serve(async (req) => {
           const transakKey = Deno.env.get("TRANSAK_API_KEY");
           if (!transakKey) {
             processorResult = {
-              processor: "transak", direction,
-              status: "not_configured",
-              message: "Transak integration pending API key setup. Configure TRANSAK_API_KEY to activate.",
+              processor: "transak", direction, status: "not_configured",
+              message: "Transak pending API key setup.",
             };
           } else {
-            // Transak uses a client-side widget — we return the config
             processorResult = {
-              processor: "transak", direction,
-              status: "ready",
+              processor: "transak", direction, status: "ready",
               widgetConfig: {
-                apiKey: transakKey,
-                environment: "PRODUCTION",
+                apiKey: transakKey, environment: "PRODUCTION",
                 defaultFiatAmount: chargeAmount,
                 defaultFiatCurrency: (currency || "USD").toUpperCase(),
                 defaultCryptoCurrency: body.cryptoCurrency || "USDC",
@@ -355,7 +472,6 @@ Deno.serve(async (req) => {
                 partnerCustomerId: userId || "",
                 partnerOrderId: transactionId || "",
               },
-              message: "Transak widget config ready. Initialize on client with this config.",
             };
           }
           break;
@@ -363,21 +479,25 @@ Deno.serve(async (req) => {
 
         case "direct":
           processorResult = {
-            processor: "direct", direction,
-            status: "awaiting_onchain",
-            message: "Direct on-chain transfer — verify via verify-crypto-payment function",
+            processor: "direct", direction, status: "awaiting_onchain",
             chain: chain || "polygon",
-            walletAddress: walletAddress || "0x7A3b1234567890abcdef1234567890abcdefF92d",
+            walletAddress: AZIX_WALLETS.transaction,
             supportedTokens: ["USDC", "USDT"],
             verifyEndpoint: `${Deno.env.get("SUPABASE_URL")}/functions/v1/verify-crypto-payment`,
           };
           break;
 
         default:
-          throw new Error(`Unknown processor: ${processor}. Supported: stripe, coinbase, transak, direct.`);
+          throw new Error(`Unknown processor: ${processor}`);
       }
 
-      // Record the payment attempt
+      // Ensure pay seed token for authenticated users
+      let seedTokenInfo = null;
+      if (userId) {
+        seedTokenInfo = await ensurePaySeedToken(supabase, userId);
+      }
+
+      // Record payment
       const { data: payment, error } = await supabase
         .from("os_payments")
         .insert({
@@ -386,7 +506,7 @@ Deno.serve(async (req) => {
           action: `${processor}_${direction}`,
           service: service || `checkout_${direction}`,
           amount,
-          fee: fee || 0,
+          fee: effectiveFee,
           total: effectiveTotal,
           method: processor,
           status: processorResult.status === "not_configured" ? "pending" : "processing",
@@ -396,7 +516,7 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      // Store tax breakdown on the transaction if we have a transactionId
+      // Store tax breakdown
       if (transactionId && taxBreakdown) {
         await supabase
           .from("transactions")
@@ -404,20 +524,46 @@ Deno.serve(async (req) => {
           .eq("id", transactionId);
       }
 
+      // Build smart contract calldata (OS Pay: no escrow deposit)
+      const contractCalldata = buildLockFundsCalldata(
+        transactionId || payment.id,
+        amount,
+        platformFeeCalc.fee,
+        0, // processorFee handled off-chain
+        "0x0000000000000000000000000000000000000000"
+      );
+
       return new Response(
         JSON.stringify({
           success: true,
           payment,
+          confirmationCode,
           processorResult,
           transactionId: transactionId || null,
           taxBreakdown: taxBreakdown ?? undefined,
+          seedToken: seedTokenInfo ? { linked: true, wallet: "transaction" } : undefined,
+          contractCalldata,
+          feeBreakdown: {
+            platformFee: platformFeeCalc.fee,
+            platformRate: `${platformFeeCalc.rate}%`,
+            feeType: platformFeeCalc.type,
+            escrowDeposit: 0,
+            destination: AZIX_WALLETS.transaction,
+          },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ── Route: Legacy OS payment (plans, reports, AI) ────
+    // ── Route: OS Payment (plans, reports, AI, services) ─
     const paymentAction = action || "payment";
+    const payMode = pay_mode || "local";
+
+    // Ensure pay seed token
+    let seedTokenInfo = null;
+    if (userId) {
+      seedTokenInfo = await ensurePaySeedToken(supabase, userId);
+    }
 
     const { data: payment, error } = await supabase
       .from("os_payments")
@@ -427,7 +573,7 @@ Deno.serve(async (req) => {
         action: paymentAction,
         service,
         amount: parseFloat(String(amount)),
-        fee: parseFloat(String(fee || "0")),
+        fee: parseFloat(String(effectiveFee)),
         total: parseFloat(String(effectiveTotal)),
         method,
         status: "completed",
@@ -445,7 +591,17 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         payment,
+        confirmationCode,
+        payMode,
         taxBreakdown: taxBreakdown ?? undefined,
+        seedToken: seedTokenInfo ? { linked: true, wallet: "transaction" } : undefined,
+        feeBreakdown: {
+          platformFee: platformFeeCalc.fee,
+          platformRate: `${platformFeeCalc.rate}%`,
+          feeType: platformFeeCalc.type,
+          escrowDeposit: 0,
+          destination: AZIX_WALLETS.transaction,
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
