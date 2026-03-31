@@ -515,13 +515,14 @@ Deno.serve(async (req) => {
         if (!orderId || !seedToken || !payoutType) throw new Error("orderId, seedToken, and payoutType are required");
         if (!["release", "refund", "split"].includes(payoutType)) throw new Error("payoutType must be release, refund, or split");
 
-        // Verify seed token matches user's active token
+        // Verify seed token matches user's active payout token
         const { data: tokenRecord } = await supabase
           .from("seed_tokens")
           .select("*")
           .eq("user_id", userId)
+          .eq("purpose", "os_payout")
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
 
         if (!tokenRecord || tokenRecord.token !== seedToken) {
           return new Response(
