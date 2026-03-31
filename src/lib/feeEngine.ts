@@ -6,14 +6,14 @@
 
 export const AZIX_WALLETS = {
   transaction: {
-    label: "Azix Transaction Wallet",
+    label: "Azix Transaction Fee Wallet",
     publicKey: "0x7A3b...F92d",
-    purpose: "Collects platform fees and taxes from checkout payments",
+    purpose: "Collects transactional fees (platform fee + escrow service fee via trickle-down)",
   },
   escrow: {
     label: "Azix Escrow Wallet",
     publicKey: "0x4E1c...A83b",
-    purpose: "Holds escrow principal + pre-paid escrow fee until release or refund",
+    purpose: "Collects escrow service fees upon release (net balance = 0 after trickle-down)",
   },
 } as const;
 
