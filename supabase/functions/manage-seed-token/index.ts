@@ -351,11 +351,20 @@ Deno.serve(async (req) => {
             .eq("id", payout.id);
         }
 
+        const trickle_metadata = effectivePayoutType === "refund"
+          ? null
+          : {
+              trickle_to: "transaction_wallet",
+              trickle_amount: trickleAmount,
+              trickle_rule: trickleRule,
+            };
+
         return new Response(
           JSON.stringify({
             success: true,
             payout,
             confirmationCode,
+            trickle_metadata,
             walletRouting: {
               transactionWallet: AZIX_TRANSACTION_WALLET,
               transactionWalletReceives: fees.transactionWalletReceives,
