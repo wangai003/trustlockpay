@@ -458,11 +458,13 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
       const escrowPrincipal = tx.amount;
-      // Pre-paid escrow fee: part used to cover gas, remainder returned to buyer
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const estimatedGas = 0.03; // ~$0.03 Polygon gas, absorbed from escrow fee
-      const escrowFeeAfterGas = round(escrowFee - estimatedGas);
-      // Buyer gets: full principal + escrow fee minus gas absorbed
+      // Refund: ALL fees waived. Gas only.
+      const isCryptoRefund = paymentMethod === "crypto" || processor === "direct";
+      const gasFee = isCryptoRefund ? FEE_RATES.gas.refund_crypto : FEE_RATES.gas.refund_fiat;
+      // Buyer gets: full locked amount (principal + escrow deposit) minus gas
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      const escrowFee = escrowDeposit; // alias for compatibility
+      const escrowFeeAfterGas = round(escrowDeposit - gasFee);
       const totalRefund = round(escrowPrincipal + escrowFeeAfterGas);
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
