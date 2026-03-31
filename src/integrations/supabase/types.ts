@@ -691,6 +691,56 @@ export type Database = {
         }
         Relationships: []
       }
+      milestone_negotiations: {
+        Row: {
+          agreed_at: string | null
+          change_notes: string | null
+          created_at: string
+          drafted_by: string
+          id: string
+          milestones: Json
+          proposed_at: string | null
+          status: string
+          transaction_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          agreed_at?: string | null
+          change_notes?: string | null
+          created_at?: string
+          drafted_by: string
+          id?: string
+          milestones?: Json
+          proposed_at?: string | null
+          status?: string
+          transaction_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          agreed_at?: string | null
+          change_notes?: string | null
+          created_at?: string
+          drafted_by?: string
+          id?: string
+          milestones?: Json
+          proposed_at?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_negotiations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -739,7 +789,9 @@ export type Database = {
           fee: number | null
           id: string
           item: string | null
+          login_link: string | null
           order_number: string | null
+          signup_link: string | null
           status: string | null
           transaction_id: string | null
           updated_at: string
@@ -757,7 +809,9 @@ export type Database = {
           fee?: number | null
           id?: string
           item?: string | null
+          login_link?: string | null
           order_number?: string | null
+          signup_link?: string | null
           status?: string | null
           transaction_id?: string | null
           updated_at?: string
@@ -775,7 +829,9 @@ export type Database = {
           fee?: number | null
           id?: string
           item?: string | null
+          login_link?: string | null
           order_number?: string | null
+          signup_link?: string | null
           status?: string | null
           transaction_id?: string | null
           updated_at?: string
@@ -886,6 +942,7 @@ export type Database = {
           completed_at: string | null
           confirmation_code: string | null
           created_at: string
+          escrow_fee_deducted: number
           fee: number | null
           id: string
           mode: string | null
@@ -899,6 +956,8 @@ export type Database = {
           seed_token: string | null
           status: string | null
           transaction_id: string | null
+          trickle_amount: number
+          trickle_rule: string
           updated_at: string
           user_id: string | null
         }
@@ -908,6 +967,7 @@ export type Database = {
           completed_at?: string | null
           confirmation_code?: string | null
           created_at?: string
+          escrow_fee_deducted?: number
           fee?: number | null
           id?: string
           mode?: string | null
@@ -921,6 +981,8 @@ export type Database = {
           seed_token?: string | null
           status?: string | null
           transaction_id?: string | null
+          trickle_amount?: number
+          trickle_rule?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -930,6 +992,7 @@ export type Database = {
           completed_at?: string | null
           confirmation_code?: string | null
           created_at?: string
+          escrow_fee_deducted?: number
           fee?: number | null
           id?: string
           mode?: string | null
@@ -943,6 +1006,8 @@ export type Database = {
           seed_token?: string | null
           status?: string | null
           transaction_id?: string | null
+          trickle_amount?: number
+          trickle_rule?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -1602,6 +1667,7 @@ export type Database = {
           updated_at: string
           user_id: string
           wallet_public_key: string | null
+          wallet_purpose: string
         }
         Insert: {
           created_at?: string
@@ -1612,6 +1678,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           wallet_public_key?: string | null
+          wallet_purpose?: string
         }
         Update: {
           created_at?: string
@@ -1622,6 +1689,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wallet_public_key?: string | null
+          wallet_purpose?: string
         }
         Relationships: []
       }
@@ -2356,6 +2424,7 @@ export type Database = {
           milestone_proposed_by: string | null
           milestone_status: string | null
           order_number: number | null
+          order_type: string
           price_currency: string | null
           price_snapshot_at: string | null
           released_date: string | null
@@ -2391,6 +2460,7 @@ export type Database = {
           milestone_proposed_by?: string | null
           milestone_status?: string | null
           order_number?: number | null
+          order_type?: string
           price_currency?: string | null
           price_snapshot_at?: string | null
           released_date?: string | null
@@ -2426,6 +2496,7 @@ export type Database = {
           milestone_proposed_by?: string | null
           milestone_status?: string | null
           order_number?: number | null
+          order_type?: string
           price_currency?: string | null
           price_snapshot_at?: string | null
           released_date?: string | null
@@ -2632,11 +2703,16 @@ export type Database = {
       vendor_settings: {
         Row: {
           auto_delivery: boolean | null
+          auto_milestone_template: boolean
           id: string
+          industry_category: string | null
           notifications: Json | null
           pay_enabled: boolean | null
           payout_tier: string | null
+          shipping_api_key_encrypted: string | null
+          shipping_api_provider: string | null
           supported_currencies: string[] | null
+          transaction_types: string[]
           updated_at: string
           vendor_id: string | null
           widget_mode: string | null
@@ -2644,11 +2720,16 @@ export type Database = {
         }
         Insert: {
           auto_delivery?: boolean | null
+          auto_milestone_template?: boolean
           id?: string
+          industry_category?: string | null
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
+          shipping_api_key_encrypted?: string | null
+          shipping_api_provider?: string | null
           supported_currencies?: string[] | null
+          transaction_types?: string[]
           updated_at?: string
           vendor_id?: string | null
           widget_mode?: string | null
@@ -2656,11 +2737,16 @@ export type Database = {
         }
         Update: {
           auto_delivery?: boolean | null
+          auto_milestone_template?: boolean
           id?: string
+          industry_category?: string | null
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
+          shipping_api_key_encrypted?: string | null
+          shipping_api_provider?: string | null
           supported_currencies?: string[] | null
+          transaction_types?: string[]
           updated_at?: string
           vendor_id?: string | null
           widget_mode?: string | null
