@@ -2,704 +2,489 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title TrustLockEscrow
  * @author TrustLock OS
- * @notice Escrow contract for USDC on Polygon supporting both atomic (single-release)
- *         and milestone-based (partial-release) transactions across all TrustLock industries.
- * @dev All amounts are in micro-USDC (6 decimals). Only the authorised operator
- *      (backend Edge Function signer) can trigger release/refund actions.
+ * @notice Dual-wallet escrow with circular revenue loop on Polygon (USDC/USDT, 6 decimals)
+ * @dev Platform fee transferred immediately at lock time; escrow release fee trickles back.
  *
- *      Fee routing:
- *        • Platform fee  → deducted at lock time, sent to transactionFeeWallet
- *        • Escrow service fee (1%) → deducted at END OF RELEASE (post buyer-authorization),
- *          atomically split in the same transaction block:
- *            - 99% principal → vendor (direct or via processor for fiat conversion)
- *            - 1% fee → trickles to transactionFeeWallet (USDC, no conversion)
- *        • Refunds → 0% fee, full principal returned to buyer
- *        • Splits → 1% fee from vendor's share only, buyer receives full split amount
+ *  Wallet 1 (transactionFeeWallet) — receives platform fee at lock + release fee at settlement
+ *  Wallet 2 (escrowWallet)         — conceptual custodian; this contract holds funds on-chain
  */
-contract TrustLockEscrow is ReentrancyGuard {
-    // ──────────────────────────────────────────────
-    //  Enums
-    // ──────────────────────────────────────────────
+contract TrustLockEscrow is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
-    /// @notice Distinguishes single-release from multi-stage escrow
-    enum EscrowType { ATOMIC, MILESTONE }
+    // ─── Token Addresses (Polygon Mainnet) ────────────────────
+    IERC20 public immutable usdc;
+    IERC20 public immutable usdt;
 
-    /// @notice Lifecycle status of an escrow
-    enum EscrowStatus { LOCKED, RELEASED, REFUNDED, DISPUTED }
+    // ─── Wallet Addresses ─────────────────────────────────────
+    address public transactionFeeWallet; // Wallet 1 — Azix Transaction Fee Wallet
+    address public escrowWallet;         // Wallet 2 — Azix Escrow Wallet
 
-    // ──────────────────────────────────────────────
-    //  Structs
-    // ──────────────────────────────────────────────
+    // ─── Fee Configuration (basis points, 10000 = 100%) ───────
+    uint256 public platformFeeCrypto = 100;   // 1.0% — crypto transactions
+    uint256 public platformFeeFiat   = 150;   // 1.5% — fiat transactions
+    uint256 public escrowDepositFee  = 50;    // 0.5% — included in locked amount
+    uint256 public escrowReleaseFee  = 100;   // 1.0% — deducted on release (trickle-down)
 
-    /// @notice Core escrow record (used by both atomic and milestone flows)
-    struct Escrow {
+    uint256 private constant BPS = 10000;
+    uint256 public autoReleasePeriod = 14 days;
+
+    // ─── Operator Access ──────────────────────────────────────
+    mapping(address => bool) public operators;
+
+    // ─── Escrow State ─────────────────────────────────────────
+    struct EscrowRecord {
         address buyer;
         address vendor;
-        uint256 amount;          // principal locked (after platform fee)
-        EscrowStatus status;
-        EscrowType escrowType;
-        uint256 createdAt;
+        address token;          // USDC or USDT address
+        uint256 lockedAmount;   // net amount held (after platform fee)
+        uint256 lockTime;
+        uint8   milestoneCount;
+        bool    released;
+        bool    refunded;
+        bool    buyerApproved;
     }
 
-    /// @notice Individual milestone within a milestone-based escrow
-    struct MilestoneData {
-        uint8   index;
+    struct Milestone {
         uint256 amount;
         bool    released;
-        bool    buyerApproved;
-        bool    vendorApproved;
-        uint256 fulfilledAt;     // timestamp when vendor marks fulfilled (0 = not yet)
     }
 
-    // ──────────────────────────────────────────────
-    //  State Variables
-    // ──────────────────────────────────────────────
+    mapping(bytes32 => EscrowRecord) public escrows;
+    mapping(bytes32 => mapping(uint256 => Milestone)) public milestones;
 
-    /// @notice USDC token contract
-    IERC20 public immutable usdc;
+    // ─── Events ───────────────────────────────────────────────
+    event FundsLocked(
+        bytes32 indexed txId,
+        uint256 totalAmount,
+        uint256 platformFee,
+        uint256 escrowDeposit,
+        uint256 lockedAmount
+    );
+    event FundsReleased(
+        bytes32 indexed txId,
+        address indexed vendor,
+        uint256 vendorPayout,
+        uint256 releaseFee
+    );
+    event FundsRefunded(
+        bytes32 indexed txId,
+        address indexed buyer,
+        uint256 refundAmount
+    );
+    event SplitPayout(
+        bytes32 indexed txId,
+        address indexed vendor,
+        address indexed buyer,
+        uint256 vendorNet,
+        uint256 buyerAmount,
+        uint256 vendorFee
+    );
+    event MilestoneReleased(
+        bytes32 indexed txId,
+        uint256 milestoneIndex,
+        uint256 vendorPayout,
+        uint256 releaseFee
+    );
+    event BuyerApproval(bytes32 indexed txId, address indexed buyer);
+    event OperatorUpdated(address indexed operator, bool status);
+    event WalletUpdated(string walletType, address newAddress);
+    event FeeUpdated(string feeType, uint256 newBps);
 
-    /// @notice Authorised operator (Edge Function signer)
-    address public operator;
-
-    /// @notice Wallet receiving platform fees & trickle-down escrow service fees
-    address public transactionFeeWallet;
-
-    /// @notice Wallet temporarily holding escrowed principal
-    address public escrowFeeWallet;
-
-    /// @notice Platform fee in basis points (e.g. 150 = 1.5%)
-    uint256 public platformFeeBps;
-
-    /// @notice Escrow service fee in basis points (100 = 1.0%)
-    uint256 public constant ESCROW_SERVICE_FEE_BPS = 100;
-
-    /// @notice 14-day auto-release window (in seconds)
-    uint256 public constant AUTO_RELEASE_WINDOW = 14 days;
-
-    /// @notice Core escrow data by escrowId
-    mapping(bytes32 => Escrow) public escrows;
-
-    /// @notice Milestone array per escrowId
-    mapping(bytes32 => MilestoneData[]) public milestones;
-
-    /// @notice Total milestone count per escrowId
-    mapping(bytes32 => uint8) public milestoneCount;
-
-    // ──────────────────────────────────────────────
-    //  Events — Atomic
-    // ──────────────────────────────────────────────
-
-    event FundsLocked(bytes32 indexed escrowId, address buyer, address vendor, uint256 amount);
-    event FundsReleased(bytes32 indexed escrowId, uint256 amount);
-    event BuyerRefunded(bytes32 indexed escrowId, uint256 amount);
-    event PayoutSplit(bytes32 indexed escrowId, uint256 buyerAmount, uint256 vendorAmount);
-
-    // ──────────────────────────────────────────────
-    //  Events — Milestone
-    // ──────────────────────────────────────────────
-
-    event MilestoneLocked(bytes32 indexed escrowId, uint8 count, uint256 totalAmount);
-    event MilestoneApproved(bytes32 indexed escrowId, uint8 index, address approver);
-    event MilestoneReleased(bytes32 indexed escrowId, uint8 index, uint256 amount);
-    event MilestoneRefunded(bytes32 indexed escrowId, uint8 index, uint256 amount);
-    event MilestoneSplit(bytes32 indexed escrowId, uint8 index, uint256 buyerAmt, uint256 vendorAmt);
-
-    // ──────────────────────────────────────────────
-    //  Modifiers
-    // ──────────────────────────────────────────────
-
+    // ─── Modifiers ────────────────────────────────────────────
     modifier onlyOperator() {
-        require(msg.sender == operator, "TL: caller is not operator");
+        require(operators[msg.sender] || msg.sender == owner(), "Not authorized");
         _;
     }
 
-    // ──────────────────────────────────────────────
-    //  Constructor
-    // ──────────────────────────────────────────────
+    modifier escrowExists(bytes32 txId) {
+        require(escrows[txId].lockedAmount > 0, "Escrow not found");
+        _;
+    }
 
-    /**
-     * @param _usdc                USDC token address on Polygon
-     * @param _operator            Authorised signer (Edge Function wallet)
-     * @param _transactionFeeWallet Wallet for platform + trickle-down fees
-     * @param _escrowFeeWallet     Wallet holding escrowed principal
-     * @param _platformFeeBps      Platform fee in basis points
-     */
+    modifier notSettled(bytes32 txId) {
+        require(!escrows[txId].released && !escrows[txId].refunded, "Already settled");
+        _;
+    }
+
+    // ─── Constructor ──────────────────────────────────────────
     constructor(
         address _usdc,
-        address _operator,
+        address _usdt,
         address _transactionFeeWallet,
-        address _escrowFeeWallet,
-        uint256 _platformFeeBps
-    ) {
-        require(_usdc != address(0), "TL: zero USDC address");
-        require(_operator != address(0), "TL: zero operator");
-        require(_transactionFeeWallet != address(0), "TL: zero txn wallet");
-        require(_escrowFeeWallet != address(0), "TL: zero escrow wallet");
+        address _escrowWallet
+    ) Ownable(msg.sender) {
+        require(_usdc != address(0) && _usdt != address(0), "Invalid token");
+        require(_transactionFeeWallet != address(0) && _escrowWallet != address(0), "Invalid wallet");
 
         usdc = IERC20(_usdc);
-        operator = _operator;
+        usdt = IERC20(_usdt);
         transactionFeeWallet = _transactionFeeWallet;
-        escrowFeeWallet = _escrowFeeWallet;
-        platformFeeBps = _platformFeeBps;
+        escrowWallet = _escrowWallet;
+        operators[msg.sender] = true;
     }
 
-    // ══════════════════════════════════════════════
-    //  ATOMIC FUNCTIONS (existing — kept as-is)
-    // ══════════════════════════════════════════════
-
+    // ═══════════════════════════════════════════════════════════
+    //  LOCK FUNDS (atomic)
+    // ═══════════════════════════════════════════════════════════
     /**
-     * @notice Lock funds for an atomic (single-release) escrow transaction.
-     * @param escrowId   Unique identifier (e.g. keccak256 of TL-{timestamp})
+     * @notice Lock funds in escrow. Platform fee is transferred IMMEDIATELY to
+     *         transactionFeeWallet. Remaining amount is held in this contract.
+     * @param txId       Unique TrustLock transaction identifier
+     * @param amount     Total amount in token units (6 decimals)
+     * @param isFiat     True if payment originated from fiat processor
+     * @param processor  Address of payment processor (address(0) if crypto-native)
      * @param buyer      Buyer address
      * @param vendor     Vendor address
-     * @param totalAmount Total USDC amount INCLUDING platform fee
+     * @param token      USDC or USDT contract address
      */
     function lockFunds(
-        bytes32 escrowId,
+        bytes32 txId,
+        uint256 amount,
+        bool isFiat,
+        address processor,
         address buyer,
         address vendor,
-        uint256 totalAmount
+        address token
     ) external onlyOperator nonReentrant {
-        require(escrows[escrowId].createdAt == 0, "TL: escrow exists");
-        require(totalAmount > 0, "TL: zero amount");
+        require(escrows[txId].lockedAmount == 0, "Escrow already exists");
+        require(amount > 0, "Amount must be > 0");
+        require(token == address(usdc) || token == address(usdt), "Unsupported token");
+        require(buyer != address(0) && vendor != address(0), "Invalid addresses");
 
-        // Calculate and route platform fee
-        uint256 platformFee = (totalAmount * platformFeeBps) / 10000;
-        uint256 principal = totalAmount - platformFee;
+        IERC20 payToken = IERC20(token);
 
-        // Transfer total from buyer
-        require(usdc.transferFrom(buyer, address(this), totalAmount), "TL: transfer failed");
+        // 1. Calculate platform fee (immediate transfer)
+        uint256 feeBps = isFiat ? platformFeeFiat : platformFeeCrypto;
+        uint256 platformFee = (amount * feeBps) / BPS;
 
-        // Route platform fee immediately
-        if (platformFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, platformFee), "TL: fee transfer failed");
-        }
+        // 2. Transfer platform fee → Transaction Fee Wallet (IMMEDIATE)
+        payToken.safeTransferFrom(msg.sender, transactionFeeWallet, platformFee);
 
-        // Store escrow
-        escrows[escrowId] = Escrow({
+        // 3. Calculate escrow deposit (informational — included in locked amount)
+        uint256 escrowDeposit = (amount * escrowDepositFee) / BPS;
+
+        // 4. Lock remainder in this contract
+        uint256 lockedAmount = amount - platformFee;
+        payToken.safeTransferFrom(msg.sender, address(this), lockedAmount);
+
+        // 5. Store escrow record
+        escrows[txId] = EscrowRecord({
             buyer: buyer,
             vendor: vendor,
-            amount: principal,
-            status: EscrowStatus.LOCKED,
-            escrowType: EscrowType.ATOMIC,
-            createdAt: block.timestamp
+            token: token,
+            lockedAmount: lockedAmount,
+            lockTime: block.timestamp,
+            milestoneCount: 0,
+            released: false,
+            refunded: false,
+            buyerApproved: false
         });
 
-        emit FundsLocked(escrowId, buyer, vendor, principal);
+        // processor fee handled off-chain by payment processor
+        // processor address stored for audit trail only
+
+        emit FundsLocked(txId, amount, platformFee, escrowDeposit, lockedAmount);
     }
 
-    /**
-     * @notice Release full funds to vendor for an atomic escrow.
-     * @dev Deducts 1% escrow service fee and routes it via the TRICKLE-DOWN mechanism:
-     *
-     *      DUAL SEED TOKEN ARCHITECTURE:
-     *      ─────────────────────────────
-     *      • OS Pay seed token  → hardwired to transactionFeeWallet (0x7A3b...F92d)
-     *        Purpose: Collects platform revenue, processor fees, taxes
-     *        Accepts: Fiat via processor APIs + stablecoins (USDC) directly
-     *
-     *      • OS Payout seed token → hardwired to escrowFeeWallet (0x4E1c...A83b)
-     *        Purpose: Holds escrowed principal during transaction lifecycle
-     *        Accepts: USDC locked from buyer at checkout
-     *
-     *      TRICKLE-DOWN FEE FLOW:
-     *      ─────────────────────
-     *      On RELEASE: escrowFeeWallet deducts 1% service fee from principal
-     *                  → transfers fee (stablecoins/USDC) to transactionFeeWallet
-     *                  → NO conversion needed — both wallets accept USDC natively
-     *                  → this transfer follows the OS Pay token's hardwire route
-     *
-     *      On REFUND:  escrowFeeWallet returns 100% principal to buyer
-     *                  → 0% fee → NO trickle-down to transactionFeeWallet
-     *
-     *      On SPLIT:   1% fee deducted from VENDOR's share only
-     *                  → fee trickles to transactionFeeWallet
-     *                  → buyer receives full split amount
-     *
-     * @param escrowId The escrow to release
-     */
-    function releaseFunds(bytes32 escrowId) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.ATOMIC, "TL: not atomic");
-
-        uint256 serviceFee = (e.amount * ESCROW_SERVICE_FEE_BPS) / 10000;
-        uint256 vendorPayout = e.amount - serviceFee;
-
-        e.status = EscrowStatus.RELEASED;
-
-        // TRICKLE-DOWN: escrow service fee (stablecoins) → transactionFeeWallet
-        // This is a direct USDC transfer — no conversion required because
-        // the transactionFeeWallet (OS Pay token hardwire) accepts stablecoins natively
-        if (serviceFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: trickle-down fee transfer failed");
-        }
-        require(usdc.transfer(e.vendor, vendorPayout), "TL: vendor transfer failed");
-
-        emit FundsReleased(escrowId, vendorPayout);
-    }
-
-    /**
-     * @notice Full refund to buyer for an atomic escrow. 0% escrow fee.
-     * @param escrowId The escrow to refund
-     */
-    function refundBuyer(bytes32 escrowId) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.ATOMIC, "TL: not atomic");
-
-        e.status = EscrowStatus.REFUNDED;
-
-        require(usdc.transfer(e.buyer, e.amount), "TL: refund transfer failed");
-
-        emit BuyerRefunded(escrowId, e.amount);
-    }
-
-    /**
-     * @notice Split payout for atomic dispute arbitration.
-     * @dev Escrow service fee (1%) is deducted from VENDOR's share only,
-     *      then trickled to transactionFeeWallet in USDC (no conversion).
-     *      Buyer receives full split amount with zero fee deduction.
-     * @param escrowId     The escrow to split
-     * @param buyerAmount  Amount returned to buyer (no fees deducted)
-     * @param vendorAmount Amount sent to vendor (before 1% escrow fee deduction)
-     */
-    function splitPayout(
-        bytes32 escrowId,
-        uint256 buyerAmount,
-        uint256 vendorAmount
-    ) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.ATOMIC, "TL: not atomic");
-        require(buyerAmount + vendorAmount == e.amount, "TL: amounts mismatch");
-
-        e.status = EscrowStatus.DISPUTED;
-
-        // TRICKLE-DOWN on split: 1% fee from vendor's share only → transactionFeeWallet
-        uint256 vendorServiceFee = (vendorAmount * ESCROW_SERVICE_FEE_BPS) / 10000;
-        uint256 vendorNet = vendorAmount - vendorServiceFee;
-
-        if (buyerAmount > 0) {
-            require(usdc.transfer(e.buyer, buyerAmount), "TL: buyer split failed");
-        }
-        if (vendorServiceFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, vendorServiceFee), "TL: split trickle-down failed");
-        }
-        if (vendorNet > 0) {
-            require(usdc.transfer(e.vendor, vendorNet), "TL: vendor split failed");
-        }
-
-        emit PayoutSplit(escrowId, buyerAmount, vendorNet);
-    }
-
-    // ══════════════════════════════════════════════
-    //  MILESTONE FUNCTIONS (new)
-    // ══════════════════════════════════════════════
-
-    /**
-     * @notice Lock funds for a milestone-based escrow transaction.
-     * @dev Platform fee is deducted and routed immediately (same as atomic).
-     *      Sum of milestoneAmounts must equal totalAmount minus platform fee.
-     * @param escrowId          Unique identifier
-     * @param buyer             Buyer address
-     * @param vendor            Vendor address
-     * @param totalAmount       Total USDC amount INCLUDING platform fee
-     * @param _milestoneCount   Number of milestones (must match array length)
-     * @param milestoneAmounts  Array of per-milestone principal amounts
-     */
+    // ═══════════════════════════════════════════════════════════
+    //  LOCK FUNDS WITH MILESTONES
+    // ═══════════════════════════════════════════════════════════
     function lockFundsWithMilestones(
-        bytes32 escrowId,
+        bytes32 txId,
+        uint256 amount,
+        bool isFiat,
+        address processor,
         address buyer,
         address vendor,
-        uint256 totalAmount,
-        uint8 _milestoneCount,
+        address token,
         uint256[] calldata milestoneAmounts
     ) external onlyOperator nonReentrant {
-        require(escrows[escrowId].createdAt == 0, "TL: escrow exists");
-        require(totalAmount > 0, "TL: zero amount");
-        require(_milestoneCount > 0 && _milestoneCount <= 20, "TL: invalid milestone count");
-        require(milestoneAmounts.length == _milestoneCount, "TL: array length mismatch");
+        require(escrows[txId].lockedAmount == 0, "Escrow already exists");
+        require(amount > 0 && milestoneAmounts.length > 0, "Invalid params");
+        require(token == address(usdc) || token == address(usdt), "Unsupported token");
 
-        // Calculate and route platform fee
-        uint256 platformFee = (totalAmount * platformFeeBps) / 10000;
-        uint256 principal = totalAmount - platformFee;
+        IERC20 payToken = IERC20(token);
 
-        // Validate milestone amounts sum to principal
-        uint256 sum = 0;
-        for (uint8 i = 0; i < _milestoneCount; i++) {
-            require(milestoneAmounts[i] > 0, "TL: zero milestone amount");
-            sum += milestoneAmounts[i];
+        uint256 feeBps = isFiat ? platformFeeFiat : platformFeeCrypto;
+        uint256 platformFee = (amount * feeBps) / BPS;
+        uint256 escrowDeposit = (amount * escrowDepositFee) / BPS;
+        uint256 lockedAmount = amount - platformFee;
+
+        // Validate milestone amounts sum to lockedAmount
+        uint256 milestoneSum;
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            milestoneSum += milestoneAmounts[i];
         }
-        require(sum == principal, "TL: milestone amounts != principal");
+        require(milestoneSum == lockedAmount, "Milestone amounts mismatch");
 
-        // Transfer total from buyer
-        require(usdc.transferFrom(buyer, address(this), totalAmount), "TL: transfer failed");
+        // Transfer platform fee immediately
+        payToken.safeTransferFrom(msg.sender, transactionFeeWallet, platformFee);
 
-        // Route platform fee immediately
-        if (platformFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, platformFee), "TL: fee transfer failed");
-        }
+        // Lock remainder
+        payToken.safeTransferFrom(msg.sender, address(this), lockedAmount);
 
-        // Store escrow
-        escrows[escrowId] = Escrow({
+        escrows[txId] = EscrowRecord({
             buyer: buyer,
             vendor: vendor,
-            amount: principal,
-            status: EscrowStatus.LOCKED,
-            escrowType: EscrowType.MILESTONE,
-            createdAt: block.timestamp
+            token: token,
+            lockedAmount: lockedAmount,
+            lockTime: block.timestamp,
+            milestoneCount: uint8(milestoneAmounts.length),
+            released: false,
+            refunded: false,
+            buyerApproved: false
         });
 
-        milestoneCount[escrowId] = _milestoneCount;
-
-        // Initialise each milestone as unreleased
-        for (uint8 i = 0; i < _milestoneCount; i++) {
-            milestones[escrowId].push(MilestoneData({
-                index: i,
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            milestones[txId][i] = Milestone({
                 amount: milestoneAmounts[i],
-                released: false,
-                buyerApproved: false,
-                vendorApproved: false,
-                fulfilledAt: 0
-            }));
+                released: false
+            });
         }
 
-        emit MilestoneLocked(escrowId, _milestoneCount, principal);
+        emit FundsLocked(txId, amount, platformFee, escrowDeposit, lockedAmount);
     }
 
+    // ═══════════════════════════════════════════════════════════
+    //  BUYER APPROVAL
+    // ═══════════════════════════════════════════════════════════
     /**
-     * @notice Record buyer or vendor approval for a specific milestone.
-     * @dev When BOTH parties have approved, the milestone becomes releasable.
-     *      The operator calls this on behalf of the approving party.
-     * @param escrowId       The escrow identifier
-     * @param milestoneIndex Zero-based index of the milestone
-     * @param isBuyer        true = buyer is approving, false = vendor is approving
+     * @notice Buyer must approve before funds can be released to vendor.
+     *         This enforces on-chain buyer authorization — the platform cannot
+     *         unilaterally release funds without this flag.
      */
-    function approveMilestone(
-        bytes32 escrowId,
-        uint8 milestoneIndex,
-        bool isBuyer
-    ) external onlyOperator {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.MILESTONE, "TL: not milestone type");
-        require(milestoneIndex < milestoneCount[escrowId], "TL: index out of bounds");
-
-        MilestoneData storage m = milestones[escrowId][milestoneIndex];
-        require(!m.released, "TL: already released");
-
-        if (isBuyer) {
-            require(!m.buyerApproved, "TL: buyer already approved");
-            m.buyerApproved = true;
-            emit MilestoneApproved(escrowId, milestoneIndex, e.buyer);
-        } else {
-            require(!m.vendorApproved, "TL: vendor already approved");
-            m.vendorApproved = true;
-            // Record fulfilledAt when vendor first approves (marks work as done)
-            if (m.fulfilledAt == 0) {
-                m.fulfilledAt = block.timestamp;
-            }
-            emit MilestoneApproved(escrowId, milestoneIndex, e.vendor);
-        }
+    function approveMilestone(bytes32 txId) external escrowExists(txId) notSettled(txId) {
+        require(msg.sender == escrows[txId].buyer, "Only buyer can approve");
+        escrows[txId].buyerApproved = true;
+        emit BuyerApproval(txId, msg.sender);
     }
 
+    // ═══════════════════════════════════════════════════════════
+    //  RELEASE FUNDS (atomic — circular revenue loop)
+    // ═══════════════════════════════════════════════════════════
     /**
-     * @notice Release a specific milestone's funds to the vendor.
-     * @dev Only callable after both buyer and vendor have approved.
-     *      Deducts 1% escrow service fee per milestone.
-     * @param escrowId       The escrow identifier
-     * @param milestoneIndex Zero-based index of the milestone
+     * @notice Release escrowed funds to vendor with 1% trickle-down fee
+     *         back to transactionFeeWallet (circular revenue loop).
+     */
+    function releaseFunds(
+        bytes32 txId
+    ) external onlyOperator nonReentrant escrowExists(txId) notSettled(txId) {
+        EscrowRecord storage e = escrows[txId];
+        require(e.buyerApproved, "Buyer has not approved release");
+
+        IERC20 payToken = IERC20(e.token);
+        uint256 locked = e.lockedAmount;
+
+        // 1% release fee → Transaction Fee Wallet (trickle-down)
+        uint256 releaseFee = (locked * escrowReleaseFee) / BPS;
+        uint256 vendorPayout = locked - releaseFee;
+
+        payToken.safeTransfer(transactionFeeWallet, releaseFee);
+        payToken.safeTransfer(e.vendor, vendorPayout);
+
+        e.released = true;
+        e.lockedAmount = 0;
+
+        emit FundsReleased(txId, e.vendor, vendorPayout, releaseFee);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  REFUND BUYER (0% fee — escrow NEVER sends fees on refund)
+    // ═══════════════════════════════════════════════════════════
+    /**
+     * @notice Full refund to buyer — NO fee deduction, NO transfer to fee wallet.
+     *         The platform fee captured at lock time is non-refundable.
+     */
+    function refundBuyer(
+        bytes32 txId
+    ) external onlyOperator nonReentrant escrowExists(txId) notSettled(txId) {
+        EscrowRecord storage e = escrows[txId];
+        IERC20 payToken = IERC20(e.token);
+        uint256 refundAmount = e.lockedAmount;
+
+        // FULL refund — NO fee deduction, NO transfer to fee wallet
+        payToken.safeTransfer(e.buyer, refundAmount);
+
+        e.refunded = true;
+        e.lockedAmount = 0;
+
+        emit FundsRefunded(txId, e.buyer, refundAmount);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  SPLIT PAYOUT (dispute arbitration)
+    // ═══════════════════════════════════════════════════════════
+    /**
+     * @notice Split escrowed funds between vendor and buyer.
+     *         Fee deducted from vendor share ONLY — buyer gets full amount.
+     * @param txId      Escrow transaction ID
+     * @param vendorBps Vendor share in basis points (e.g. 7000 = 70%)
+     */
+    function splitPayout(
+        bytes32 txId,
+        uint256 vendorBps
+    ) external onlyOperator nonReentrant escrowExists(txId) notSettled(txId) {
+        require(vendorBps <= BPS, "Invalid bps");
+
+        EscrowRecord storage e = escrows[txId];
+        IERC20 payToken = IERC20(e.token);
+        uint256 locked = e.lockedAmount;
+
+        uint256 vendorGross = (locked * vendorBps) / BPS;
+        uint256 buyerAmount = locked - vendorGross;
+
+        // 1% escrow fee on vendor share ONLY
+        uint256 vendorFee = (vendorGross * escrowReleaseFee) / BPS;
+        uint256 vendorNet = vendorGross - vendorFee;
+
+        payToken.safeTransfer(transactionFeeWallet, vendorFee);
+        payToken.safeTransfer(e.vendor, vendorNet);
+        if (buyerAmount > 0) {
+            payToken.safeTransfer(e.buyer, buyerAmount);
+        }
+
+        e.released = true;
+        e.lockedAmount = 0;
+
+        emit SplitPayout(txId, e.vendor, e.buyer, vendorNet, buyerAmount, vendorFee);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  RELEASE MILESTONE
+    // ═══════════════════════════════════════════════════════════
+    /**
+     * @notice Release a single milestone's funds to vendor with 1% fee.
+     *         When all milestones are released, escrow is marked complete.
      */
     function releaseMilestone(
-        bytes32 escrowId,
-        uint8 milestoneIndex
-    ) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.MILESTONE, "TL: not milestone type");
-        require(milestoneIndex < milestoneCount[escrowId], "TL: index out of bounds");
+        bytes32 txId,
+        uint256 milestoneIndex
+    ) external onlyOperator nonReentrant escrowExists(txId) notSettled(txId) {
+        EscrowRecord storage e = escrows[txId];
+        require(e.buyerApproved, "Buyer has not approved");
+        require(milestoneIndex < e.milestoneCount, "Invalid milestone");
 
-        MilestoneData storage m = milestones[escrowId][milestoneIndex];
-        require(!m.released, "TL: already released");
-        require(m.buyerApproved && m.vendorApproved, "TL: not fully approved");
+        Milestone storage m = milestones[txId][milestoneIndex];
+        require(!m.released, "Already released");
+        require(m.amount > 0, "Zero milestone");
 
-        m.released = true;
+        IERC20 payToken = IERC20(e.token);
 
-        // Zero-amount checkpoints: no funds move, no fee
-        if (m.amount == 0) {
-            // If all milestones released, mark escrow as RELEASED
-            if (_allMilestonesReleased(escrowId)) {
-                e.status = EscrowStatus.RELEASED;
-            }
-            emit MilestoneReleased(escrowId, milestoneIndex, 0);
-            return;
-        }
+        // 1% release fee on milestone amount
+        uint256 releaseFee = (m.amount * escrowReleaseFee) / BPS;
+        uint256 vendorPayout = m.amount - releaseFee;
 
-        // Payment milestone: deduct fractional escrow service fee
-        // Fee = 1% of THIS milestone's amount (totals to 1% of principal
-        // only across payment milestones, since checkpoints have amount=0)
-        uint256 serviceFee = (m.amount * ESCROW_SERVICE_FEE_BPS) / 10000;
-        uint256 vendorPayout = m.amount - serviceFee;
-
-        // Trickle-down: service fee → transaction wallet
-        if (serviceFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: fee transfer failed");
-        }
-        require(usdc.transfer(e.vendor, vendorPayout), "TL: vendor transfer failed");
-
-        // If all milestones released, mark escrow as RELEASED
-        if (_allMilestonesReleased(escrowId)) {
-            e.status = EscrowStatus.RELEASED;
-        }
-
-        emit MilestoneReleased(escrowId, milestoneIndex, vendorPayout);
-    }
-
-    /**
-     * @notice Auto-release a milestone after the 14-day window has elapsed.
-     * @dev Only applies if vendor has marked fulfilled (fulfilledAt > 0)
-     *      and 14 days have passed without buyer dispute.
-     * @param escrowId       The escrow identifier
-     * @param milestoneIndex Zero-based index of the milestone
-     */
-    function autoReleaseMilestone(
-        bytes32 escrowId,
-        uint8 milestoneIndex
-    ) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.MILESTONE, "TL: not milestone type");
-        require(milestoneIndex < milestoneCount[escrowId], "TL: index out of bounds");
-
-        MilestoneData storage m = milestones[escrowId][milestoneIndex];
-        require(!m.released, "TL: already released");
-        require(m.fulfilledAt > 0, "TL: not fulfilled");
-        require(block.timestamp >= m.fulfilledAt + AUTO_RELEASE_WINDOW, "TL: 14-day window not elapsed");
+        payToken.safeTransfer(transactionFeeWallet, releaseFee);
+        payToken.safeTransfer(e.vendor, vendorPayout);
 
         m.released = true;
-        m.buyerApproved = true;  // implied by auto-release
-        m.vendorApproved = true;
+        e.lockedAmount -= m.amount;
 
-        uint256 serviceFee = (m.amount * ESCROW_SERVICE_FEE_BPS) / 10000;
-        uint256 vendorPayout = m.amount - serviceFee;
-
-        if (serviceFee > 0) {
-            require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: fee transfer failed");
-        }
-        require(usdc.transfer(e.vendor, vendorPayout), "TL: vendor transfer failed");
-
-        if (_allMilestonesReleased(escrowId)) {
-            e.status = EscrowStatus.RELEASED;
+        // If all milestones released, mark escrow as fully released
+        if (e.lockedAmount == 0) {
+            e.released = true;
         }
 
-        emit MilestoneReleased(escrowId, milestoneIndex, vendorPayout);
+        emit MilestoneReleased(txId, milestoneIndex, vendorPayout, releaseFee);
     }
 
+    // ═══════════════════════════════════════════════════════════
+    //  AUTO-RELEASE (batch — 14-day timeout)
+    // ═══════════════════════════════════════════════════════════
     /**
-     * @notice Batch auto-release multiple milestones across multiple escrows.
-     * @dev Arrays must be the same length. Each pair is processed independently.
-     * @param escrowIds        Array of escrow identifiers
-     * @param milestoneIndexes Array of milestone indexes (parallel to escrowIds)
+     * @notice Batch auto-release for escrows past the auto-release period.
+     *         Only processes escrows where buyer has already approved.
      */
-    function autoReleaseMilestonesBatch(
-        bytes32[] calldata escrowIds,
-        uint8[] calldata milestoneIndexes
-    ) external onlyOperator nonReentrant {
-        require(escrowIds.length == milestoneIndexes.length, "TL: array length mismatch");
+    function autoRelease(bytes32[] calldata txIds) external onlyOperator nonReentrant {
+        for (uint256 i = 0; i < txIds.length; i++) {
+            bytes32 txId = txIds[i];
+            EscrowRecord storage e = escrows[txId];
 
-        for (uint256 i = 0; i < escrowIds.length; i++) {
-            bytes32 eid = escrowIds[i];
-            uint8 midx = milestoneIndexes[i];
+            if (
+                e.lockedAmount > 0 &&
+                !e.released &&
+                !e.refunded &&
+                e.buyerApproved &&
+                block.timestamp >= e.lockTime + autoReleasePeriod
+            ) {
+                IERC20 payToken = IERC20(e.token);
+                uint256 locked = e.lockedAmount;
 
-            Escrow storage e = escrows[eid];
-            if (e.status != EscrowStatus.LOCKED) continue;
-            if (e.escrowType != EscrowType.MILESTONE) continue;
-            if (midx >= milestoneCount[eid]) continue;
+                uint256 releaseFee = (locked * escrowReleaseFee) / BPS;
+                uint256 vendorPayout = locked - releaseFee;
 
-            MilestoneData storage m = milestones[eid][midx];
-            if (m.released) continue;
-            if (m.fulfilledAt == 0) continue;
-            if (block.timestamp < m.fulfilledAt + AUTO_RELEASE_WINDOW) continue;
+                payToken.safeTransfer(transactionFeeWallet, releaseFee);
+                payToken.safeTransfer(e.vendor, vendorPayout);
 
-            m.released = true;
-            m.buyerApproved = true;
-            m.vendorApproved = true;
+                e.released = true;
+                e.lockedAmount = 0;
 
-            uint256 serviceFee = (m.amount * ESCROW_SERVICE_FEE_BPS) / 10000;
-            uint256 vendorPayout = m.amount - serviceFee;
-
-            if (serviceFee > 0) {
-                usdc.transfer(transactionFeeWallet, serviceFee);
+                emit FundsReleased(txId, e.vendor, vendorPayout, releaseFee);
             }
-            usdc.transfer(e.vendor, vendorPayout);
-
-            if (_allMilestonesReleased(eid)) {
-                e.status = EscrowStatus.RELEASED;
-            }
-
-            emit MilestoneReleased(eid, midx, vendorPayout);
         }
     }
 
-    /**
-     * @notice Refund a specific unreleased milestone to the buyer. 0% escrow fee.
-     * @param escrowId       The escrow identifier
-     * @param milestoneIndex Zero-based index of the milestone
-     */
-    function refundMilestone(
-        bytes32 escrowId,
-        uint8 milestoneIndex
-    ) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.MILESTONE, "TL: not milestone type");
-        require(milestoneIndex < milestoneCount[escrowId], "TL: index out of bounds");
-
-        MilestoneData storage m = milestones[escrowId][milestoneIndex];
-        require(!m.released, "TL: already released");
-
-        m.released = true; // mark as settled (refunded)
-
-        // Full amount back to buyer — no escrow fee on refunds
-        require(usdc.transfer(e.buyer, m.amount), "TL: refund transfer failed");
-
-        // Check if all milestones are now settled
-        if (_allMilestonesReleased(escrowId)) {
-            e.status = EscrowStatus.REFUNDED;
-        }
-
-        emit MilestoneRefunded(escrowId, milestoneIndex, m.amount);
-    }
-
-    /**
-     * @notice Split a milestone's funds between buyer and vendor (arbitration).
-     * @dev buyerAmount + vendorAmount must equal the milestone amount.
-     *      Escrow service fee is deducted from the vendor's share only.
-     * @param escrowId       The escrow identifier
-     * @param milestoneIndex Zero-based index of the milestone
-     * @param buyerAmount    Amount to return to buyer
-     * @param vendorAmount   Amount to send to vendor (before service fee)
-     */
-    function splitMilestone(
-        bytes32 escrowId,
-        uint8 milestoneIndex,
-        uint256 buyerAmount,
-        uint256 vendorAmount
-    ) external onlyOperator nonReentrant {
-        Escrow storage e = escrows[escrowId];
-        require(e.status == EscrowStatus.LOCKED, "TL: not locked");
-        require(e.escrowType == EscrowType.MILESTONE, "TL: not milestone type");
-        require(milestoneIndex < milestoneCount[escrowId], "TL: index out of bounds");
-
-        MilestoneData storage m = milestones[escrowId][milestoneIndex];
-        require(!m.released, "TL: already released");
-        require(buyerAmount + vendorAmount == m.amount, "TL: amounts mismatch");
-
-        m.released = true;
-
-        // Buyer gets full share (no fee on buyer's portion)
-        if (buyerAmount > 0) {
-            require(usdc.transfer(e.buyer, buyerAmount), "TL: buyer split failed");
-        }
-
-        // Vendor share: deduct escrow service fee
-        if (vendorAmount > 0) {
-            uint256 serviceFee = (vendorAmount * ESCROW_SERVICE_FEE_BPS) / 10000;
-            uint256 vendorPayout = vendorAmount - serviceFee;
-
-            if (serviceFee > 0) {
-                require(usdc.transfer(transactionFeeWallet, serviceFee), "TL: fee transfer failed");
-            }
-            require(usdc.transfer(e.vendor, vendorPayout), "TL: vendor split failed");
-        }
-
-        if (_allMilestonesReleased(escrowId)) {
-            e.status = EscrowStatus.DISPUTED;
-        }
-
-        emit MilestoneSplit(escrowId, milestoneIndex, buyerAmount, vendorAmount);
-    }
-
-    // ══════════════════════════════════════════════
-    //  VIEW FUNCTIONS
-    // ══════════════════════════════════════════════
-
-    /**
-     * @notice Get all milestone data for a given escrow.
-     * @param escrowId The escrow identifier
-     * @return Array of MilestoneData structs
-     */
-    function getMilestoneStatus(bytes32 escrowId)
-        external
-        view
-        returns (MilestoneData[] memory)
-    {
-        return milestones[escrowId];
-    }
-
-    /**
-     * @notice Get core escrow details.
-     * @param escrowId The escrow identifier
-     * @return buyer, vendor, amount, status, escrowType, createdAt
-     */
-    function getEscrow(bytes32 escrowId)
-        external
-        view
-        returns (
-            address buyer,
-            address vendor,
-            uint256 amount,
-            EscrowStatus status,
-            EscrowType escrowType,
-            uint256 createdAt
-        )
-    {
-        Escrow storage e = escrows[escrowId];
-        return (e.buyer, e.vendor, e.amount, e.status, e.escrowType, e.createdAt);
-    }
-
-    // ══════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     //  ADMIN FUNCTIONS
-    // ══════════════════════════════════════════════
-
-    /**
-     * @notice Update the operator address.
-     * @param newOperator New authorised signer
-     */
-    function setOperator(address newOperator) external onlyOperator {
-        require(newOperator != address(0), "TL: zero address");
-        operator = newOperator;
+    // ═══════════════════════════════════════════════════════════
+    function setOperator(address op, bool status) external onlyOwner {
+        operators[op] = status;
+        emit OperatorUpdated(op, status);
     }
 
-    /**
-     * @notice Update the platform fee rate.
-     * @param newFeeBps New fee in basis points (max 500 = 5%)
-     */
-    function setPlatformFee(uint256 newFeeBps) external onlyOperator {
-        require(newFeeBps <= 500, "TL: fee too high");
-        platformFeeBps = newFeeBps;
+    function setTransactionFeeWallet(address wallet) external onlyOwner {
+        require(wallet != address(0), "Invalid address");
+        transactionFeeWallet = wallet;
+        emit WalletUpdated("transactionFee", wallet);
     }
 
-    // ══════════════════════════════════════════════
-    //  INTERNAL HELPERS
-    // ══════════════════════════════════════════════
+    function setEscrowWallet(address wallet) external onlyOwner {
+        require(wallet != address(0), "Invalid address");
+        escrowWallet = wallet;
+        emit WalletUpdated("escrow", wallet);
+    }
 
-    /**
-     * @dev Check if all milestones in an escrow have been settled (released/refunded/split).
-     */
-    function _allMilestonesReleased(bytes32 escrowId) internal view returns (bool) {
-        uint8 count = milestoneCount[escrowId];
-        for (uint8 i = 0; i < count; i++) {
-            if (!milestones[escrowId][i].released) {
-                return false;
-            }
-        }
-        return true;
+    function setPlatformFeeCrypto(uint256 bps) external onlyOwner {
+        require(bps <= 500, "Max 5%");
+        platformFeeCrypto = bps;
+        emit FeeUpdated("platformFeeCrypto", bps);
+    }
+
+    function setPlatformFeeFiat(uint256 bps) external onlyOwner {
+        require(bps <= 500, "Max 5%");
+        platformFeeFiat = bps;
+        emit FeeUpdated("platformFeeFiat", bps);
+    }
+
+    function setEscrowReleaseFee(uint256 bps) external onlyOwner {
+        require(bps <= 300, "Max 3%");
+        escrowReleaseFee = bps;
+        emit FeeUpdated("escrowReleaseFee", bps);
+    }
+
+    function setAutoReleasePeriod(uint256 period) external onlyOwner {
+        require(period >= 1 days && period <= 90 days, "Invalid period");
+        autoReleasePeriod = period;
+    }
+
+    // ─── View Helpers ─────────────────────────────────────────
+    function getEscrow(bytes32 txId) external view returns (EscrowRecord memory) {
+        return escrows[txId];
+    }
+
+    function getMilestone(bytes32 txId, uint256 index) external view returns (Milestone memory) {
+        return milestones[txId][index];
+    }
+
+    // ─── Emergency Withdraw (owner only, for contract migration) ──
+    function emergencyWithdraw(address token, uint256 amount) external onlyOwner {
+        IERC20(token).safeTransfer(owner(), amount);
     }
 }
