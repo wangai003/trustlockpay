@@ -77,26 +77,32 @@ function calculatePayoutFees(
 
   switch (payoutType) {
     case "release":
+      // 1.0% escrow service fee only + $0.02 gas
       trustlockRate = 0;
-      escrowRate = 0.01; // 1%
+      escrowRate = 0.01;  // 1.0%
+      gasEstimate = 0.02;
       applyEscrow = true;
       break;
     case "refund":
+      // ALL fees waived — gas only
       trustlockRate = 0;
-      escrowRate = 0;     // NO escrow fee on refunds
+      escrowRate = 0;
       applyEscrow = false;
-      gasEstimate = isCrypto ? 0.05 : 0.02;
+      gasEstimate = isCrypto ? 0.02 : 0.05;
       break;
     case "split":
+      // 1.0% escrow fee on VENDOR share only + $0.04 gas
       trustlockRate = 0;
-      escrowRate = 0.01;  // 1% but ONLY on vendor's share
+      escrowRate = 0.01;
       applyEscrow = true;
       escrowVendorOnly = true;
-      gasEstimate = 0.04; // 2x gas for dual disbursement
+      gasEstimate = 0.04;
       break;
     default:
+      // os_payment: 1.5% platform fee, no escrow
       trustlockRate = isCrypto ? 0.01 : 0.015;
-      escrowRate = 0.005;
+      escrowRate = 0;
+      applyEscrow = false;
       break;
   }
 
@@ -114,8 +120,8 @@ function calculatePayoutFees(
 
   const totalFees = trustlockFee + processorFee + escrowFee + gasEstimate;
 
-  // Fee trickle-down: escrow service fees are forwarded to the transaction wallet
-  // EXCEPT on refunds (no fees) and the escrow wallet retains nothing — it forwards all collected fees
+  // Trickle-down: escrow wallet forwards collected fees to transaction wallet
+  // Escrow wallet net balance = 0 after forwarding
   const feeTrickleToTransactionWallet = applyEscrow ? escrowFee : 0;
 
   return {
@@ -125,9 +131,9 @@ function calculatePayoutFees(
     gasFee: gasEstimate,
     totalFees,
     netAmount: amount - totalFees,
-    transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,  // Platform fee + trickled escrow fee → AZIX_TRANSACTION_WALLET
-    escrowWalletReceives: 0,  // Escrow wallet forwards all fees — net zero retention
-    feeTrickleToTransactionWallet,  // Specifically the amount forwarded from escrow → transaction wallet
+    transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,
+    escrowWalletReceives: 0,  // Escrow wallet net balance = 0 after trickle-down
+    feeTrickleToTransactionWallet,
   };
 }
 

@@ -91,7 +91,7 @@ const InvoiceFeeCalculator = ({
 
         {isCrypto && (
           <div className="text-[10px] text-muted-foreground pt-1">
-            All-in rate: <strong className="text-foreground">{ALL_IN_RANGES.cryptoDirect.range}</strong> (Platform {FEE_CATEGORIES.platform.crypto.display} + Escrow {FEE_CATEGORIES.escrow.display})
+            All-in rate: <strong className="text-foreground">{ALL_IN_RANGES.cryptoDirect.range}</strong> (Platform {FEE_CATEGORIES.platform.crypto.display} + Escrow Deposit {FEE_CATEGORIES.escrowDeposit.display})
           </div>
         )}
       </div>
@@ -169,7 +169,7 @@ const InvoiceFeeCalculator = ({
       {showDisclosure && (
         <div className="p-3 rounded-lg bg-muted/30 border border-border text-[10px] text-muted-foreground leading-relaxed whitespace-pre-line">
           {INVOICE_MANDATORY_DISCLOSURE}
-          {isCrypto && `\n\n**Crypto-to-Crypto Specific:**\n• All-in fee: ${ALL_IN_RANGES.cryptoDirect.range} (Platform ${FEE_CATEGORIES.platform.crypto.display} + Escrow ${FEE_CATEGORIES.escrow.display})\n• No processor fee — direct on-chain transfer\n• Gas fees on release, refund, and split payouts are absorbed from the 1% escrow fee before the balance reaches TrustLock's revenue wallet\n• Vendor receives 100% of escrow principal upon completion\n• Buyer receives full refund (principal + escrow fee) if cancelled before work begins`}
+          {isCrypto && `\n\n**Crypto-to-Crypto Specific:**\n• All-in fee: ${ALL_IN_RANGES.cryptoDirect.range} (Platform ${FEE_CATEGORIES.platform.crypto.display} + Escrow Deposit ${FEE_CATEGORIES.escrowDeposit.display})\n• No processor fee — direct on-chain transfer\n• 1.0% escrow service fee deducted at release and trickled to transaction wallet\n• Escrow wallet net balance = 0 after trickle-down\n• Refunds: ALL fees waived, gas only ($0.02)`}
         </div>
       )}
     </div>

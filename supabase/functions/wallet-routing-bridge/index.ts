@@ -25,12 +25,21 @@ const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
 // ─── Fee Rate Constants ──────────────────────────────────
-// NEW MODEL: Escrow fee is pre-paid at checkout (added to buyer's total)
-// and sent alongside principal to escrow wallet. NOT deducted from principal.
+// Checkout: 0.5% escrow deposit moves with principal to escrow wallet
+// Release:  1.0% escrow service fee trickles from escrow → transaction wallet
+// Refund:   ALL fees waived, gas only ($0.02–$0.05)
 const FEE_RATES = {
-  platform_fiat: 1.5,
-  platform_crypto: 1.0,
-  escrow_service: 1.0,    // 1% escrow fee — pre-paid at checkout, trickled on release
+  platform_fiat: 1.5,       // 1.5% platform fee at checkout (fiat)
+  platform_crypto: 1.0,     // 1.0% platform fee at checkout (crypto)
+  escrow_deposit: 0.5,      // 0.5% escrow deposit at checkout
+  escrow_service: 1.0,      // 1.0% escrow service fee at release (trickle-down)
+  gas: {
+    checkout: 0.02,
+    release: 0.02,
+    refund_crypto: 0.02,
+    refund_fiat: 0.05,
+    split: 0.04,
+  } as Record<string, number>,
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
@@ -196,14 +205,19 @@ Deno.serve(async (req) => {
       const platformRate = isCrypto ? FEE_RATES.platform_crypto : FEE_RATES.platform_fiat;
       const platformFee = round(escrowPrincipal * (platformRate / 100));
 
-      // 2) Processor fee (already deducted by processor for fiat, 0 for direct)
+      // 2) Processor fee (already deducted by processor before funds reach us)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
       const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
 
-      // 3) Escrow service fee (1% of principal — pre-paid, routed WITH principal)
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      // 3) Escrow deposit fee (0.5% of principal — routed WITH principal to escrow wallet)
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      // Legacy alias
+      const escrowFee = escrowDeposit;
 
-      // 4) Jurisdiction taxes
+      // 4) Gas fee
+      const gasFee = FEE_RATES.gas.checkout;
+
+      // 5) Jurisdiction taxes
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -211,16 +225,16 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 5) Transaction Wallet retains platform fee + taxes
+      // 6) Transaction Wallet retains platform fee + taxes
       const transactionWalletRetains = round(platformFee + taxAmount);
 
-      // 6) Escrow Wallet receives: full principal + escrow fee
-      const escrowWalletReceives = round(escrowPrincipal + escrowFee);
+      // 7) Escrow Wallet receives: full principal + escrow deposit
+      const escrowWalletReceives = round(escrowPrincipal + escrowDeposit);
 
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowFee, taxAmount },
+          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount, gasFee },
         }, 400);
       }
 
@@ -342,11 +356,14 @@ Deno.serve(async (req) => {
     //  ACTION: ROUTE_RELEASE — Vendor gets 100% principal
     // ══════════════════════════════════════════════════
     if (action === "route_release") {
-      // Escrow wallet holds: principal + escrow fee
-      // Vendor gets: 100% principal (preserved)
-      // Escrow fee trickles: → Transaction Wallet
+      // Escrow wallet holds: principal + escrow deposit
+      // Release: 1.0% escrow service fee deducted from locked amount → Transaction Wallet
+      // Vendor gets: locked amount minus escrow service fee
+      // Escrow wallet net balance = 0 after forwarding
       const escrowPrincipal = tx.amount;
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const escrowFee = escrowServiceFee; // alias
+      const gasFee = FEE_RATES.gas.release;
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
@@ -441,11 +458,13 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
       const escrowPrincipal = tx.amount;
-      // Pre-paid escrow fee: part used to cover gas, remainder returned to buyer
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const estimatedGas = 0.03; // ~$0.03 Polygon gas, absorbed from escrow fee
-      const escrowFeeAfterGas = round(escrowFee - estimatedGas);
-      // Buyer gets: full principal + escrow fee minus gas absorbed
+      // Refund: ALL fees waived. Gas only.
+      const isCryptoRefund = paymentMethod === "crypto" || processor === "direct";
+      const gasFee = isCryptoRefund ? FEE_RATES.gas.refund_crypto : FEE_RATES.gas.refund_fiat;
+      // Buyer gets: full locked amount (principal + escrow deposit) minus gas
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      const escrowFee = escrowDeposit; // alias for compatibility
+      const escrowFeeAfterGas = round(escrowDeposit - gasFee);
       const totalRefund = round(escrowPrincipal + escrowFeeAfterGas);
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
@@ -524,22 +543,20 @@ Deno.serve(async (req) => {
       }
 
       const escrowPrincipal = tx.amount;
-      const prePaidEscrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const totalInEscrow = round(escrowPrincipal + prePaidEscrowFee);
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      const totalInEscrow = round(escrowPrincipal + escrowDeposit);
 
       const buyerAmount = round(escrowPrincipal * buyerShare);
       const vendorGross = round(escrowPrincipal * vendorShare);
 
-      // Escrow fee halved from original rate, vendor side only
-      const originalMilestoneRate = body.originalMilestoneEscrowRate ?? FEE_RATES.escrow_service;
-      const halvedRate = originalMilestoneRate / 2;
-      const vendorEscrowFee = round(vendorGross * (halvedRate / 100));
+      // 1.0% escrow fee on VENDOR share only
+      const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // Gas absorbed from pre-paid escrow fee — $0 to buyer and vendor
-      const estimatedGasTotal = 0.05; // ~$0.05 total for 2 transfers
-      // Remaining escrow fee from pre-paid amount: trickle to Transaction Wallet minus gas
-      const feeToTrickle = round(prePaidEscrowFee - vendorEscrowFee - estimatedGasTotal);
+      // Gas for split payout
+      const gasFee = FEE_RATES.gas.split;
+      // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
+      const feeToTrickle = round(vendorEscrowFee + escrowDeposit - gasFee);
 
       const transfers = [];
 

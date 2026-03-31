@@ -86,12 +86,16 @@ const FeeComparisonSection = () => {
                 <span className="text-right font-medium">{FEE_CATEGORIES.processor.range}</span>
               </div>
               <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.escrow.label} (pre-paid at checkout)</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.escrow.display}</span>
+                <span className="text-muted-foreground">{FEE_CATEGORIES.escrowDeposit.label} (at checkout)</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.escrowDeposit.display}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <span className="text-muted-foreground">{FEE_CATEGORIES.escrowService.label} (at release)</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.escrowService.display}</span>
               </div>
               <div className="grid grid-cols-2 gap-1">
                 <span className="text-muted-foreground">{FEE_CATEGORIES.gas.label}</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.gas.estimate}</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.gas.checkout}</span>
               </div>
               <div className="border-t border-border pt-2 space-y-1">
                 <p className="text-muted-foreground">
