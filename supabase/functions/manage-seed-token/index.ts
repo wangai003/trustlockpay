@@ -164,19 +164,19 @@ Deno.serve(async (req) => {
 
     switch (action) {
       // ─── Generate or retrieve seed token (dual-token architecture) ─────
-      // OS Pay token  → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
-      // OS Payout token → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
-      // Trickle-down: escrow fees (stablecoins) flow from Escrow → Transaction
-      //               wallet via the OS Pay token — no conversion needed
+      // wallet_purpose='pay'    → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
+      // wallet_purpose='payout' → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
       case "get_or_create_token": {
         const targetUserId = params.userId || userId;
         if (!targetUserId) throw new Error("User ID required");
 
-        // Purpose determines which wallet this token is hardwired to
-        const purpose: string = params.purpose || "os_pay";
-        const walletAddress = purpose === "os_payout"
-          ? AZIX_ESCROW_WALLET       // Escrow disbursement wallet
-          : AZIX_TRANSACTION_WALLET; // Revenue & fees collection wallet
+        // Accept wallet_purpose ('pay' | 'payout') — maps to internal purpose
+        const walletPurpose: string = params.wallet_purpose || params.purpose || "pay";
+        const purpose = walletPurpose === "payout" ? "os_payout" : "os_pay";
+        const walletAddress = walletPurpose === "payout"
+          ? AZIX_ESCROW_WALLET
+          : AZIX_TRANSACTION_WALLET;
+        const walletPurposeLabel = walletPurpose === "payout" ? "payout" : "pay";
 
         const { data: existing } = await supabase
           .from("seed_tokens")
@@ -188,7 +188,13 @@ Deno.serve(async (req) => {
 
         if (existing) {
           return new Response(
-            JSON.stringify({ success: true, token: existing, purpose }),
+            JSON.stringify({
+              success: true,
+              token: existing,
+              purpose,
+              wallet_purpose: walletPurposeLabel,
+              wallet_address: walletAddress,
+            }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -200,6 +206,7 @@ Deno.serve(async (req) => {
             user_id: targetUserId,
             token,
             wallet_public_key: walletAddress,
+            wallet_purpose: walletPurposeLabel,
             purpose,
           })
           .select()
@@ -208,7 +215,13 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         return new Response(
-          JSON.stringify({ success: true, token: newToken, purpose }),
+          JSON.stringify({
+            success: true,
+            token: newToken,
+            purpose,
+            wallet_purpose: walletPurposeLabel,
+            wallet_address: walletAddress,
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -237,13 +250,22 @@ Deno.serve(async (req) => {
 
         const confirmationCode = generateConfirmationCode();
 
+        // Compute trickle metadata
+        const effectivePayoutType = payoutType || "release";
+        const trickleRule = effectivePayoutType === "refund"
+          ? "none"
+          : effectivePayoutType === "split"
+            ? "vendor_share_only"
+            : "full_escrow_fee";
+        const trickleAmount = effectivePayoutType === "refund" ? 0 : fees.feeTrickleToTransactionWallet;
+
         const { data: payout, error } = await supabase
           .from("payout_requests")
           .insert({
             user_id: userId,
             seed_token: seedToken,
             role: payoutRole,
-            payout_type: payoutType || "release",
+            payout_type: effectivePayoutType,
             transaction_id: transactionId || null,
             order_number: orderNumber || null,
             amount: amountNum,
@@ -251,21 +273,24 @@ Deno.serve(async (req) => {
             net_amount: fees.netAmount,
             payment_category: paymentCategory,
             payment_provider: paymentProvider,
+            trickle_amount: trickleAmount,
+            trickle_rule: trickleRule,
+            escrow_fee_deducted: fees.escrowFee,
             provider_details: {
               ...providerDetails,
               processor,
-                feeBreakdown: {
-                  trustlockFee: fees.trustlockFee,
-                  processorFee: fees.processorFee,
-                  escrowFee: fees.escrowFee,
-                  gasFee: fees.gasFee,
-                  transactionWallet: AZIX_TRANSACTION_WALLET,
-                  escrowWallet: AZIX_ESCROW_WALLET,
-                  transactionWalletReceives: fees.transactionWalletReceives,
-                  escrowWalletReceives: fees.escrowWalletReceives,
-                  feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
-                  trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
-                },
+              feeBreakdown: {
+                trustlockFee: fees.trustlockFee,
+                processorFee: fees.processorFee,
+                escrowFee: fees.escrowFee,
+                gasFee: fees.gasFee,
+                transactionWallet: AZIX_TRANSACTION_WALLET,
+                escrowWallet: AZIX_ESCROW_WALLET,
+                transactionWalletReceives: fees.transactionWalletReceives,
+                escrowWalletReceives: fees.escrowWalletReceives,
+                feeTrickleToTransactionWallet: trickleAmount,
+                trickleRule,
+              },
             },
             mode: mode || "local",
             status: "processing",
@@ -326,11 +351,20 @@ Deno.serve(async (req) => {
             .eq("id", payout.id);
         }
 
+        const trickle_metadata = effectivePayoutType === "refund"
+          ? null
+          : {
+              trickle_to: "transaction_wallet",
+              trickle_amount: trickleAmount,
+              trickle_rule: trickleRule,
+            };
+
         return new Response(
           JSON.stringify({
             success: true,
             payout,
             confirmationCode,
+            trickle_metadata,
             walletRouting: {
               transactionWallet: AZIX_TRANSACTION_WALLET,
               transactionWalletReceives: fees.transactionWalletReceives,
@@ -481,13 +515,14 @@ Deno.serve(async (req) => {
         if (!orderId || !seedToken || !payoutType) throw new Error("orderId, seedToken, and payoutType are required");
         if (!["release", "refund", "split"].includes(payoutType)) throw new Error("payoutType must be release, refund, or split");
 
-        // Verify seed token matches user's active token
+        // Verify seed token matches user's active payout token
         const { data: tokenRecord } = await supabase
           .from("seed_tokens")
           .select("*")
           .eq("user_id", userId)
+          .eq("purpose", "os_payout")
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
 
         if (!tokenRecord || tokenRecord.token !== seedToken) {
           return new Response(
@@ -526,6 +561,13 @@ Deno.serve(async (req) => {
           payoutType === "split" && userRole === "vendor" ? 1 : undefined
         );
 
+        const vpTrickleRule = payoutType === "refund"
+          ? "none"
+          : payoutType === "split"
+            ? "vendor_share_only"
+            : "full_escrow_fee";
+        const vpTrickleAmount = payoutType === "refund" ? 0 : fees.feeTrickleToTransactionWallet;
+
         const { data: payoutReq, error: prErr } = await supabase
           .from("payout_requests")
           .insert({
@@ -537,6 +579,9 @@ Deno.serve(async (req) => {
             amount: order.amount || 0,
             fee: fees.totalFees,
             net_amount: fees.netAmount,
+            trickle_amount: vpTrickleAmount,
+            trickle_rule: vpTrickleRule,
+            escrow_fee_deducted: fees.escrowFee,
             status: "verified",
             confirmation_code: confirmationCode,
             provider_details: {
@@ -549,8 +594,8 @@ Deno.serve(async (req) => {
                 escrowWallet: AZIX_ESCROW_WALLET,
                 transactionWalletReceives: fees.transactionWalletReceives,
                 escrowWalletReceives: fees.escrowWalletReceives,
-                feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
-                trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
+                feeTrickleToTransactionWallet: vpTrickleAmount,
+                trickleRule: vpTrickleRule,
               },
             },
           })
@@ -559,11 +604,20 @@ Deno.serve(async (req) => {
 
         if (prErr) throw prErr;
 
+        const vpTrickleMeta = payoutType === "refund"
+          ? null
+          : {
+              trickle_to: "transaction_wallet",
+              trickle_amount: vpTrickleAmount,
+              trickle_rule: vpTrickleRule,
+            };
+
         return new Response(
           JSON.stringify({
             success: true,
             verified: true,
             payoutRequest: payoutReq,
+            trickle_metadata: vpTrickleMeta,
             walletRouting: {
               transactionWallet: AZIX_TRANSACTION_WALLET,
               escrowWallet: AZIX_ESCROW_WALLET,
