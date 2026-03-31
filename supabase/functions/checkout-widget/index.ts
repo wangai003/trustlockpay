@@ -38,6 +38,10 @@ interface CheckoutSession {
   escrowFee: number;
   platformFee: number;
   processorFee: number;
+  gasFee: number;
+  orderType: "simple" | "milestone" | "hybrid";
+  industry?: string;
+  feeBreakdownJson: Record<string, unknown>;
 }
 
 interface ProcessorResult {
@@ -53,6 +57,10 @@ interface ProcessorResult {
 // ─── Helpers ───────────────────────────────────────────────
 function generateSessionId(): string {
   return `cs_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+}
+
+function generateConfirmationCode(): string {
+  return `TL-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 }
 
 function getSupabase() {
@@ -72,30 +80,103 @@ function round(n: number): number {
 const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d";
 const AZIX_ESCROW_WALLET = "0x4E1c...A83b";
 
-// ─── Fee calculation (mirrors feeEngine — MUST stay in sync) ──
-function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean, taxTotal: number = 0) {
-  const trustlockRate = isCrypto ? 1.0 : 1.5;
-  const escrowRate = 1.0; // 1% escrow service fee — pre-paid at checkout
+// ─── Auto-Processor Selection (cost-optimized) ────────────
+// Priority: direct (crypto, 0%) → thirdweb (1.0%) → coinbase/transak (1.5%) → yellow_card (2.0%) → stripe (2.9%)
+interface ProcessorOption {
+  id: string;
+  name: string;
+  feeRate: number;
+  supportsCrypto: boolean;
+  supportsFiat: boolean;
+  onRamp: boolean;
+  offRamp: boolean;
+  regions: string[];
+}
 
-  const trustlockFee = round(amount * (trustlockRate / 100));
-  const processorFee = isCrypto ? 0 : round(amount * (processorFeeRate / 100));
-  const escrowFee = round(amount * (escrowRate / 100));
-  const gasFee = 0; // $0 — ALL gas covered by TrustLock (from platform revenue or escrow fee pool)
-  const totalFees = round(trustlockFee + processorFee + escrowFee + gasFee);
+const PROCESSOR_REGISTRY: ProcessorOption[] = [
+  { id: "direct", name: "Direct (On-chain)", feeRate: 0, supportsCrypto: true, supportsFiat: false, onRamp: false, offRamp: false, regions: ["global"] },
+  { id: "thirdweb", name: "Thirdweb", feeRate: 1.0, supportsCrypto: true, supportsFiat: true, onRamp: true, offRamp: false, regions: ["global"] },
+  { id: "coinbase", name: "Coinbase", feeRate: 1.5, supportsCrypto: true, supportsFiat: true, onRamp: true, offRamp: true, regions: ["US", "EU", "UK", "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt", "Uganda", "Tanzania", "Rwanda", "global"] },
+  { id: "transak", name: "Transak", feeRate: 1.5, supportsCrypto: true, supportsFiat: true, onRamp: true, offRamp: true, regions: ["US", "EU", "UK", "IN", "BR", "MX", "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt", "global"] },
+  { id: "yellow_card", name: "Yellow Card", feeRate: 2.0, supportsCrypto: true, supportsFiat: true, onRamp: true, offRamp: true, regions: ["Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt", "Uganda", "Tanzania", "Rwanda", "Botswana", "Senegal"] },
+  { id: "stripe", name: "Stripe", feeRate: 2.9, supportsCrypto: false, supportsFiat: true, onRamp: true, offRamp: false, regions: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"] },
+];
+
+function selectCheapestProcessor(country: string, isCrypto: boolean): ProcessorResult {
+  for (const proc of PROCESSOR_REGISTRY) {
+    if (isCrypto && !proc.supportsCrypto) continue;
+    if (!isCrypto && !proc.supportsFiat) continue;
+    // Direct only for crypto
+    if (proc.id === "direct" && !isCrypto) continue;
+    // Region check
+    const regionMatch = proc.regions.includes(country) || proc.regions.includes("global");
+    if (!regionMatch) continue;
+
+    return {
+      processorId: proc.id,
+      processorName: proc.name,
+      feeRate: proc.feeRate,
+      supportsFiat: proc.supportsFiat,
+      supportsCrypto: proc.supportsCrypto,
+      onRamp: proc.onRamp,
+      offRamp: proc.offRamp,
+    };
+  }
+  // Fallback to stripe
+  return {
+    processorId: "stripe",
+    processorName: "Stripe",
+    feeRate: 2.9,
+    supportsFiat: true,
+    supportsCrypto: false,
+    onRamp: true,
+    offRamp: false,
+  };
+}
+
+// ─── 3-Way Fee Routing ────────────────────────────────────
+function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean, taxTotal: number = 0) {
+  // Platform fee: 1.0% crypto, 1.5% fiat
+  const platformRate = isCrypto ? 1.0 : 1.5;
+  const platformFee = round(amount * (platformRate / 100));
+
+  // Processor fee: 0 for direct crypto, else processor rate
+  const processorFee = isCrypto && processorFeeRate === 0 ? 0 : round(amount * (processorFeeRate / 100));
+
+  // Escrow deposit: 0.5% (held until release when 1.0% escrow service fee applies)
+  const escrowDeposit = round(amount * (0.5 / 100));
+
+  // Gas fee
+  const gasFee = 0.02;
+
+  const totalFees = round(platformFee + processorFee + escrowDeposit + gasFee);
   const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
+  // Build lockFunds calldata for smart contract
+  const lockFundsCalldata = {
+    function: "lockFunds",
+    params: {
+      amount: Math.round(amount * 1e6), // USDC 6 decimals
+      platformFee: Math.round(platformFee * 1e6),
+      escrowDeposit: Math.round(escrowDeposit * 1e6),
+      processorFee: Math.round(processorFee * 1e6),
+    },
+  };
+
   return {
-    trustlockFee,
+    platformFee,
     processorFee,
-    escrowFee,
+    escrowDeposit,
     gasFee,
     totalFees,
     taxTotal,
     totalBuyerCharge,
     netAmount: amount, // Vendor receives 100% of escrow principal
-    // Wallet routing
-    escrowWalletReceives: round(amount + escrowFee), // principal + escrow fee
-    transactionWalletReceives: round(trustlockFee + taxTotal), // platform fee + taxes
+    // 3-way wallet routing
+    transactionWalletReceives: round(platformFee + taxTotal), // immediate at checkout
+    escrowWalletReceives: round(amount + escrowDeposit), // principal + deposit held in escrow
+    processorReceives: processorFee,
+    lockFundsCalldata,
   };
 }
 
@@ -148,7 +229,7 @@ async function verifyStripeSignature(payload: string, sigHeader: string): Promis
   }
 }
 
-// ─── Action: Initiate Checkout ─────────────────────────────
+// ─── Action: Initiate Checkout (init_session) ──────────────
 async function initiateCheckout(params: Record<string, unknown>): Promise<Response> {
   const { vendorId, amount, item, buyerEmail, buyerName, buyerLocation, paymentMethod } = params;
 
@@ -174,28 +255,20 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
   const isCrypto = paymentMethod === "crypto";
   const country = String(buyerLocation || "US");
 
-  // Call select-processor (now returns limits)
-  const processor = (await callEdgeFunction("select-processor", {
-    country,
-    isCrypto,
-    kyc_tier: params.kyc_tier || "basic",
-  })) as ProcessorResult & { limits?: Record<string, unknown> };
+  // ── Auto-processor selection (cost-optimized priority) ──
+  const processor = selectCheapestProcessor(country, isCrypto);
 
-  // ── Enforce processor transaction limits ──
-  const procLimits = processor.limits as { minPerTx?: number; maxPerTx?: number } | undefined;
-  if (procLimits) {
-    if (procLimits.minPerTx && numAmount < procLimits.minPerTx) {
-      return errorResponse(
-        `Amount $${numAmount} is below the minimum of $${procLimits.minPerTx} for ${processor.processorName}`,
-        400
-      );
-    }
-    if (procLimits.maxPerTx && numAmount > procLimits.maxPerTx) {
-      return errorResponse(
-        `Amount $${numAmount.toLocaleString()} exceeds the per-transaction limit of $${(procLimits.maxPerTx as number).toLocaleString()} for ${processor.processorName} at your verification level. Upgrade KYC to increase limits.`,
-        403
-      );
-    }
+  // ── Enforce processor transaction limits via select-processor ──
+  const limitCheck = (await callEdgeFunction("select-processor", {
+    action: "check_limits",
+    user_id: params.buyer_id || "guest",
+    amount: numAmount,
+    processor_id: processor.processorId,
+    kyc_tier: params.kyc_tier || "basic",
+  })) as { allowed?: boolean; errors?: string[] };
+
+  if (limitCheck.allowed === false && limitCheck.errors?.length) {
+    return errorResponse(limitCheck.errors[0], 403);
   }
 
   // ── AML threshold logging ──
@@ -218,7 +291,6 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
   }
 
   // ── Dynamic Tax Resolution ──
-  // Call tax-resolve engine for jurisdiction-based taxes/tariffs
   let taxBreakdown: TaxLineResult[] = [];
   let taxTotal = 0;
   try {
@@ -236,7 +308,6 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       taxTotal = round(taxResult.total_tax || taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
     }
   } catch {
-    // Non-blocking — proceed without auto-taxes; vendor/buyer can add manually
     console.log("Tax resolution skipped or failed — proceeding without auto-taxes");
   }
 
@@ -253,8 +324,30 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     taxTotal = round(taxBreakdown.reduce((s, t) => s + (t.amount || 0), 0));
   }
 
-  // Calculate fees (now includes tax total)
+  // ── 3-Way Fee Calculation ──
   const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto, taxTotal);
+
+  // ── Determine order_type from vendor widget config ──
+  let orderType: "simple" | "milestone" | "hybrid" = "simple";
+  try {
+    const { data: vendorSettings } = await supabase
+      .from("vendor_settings")
+      .select("supported_order_types, default_order_type")
+      .eq("vendor_id", String(vendorId))
+      .single();
+
+    if (vendorSettings?.default_order_type) {
+      const dt = String(vendorSettings.default_order_type);
+      if (dt === "milestone" || dt === "hybrid") orderType = dt;
+    }
+    // Allow override from params
+    if (params.order_type) {
+      const ot = String(params.order_type);
+      if (ot === "milestone" || ot === "hybrid" || ot === "simple") orderType = ot;
+    }
+  } catch {
+    // Default to simple
+  }
 
   // Call auto-signature-protocol before creating session
   let contractResult: Record<string, unknown> = {};
@@ -267,8 +360,29 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       buyer_name: String(buyerName),
     })) as Record<string, unknown>;
   } catch {
-    // Non-blocking — proceed without contract
+    // Non-blocking
   }
+
+  // Fee breakdown JSON for storage
+  const feeBreakdownJson = {
+    platformFee: fees.platformFee,
+    processorFee: fees.processorFee,
+    escrowDeposit: fees.escrowDeposit,
+    gasFee: fees.gasFee,
+    totalFees: fees.totalFees,
+    taxTotal,
+    taxBreakdown,
+    processorId: processor.processorId,
+    processorName: processor.processorName,
+    processorRate: processor.feeRate,
+    isCrypto,
+    routing: {
+      transactionWallet: fees.transactionWalletReceives,
+      escrowWallet: fees.escrowWalletReceives,
+      processor: fees.processorReceives,
+    },
+    lockFundsCalldata: fees.lockFundsCalldata,
+  };
 
   // Create session
   const sessionId = generateSessionId();
@@ -290,9 +404,13 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     vendorName,
     taxBreakdown,
     taxTotal,
-    escrowFee: fees.escrowFee,
-    platformFee: fees.trustlockFee,
+    escrowFee: fees.escrowDeposit,
+    platformFee: fees.platformFee,
     processorFee: fees.processorFee,
+    gasFee: fees.gasFee,
+    orderType,
+    industry: params.industry ? String(params.industry) : undefined,
+    feeBreakdownJson,
   };
 
   sessions.set(sessionId, session);
@@ -341,22 +459,27 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       amount: numAmount,
       fee: fees.totalFees,
       total: session.total,
+      orderType,
       processor: {
         id: processor.processorId,
         name: processor.processorName,
         feeRate: processor.feeRate,
       },
       feeBreakdown: {
-        ...fees,
+        platformFee: fees.platformFee,
+        processorFee: fees.processorFee,
+        escrowDeposit: fees.escrowDeposit,
+        gasFee: fees.gasFee,
+        totalFees: fees.totalFees,
         taxBreakdown,
         taxTotal,
-        gasCoverage: "All gas fees covered by TrustLock — $0 to buyer/vendor",
       },
       walletRouting: {
-        escrowWallet: { address: AZIX_ESCROW_WALLET, receives: fees.escrowWalletReceives, description: "Escrow principal + pre-paid 1% escrow fee" },
-        transactionWallet: { address: AZIX_TRANSACTION_WALLET, receives: fees.transactionWalletReceives, description: "Platform fee + taxes/tariffs" },
-        processorReceives: fees.processorFee,
+        transactionWallet: { address: AZIX_TRANSACTION_WALLET, receives: fees.transactionWalletReceives, description: "Platform fee + taxes — immediate at checkout" },
+        escrowWallet: { address: AZIX_ESCROW_WALLET, receives: fees.escrowWalletReceives, description: "Escrow principal + 0.5% deposit — held until release" },
+        processorReceives: fees.processorReceives,
       },
+      smartContract: fees.lockFundsCalldata,
       walletAddresses: session.walletAddresses,
       vendorName,
       item,
@@ -369,9 +492,9 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       disclosure: {
         escrowPrincipalPreserved: true,
         vendorReceives: `100% of escrow principal ($${numAmount.toFixed(2)})`,
-        gasFeePolicy: "All gas fees absorbed by TrustLock — from platform revenue (checkout/release) or escrow fee pool (refund/split)",
-        refundPolicy: "Full principal + escrow fee returned. Gas absorbed from escrow fee — $0 charged to buyer.",
-        splitPayoutPolicy: "Escrow fee halved to 0.5%, applied to vendor share only. Gas absorbed from escrow fee for both parties.",
+        gasFeePolicy: "Gas absorbed by TrustLock — $0.02 per transaction",
+        refundPolicy: "Full principal + escrow deposit returned. All fees waived.",
+        splitPayoutPolicy: "1.0% escrow fee applied to vendor share only.",
       },
     },
   });
@@ -386,11 +509,13 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   if (!session) return errorResponse("Session not found or expired", 404);
   if (session.status === "confirmed") return errorResponse("Payment already confirmed", 400);
 
-  // Create transaction via escrow-manager lock_funds
+  const supabase = getSupabase();
+
+  // Create transaction via escrow-manager lock_funds with fee breakdown
   const lockResult = (await callEdgeFunction("escrow-manager", {
     action: "lock_funds",
     vendor_id: session.vendorId,
-    buyer_id: null, // Guest buyer — no account
+    buyer_id: params.buyer_id || null, // Guest buyer — may not have account
     amount: session.amount,
     item: session.item,
     buyer_name: session.buyerName,
@@ -398,6 +523,8 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     buyer_location: session.buyerLocation,
     processor: session.processor.processorId,
     payment_type: session.paymentMethod === "crypto" ? "checkout_crypto" : "checkout_fiat",
+    order_type: session.orderType,
+    industry: session.industry,
   })) as Record<string, unknown>;
 
   if (!lockResult.success) {
@@ -408,13 +535,58 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   session.status = "confirmed";
 
   const tx = lockResult.transaction as Record<string, unknown>;
+  const transactionId = tx?.id as string | undefined;
+  const txId = tx?.tx_id as string | undefined;
+  const confirmationCode = generateConfirmationCode();
+
+  // Store fee breakdown in the transaction (update with JSON)
+  if (transactionId) {
+    await supabase
+      .from("transactions")
+      .update({
+        fee: session.fee,
+        order_type: session.orderType,
+      })
+      .eq("id", transactionId);
+  }
+
+  // ── Standalone buyer flow: generate signup/login links ──
+  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  const signupLink = `${baseUrl}/buyer/signup?ref=${txId}&vendor=${session.vendorId}`;
+  const loginLink = `${baseUrl}/buyer/login?ref=${txId}`;
+
+  // Store in order_carbon_copies
+  await supabase.from("order_carbon_copies").insert({
+    transaction_id: transactionId || null,
+    order_number: txId || null,
+    vendor_id: session.vendorId,
+    buyer_id: params.buyer_id || null,
+    buyer_name: session.buyerName,
+    vendor_name: session.vendorName,
+    item: session.item,
+    amount: session.amount,
+    fee: session.fee,
+    status: "active",
+    confirmation_code: confirmationCode,
+    checkout_details: session.feeBreakdownJson,
+    signup_link: signupLink,
+    login_link: loginLink,
+  });
 
   return jsonResponse({
     success: true,
     transaction: tx,
-    confirmationCode: lockResult.confirmationCode,
-    orderNumber: tx?.tx_id,
+    confirmationCode,
+    orderNumber: txId,
+    orderType: session.orderType,
     paymentProof: paymentProof || null,
+    feeBreakdown: session.feeBreakdownJson,
+    smartContract: session.feeBreakdownJson.lockFundsCalldata,
+    buyerLinks: {
+      signupLink,
+      loginLink,
+      message: "Share these links with the buyer to track their order.",
+    },
   });
 }
 
@@ -474,7 +646,6 @@ async function handleWebhook(req: Request, body: Record<string, unknown>): Promi
   // ─ Yellow Card webhook
   if (yellowCardSignature) {
     source = "yellow_card";
-    // Yellow Card uses API secret for HMAC
     const secret = Deno.env.get("YELLOW_CARD_API_SECRET");
     if (secret) {
       try {
@@ -560,10 +731,10 @@ async function getVendorConfig(params: Record<string, unknown>): Promise<Respons
     .eq("id", String(vendorId))
     .single();
 
-  // Get vendor settings
+  // Get vendor settings (including order type config)
   const { data: settings } = await supabase
     .from("vendor_settings")
-    .select("pay_enabled, payout_tier")
+    .select("pay_enabled, payout_tier, supported_order_types, default_order_type")
     .eq("vendor_id", String(vendorId))
     .single();
 
@@ -584,7 +755,7 @@ async function getVendorConfig(params: Record<string, unknown>): Promise<Respons
     basic: 50,
     starter: 200,
     growth: 1000,
-    enterprise: -1, // unlimited
+    enterprise: -1,
   };
 
   const monthlyLimit = planLimits[planTier] ?? 50;
@@ -613,6 +784,10 @@ async function getVendorConfig(params: Record<string, unknown>): Promise<Respons
     usedThisMonth: used,
     remainingOrders: remaining === -1 ? "unlimited" : remaining,
     vendorName: profile?.full_name || "Vendor",
+    orderTypes: {
+      supported: settings?.supported_order_types || ["simple"],
+      default: settings?.default_order_type || "simple",
+    },
   });
 }
 
@@ -647,6 +822,7 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "initiate_checkout":
+      case "init_session":
         return await initiateCheckout(params);
       case "confirm_payment":
         return await confirmPayment(params);
@@ -656,7 +832,7 @@ Deno.serve(async (req) => {
         return await getVendorConfig(params);
       default:
         return errorResponse(
-          `Unknown action: ${action}. Valid: initiate_checkout, confirm_payment, handle_webhook, get_vendor_config`,
+          `Unknown action: ${action}. Valid: init_session, confirm_payment, handle_webhook, get_vendor_config`,
           400
         );
     }
