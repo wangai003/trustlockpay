@@ -543,22 +543,20 @@ Deno.serve(async (req) => {
       }
 
       const escrowPrincipal = tx.amount;
-      const prePaidEscrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const totalInEscrow = round(escrowPrincipal + prePaidEscrowFee);
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      const totalInEscrow = round(escrowPrincipal + escrowDeposit);
 
       const buyerAmount = round(escrowPrincipal * buyerShare);
       const vendorGross = round(escrowPrincipal * vendorShare);
 
-      // Escrow fee halved from original rate, vendor side only
-      const originalMilestoneRate = body.originalMilestoneEscrowRate ?? FEE_RATES.escrow_service;
-      const halvedRate = originalMilestoneRate / 2;
-      const vendorEscrowFee = round(vendorGross * (halvedRate / 100));
+      // 1.0% escrow fee on VENDOR share only
+      const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // Gas absorbed from pre-paid escrow fee — $0 to buyer and vendor
-      const estimatedGasTotal = 0.05; // ~$0.05 total for 2 transfers
-      // Remaining escrow fee from pre-paid amount: trickle to Transaction Wallet minus gas
-      const feeToTrickle = round(prePaidEscrowFee - vendorEscrowFee - estimatedGasTotal);
+      // Gas for split payout
+      const gasFee = FEE_RATES.gas.split;
+      // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
+      const feeToTrickle = round(vendorEscrowFee + escrowDeposit - gasFee);
 
       const transfers = [];
 

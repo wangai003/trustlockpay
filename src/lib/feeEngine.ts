@@ -405,15 +405,17 @@ export function selectProcessor(
 // Computes the complete breakdown for the invoice stage so buyers
 // see exactly what they pay and vendors know the full escrow principal.
 export interface InvoiceFeeCalculation {
-  escrowPrincipal: number;     // Amount vendor will receive (preserved)
-  escrowFee: number;           // 1% of principal — added on top
+  escrowPrincipal: number;     // Amount vendor will receive (minus escrow service fee at release)
+  escrowDeposit: number;       // 0.5% of principal — added on top at checkout
   platformFee: number;         // TrustLock platform fee — added on top
   processorFee: number;        // Processor fee — added on top
   taxAmount: number;           // Taxes/tariffs from invoice
-  gasFee: number;              // $0 — covered by platform
+  gasFee: number;              // $0.02 gas
   totalBuyerCharge: number;    // What the buyer actually pays
-  escrowWalletReceives: number;  // principal + escrow fee
+  escrowWalletReceives: number;  // principal + escrow deposit
   transactionWalletReceives: number; // platform fee + taxes
+  // Legacy alias
+  escrowFee: number;
 }
 
 export function calculateInvoiceFees(
@@ -425,22 +427,24 @@ export function calculateInvoiceFees(
   const platformRate = isCrypto ? 1.0 : 1.5;
   const processorRate = PROCESSORS[processorId]?.feeRate ?? 0;
 
-  const escrowFee = round(escrowPrincipal * 0.01);         // 1% of principal
+  const escrowDeposit = round(escrowPrincipal * 0.005);    // 0.5% escrow deposit
   const platformFee = round(escrowPrincipal * (platformRate / 100));
   const processorFee = processorId === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
   const tax = round(taxAmount);
+  const gasFee = 0.02;
 
-  const totalBuyerCharge = round(escrowPrincipal + escrowFee + platformFee + processorFee + tax);
+  const totalBuyerCharge = round(escrowPrincipal + escrowDeposit + platformFee + processorFee + tax + gasFee);
 
   return {
     escrowPrincipal,
-    escrowFee,
+    escrowDeposit,
+    escrowFee: escrowDeposit, // legacy alias
     platformFee,
     processorFee,
     taxAmount: tax,
-    gasFee: 0,
+    gasFee,
     totalBuyerCharge,
-    escrowWalletReceives: round(escrowPrincipal + escrowFee),
+    escrowWalletReceives: round(escrowPrincipal + escrowDeposit),
     transactionWalletReceives: round(platformFee + tax),
   };
 }
