@@ -502,6 +502,7 @@ const TrustLockOSPayout = ({
   };
 
   const handleConfirmAndPay = async () => {
+    console.log("[OSPayout] handleConfirmAndPay called", { isTestnet, role, payoutType, orderNumber, amountNum, seedToken });
     setProcessing(true);
     // Keep reviewStep = true so the user sees the loading state
 
