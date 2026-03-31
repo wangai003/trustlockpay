@@ -91,7 +91,7 @@ const InvoiceFeeCalculator = ({
 
         {isCrypto && (
           <div className="text-[10px] text-muted-foreground pt-1">
-            All-in rate: <strong className="text-foreground">{ALL_IN_RANGES.cryptoDirect.range}</strong> (Platform {FEE_CATEGORIES.platform.crypto.display} + Escrow {FEE_CATEGORIES.escrow.display})
+            All-in rate: <strong className="text-foreground">{ALL_IN_RANGES.cryptoDirect.range}</strong> (Platform {FEE_CATEGORIES.platform.crypto.display} + Escrow Deposit {FEE_CATEGORIES.escrowDeposit.display})
           </div>
         )}
       </div>
