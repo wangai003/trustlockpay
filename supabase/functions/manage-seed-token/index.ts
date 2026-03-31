@@ -250,13 +250,22 @@ Deno.serve(async (req) => {
 
         const confirmationCode = generateConfirmationCode();
 
+        // Compute trickle metadata
+        const effectivePayoutType = payoutType || "release";
+        const trickleRule = effectivePayoutType === "refund"
+          ? "none"
+          : effectivePayoutType === "split"
+            ? "vendor_share_only"
+            : "full_escrow_fee";
+        const trickleAmount = effectivePayoutType === "refund" ? 0 : fees.feeTrickleToTransactionWallet;
+
         const { data: payout, error } = await supabase
           .from("payout_requests")
           .insert({
             user_id: userId,
             seed_token: seedToken,
             role: payoutRole,
-            payout_type: payoutType || "release",
+            payout_type: effectivePayoutType,
             transaction_id: transactionId || null,
             order_number: orderNumber || null,
             amount: amountNum,
@@ -264,21 +273,24 @@ Deno.serve(async (req) => {
             net_amount: fees.netAmount,
             payment_category: paymentCategory,
             payment_provider: paymentProvider,
+            trickle_amount: trickleAmount,
+            trickle_rule: trickleRule,
+            escrow_fee_deducted: fees.escrowFee,
             provider_details: {
               ...providerDetails,
               processor,
-                feeBreakdown: {
-                  trustlockFee: fees.trustlockFee,
-                  processorFee: fees.processorFee,
-                  escrowFee: fees.escrowFee,
-                  gasFee: fees.gasFee,
-                  transactionWallet: AZIX_TRANSACTION_WALLET,
-                  escrowWallet: AZIX_ESCROW_WALLET,
-                  transactionWalletReceives: fees.transactionWalletReceives,
-                  escrowWalletReceives: fees.escrowWalletReceives,
-                  feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
-                  trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
-                },
+              feeBreakdown: {
+                trustlockFee: fees.trustlockFee,
+                processorFee: fees.processorFee,
+                escrowFee: fees.escrowFee,
+                gasFee: fees.gasFee,
+                transactionWallet: AZIX_TRANSACTION_WALLET,
+                escrowWallet: AZIX_ESCROW_WALLET,
+                transactionWalletReceives: fees.transactionWalletReceives,
+                escrowWalletReceives: fees.escrowWalletReceives,
+                feeTrickleToTransactionWallet: trickleAmount,
+                trickleRule,
+              },
             },
             mode: mode || "local",
             status: "processing",
