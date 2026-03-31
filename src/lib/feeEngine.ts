@@ -299,51 +299,51 @@ interface FeeRule {
 
 const FEE_RULES: Record<TransactionType, FeeRule> = {
   checkout_fiat: {
-    trustlockRate: 1.5,
-    escrowRate: 1.0,       // 1% escrow fee charged UPFRONT at checkout
-    gasEstimate: 0,        // Gas covered by platform for inbound routing
+    trustlockRate: 1.5,       // 1.5% platform fee
+    escrowRate: 0.5,          // 0.5% escrow deposit (held until release)
+    gasEstimate: 0.02,        // $0.02 gas
     escrowApplies: true,
     escrowVendorOnly: false,
   },
   checkout_crypto: {
-    trustlockRate: 1.0,
-    escrowRate: 1.0,       // 1% escrow fee charged UPFRONT at checkout
-    gasEstimate: 0,        // Gas covered by platform for inbound routing
+    trustlockRate: 1.0,       // 1.0% platform fee
+    escrowRate: 0.5,          // 0.5% escrow deposit
+    gasEstimate: 0.02,        // $0.02 gas
     escrowApplies: true,
     escrowVendorOnly: false,
   },
   release_to_vendor: {
     trustlockRate: 0,
-    escrowRate: 0,         // Already pre-paid at checkout — no additional charge
-    gasEstimate: 0,        // Gas covered by platform for release
-    escrowApplies: false,
+    escrowRate: 1.0,          // 1.0% escrow service fee deducted at release
+    gasEstimate: 0.02,        // $0.02 gas
+    escrowApplies: true,
     escrowVendorOnly: false,
   },
   refund_crypto: {
     trustlockRate: 0,
-    escrowRate: 0,
-    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to buyer
+    escrowRate: 0,            // ALL fees waived on refund
+    gasEstimate: 0.02,        // $0.02 gas only
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   refund_fiat: {
     trustlockRate: 0,
-    escrowRate: 0,
-    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to buyer
+    escrowRate: 0,            // ALL fees waived on refund
+    gasEstimate: 0.05,        // $0.05 gas only (fiat off-ramp)
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   split_payout: {
     trustlockRate: 0,
-    escrowRate: 1.0,       // Halved from original milestone rate, vendor side only
-    gasEstimate: 0,        // Gas absorbed from pre-paid escrow fee — $0 to parties
+    escrowRate: 1.0,          // 1.0% escrow fee on VENDOR share only
+    gasEstimate: 0.04,        // $0.04 gas (dual disbursement)
     escrowApplies: true,
     escrowVendorOnly: true,
   },
   os_payment: {
-    trustlockRate: 1.5,
+    trustlockRate: 1.5,       // 1.5% platform fee, no escrow
     escrowRate: 0,
-    gasEstimate: 0,        // Gas covered by platform
+    gasEstimate: 0,
     escrowApplies: false,
     escrowVendorOnly: false,
   },
