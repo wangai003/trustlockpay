@@ -481,9 +481,14 @@ const TrustLockOSPayout = ({
   const fieldErrors = validationAttempted ? getFieldErrors() : {};
 
   const handleProceedToReview = () => {
+    console.log("[OSPayout] handleProceedToReview called", {
+      orderNumber, isAdmin, isCrypto, selectedProvider: selectedProvider?.name,
+      selectedCountry, activeFieldsLen: activeFields.length, formValid: isFormValid(),
+    });
     if (!isFormValid()) {
       setValidationAttempted(true);
       toast.error("Please complete all highlighted fields before proceeding");
+      console.log("[OSPayout] Form invalid — field errors:", getFieldErrors());
       return;
     }
     setValidationAttempted(false);
