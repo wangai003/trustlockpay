@@ -356,11 +356,14 @@ Deno.serve(async (req) => {
     //  ACTION: ROUTE_RELEASE — Vendor gets 100% principal
     // ══════════════════════════════════════════════════
     if (action === "route_release") {
-      // Escrow wallet holds: principal + escrow fee
-      // Vendor gets: 100% principal (preserved)
-      // Escrow fee trickles: → Transaction Wallet
+      // Escrow wallet holds: principal + escrow deposit
+      // Release: 1.0% escrow service fee deducted from locked amount → Transaction Wallet
+      // Vendor gets: locked amount minus escrow service fee
+      // Escrow wallet net balance = 0 after forwarding
       const escrowPrincipal = tx.amount;
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      const escrowFee = escrowServiceFee; // alias
+      const gasFee = FEE_RATES.gas.release;
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
