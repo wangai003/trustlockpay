@@ -560,6 +560,13 @@ Deno.serve(async (req) => {
           payoutType === "split" && userRole === "vendor" ? 1 : undefined
         );
 
+        const vpTrickleRule = payoutType === "refund"
+          ? "none"
+          : payoutType === "split"
+            ? "vendor_share_only"
+            : "full_escrow_fee";
+        const vpTrickleAmount = payoutType === "refund" ? 0 : fees.feeTrickleToTransactionWallet;
+
         const { data: payoutReq, error: prErr } = await supabase
           .from("payout_requests")
           .insert({
@@ -571,6 +578,9 @@ Deno.serve(async (req) => {
             amount: order.amount || 0,
             fee: fees.totalFees,
             net_amount: fees.netAmount,
+            trickle_amount: vpTrickleAmount,
+            trickle_rule: vpTrickleRule,
+            escrow_fee_deducted: fees.escrowFee,
             status: "verified",
             confirmation_code: confirmationCode,
             provider_details: {
@@ -583,8 +593,8 @@ Deno.serve(async (req) => {
                 escrowWallet: AZIX_ESCROW_WALLET,
                 transactionWalletReceives: fees.transactionWalletReceives,
                 escrowWalletReceives: fees.escrowWalletReceives,
-                feeTrickleToTransactionWallet: fees.feeTrickleToTransactionWallet,
-                trickleRule: payoutType === "refund" ? "none" : payoutType === "split" ? "vendor_share_only" : "full_escrow_fee",
+                feeTrickleToTransactionWallet: vpTrickleAmount,
+                trickleRule: vpTrickleRule,
               },
             },
           })
@@ -593,11 +603,20 @@ Deno.serve(async (req) => {
 
         if (prErr) throw prErr;
 
+        const vpTrickleMeta = payoutType === "refund"
+          ? null
+          : {
+              trickle_to: "transaction_wallet",
+              trickle_amount: vpTrickleAmount,
+              trickle_rule: vpTrickleRule,
+            };
+
         return new Response(
           JSON.stringify({
             success: true,
             verified: true,
             payoutRequest: payoutReq,
+            trickle_metadata: vpTrickleMeta,
             walletRouting: {
               transactionWallet: AZIX_TRANSACTION_WALLET,
               escrowWallet: AZIX_ESCROW_WALLET,
