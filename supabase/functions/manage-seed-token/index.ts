@@ -164,19 +164,19 @@ Deno.serve(async (req) => {
 
     switch (action) {
       // ─── Generate or retrieve seed token (dual-token architecture) ─────
-      // OS Pay token  → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
-      // OS Payout token → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
-      // Trickle-down: escrow fees (stablecoins) flow from Escrow → Transaction
-      //               wallet via the OS Pay token — no conversion needed
+      // wallet_purpose='pay'    → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
+      // wallet_purpose='payout' → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
       case "get_or_create_token": {
         const targetUserId = params.userId || userId;
         if (!targetUserId) throw new Error("User ID required");
 
-        // Purpose determines which wallet this token is hardwired to
-        const purpose: string = params.purpose || "os_pay";
-        const walletAddress = purpose === "os_payout"
-          ? AZIX_ESCROW_WALLET       // Escrow disbursement wallet
-          : AZIX_TRANSACTION_WALLET; // Revenue & fees collection wallet
+        // Accept wallet_purpose ('pay' | 'payout') — maps to internal purpose
+        const walletPurpose: string = params.wallet_purpose || params.purpose || "pay";
+        const purpose = walletPurpose === "payout" ? "os_payout" : "os_pay";
+        const walletAddress = walletPurpose === "payout"
+          ? AZIX_ESCROW_WALLET
+          : AZIX_TRANSACTION_WALLET;
+        const walletPurposeLabel = walletPurpose === "payout" ? "payout" : "pay";
 
         const { data: existing } = await supabase
           .from("seed_tokens")
@@ -188,7 +188,13 @@ Deno.serve(async (req) => {
 
         if (existing) {
           return new Response(
-            JSON.stringify({ success: true, token: existing, purpose }),
+            JSON.stringify({
+              success: true,
+              token: existing,
+              purpose,
+              wallet_purpose: walletPurposeLabel,
+              wallet_address: walletAddress,
+            }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -200,6 +206,7 @@ Deno.serve(async (req) => {
             user_id: targetUserId,
             token,
             wallet_public_key: walletAddress,
+            wallet_purpose: walletPurposeLabel,
             purpose,
           })
           .select()
@@ -208,7 +215,13 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         return new Response(
-          JSON.stringify({ success: true, token: newToken, purpose }),
+          JSON.stringify({
+            success: true,
+            token: newToken,
+            purpose,
+            wallet_purpose: walletPurposeLabel,
+            wallet_address: walletAddress,
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
