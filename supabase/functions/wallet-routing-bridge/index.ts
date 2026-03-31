@@ -205,14 +205,19 @@ Deno.serve(async (req) => {
       const platformRate = isCrypto ? FEE_RATES.platform_crypto : FEE_RATES.platform_fiat;
       const platformFee = round(escrowPrincipal * (platformRate / 100));
 
-      // 2) Processor fee (already deducted by processor for fiat, 0 for direct)
+      // 2) Processor fee (already deducted by processor before funds reach us)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
       const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
 
-      // 3) Escrow service fee (1% of principal — pre-paid, routed WITH principal)
-      const escrowFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
+      // 3) Escrow deposit fee (0.5% of principal — routed WITH principal to escrow wallet)
+      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
+      // Legacy alias
+      const escrowFee = escrowDeposit;
 
-      // 4) Jurisdiction taxes
+      // 4) Gas fee
+      const gasFee = FEE_RATES.gas.checkout;
+
+      // 5) Jurisdiction taxes
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -220,16 +225,16 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 5) Transaction Wallet retains platform fee + taxes
+      // 6) Transaction Wallet retains platform fee + taxes
       const transactionWalletRetains = round(platformFee + taxAmount);
 
-      // 6) Escrow Wallet receives: full principal + escrow fee
-      const escrowWalletReceives = round(escrowPrincipal + escrowFee);
+      // 7) Escrow Wallet receives: full principal + escrow deposit
+      const escrowWalletReceives = round(escrowPrincipal + escrowDeposit);
 
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowFee, taxAmount },
+          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount, gasFee },
         }, 400);
       }
 
