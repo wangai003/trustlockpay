@@ -133,7 +133,7 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
       expect(result.escrowFee).toBe(0);            // Pre-paid, no additional charge
-      expect(result.gasFee).toBe(0);               // Gas covered by platform
+      // gasFee removed — gasless
       expect(result.totalFees).toBe(0);
     });
   });

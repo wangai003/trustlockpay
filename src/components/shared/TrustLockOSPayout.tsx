@@ -1259,9 +1259,7 @@ const TrustLockOSPayout = ({
               {fees.escrowFee > 0 && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee{payoutType === "split" ? " (halved, vendor only)" : ""}</span><span className="text-muted-foreground">-${fees.escrowFee.toFixed(2)}</span></div>
               )}
-              {fees.gasFee > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-muted-foreground">-${fees.gasFee.toFixed(4)}</span></div>
-              )}
+              <div className="flex justify-between"><span className="text-muted-foreground">Network Gas</span><span className="text-green-600">$0 (Gasless)</span></div>
               {payoutType === "release" && role === "vendor" && (
                 <div className="flex justify-between text-primary">
                   <span className="text-muted-foreground">Escrow Fee</span>
