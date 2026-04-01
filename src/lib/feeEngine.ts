@@ -272,7 +272,7 @@ export interface FeeBreakdown {
   trustlockFee: number;        // TrustLock's platform cut
   processorFee: number;        // Processor's cut
   escrowFee: number;           // 1% escrow service fee (pre-paid at checkout)
-  gasFee: number;              // Polygon L2 gas estimate
+  // No gasFee — gasless architecture (MATIC paid by TrustLock Relayer)
   totalFees: number;
   netAmount: number;
   // What the buyer actually pays at checkout (amount + all fees)
