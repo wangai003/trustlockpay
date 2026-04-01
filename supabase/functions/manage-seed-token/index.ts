@@ -570,12 +570,23 @@ Deno.serve(async (req) => {
 
         // Create verified payout request
         const confirmationCode = generateConfirmationCode();
+        // Resolve milestone count for fractionalized escrow fee
+        let verifyMilestoneCount = 1;
+        if (order.transaction_id) {
+          const { count } = await supabase
+            .from("transaction_milestones")
+            .select("id", { count: "exact", head: true })
+            .eq("transaction_id", order.transaction_id);
+          if (count && count > 1) verifyMilestoneCount = count;
+        }
+
         const fees = calculatePayoutFees(
           order.amount || 0,
           payoutType,
           "crypto_wallet",
           "direct",
-          payoutType === "split" && userRole === "vendor" ? 1 : undefined
+          payoutType === "split" && userRole === "vendor" ? 1 : undefined,
+          verifyMilestoneCount
         );
 
         const vpTrickleRule = payoutType === "refund"
