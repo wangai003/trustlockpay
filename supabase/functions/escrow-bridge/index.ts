@@ -255,7 +255,8 @@ Deno.serve(async (req) => {
         .eq("id", transactionId);
 
       // Calculate trickle-down fee for records
-      // 1% of total principal (atomic release = full 1%)
+      // Atomic (non-milestone) release = full 1% of total principal
+      // For milestone releases, fee is fractionalized in release_milestone action
       const escrowFee = Math.round(tx.amount * 0.01 * 100) / 100;
       const vendorPayout = tx.amount - escrowFee;
 
