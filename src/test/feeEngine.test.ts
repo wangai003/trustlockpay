@@ -88,7 +88,7 @@ describe("Fee Engine V2", () => {
       expect(result.processorFee).toBe(0);
       expect(result.trustlockFee).toBe(1.0);
       expect(result.escrowFee).toBe(1);           // 1% escrow
-      expect(result.gasFee).toBe(0);
+      // gasFee removed — gasless
     });
 
     it("charges zero escrow fee on refunds and $0 gas", () => {
