@@ -212,8 +212,7 @@ Deno.serve(async (req) => {
       // Legacy alias
       const escrowFee = escrowDeposit;
 
-      // 4) Gas fee
-      const gasFee = FEE_RATES.gas.checkout;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
 
       // 5) Jurisdiction taxes
       let taxAmount = 0;
