@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
         supabase, tx.vendor_id,
         "Funds Secured in Escrow",
         `$${escrowPrincipal.toFixed(2)} has been locked in escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `The full escrow amount will be released to you upon completion — no fees deducted from your payout.`,
+        `Upon release, a 1% escrow service fee will be extracted. Remainder is your payout.`,
         "success", transactionId
       );
 
@@ -298,7 +298,7 @@ Deno.serve(async (req) => {
         supabase, tx.buyer_id,
         "Payment Secured",
         `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `Fees paid: Platform $${platformFee.toFixed(2)}, Escrow service $${escrowFee.toFixed(2)}` +
+        `Transaction fee: $${trustlockFee.toFixed(2)}` +
         `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
         `In case of refund, you receive 100% of the escrow amount — $0 fees.`,
         "success", transactionId
@@ -307,10 +307,10 @@ Deno.serve(async (req) => {
       const result: RoutingResult = {
         action: "route_inbound",
         transactionId,
-        grossAmount: round(escrowPrincipal + escrowFee + platformFee + processorFee + taxAmount),
-        platformFee,
+        grossAmount: round(escrowPrincipal + trustlockFee + processorFee + taxAmount),
+        platformFee: trustlockFee,
         processorFee,
-        escrowFee,
+        escrowFee: 0, // No escrow deposit at checkout
         taxAmount,
         taxType,
         totalDeductions: transactionWalletRetains,
@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
           to: WALLETS.escrow.address,
           amount: escrowWalletReceives,
           token,
-          memo: `Escrow principal + fee for TX ${tx.tx_id}`,
+          memo: `Vendor principal for TX ${tx.tx_id} — 1% escrow fee baked in`,
           txHash: routingTransfer.txHash,
           status: routingTransfer.status,
         }],
