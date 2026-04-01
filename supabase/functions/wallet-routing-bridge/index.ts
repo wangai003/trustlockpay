@@ -445,23 +445,23 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_REFUND — 100% principal back, $0 fees
-    //  Gas paid in MATIC by TrustLock Relayer — not deducted from stablecoins
+    //  ACTION: ROUTE_REFUND — 100% of locked principal back to buyer
+    //  $0 fees — ALL fees waived. Gas paid in MATIC by Relayer.
+    //  The 0.5% transaction fee was already kept by Transaction Wallet at checkout
+    //  and is NOT refunded (it's TrustLock revenue, not an escrow deposit).
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
-      const escrowPrincipal = tx.amount;
-      // Refund: ALL fees waived. Gasless (MATIC paid by relayer).
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      // Buyer gets: full locked amount (principal + escrow deposit) — $0 deductions
-      const totalRefund = round(escrowPrincipal + escrowDeposit);
+      // Escrow Wallet holds ONLY the vendor principal (1% escrow fee baked in).
+      // On refund, return the FULL locked amount to buyer — $0 deductions.
+      const lockedPrincipal = tx.amount;
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
         buyerWallet,
-        totalRefund,
+        lockedPrincipal,
         token,
-        `Full refund (principal + escrow deposit) for TX ${tx.tx_id}`
+        `Full refund (locked principal) for TX ${tx.tx_id}`
       );
 
       await supabase
@@ -489,8 +489,7 @@ Deno.serve(async (req) => {
       await notify(
         supabase, tx.buyer_id,
         "Refund Processed — $0 Fees",
-        `Full refund of $${totalRefund.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
-        `This includes your escrow principal ($${escrowPrincipal.toFixed(2)}) and pre-paid escrow deposit ($${escrowDeposit.toFixed(2)}). ` +
+        `Full refund of $${lockedPrincipal.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
         `No fees charged. Gas is covered by TrustLock.`,
         "success", transactionId
       );
@@ -499,15 +498,14 @@ Deno.serve(async (req) => {
         success: true,
         action: "route_refund",
         transactionId,
-        refundAmount: totalRefund,
-        escrowPrincipal,
-        escrowDepositReturned: escrowDeposit,
+        refundAmount: lockedPrincipal,
         feesChargedToBuyer: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
+        note: "The 0.5% transaction fee collected at checkout is NOT refunded — it is TrustLock revenue.",
         transfers: [{
           from: WALLETS.escrow.address,
           to: buyerWallet,
-          amount: totalRefund,
+          amount: lockedPrincipal,
           token,
           memo: "Full refund — $0 fees, gasless",
           txHash: refundTransfer.txHash,
