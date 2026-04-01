@@ -542,25 +542,24 @@ Deno.serve(async (req) => {
       const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // Gas for split payout
-      const gasFee = FEE_RATES.gas.split;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
       // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
-      const feeToTrickle = round(vendorEscrowFee + escrowDeposit - gasFee);
+      const feeToTrickle = round(vendorEscrowFee + escrowDeposit);
 
       const transfers = [];
 
-      // 1) Trickle remaining escrow fee (minus gas) → Transaction Wallet
+      // 1) Trickle escrow fee + deposit → Transaction Wallet
       if (feeToTrickle > 0) {
         const trickle = await transferOnChain(
           WALLETS.escrow.address, WALLETS.transaction.address,
           feeToTrickle, token,
-          `Split escrow fee trickle (gas absorbed) for TX ${tx.tx_id}`
+          `Split escrow fee trickle for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: WALLETS.transaction.address,
           amount: feeToTrickle,
-          token, memo: "Split escrow fee trickle-down (gas absorbed from escrow fee)",
+          token, memo: "Split escrow fee trickle-down",
           txHash: trickle.txHash, status: trickle.status,
         });
       }
