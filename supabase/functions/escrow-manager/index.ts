@@ -621,7 +621,7 @@ async function splitPayout(body: Record<string, unknown>) {
 
   if (upErr) return errorResponse(upErr.message, 500);
 
-  const vendorNet = round(vendorAmount - fees.escrowWalletReceives - fees.gasFee / 2);
+  const vendorNet = round(vendorAmount - fees.escrowWalletReceives);
   const { data: vendorPayout, error: vpErr } = await supabase
     .from("payouts")
     .insert({
