@@ -166,7 +166,7 @@ function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypt
     platformFee,
     processorFee,
     escrowDeposit,
-    gasFee,
+    // gasFee removed — gasless architecture
     totalFees,
     taxTotal,
     totalBuyerCharge,
