@@ -199,22 +199,17 @@ Deno.serve(async (req) => {
       const escrowPrincipal = verifiedAmount || tx.amount;
       const taxBreakdown = tx.tax_breakdown as Record<string, unknown> | null;
 
-      // 1) Platform fee (retained by Transaction Wallet)
-      const platformRate = isCrypto ? FEE_RATES.platform_crypto : FEE_RATES.platform_fiat;
-      const platformFee = round(escrowPrincipal * (platformRate / 100));
+      // 1) TrustLock transaction fee: 0.5% (kept by Transaction Fee Wallet)
+      const trustlockFee = round(escrowPrincipal * (FEE_RATES.trustlock_transaction_fee / 100));
 
       // 2) Processor fee (already deducted by processor before funds reach us)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
       const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
 
-      // 3) Escrow deposit fee (0.5% of principal — routed WITH principal to escrow wallet)
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      // Legacy alias
-      const escrowFee = escrowDeposit;
+      // No escrow deposit — the 0.5% is TrustLock's transaction fee, NOT an escrow deposit
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
 
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
-
-      // 5) Jurisdiction taxes
+      // 3) Jurisdiction taxes
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -222,11 +217,12 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 6) Transaction Wallet retains platform fee + taxes
-      const transactionWalletRetains = round(platformFee + taxAmount);
+      // 4) Transaction Fee Wallet keeps: 0.5% TrustLock fee + taxes
+      const transactionWalletRetains = round(trustlockFee + taxAmount);
 
-      // 7) Escrow Wallet receives: full principal + escrow deposit
-      const escrowWalletReceives = round(escrowPrincipal + escrowDeposit);
+      // 5) Escrow Wallet receives: vendor principal only
+      //    (the principal has the 1% escrow service fee baked in — extracted at release)
+      const escrowWalletReceives = escrowPrincipal;
 
       if (escrowPrincipal <= 0) {
         return json({
