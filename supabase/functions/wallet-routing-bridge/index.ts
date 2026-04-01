@@ -25,19 +25,21 @@ const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
 // ─── Fee Rate Constants ──────────────────────────────────
-// Checkout: 0.5% escrow deposit moves with principal to escrow wallet
-// Release:  1.0% escrow service fee trickles from escrow → transaction wallet
-// Refund:   ALL fees waived — $0 to buyer
+// CORRECTED FEE MODEL:
+//   At checkout: ALL post-processor funds → Transaction Fee Wallet
+//     Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//     Transaction Fee Wallet routes principal → Escrow Wallet
+//     (principal has 1% escrow service fee baked in)
+//   At release: 1% extracted from principal → trickled to Transaction Fee Wallet
+//   Refund: ALL fees waived
+//   The 0.5% is TrustLock's upfront transaction fee — NOT an escrow deposit
+//
 // GAS MODEL: Gasless (ERC-2771 Meta-Transactions)
 //   All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
-//   No stablecoin (USDC/USDT) deductions for gas. Gas is an internal
-//   operational cost absorbed by platform fee revenue.
+//   No stablecoin (USDC/USDT) deductions for gas.
 const FEE_RATES = {
-  platform_fiat: 1.5,       // 1.5% platform fee at checkout (fiat)
-  platform_crypto: 1.0,     // 1.0% platform fee at checkout (crypto)
-  escrow_deposit: 0.5,      // 0.5% escrow deposit at checkout
-  escrow_service: 1.0,      // 1.0% escrow service fee at release (trickle-down)
-  // No gas fees in stablecoin — MATIC gas paid by TrustLock Relayer Wallet
+  trustlock_transaction_fee: 0.5, // 0.5% TrustLock upfront transaction fee (kept in Transaction Fee Wallet)
+  escrow_service: 1.0,           // 1.0% escrow service fee at release (extracted from vendor principal)
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
@@ -109,29 +111,27 @@ async function notify(
 }
 
 // ═══════════════════════════════════════════════════════════
-//  ROUTING LOGIC — REVISED FEE MODEL
+//  ROUTING LOGIC — CORRECTED FEE MODEL
 // ═══════════════════════════════════════════════════════════
 //
 //  INBOUND (all payment methods):
-//   1. Buyer pays: escrow principal + escrow fee (1%) + platform fee + processor fee + taxes
-//   2. ALL funds land in Transaction Fee Wallet
-//   3. Transaction Wallet retains: platform fee + taxes
-//   4. Transaction Wallet routes to Escrow Wallet: escrow principal + escrow fee
-//   5. Escrow Wallet holds both until release or refund
+//   1. Processor takes their cut first (before funds reach TrustLock)
+//   2. ALL remaining funds → Transaction Fee Wallet
+//   3. Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//   4. Transaction Fee Wallet routes principal → Escrow Wallet
+//      (principal has 1% escrow service fee baked in)
 //
 //  RELEASE:
-//   1. Escrow Wallet sends 100% principal to vendor (preserved, no deductions)
-//   2. Escrow Wallet trickles pre-paid escrow fee → Transaction Wallet
-//   3. Gas covered by platform revenue
+//   1. Escrow Wallet extracts 1% from vendor principal → trickles to Transaction Fee Wallet
+//   2. Remaining principal → vendor
 //
 //  REFUND:
 //   1. Escrow Wallet returns 100% principal to buyer
-//   2. Pre-paid escrow fee also returned to buyer (or absorbed — see below)
-//   3. No TrustLock service fees on refunds. Gas only (~$0.02-$0.05)
+//   2. No TrustLock fees charged on refunds
 //
 //  SPLIT (Dispute):
-//   1. Escrow fee halved from original milestone rate, vendor side only
-//   2. Gas split equally between buyer & vendor
+//   1. 1% escrow fee on vendor share ONLY
+//   2. Buyer receives full split amount with zero deduction
 // ═══════════════════════════════════════════════════════════
 
 interface RoutingResult {
@@ -199,22 +199,17 @@ Deno.serve(async (req) => {
       const escrowPrincipal = verifiedAmount || tx.amount;
       const taxBreakdown = tx.tax_breakdown as Record<string, unknown> | null;
 
-      // 1) Platform fee (retained by Transaction Wallet)
-      const platformRate = isCrypto ? FEE_RATES.platform_crypto : FEE_RATES.platform_fiat;
-      const platformFee = round(escrowPrincipal * (platformRate / 100));
+      // 1) TrustLock transaction fee: 0.5% (kept by Transaction Fee Wallet)
+      const trustlockFee = round(escrowPrincipal * (FEE_RATES.trustlock_transaction_fee / 100));
 
       // 2) Processor fee (already deducted by processor before funds reach us)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
       const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
 
-      // 3) Escrow deposit fee (0.5% of principal — routed WITH principal to escrow wallet)
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      // Legacy alias
-      const escrowFee = escrowDeposit;
+      // No escrow deposit — the 0.5% is TrustLock's transaction fee, NOT an escrow deposit
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
 
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
-
-      // 5) Jurisdiction taxes
+      // 3) Jurisdiction taxes
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -222,27 +217,28 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 6) Transaction Wallet retains platform fee + taxes
-      const transactionWalletRetains = round(platformFee + taxAmount);
+      // 4) Transaction Fee Wallet keeps: 0.5% TrustLock fee + taxes
+      const transactionWalletRetains = round(trustlockFee + taxAmount);
 
-      // 7) Escrow Wallet receives: full principal + escrow deposit
-      const escrowWalletReceives = round(escrowPrincipal + escrowDeposit);
+      // 5) Escrow Wallet receives: vendor principal only
+      //    (the principal has the 1% escrow service fee baked in — extracted at release)
+      const escrowWalletReceives = escrowPrincipal;
 
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount },
+          breakdown: { escrowPrincipal, trustlockFee, processorFee, taxAmount },
         }, 400);
       }
 
-      // 7) Transfer: Transaction Wallet → Escrow Wallet (principal + escrow fee)
-      // Gas for this internal transfer is covered by TrustLock platform revenue
+      // 6) Transfer: Transaction Fee Wallet → Escrow Wallet (principal only)
+      // The principal has 1% baked in — extracted at release
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
         WALLETS.escrow.address,
         escrowWalletReceives,
         token,
-        `Escrow principal ($${escrowPrincipal}) + escrow fee ($${escrowFee}) for TX ${tx.tx_id}`
+        `Vendor principal ($${escrowPrincipal}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
 
       // 8) Update transaction
@@ -294,7 +290,7 @@ Deno.serve(async (req) => {
         supabase, tx.vendor_id,
         "Funds Secured in Escrow",
         `$${escrowPrincipal.toFixed(2)} has been locked in escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `The full escrow amount will be released to you upon completion — no fees deducted from your payout.`,
+        `Upon release, a 1% escrow service fee will be extracted. Remainder is your payout.`,
         "success", transactionId
       );
 
@@ -302,7 +298,7 @@ Deno.serve(async (req) => {
         supabase, tx.buyer_id,
         "Payment Secured",
         `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `Fees paid: Platform $${platformFee.toFixed(2)}, Escrow service $${escrowFee.toFixed(2)}` +
+        `Transaction fee: $${trustlockFee.toFixed(2)}` +
         `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
         `In case of refund, you receive 100% of the escrow amount — $0 fees.`,
         "success", transactionId
@@ -311,10 +307,10 @@ Deno.serve(async (req) => {
       const result: RoutingResult = {
         action: "route_inbound",
         transactionId,
-        grossAmount: round(escrowPrincipal + escrowFee + platformFee + processorFee + taxAmount),
-        platformFee,
+        grossAmount: round(escrowPrincipal + trustlockFee + processorFee + taxAmount),
+        platformFee: trustlockFee,
         processorFee,
-        escrowFee,
+        escrowFee: 0, // No escrow deposit at checkout
         taxAmount,
         taxType,
         totalDeductions: transactionWalletRetains,
@@ -325,7 +321,7 @@ Deno.serve(async (req) => {
           to: WALLETS.escrow.address,
           amount: escrowWalletReceives,
           token,
-          memo: `Escrow principal + fee for TX ${tx.tx_id}`,
+          memo: `Vendor principal for TX ${tx.tx_id} — 1% escrow fee baked in`,
           txHash: routingTransfer.txHash,
           status: routingTransfer.status,
         }],
