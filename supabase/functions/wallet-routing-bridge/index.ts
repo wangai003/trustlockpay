@@ -27,19 +27,17 @@ const TOKEN_DECIMALS = 6;
 // ─── Fee Rate Constants ──────────────────────────────────
 // Checkout: 0.5% escrow deposit moves with principal to escrow wallet
 // Release:  1.0% escrow service fee trickles from escrow → transaction wallet
-// Refund:   ALL fees waived, gas only ($0.02–$0.05)
+// Refund:   ALL fees waived — $0 to buyer
+// GAS MODEL: Gasless (ERC-2771 Meta-Transactions)
+//   All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
+//   No stablecoin (USDC/USDT) deductions for gas. Gas is an internal
+//   operational cost absorbed by platform fee revenue.
 const FEE_RATES = {
   platform_fiat: 1.5,       // 1.5% platform fee at checkout (fiat)
   platform_crypto: 1.0,     // 1.0% platform fee at checkout (crypto)
   escrow_deposit: 0.5,      // 0.5% escrow deposit at checkout
   escrow_service: 1.0,      // 1.0% escrow service fee at release (trickle-down)
-  gas: {
-    checkout: 0.02,
-    release: 0.02,
-    refund_crypto: 0.02,
-    refund_fiat: 0.05,
-    split: 0.04,
-  } as Record<string, number>,
+  // No gas fees in stablecoin — MATIC gas paid by TrustLock Relayer Wallet
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
@@ -214,8 +212,7 @@ Deno.serve(async (req) => {
       // Legacy alias
       const escrowFee = escrowDeposit;
 
-      // 4) Gas fee
-      const gasFee = FEE_RATES.gas.checkout;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
 
       // 5) Jurisdiction taxes
       let taxAmount = 0;
@@ -234,7 +231,7 @@ Deno.serve(async (req) => {
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount, gasFee },
+          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount },
         }, 400);
       }
 
@@ -307,7 +304,7 @@ Deno.serve(async (req) => {
         `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
         `Fees paid: Platform $${platformFee.toFixed(2)}, Escrow service $${escrowFee.toFixed(2)}` +
         `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
-        `In case of refund, you receive 100% of the escrow amount — only gas fees apply.`,
+        `In case of refund, you receive 100% of the escrow amount — $0 fees.`,
         "success", transactionId
       );
 
@@ -363,7 +360,7 @@ Deno.serve(async (req) => {
       const escrowPrincipal = tx.amount;
       const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
       const escrowFee = escrowServiceFee; // alias
-      const gasFee = FEE_RATES.gas.release;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
@@ -454,31 +451,24 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_REFUND — 100% principal back, gas only
+    //  ACTION: ROUTE_REFUND — 100% principal back, $0 fees
+    //  Gas paid in MATIC by TrustLock Relayer — not deducted from stablecoins
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
       const escrowPrincipal = tx.amount;
-      // Refund: ALL fees waived. Gas only.
-      const isCryptoRefund = paymentMethod === "crypto" || processor === "direct";
-      const gasFee = isCryptoRefund ? FEE_RATES.gas.refund_crypto : FEE_RATES.gas.refund_fiat;
-      // Buyer gets: full locked amount (principal + escrow deposit) minus gas
+      // Refund: ALL fees waived. Gasless (MATIC paid by relayer).
       const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      const escrowFee = escrowDeposit; // alias for compatibility
-      const escrowFeeAfterGas = round(escrowDeposit - gasFee);
-      const totalRefund = round(escrowPrincipal + escrowFeeAfterGas);
+      // Buyer gets: full locked amount (principal + escrow deposit) — $0 deductions
+      const totalRefund = round(escrowPrincipal + escrowDeposit);
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
-      // Gas absorbed from escrow fee — buyer pays $0 in gas
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
         buyerWallet,
         totalRefund,
         token,
-        `Full refund (principal + escrow fee - gas absorbed) for TX ${tx.tx_id}`
+        `Full refund (principal + escrow deposit) for TX ${tx.tx_id}`
       );
-
-      // Tiny remainder (gas cost) stays in escrow wallet to cover network fee
-      // This is NOT a TrustLock charge — it's the blockchain network fee absorbed from the pre-paid escrow fee
 
       await supabase
         .from("transactions")
@@ -506,8 +496,8 @@ Deno.serve(async (req) => {
         supabase, tx.buyer_id,
         "Refund Processed — $0 Fees",
         `Full refund of $${totalRefund.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
-        `This includes your escrow principal ($${escrowPrincipal.toFixed(2)}) and pre-paid escrow fee ($${escrowFeeAfterGas.toFixed(2)}). ` +
-        `No TrustLock service fees or gas fees charged to you. Gas was absorbed from the escrow service fee.`,
+        `This includes your escrow principal ($${escrowPrincipal.toFixed(2)}) and pre-paid escrow deposit ($${escrowDeposit.toFixed(2)}). ` +
+        `No fees charged. Gas is covered by TrustLock.`,
         "success", transactionId
       );
 
@@ -517,16 +507,15 @@ Deno.serve(async (req) => {
         transactionId,
         refundAmount: totalRefund,
         escrowPrincipal,
-        escrowFeeReturned: escrowFeeAfterGas,
-        gasAbsorbedFromEscrowFee: estimatedGas,
+        escrowDepositReturned: escrowDeposit,
         feesChargedToBuyer: 0,
-        gasNote: "Gas fees absorbed from pre-paid escrow fee. Buyer pays $0.",
+        gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         transfers: [{
           from: WALLETS.escrow.address,
           to: buyerWallet,
           amount: totalRefund,
           token,
-          memo: "Full refund — $0 fees to buyer, gas absorbed from escrow fee",
+          memo: "Full refund — $0 fees, gasless",
           txHash: refundTransfer.txHash,
           status: refundTransfer.status,
         }],
@@ -553,25 +542,24 @@ Deno.serve(async (req) => {
       const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // Gas for split payout
-      const gasFee = FEE_RATES.gas.split;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
       // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
-      const feeToTrickle = round(vendorEscrowFee + escrowDeposit - gasFee);
+      const feeToTrickle = round(vendorEscrowFee + escrowDeposit);
 
       const transfers = [];
 
-      // 1) Trickle remaining escrow fee (minus gas) → Transaction Wallet
+      // 1) Trickle escrow fee + deposit → Transaction Wallet
       if (feeToTrickle > 0) {
         const trickle = await transferOnChain(
           WALLETS.escrow.address, WALLETS.transaction.address,
           feeToTrickle, token,
-          `Split escrow fee trickle (gas absorbed) for TX ${tx.tx_id}`
+          `Split escrow fee trickle for TX ${tx.tx_id}`
         );
         transfers.push({
           from: WALLETS.escrow.address,
           to: WALLETS.transaction.address,
           amount: feeToTrickle,
-          token, memo: "Split escrow fee trickle-down (gas absorbed from escrow fee)",
+          token, memo: "Split escrow fee trickle-down",
           txHash: trickle.txHash, status: trickle.status,
         });
       }

@@ -38,7 +38,7 @@ interface CheckoutSession {
   escrowFee: number;
   platformFee: number;
   processorFee: number;
-  gasFee: number;
+  // No gasFee field — gas is paid in MATIC by TrustLock Relayer (gasless)
   orderType: "simple" | "milestone" | "hybrid";
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
@@ -146,10 +146,9 @@ function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypt
   // Escrow deposit: 0.5% (held until release when 1.0% escrow service fee applies)
   const escrowDeposit = round(amount * (0.5 / 100));
 
-  // Gas fee
-  const gasFee = 0.02;
+  // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
 
-  const totalFees = round(platformFee + processorFee + escrowDeposit + gasFee);
+  const totalFees = round(platformFee + processorFee + escrowDeposit);
   const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
   // Build lockFunds calldata for smart contract
@@ -167,7 +166,7 @@ function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypt
     platformFee,
     processorFee,
     escrowDeposit,
-    gasFee,
+    // gasFee removed — gasless architecture
     totalFees,
     taxTotal,
     totalBuyerCharge,
@@ -368,7 +367,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     platformFee: fees.platformFee,
     processorFee: fees.processorFee,
     escrowDeposit: fees.escrowDeposit,
-    gasFee: fees.gasFee,
+    // gasFee removed — gasless
     totalFees: fees.totalFees,
     taxTotal,
     taxBreakdown,
@@ -407,7 +406,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     escrowFee: fees.escrowDeposit,
     platformFee: fees.platformFee,
     processorFee: fees.processorFee,
-    gasFee: fees.gasFee,
+    // gasFee removed — gasless
     orderType,
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
@@ -469,7 +468,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         platformFee: fees.platformFee,
         processorFee: fees.processorFee,
         escrowDeposit: fees.escrowDeposit,
-        gasFee: fees.gasFee,
+        // gasFee removed — gasless
         totalFees: fees.totalFees,
         taxBreakdown,
         taxTotal,
@@ -492,7 +491,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       disclosure: {
         escrowPrincipalPreserved: true,
         vendorReceives: `100% of escrow principal ($${numAmount.toFixed(2)})`,
-        gasFeePolicy: "Gas absorbed by TrustLock — $0.02 per transaction",
+        gasFeePolicy: "Gasless — MATIC gas paid by TrustLock Relayer Wallet. $0 gas to users.",
         refundPolicy: "Full principal + escrow deposit returned. All fees waived.",
         splitPayoutPolicy: "1.0% escrow fee applied to vendor share only.",
       },

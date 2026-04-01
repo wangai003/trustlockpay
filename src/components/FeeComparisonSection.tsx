@@ -94,8 +94,8 @@ const FeeComparisonSection = () => {
                 <span className="text-right font-medium">{FEE_CATEGORIES.escrowService.display}</span>
               </div>
               <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.gas.label}</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.gas.checkout}</span>
+                <span className="text-muted-foreground">{FEE_CATEGORIES.gasModel.label}</span>
+                <span className="text-right font-medium">{FEE_CATEGORIES.gasModel.userCost} (Gasless)</span>
               </div>
               <div className="border-t border-border pt-2 space-y-1">
                 <p className="text-muted-foreground">

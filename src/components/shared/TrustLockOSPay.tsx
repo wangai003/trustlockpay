@@ -1301,12 +1301,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                   <span className="font-medium">${processorFeeDisplay}</span>
                 </div>
               )}
-              {feeBreakdown.gasFee > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Gas Fee</span>
-                  <span className="font-medium">${feeBreakdown.gasFee.toFixed(4)}</span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Gas Fee</span>
+                <span className="font-medium text-green-600">$0 (Gasless)</span>
+              </div>
               <div className="flex justify-between border-t border-border pt-1 mt-1">
                 <span className="font-bold text-sm">Total</span>
                 <span className="font-bold text-sm text-primary">${total}</span>
