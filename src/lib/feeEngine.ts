@@ -572,26 +572,22 @@ export const FEE_CATEGORIES = {
     description: "Collected upon fund release. Trickles from escrow wallet → transaction wallet, leaving escrow net balance = 0.",
     when: "1.0% deducted at release/settlement. On refund, this fee is NOT charged.",
   },
-  gas: {
-    label: "Network Gas Fee",
-    shortLabel: "Gas",
-    checkout: "$0.02",
-    release: "$0.02",
-    refundCrypto: "$0.02",
-    refundFiat: "$0.05",
-    split: "$0.04",
-    description: "Polygon L2 gas fees paid to blockchain validators. Minimal and predictable.",
-    when: "Applied per transaction type. Refunds and splits include gas only — all other fees waived.",
+  gasModel: {
+    label: "Gas Model",
+    shortLabel: "Gasless",
+    model: "ERC-2771 Meta-Transactions",
+    description: "All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet. Users never see or pay gas fees. Gas is an internal operational cost absorbed by platform fee revenue.",
+    userCost: "$0",
   },
 } as const;
 
 // ─── All-in fee ranges ─────────────────────────────────────
 export const ALL_IN_RANGES = {
-  cryptoDirect: { range: "1.5% + $0.02 gas", label: "Crypto-to-Crypto (Direct)" },
-  cryptoViaProcessor: { range: "2.5% – 3.0% + $0.02 gas", label: "Crypto via Processor" },
-  fiat: { range: "3.0% – 4.9% + $0.02 gas", label: "Fiat-to-Crypto" },
-  refund: { range: "$0.02–$0.05 gas only — ALL fees waived", label: "Refund" },
-  release: { range: "1.0% escrow service fee + $0.02 gas", label: "Release to Vendor" },
+  cryptoDirect: { range: "1.5%", label: "Crypto-to-Crypto (Direct)" },
+  cryptoViaProcessor: { range: "2.5% – 3.0%", label: "Crypto via Processor" },
+  fiat: { range: "3.0% – 4.9%", label: "Fiat-to-Crypto" },
+  refund: { range: "$0 — ALL fees waived (gasless)", label: "Refund" },
+  release: { range: "1.0% escrow service fee", label: "Release to Vendor" },
   osPayment: { range: "1.5%", label: "OS Platform Payment (no escrow)" },
 } as const;
 
