@@ -292,7 +292,6 @@ export interface FeeBreakdown {
 interface FeeRule {
   trustlockRate: number;   // %
   escrowRate: number;      // % — charged upfront at checkout, not deducted from principal
-  gasEstimate: number;     // Fixed USD
   escrowApplies: boolean;
   escrowVendorOnly: boolean;
 }
@@ -301,53 +300,49 @@ const FEE_RULES: Record<TransactionType, FeeRule> = {
   checkout_fiat: {
     trustlockRate: 1.5,       // 1.5% platform fee
     escrowRate: 0.5,          // 0.5% escrow deposit (held until release)
-    gasEstimate: 0.02,        // $0.02 gas
     escrowApplies: true,
     escrowVendorOnly: false,
   },
   checkout_crypto: {
     trustlockRate: 1.0,       // 1.0% platform fee
     escrowRate: 0.5,          // 0.5% escrow deposit
-    gasEstimate: 0.02,        // $0.02 gas
     escrowApplies: true,
     escrowVendorOnly: false,
   },
   release_to_vendor: {
     trustlockRate: 0,
     escrowRate: 1.0,          // 1.0% escrow service fee deducted at release
-    gasEstimate: 0.02,        // $0.02 gas
     escrowApplies: true,
     escrowVendorOnly: false,
   },
   refund_crypto: {
     trustlockRate: 0,
     escrowRate: 0,            // ALL fees waived on refund
-    gasEstimate: 0.02,        // $0.02 gas only
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   refund_fiat: {
     trustlockRate: 0,
     escrowRate: 0,            // ALL fees waived on refund
-    gasEstimate: 0.05,        // $0.05 gas only (fiat off-ramp)
     escrowApplies: false,
     escrowVendorOnly: false,
   },
   split_payout: {
     trustlockRate: 0,
     escrowRate: 1.0,          // 1.0% escrow fee on VENDOR share only
-    gasEstimate: 0.04,        // $0.04 gas (dual disbursement)
     escrowApplies: true,
     escrowVendorOnly: true,
   },
   os_payment: {
     trustlockRate: 1.5,       // 1.5% platform fee, no escrow
     escrowRate: 0,
-    gasEstimate: 0,
     escrowApplies: false,
     escrowVendorOnly: false,
   },
 };
+// GAS MODEL: Gasless (ERC-2771 Meta-Transactions)
+// All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
+// No gas fees are charged to users or deducted from stablecoin amounts.
 
 // ─── Processor Selection Logic ─────────────────────────────
 export interface ProcessorMatch {
