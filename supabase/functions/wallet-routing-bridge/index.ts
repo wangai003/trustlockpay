@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
       const escrowPrincipal = tx.amount;
       const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
       const escrowFee = escrowServiceFee; // alias
-      const gasFee = FEE_RATES.gas.release;
+      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
