@@ -732,9 +732,10 @@ Deno.serve(async (req) => {
               purpose: "Collects escrow service fees upon fund release",
             },
             feeRules: {
-              release: "1% escrow fee on full amount",
-              refund: "0% escrow fee — gas only ($0.02–$0.05)",
-              split: "1% escrow fee on vendor share only, gas doubled ($0.04)",
+              release: "1% escrow fee on full amount (fractionalized per milestone)",
+              refund: "0% — all fees waived, gasless",
+              split: "1% escrow fee on vendor share only, gasless",
+              gasModel: "Gasless (ERC-2771 Meta-Transactions) — MATIC paid by TrustLock Relayer Wallet",
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
