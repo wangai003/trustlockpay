@@ -524,8 +524,7 @@ Deno.serve(async (req) => {
       }
 
       const escrowPrincipal = tx.amount;
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      const totalInEscrow = round(escrowPrincipal + escrowDeposit);
+      // No escrow deposit — the 0.5% was a transaction fee kept by Transaction Wallet at checkout
 
       const buyerAmount = round(escrowPrincipal * buyerShare);
       const vendorGross = round(escrowPrincipal * vendorShare);
@@ -534,9 +533,8 @@ Deno.serve(async (req) => {
       const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
-      // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
-      const feeToTrickle = round(vendorEscrowFee + escrowDeposit);
+      // Trickle vendor escrow fee → Transaction Wallet
+      const feeToTrickle = vendorEscrowFee;
 
       const transfers = [];
 
