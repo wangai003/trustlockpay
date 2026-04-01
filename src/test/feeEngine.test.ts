@@ -95,7 +95,7 @@ describe("Fee Engine V2", () => {
       const refundCrypto = calculateFeesV2(100, "refund_crypto", "direct");
       expect(refundCrypto.escrowFee).toBe(0);
       expect(refundCrypto.trustlockFee).toBe(0);
-      expect(refundCrypto.gasFee).toBe(0);        // Gas absorbed from escrow fee
+      // gasFee removed — gasless
       expect(refundCrypto.escrowWalletReceives).toBe(0);
 
       const refundFiat = calculateFeesV2(100, "refund_fiat", "stripe");
