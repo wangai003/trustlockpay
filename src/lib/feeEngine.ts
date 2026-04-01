@@ -1,19 +1,22 @@
 // ─── Dual Azix Wallet Fee Engine ───────────────────────────
 // Two distinct custodian wallets:
-//   1. TRANSACTION WALLET — collects platform fees + taxes at checkout
-//   2. ESCROW WALLET — receives escrow principal + pre-paid escrow fee;
-//      trickles escrow fee to Transaction Wallet upon release
+//   1. TRANSACTION FEE WALLET — receives ALL post-processor funds at checkout,
+//      keeps TrustLock 0.5% transaction fee + taxes, then routes vendor principal
+//      (with 1% escrow fee baked in) to Escrow Wallet.
+//   2. ESCROW WALLET — holds vendor principal (which includes TrustLock's 1% escrow
+//      service fee baked in). On release, 1% is extracted → trickled back to
+//      Transaction Fee Wallet, remainder → vendor.
 
 export const AZIX_WALLETS = {
   transaction: {
     label: "Azix Transaction Fee Wallet",
     publicKey: "0x7A3b...F92d",
-    purpose: "Collects transactional fees (platform fee + escrow service fee via trickle-down)",
+    purpose: "Receives all post-processor funds. Keeps 0.5% transaction fee + taxes. Routes vendor principal to Escrow Wallet.",
   },
   escrow: {
     label: "Azix Escrow Wallet",
     publicKey: "0x4E1c...A83b",
-    purpose: "Collects escrow service fees upon release (net balance = 0 after trickle-down)",
+    purpose: "Holds vendor principal (with 1% escrow fee baked in). On release, 1% trickles back to Transaction Fee Wallet.",
   },
 } as const;
 
@@ -269,17 +272,17 @@ export interface FeeBreakdown {
   transactionType: TransactionType;
   amount: number;
   // Fees
-  trustlockFee: number;        // TrustLock's platform cut
-  processorFee: number;        // Processor's cut
-  escrowFee: number;           // 1% escrow service fee (pre-paid at checkout)
+  trustlockFee: number;        // TrustLock's 0.5% upfront transaction fee (kept in Transaction Fee Wallet)
+  processorFee: number;        // Processor's cut (deducted before funds reach TrustLock)
+  escrowFee: number;           // 1% escrow service fee (baked into vendor principal, extracted at release)
   // No gasFee — gasless architecture (MATIC paid by TrustLock Relayer)
   totalFees: number;
   netAmount: number;
-  // What the buyer actually pays at checkout (amount + all fees)
+  // What the buyer actually pays at checkout (amount + transaction fee + processor fee + taxes)
   buyerTotalCharge: number;
   // Wallet routing
-  transactionWalletReceives: number;
-  escrowWalletReceives: number;  // principal + escrow fee held until release
+  transactionWalletReceives: number;  // TrustLock 0.5% + taxes (retained) + 1% trickle at release
+  escrowWalletReceives: number;       // vendor principal (with 1% baked in)
   processorReceives: number;
   feeTrickleToTransactionWallet: number;
   // Metadata
@@ -289,29 +292,40 @@ export interface FeeBreakdown {
 }
 
 // ─── Fee Rules by Transaction Type ─────────────────────────
+// CORRECTED FEE MODEL:
+//   At checkout:
+//     - Processor takes their cut first (before funds reach TrustLock)
+//     - ALL remaining funds → Transaction Fee Wallet
+//     - Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//     - Transaction Fee Wallet routes to Escrow Wallet: vendor principal
+//       (the principal already has TrustLock's 1% escrow fee baked into it)
+//   At release:
+//     - 1% extracted from vendor principal → trickled to Transaction Fee Wallet
+//     - Remaining principal → vendor
+//   Total TrustLock revenue: 0.5% (upfront) + 1.0% (release) = 1.5%
 interface FeeRule {
-  trustlockRate: number;   // %
-  escrowRate: number;      // % — charged upfront at checkout, not deducted from principal
+  trustlockRate: number;   // % — TrustLock's upfront transaction fee (kept in Transaction Fee Wallet)
+  escrowRate: number;      // % — escrow service fee (baked into principal, extracted at release)
   escrowApplies: boolean;
   escrowVendorOnly: boolean;
 }
 
 const FEE_RULES: Record<TransactionType, FeeRule> = {
   checkout_fiat: {
-    trustlockRate: 1.5,       // 1.5% platform fee
-    escrowRate: 0.5,          // 0.5% escrow deposit (held until release)
-    escrowApplies: true,
+    trustlockRate: 0.5,       // 0.5% TrustLock transaction fee (upfront revenue)
+    escrowRate: 0,            // No escrow fee at checkout — 1% is baked into principal, extracted at release
+    escrowApplies: false,
     escrowVendorOnly: false,
   },
   checkout_crypto: {
-    trustlockRate: 1.0,       // 1.0% platform fee
-    escrowRate: 0.5,          // 0.5% escrow deposit
-    escrowApplies: true,
+    trustlockRate: 0.5,       // 0.5% TrustLock transaction fee (same for crypto)
+    escrowRate: 0,            // No escrow fee at checkout
+    escrowApplies: false,
     escrowVendorOnly: false,
   },
   release_to_vendor: {
     trustlockRate: 0,
-    escrowRate: 1.0,          // 1.0% escrow service fee deducted at release
+    escrowRate: 1.0,          // 1.0% escrow service fee extracted from vendor principal at release
     escrowApplies: true,
     escrowVendorOnly: false,
   },
@@ -356,7 +370,7 @@ export function getEligibleProcessors(
   paymentMethod: PaymentMethod = "card",
   transactionType: TransactionType = "checkout_fiat"
 ): ProcessorMatch[] {
-  const trustlockRate = FEE_RULES[transactionType]?.trustlockRate ?? 1.5;
+  const trustlockRate = FEE_RULES[transactionType]?.trustlockRate ?? 0.5;
 
   const eligible: ProcessorMatch[] = [];
 
@@ -397,20 +411,32 @@ export function selectProcessor(
 }
 
 // ─── Invoice Fee Calculator ───────────────────────────────
-// Computes the complete breakdown for the invoice stage so buyers
-// see exactly what they pay and vendors know the full escrow principal.
+// CORRECTED MODEL:
+//   The invoice shows ONE combined "Transaction Fee" line to the buyer:
+//     Transaction Fee = processor fee + TrustLock 0.5% transaction fee
+//   The 1% escrow service fee is NOT shown separately — it's baked into the
+//   vendor principal and only extracted at release.
+//
+//   Fund flow at checkout:
+//     1. Processor takes their cut (before funds reach TrustLock)
+//     2. ALL remaining funds → Transaction Fee Wallet
+//     3. Transaction Fee Wallet keeps: 0.5% + taxes
+//     4. Transaction Fee Wallet sends principal → Escrow Wallet
+//        (principal has 1% baked in — extracted at release)
 export interface InvoiceFeeCalculation {
-  escrowPrincipal: number;     // Amount vendor will receive (minus escrow service fee at release)
-  escrowDeposit: number;       // 0.5% of principal — added on top at checkout
-  platformFee: number;         // TrustLock platform fee — added on top
-  processorFee: number;        // Processor fee — added on top
+  escrowPrincipal: number;     // Vendor principal (includes 1% escrow fee baked in)
+  trustlockFee: number;        // 0.5% TrustLock upfront transaction fee
+  processorFee: number;        // Processor fee
   taxAmount: number;           // Taxes/tariffs from invoice
-  // No gasFee — gasless architecture
   totalBuyerCharge: number;    // What the buyer actually pays
-  escrowWalletReceives: number;  // principal + escrow deposit
-  transactionWalletReceives: number; // platform fee + taxes
-  // Legacy alias
-  escrowFee: number;
+  escrowWalletReceives: number;  // principal only (routed from Transaction Fee Wallet)
+  transactionWalletReceives: number; // 0.5% TrustLock fee + taxes (retained)
+  // Combined "Transaction Fee" shown on invoice (processor + TrustLock 0.5%)
+  combinedTransactionFee: number;
+  // Legacy aliases
+  platformFee: number;         // alias for trustlockFee
+  escrowFee: number;           // alias for trustlockFee (was wrongly called escrow deposit)
+  escrowDeposit: number;       // DEPRECATED — always 0 (there is no escrow deposit)
 }
 
 export function calculateInvoiceFees(
@@ -419,27 +445,33 @@ export function calculateInvoiceFees(
   isCrypto: boolean,
   taxAmount: number = 0,
 ): InvoiceFeeCalculation {
-  const platformRate = isCrypto ? 1.0 : 1.5;
   const processorRate = PROCESSORS[processorId]?.feeRate ?? 0;
 
-  const escrowDeposit = round(escrowPrincipal * 0.005);    // 0.5% escrow deposit
-  const platformFee = round(escrowPrincipal * (platformRate / 100));
+  // TrustLock's upfront transaction fee: always 0.5% (same for fiat and crypto)
+  const trustlockFee = round(escrowPrincipal * 0.005);
   const processorFee = processorId === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
   const tax = round(taxAmount);
 
+  // Combined "Transaction Fee" shown on invoice = processor + TrustLock 0.5%
+  const combinedTransactionFee = round(trustlockFee + processorFee);
+
   // No gas fee — gasless (MATIC paid by TrustLock Relayer)
-  const totalBuyerCharge = round(escrowPrincipal + escrowDeposit + platformFee + processorFee + tax);
+  const totalBuyerCharge = round(escrowPrincipal + combinedTransactionFee + tax);
 
   return {
     escrowPrincipal,
-    escrowDeposit,
-    escrowFee: escrowDeposit, // legacy alias
-    platformFee,
+    trustlockFee,
+    platformFee: trustlockFee,       // legacy alias
+    escrowFee: trustlockFee,         // legacy alias (renamed from escrow deposit)
+    escrowDeposit: 0,                // DEPRECATED — no escrow deposit exists
     processorFee,
     taxAmount: tax,
+    combinedTransactionFee,
     totalBuyerCharge,
-    escrowWalletReceives: round(escrowPrincipal + escrowDeposit),
-    transactionWalletReceives: round(platformFee + tax),
+    // Escrow Wallet receives ONLY the principal (routed from Transaction Fee Wallet)
+    escrowWalletReceives: escrowPrincipal,
+    // Transaction Fee Wallet keeps 0.5% TrustLock fee + taxes
+    transactionWalletReceives: round(trustlockFee + tax),
   };
 }
 
@@ -496,8 +528,11 @@ export function calculateFeesV2(
     totalFees,
     netAmount,
     buyerTotalCharge,
+    // At checkout: Transaction Fee Wallet receives ALL, keeps 0.5% + taxes
+    // At release: Transaction Fee Wallet receives 1% trickle from Escrow Wallet
     transactionWalletReceives: round(trustlockFee + feeTrickleToTransactionWallet),
-    escrowWalletReceives: isCheckout ? round(amount + escrowFee) : 0,
+    // At checkout: Escrow Wallet receives principal (routed from Transaction Fee Wallet)
+    escrowWalletReceives: isCheckout ? amount : 0,
     processorReceives: processorFee,
     feeTrickleToTransactionWallet,
     processorUsed: processorId,
@@ -510,34 +545,33 @@ export function calculateFeesV2(
 export function getFeeRangeForType(type: TransactionType): string {
   switch (type) {
     case "checkout_crypto":
-      return "1.5% total (1.0% platform + 0.5% escrow deposit)";
+      return "0.5% TrustLock transaction fee (direct crypto)";
     case "checkout_fiat":
-      return "2.0% – 4.9% total (1.5% platform + 0.5% escrow deposit + processor 1.0–2.9%)";
+      return "0.5% TrustLock fee + processor (1.0–2.9%) — shown as combined 'Transaction Fee'";
     case "refund_crypto":
     case "refund_fiat":
       return "$0 — ALL fees waived (gasless)";
     case "release_to_vendor":
-      return "1.0% escrow service fee only";
+      return "1.0% escrow service fee (extracted from vendor principal)";
     case "split_payout":
       return "1.0% escrow fee on vendor share only";
     case "os_payment":
       return "1.5% platform fee (no escrow)";
     default:
-      return "1.5% – 4.9%";
+      return "0.5% – 3.4%";
   }
 }
 
 // ─── Canonical Fee Display Constants ───────────────────────
 export const FEE_CATEGORIES = {
-  platform: {
-    label: "TrustLock Platform Fee",
-    shortLabel: "Platform Fee",
-    crypto: { rate: 1.0, display: "1.0%" },
-    fiat: { rate: 1.5, display: "1.5%" },
-    range: "1.0% – 1.5%",
+  transactionFee: {
+    label: "TrustLock Transaction Fee",
+    shortLabel: "Transaction Fee",
+    rate: 0.5,
+    display: "0.5%",
     wallet: "transaction" as WalletType,
-    description: "Covers payment processing, currency conversion coordination, and network infrastructure.",
-    when: "Charged at checkout, added to the invoice total. Not deducted from escrow principal.",
+    description: "TrustLock's upfront processing fee. Combined with processor fee on the invoice as a single 'Transaction Fee' line item.",
+    when: "Charged at checkout. Stays in the Transaction Fee Wallet as TrustLock revenue.",
   },
   processor: {
     label: "Payment Processor Fee",
@@ -548,20 +582,11 @@ export const FEE_CATEGORIES = {
       stripe: { rate: 2.9, display: "2.9%" },
       direct: { rate: 0, display: "0%" },
     },
-    range: "1.0% – 2.9%",
+    range: "0% – 2.9%",
     rangeWithDirect: "0% – 2.9%",
     wallet: "external" as const,
-    description: "Paid to the payment processor (Stripe, Coinbase, or Transak) for payment processing.",
-    when: "Charged at checkout. Direct crypto transfers bypass this fee entirely.",
-  },
-  escrowDeposit: {
-    label: "Escrow Deposit Fee",
-    shortLabel: "Escrow Deposit",
-    rate: 0.5,
-    display: "0.5%",
-    wallet: "escrow" as WalletType,
-    description: "Pre-paid deposit held with escrow principal until release. Moves with the vendor balance.",
-    when: "0.5% charged upfront at checkout. Held in escrow until obligations are met.",
+    description: "Paid to the payment processor (Stripe, Coinbase, or Transak). Direct crypto transfers bypass this fee entirely.",
+    when: "Deducted by the processor before funds reach TrustLock.",
   },
   escrowService: {
     label: "Escrow Service Fee",
@@ -569,23 +594,44 @@ export const FEE_CATEGORIES = {
     rate: 1.0,
     display: "1.0%",
     wallet: "transaction" as WalletType,
-    description: "Collected upon fund release. Trickles from escrow wallet → transaction wallet, leaving escrow net balance = 0.",
-    when: "1.0% deducted at release/settlement. On refund, this fee is NOT charged.",
+    description: "Baked into the vendor principal. Extracted at release and trickled from Escrow Wallet → Transaction Fee Wallet.",
+    when: "1.0% extracted from vendor principal at release. On refund, NOT charged. On split, applied to vendor share only.",
   },
   gasModel: {
     label: "Gas Model",
     shortLabel: "Gasless",
     model: "ERC-2771 Meta-Transactions",
-    description: "All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet. Users never see or pay gas fees. Gas is an internal operational cost absorbed by platform fee revenue.",
+    description: "All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet. Users never see or pay gas fees.",
     userCost: "$0",
+  },
+  // DEPRECATED — kept for backward compatibility
+  platform: {
+    label: "TrustLock Transaction Fee",
+    shortLabel: "Transaction Fee",
+    crypto: { rate: 0.5, display: "0.5%" },
+    fiat: { rate: 0.5, display: "0.5%" },
+    range: "0.5%",
+    wallet: "transaction" as WalletType,
+    description: "TrustLock's upfront processing fee.",
+    when: "Charged at checkout.",
+  },
+  // DEPRECATED — there is no escrow deposit
+  escrowDeposit: {
+    label: "DEPRECATED — No Escrow Deposit",
+    shortLabel: "N/A",
+    rate: 0,
+    display: "0%",
+    wallet: "escrow" as WalletType,
+    description: "DEPRECATED — The 0.5% is TrustLock's transaction fee, NOT an escrow deposit.",
+    when: "N/A",
   },
 } as const;
 
 // ─── All-in fee ranges ─────────────────────────────────────
 export const ALL_IN_RANGES = {
-  cryptoDirect: { range: "1.5%", label: "Crypto-to-Crypto (Direct)" },
-  cryptoViaProcessor: { range: "2.5% – 3.0%", label: "Crypto via Processor" },
-  fiat: { range: "3.0% – 4.9%", label: "Fiat-to-Crypto" },
+  cryptoDirect: { range: "0.5%", label: "Crypto-to-Crypto (Direct)" },
+  cryptoViaProcessor: { range: "2.0% – 2.5%", label: "Crypto via Processor" },
+  fiat: { range: "2.0% – 3.4%", label: "Fiat-to-Crypto" },
   refund: { range: "$0 — ALL fees waived (gasless)", label: "Refund" },
   release: { range: "1.0% escrow service fee", label: "Release to Vendor" },
   osPayment: { range: "1.5%", label: "OS Platform Payment (no escrow)" },
@@ -594,43 +640,45 @@ export const ALL_IN_RANGES = {
 // ─── Formatted disclosure text ────────────────────────────
 export const DUAL_WALLET_DISCLOSURE = `TrustLock uses two separate custodian wallets for maximum transparency:
 
-• **Transaction Fee Wallet** (${AZIX_WALLETS.transaction.publicKey}): Collects transactional fees — platform fee (${FEE_CATEGORIES.platform.range}) at checkout, plus the 1.0% escrow service fee via trickle-down upon release.
+• **Transaction Fee Wallet** (${AZIX_WALLETS.transaction.publicKey}): Receives ALL post-processor funds. Keeps TrustLock's 0.5% transaction fee + jurisdiction taxes. Routes vendor principal to Escrow Wallet.
 
-• **Escrow Wallet** (${AZIX_WALLETS.escrow.publicKey}): Holds the vendor's principal + 0.5% escrow deposit. Upon release, the 1.0% escrow service fee trickles to the Transaction Wallet, leaving the escrow wallet at net balance = 0.
+• **Escrow Wallet** (${AZIX_WALLETS.escrow.publicKey}): Holds the vendor's principal (which includes TrustLock's 1.0% escrow service fee baked in). Upon release, the 1.0% is extracted and trickled back to the Transaction Fee Wallet. Vendor receives principal minus 1%.
 
 Processor fees (${FEE_CATEGORIES.processor.range}) are deducted by the processor before funds reach TrustLock.
 
-Trickle-Down Rule: Escrow wallet forwards collected fees to transaction wallet. Escrow wallet net balance = 0 after forwarding.`;
+Total TrustLock Revenue: 0.5% (upfront) + 1.0% (at release) = 1.5% per transaction.`;
 
-export const FEE_DISCLOSURE_SHORT = `Platform: ${FEE_CATEGORIES.platform.range} · Processor: ${FEE_CATEGORIES.processor.range} · Escrow Deposit: ${FEE_CATEGORIES.escrowDeposit.display} at checkout · Escrow Service: ${FEE_CATEGORIES.escrowService.display} at release. Refunds: $0 — ALL fees waived. Gas: Gasless (paid by TrustLock).`;
+export const FEE_DISCLOSURE_SHORT = `Transaction Fee: 0.5% TrustLock + processor (0–2.9%) — shown as one line on invoice. Escrow Service: 1.0% extracted from vendor principal at release. Refunds: $0 — ALL fees waived. Gas: Gasless (paid by TrustLock).`;
 
 export const FEE_DISCLOSURE_FULL = `TrustLock Pay fee schedule per transaction type:
 
-1. **Checkout (Fiat):** 1.5% platform + 0.5% escrow deposit + processor (1.0–2.9%)
-2. **Checkout (Crypto):** 1.0% platform + 0.5% escrow deposit
-3. **Release to Vendor:** 1.0% escrow service fee only
-4. **Refund (Crypto/Fiat):** $0 — ALL fees waived
-5. **Split Payout:** 1.0% escrow fee on VENDOR share only
-6. **OS Payment:** 1.5% platform fee, no escrow
+1. **Checkout (Fiat/Crypto):** 0.5% TrustLock transaction fee + processor fee (0–2.9%) — shown as combined "Transaction Fee" on invoice
+2. **Release to Vendor:** 1.0% escrow service fee extracted from vendor principal
+3. **Refund (Crypto/Fiat):** $0 — ALL fees waived
+4. **Split Payout:** 1.0% escrow fee on VENDOR share only
+5. **OS Payment:** 1.5% platform fee, no escrow
 
-**Gas Model:** Gasless (ERC-2771 Meta-Transactions). All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet. Users never see or pay gas fees.
+**Fund Flow at Checkout:**
+  Processor takes cut → remaining → Transaction Fee Wallet → keeps 0.5% + taxes → routes principal → Escrow Wallet
 
-**Trickle-Down Rule:** Upon release, the escrow wallet forwards the 1.0% escrow service fee to the transaction fee wallet. The escrow wallet's net balance = 0 after forwarding.
+**Fund Flow at Release:**
+  Escrow Wallet → extracts 1% → trickles to Transaction Fee Wallet → sends principal-1% → vendor
+
+**Gas Model:** Gasless (ERC-2771 Meta-Transactions). All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
+
+**Total TrustLock Revenue:** 0.5% (upfront) + 1.0% (release) = 1.5% per transaction.
 
 **Wallet Architecture:**
-• Transaction Fee Wallet (${AZIX_WALLETS.transaction.publicKey}): Collects transactional fees
-• Escrow Wallet (${AZIX_WALLETS.escrow.publicKey}): Collects escrow service fees upon release
-
-**Refund Policy:** On refund, the buyer receives 100% of locked funds. No fees charged. Gas covered by TrustLock.`;
+• Transaction Fee Wallet (${AZIX_WALLETS.transaction.publicKey}): Receives all funds, keeps fees + taxes
+• Escrow Wallet (${AZIX_WALLETS.escrow.publicKey}): Holds vendor principal until release`;
 
 // ─── Invoice Mandatory Disclosure ──────────────────────────
 export const INVOICE_MANDATORY_DISCLOSURE = `**Fee Transparency Notice**
 
 The total amount charged includes the following fees added on top of the escrow principal:
-• **Transaction Fee** (${FEE_CATEGORIES.platform.range}): Combined platform and processing fee
-• **Escrow Deposit** (${FEE_CATEGORIES.escrowDeposit.display}): Held with escrow until release
+• **Transaction Fee** (${FEE_CATEGORIES.transactionFee.display} TrustLock + processor): Combined processing fee
 • **Taxes/Tariffs**: Determined by buyer and vendor jurisdictions
 
-The escrow principal is preserved in full. The vendor receives their principal minus the 1.0% escrow service fee at release.
+The vendor principal is held in escrow. Upon release, a 1.0% escrow service fee is extracted from the vendor's principal.
 
 **Refund Policy:** If a refund is processed, the buyer receives 100% of locked funds. $0 fees — gasless.`;
