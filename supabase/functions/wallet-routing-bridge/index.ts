@@ -346,35 +346,33 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_RELEASE — Vendor gets 100% principal
+    //  ACTION: ROUTE_RELEASE — Atomic (non-milestone) release
+    //  1% escrow service fee extracted from principal → trickled to Transaction Wallet
+    //  Vendor receives: principal minus 1% escrow fee
+    //  Escrow Wallet net balance = 0 after forwarding
     // ══════════════════════════════════════════════════
     if (action === "route_release") {
-      // Escrow wallet holds: principal + escrow deposit
-      // Release: 1.0% escrow service fee deducted from locked amount → Transaction Wallet
-      // Vendor gets: locked amount minus escrow service fee
-      // Escrow wallet net balance = 0 after forwarding
       const escrowPrincipal = tx.amount;
       const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const escrowFee = escrowServiceFee; // alias
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
+      const vendorPayout = round(escrowPrincipal - escrowServiceFee);
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
         WALLETS.escrow.address,
         WALLETS.transaction.address,
-        escrowFee,
+        escrowServiceFee,
         token,
         `Escrow fee trickle-down for TX ${tx.tx_id}`
       );
 
-      // Transfer 2: Full principal → Vendor (100%, no deductions)
+      // Transfer 2: Vendor payout (principal minus 1% escrow fee)
       const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTransfer = await transferOnChain(
         WALLETS.escrow.address,
         vendorWallet,
-        escrowPrincipal,
+        vendorPayout,
         token,
-        `Vendor payout (100% principal) for TX ${tx.tx_id}`
+        `Vendor payout for TX ${tx.tx_id} (principal - 1% escrow fee)`
       );
 
       await supabase
@@ -402,9 +400,9 @@ Deno.serve(async (req) => {
 
       await notify(
         supabase, tx.vendor_id,
-        "Funds Released — Full Amount",
-        `$${escrowPrincipal.toFixed(2)} released to your account (100% of escrow principal, no deductions). ` +
-        `Escrow service fee of $${escrowFee.toFixed(2)} was pre-paid by the buyer at checkout.`,
+        "Funds Released",
+        `$${vendorPayout.toFixed(2)} released to your account. ` +
+        `1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`,
         "success", transactionId
       );
 
@@ -420,25 +418,25 @@ Deno.serve(async (req) => {
         action: "route_release",
         transactionId,
         escrowPrincipal,
-        escrowFee,
-        vendorPayout: escrowPrincipal,
-        trickleToTransactionWallet: escrowFee,
+        escrowServiceFee,
+        vendorPayout,
+        trickleToTransactionWallet: escrowServiceFee,
         transfers: [
           {
             from: WALLETS.escrow.address,
             to: WALLETS.transaction.address,
-            amount: escrowFee,
+            amount: escrowServiceFee,
             token,
-            memo: "Escrow fee trickle-down",
+            memo: "Escrow service fee trickle-down (1% of principal)",
             txHash: trickleTransfer.txHash,
             status: trickleTransfer.status,
           },
           {
             from: WALLETS.escrow.address,
             to: vendorWallet,
-            amount: escrowPrincipal,
+            amount: vendorPayout,
             token,
-            memo: "Vendor payout (100% principal)",
+            memo: "Vendor payout (principal - 1% escrow fee)",
             txHash: payoutTransfer.txHash,
             status: payoutTransfer.status,
           },
