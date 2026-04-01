@@ -113,7 +113,7 @@ describe("Fee Engine V2", () => {
       expect(result.escrowWalletReceives).toBe(0);
       expect(result.feeTrickleToTransactionWallet).toBe(3);
       expect(result.trickleRule).toBe("vendor_share_only");
-      expect(result.gasFee).toBe(0);              // Gas absorbed from escrow fee
+      // gasFee removed — gasless
     });
 
     it("handles zero amount without division errors", () => {
