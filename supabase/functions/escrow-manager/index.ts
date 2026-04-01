@@ -639,7 +639,7 @@ async function splitPayout(body: Record<string, unknown>) {
 
   if (vpErr) return errorResponse(vpErr.message, 500);
 
-  const buyerNet = round(buyerAmount - fees.gasFee / 2);
+  const buyerNet = buyerAmount; // $0 fees on buyer's share
   const { data: buyerPayout, error: bpErr } = await supabase
     .from("payouts")
     .insert({
