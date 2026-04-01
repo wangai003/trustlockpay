@@ -475,8 +475,8 @@ export function calculateFeesV2(
     }
   }
 
-  const gasFee = rule.gasEstimate;
-  const totalFees = round(trustlockFee + processorFee + escrowFee + gasFee);
+  // No gas fee — gasless architecture
+  const totalFees = round(trustlockFee + processorFee + escrowFee);
   const netAmount = round(amount - totalFees);
 
   // For checkout: buyer pays amount + fees ON TOP (fees not deducted from amount)
@@ -493,7 +493,6 @@ export function calculateFeesV2(
     trustlockFee,
     processorFee,
     escrowFee,
-    gasFee,
     totalFees,
     netAmount,
     buyerTotalCharge,
