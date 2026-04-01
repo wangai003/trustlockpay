@@ -412,8 +412,8 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     vendorName,
     taxBreakdown,
     taxTotal,
-    escrowFee: fees.escrowDeposit,
-    platformFee: fees.platformFee,
+    escrowFee: 0,                    // No escrow deposit — 0.5% is TrustLock transaction fee
+    platformFee: fees.trustlockFee,  // 0.5% TrustLock transaction fee
     processorFee: fees.processorFee,
     // gasFee removed — gasless
     orderType,
