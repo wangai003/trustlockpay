@@ -510,17 +510,16 @@ export function calculateFeesV2(
 export function getFeeRangeForType(type: TransactionType): string {
   switch (type) {
     case "checkout_crypto":
-      return "1.5% total (1.0% platform + 0.5% escrow deposit) + $0.02 gas";
+      return "1.5% total (1.0% platform + 0.5% escrow deposit)";
     case "checkout_fiat":
-      return "2.0% – 4.9% total (1.5% platform + 0.5% escrow deposit + processor 1.0–2.9%) + $0.02 gas";
+      return "2.0% – 4.9% total (1.5% platform + 0.5% escrow deposit + processor 1.0–2.9%)";
     case "refund_crypto":
-      return "$0.02 gas only — ALL fees waived";
     case "refund_fiat":
-      return "$0.05 gas only — ALL fees waived";
+      return "$0 — ALL fees waived (gasless)";
     case "release_to_vendor":
-      return "1.0% escrow service fee + $0.02 gas";
+      return "1.0% escrow service fee only";
     case "split_payout":
-      return "1.0% escrow fee on vendor share only + $0.04 gas";
+      return "1.0% escrow fee on vendor share only";
     case "os_payment":
       return "1.5% platform fee (no escrow)";
     default:
