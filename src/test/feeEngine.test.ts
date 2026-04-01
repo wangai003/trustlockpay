@@ -101,7 +101,7 @@ describe("Fee Engine V2", () => {
       const refundFiat = calculateFeesV2(100, "refund_fiat", "stripe");
       expect(refundFiat.escrowFee).toBe(0);
       expect(refundFiat.trustlockFee).toBe(0);
-      expect(refundFiat.gasFee).toBe(0);           // Gas absorbed from escrow fee
+      // gasFee removed — gasless
     });
 
     it("charges escrow fee only on vendor share for split_payout (halved rate)", () => {
