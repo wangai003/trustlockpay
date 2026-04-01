@@ -38,7 +38,7 @@ interface CheckoutSession {
   escrowFee: number;
   platformFee: number;
   processorFee: number;
-  gasFee: number;
+  // No gasFee field — gas is paid in MATIC by TrustLock Relayer (gasless)
   orderType: "simple" | "milestone" | "hybrid";
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
