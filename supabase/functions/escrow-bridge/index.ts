@@ -395,31 +395,58 @@ Deno.serve(async (req) => {
       );
 
       // Update milestone in DB
-      const { data: milestones } = await supabase
+      const { data: milestone } = await supabase
         .from("transaction_milestones")
         .select("id, order_index, amount, title")
         .eq("transaction_id", transactionId)
         .eq("order_index", milestoneIndex)
         .single();
 
-      if (milestones) {
+      if (milestone) {
         await supabase
           .from("transaction_milestones")
           .update({
             status: "completed",
             completed_at: new Date().toISOString(),
           })
-          .eq("id", milestones.id);
+          .eq("id", milestone.id);
       }
 
-      // Check if all milestones are now completed
+      // ── Fractionalized escrow fee: 1% ÷ total milestones ──
+      // Get total milestone count for this transaction
+      const { count: totalMilestoneCount } = await supabase
+        .from("transaction_milestones")
+        .select("id", { count: "exact", head: true })
+        .eq("transaction_id", transactionId);
+
+      const msCount = totalMilestoneCount || 1;
+      const totalEscrowFee = Math.round(tx.amount * 0.01 * 100) / 100;
+      // Each milestone gets an equal fraction: 1% / totalMilestones
+      const fractionalFee = Math.round((totalEscrowFee / msCount) * 100) / 100;
+
+      // Check if this is the last milestone — use remainder absorption
       const { data: remaining } = await supabase
         .from("transaction_milestones")
         .select("id")
         .eq("transaction_id", transactionId)
         .neq("status", "completed");
 
-      if (!remaining?.length) {
+      const isLast = !remaining?.length;
+
+      // Last milestone absorbs rounding remainder so total fees = exactly 1%
+      const { count: completedBefore } = await supabase
+        .from("transaction_milestones")
+        .select("id", { count: "exact", head: true })
+        .eq("transaction_id", transactionId)
+        .eq("status", "completed");
+
+      const priorCompleted = (completedBefore || 1) - 1; // subtract current one just marked
+      const feesAlreadyCharged = Math.round(fractionalFee * priorCompleted * 100) / 100;
+      const milestoneEscrowFee = isLast
+        ? Math.round((totalEscrowFee - feesAlreadyCharged) * 100) / 100
+        : fractionalFee;
+
+      if (isLast) {
         await supabase
           .from("transactions")
           .update({
@@ -435,7 +462,7 @@ Deno.serve(async (req) => {
         supabase,
         tx.vendor_id,
         "Milestone Released",
-        `Milestone "${milestones?.title || milestoneIndex}" funds have been released.`,
+        `Milestone "${milestone?.title || milestoneIndex}" funds released. Escrow fee: $${milestoneEscrowFee.toFixed(2)} (${(1 / msCount).toFixed(2)}% of 1%).`,
         "success",
         transactionId
       );
@@ -446,7 +473,11 @@ Deno.serve(async (req) => {
         escrowId,
         milestoneIndex,
         contractTx: result,
-        allCompleted: !remaining?.length,
+        allCompleted: isLast,
+        milestoneEscrowFee,
+        totalEscrowFee,
+        milestoneCount: msCount,
+        feeFormula: `1% / ${msCount} milestones = ${(1 / msCount).toFixed(4)}% per milestone`,
       });
     }
 

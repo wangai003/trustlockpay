@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
         const {
           seedToken, role: payoutRole, payoutType, transactionId, orderNumber,
           amount, paymentCategory, paymentProvider, providerDetails, mode,
-          processorId, splitVendorShare,
+          processorId, splitVendorShare, milestoneCount: paramMilestoneCount,
         } = params;
 
         if (!amount || parseFloat(amount) <= 0) throw new Error("Valid amount required");
@@ -245,12 +245,24 @@ Deno.serve(async (req) => {
         const amountNum = parseFloat(amount);
         const processor = processorId || (paymentCategory === "crypto_wallet" ? "direct" : "coinbase");
 
+        // Resolve milestone count for fractionalized escrow fee
+        // If not passed, look up from transaction_milestones (count payment milestones with amount > 0)
+        let resolvedMilestoneCount = paramMilestoneCount ? parseInt(paramMilestoneCount) : 1;
+        if (!paramMilestoneCount && transactionId) {
+          const { count } = await supabase
+            .from("transaction_milestones")
+            .select("id", { count: "exact", head: true })
+            .eq("transaction_id", transactionId);
+          if (count && count > 1) resolvedMilestoneCount = count;
+        }
+
         const fees = calculatePayoutFees(
           amountNum,
           payoutType || "release",
           paymentCategory,
           processor,
-          splitVendorShare
+          splitVendorShare,
+          resolvedMilestoneCount
         );
 
         const confirmationCode = generateConfirmationCode();
