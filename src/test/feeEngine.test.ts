@@ -75,7 +75,7 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(1.5);
       expect(result.processorFee).toBe(2.9);
       expect(result.escrowFee).toBe(1);          // 1% upfront escrow fee
-      expect(result.gasFee).toBe(0);              // Gas covered by platform
+      // gasFee removed — gasless architecture
       expect(result.totalFees).toBeCloseTo(5.4, 2);
       expect(result.netAmount).toBeCloseTo(94.6, 2);
       expect(result.transactionWalletReceives).toBe(2.5); // trustlock 1.5 + escrow trickle 1
