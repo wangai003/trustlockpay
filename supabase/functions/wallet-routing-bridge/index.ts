@@ -111,29 +111,27 @@ async function notify(
 }
 
 // ═══════════════════════════════════════════════════════════
-//  ROUTING LOGIC — REVISED FEE MODEL
+//  ROUTING LOGIC — CORRECTED FEE MODEL
 // ═══════════════════════════════════════════════════════════
 //
 //  INBOUND (all payment methods):
-//   1. Buyer pays: escrow principal + escrow fee (1%) + platform fee + processor fee + taxes
-//   2. ALL funds land in Transaction Fee Wallet
-//   3. Transaction Wallet retains: platform fee + taxes
-//   4. Transaction Wallet routes to Escrow Wallet: escrow principal + escrow fee
-//   5. Escrow Wallet holds both until release or refund
+//   1. Processor takes their cut first (before funds reach TrustLock)
+//   2. ALL remaining funds → Transaction Fee Wallet
+//   3. Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//   4. Transaction Fee Wallet routes principal → Escrow Wallet
+//      (principal has 1% escrow service fee baked in)
 //
 //  RELEASE:
-//   1. Escrow Wallet sends 100% principal to vendor (preserved, no deductions)
-//   2. Escrow Wallet trickles pre-paid escrow fee → Transaction Wallet
-//   3. Gas covered by platform revenue
+//   1. Escrow Wallet extracts 1% from vendor principal → trickles to Transaction Fee Wallet
+//   2. Remaining principal → vendor
 //
 //  REFUND:
 //   1. Escrow Wallet returns 100% principal to buyer
-//   2. Pre-paid escrow fee also returned to buyer (or absorbed — see below)
-//   3. No TrustLock service fees on refunds. Gas only (~$0.02-$0.05)
+//   2. No TrustLock fees charged on refunds
 //
 //  SPLIT (Dispute):
-//   1. Escrow fee halved from original milestone rate, vendor side only
-//   2. Gas split equally between buyer & vendor
+//   1. 1% escrow fee on vendor share ONLY
+//   2. Buyer receives full split amount with zero deduction
 // ═══════════════════════════════════════════════════════════
 
 interface RoutingResult {
