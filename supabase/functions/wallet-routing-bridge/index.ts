@@ -824,7 +824,103 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone` }, 400);
+    // ══════════════════════════════════════════════════
+    //  ACTION: ROUTE_REFUND_MILESTONE — Refund a single milestone
+    //  $0 fees — returns milestone amount to buyer, no trickle
+    // ══════════════════════════════════════════════════
+    if (action === "route_refund_milestone") {
+      const { milestoneId } = body;
+      if (!milestoneId) return json({ error: "milestoneId is required" }, 400);
+
+      const { data: milestone } = await supabase
+        .from("transaction_milestones")
+        .select("*")
+        .eq("id", milestoneId)
+        .single();
+
+      if (!milestone) return json({ error: "Milestone not found" }, 404);
+
+      const milestoneAmount = Number(milestone.amount) || 0;
+      const buyerWallet = body.buyerWallet || "buyer_pending";
+
+      const transfers = [];
+
+      if (milestoneAmount > 0) {
+        const refundTx = await transferOnChain(
+          WALLETS.escrow.address, buyerWallet,
+          milestoneAmount, token,
+          `Milestone "${milestone.title}" refund for TX ${tx.tx_id}`
+        );
+        transfers.push({
+          from: WALLETS.escrow.address, to: buyerWallet,
+          amount: milestoneAmount, token,
+          memo: `Milestone refund — $0 fees, gasless`,
+          txHash: refundTx.txHash, status: refundTx.status,
+        });
+      }
+
+      await supabase
+        .from("transaction_milestones")
+        .update({ status: "refunded", completed_at: new Date().toISOString() })
+        .eq("id", milestoneId);
+
+      // Check if all milestones resolved
+      const { data: pendingMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id")
+        .eq("transaction_id", transactionId)
+        .not("status", "in", '("completed","refunded")');
+
+      const allResolved = !pendingMilestones?.length;
+
+      if (allResolved) {
+        await supabase
+          .from("transactions")
+          .update({
+            status: "refunded",
+            milestone_status: "all_completed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", transactionId);
+      }
+
+      // Forward to escrow-bridge
+      try {
+        const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
+        await fetch(escrowUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "refund_milestone",
+            transactionId,
+            milestoneIndex: milestone.order_index,
+          }),
+        });
+      } catch (e) {
+        console.warn("Escrow bridge milestone refund forward failed:", e);
+      }
+
+      await notify(supabase, tx.buyer_id,
+        "Milestone Refunded",
+        `$${milestoneAmount.toFixed(2)} refunded for milestone "${milestone.title}" — $0 fees. Gas covered by TrustLock.`,
+        "success", transactionId);
+
+      return json({
+        success: true,
+        action: "route_refund_milestone",
+        transactionId,
+        milestoneId,
+        refundAmount: milestoneAmount,
+        feesCharged: 0,
+        allResolved,
+        transfers,
+      });
+    }
+
+    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone, route_refund_milestone` }, 400);
   } catch (err) {
     console.error("wallet-routing-bridge error:", err);
     return json({ success: false, error: err.message }, 500);
