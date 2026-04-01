@@ -27,19 +27,17 @@ const TOKEN_DECIMALS = 6;
 // ─── Fee Rate Constants ──────────────────────────────────
 // Checkout: 0.5% escrow deposit moves with principal to escrow wallet
 // Release:  1.0% escrow service fee trickles from escrow → transaction wallet
-// Refund:   ALL fees waived, gas only ($0.02–$0.05)
+// Refund:   ALL fees waived — $0 to buyer
+// GAS MODEL: Gasless (ERC-2771 Meta-Transactions)
+//   All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
+//   No stablecoin (USDC/USDT) deductions for gas. Gas is an internal
+//   operational cost absorbed by platform fee revenue.
 const FEE_RATES = {
   platform_fiat: 1.5,       // 1.5% platform fee at checkout (fiat)
   platform_crypto: 1.0,     // 1.0% platform fee at checkout (crypto)
   escrow_deposit: 0.5,      // 0.5% escrow deposit at checkout
   escrow_service: 1.0,      // 1.0% escrow service fee at release (trickle-down)
-  gas: {
-    checkout: 0.02,
-    release: 0.02,
-    refund_crypto: 0.02,
-    refund_fiat: 0.05,
-    split: 0.04,
-  } as Record<string, number>,
+  // No gas fees in stablecoin — MATIC gas paid by TrustLock Relayer Wallet
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
