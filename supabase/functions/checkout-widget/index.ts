@@ -499,10 +499,10 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
       cryptoVerification,
       disclosure: {
         escrowPrincipalPreserved: true,
-        vendorReceives: `100% of escrow principal ($${numAmount.toFixed(2)})`,
+        vendorReceives: `Escrow principal minus 1% escrow service fee ($${numAmount.toFixed(2)})`,
         gasFeePolicy: "Gasless — MATIC gas paid by TrustLock Relayer Wallet. $0 gas to users.",
-        refundPolicy: "Full principal + escrow deposit returned. All fees waived.",
-        splitPayoutPolicy: "1.0% escrow fee applied to vendor share only.",
+        refundPolicy: "Full locked principal returned to buyer. All fees waived. The 0.5% transaction fee (already collected) is NOT refunded.",
+        splitPayoutPolicy: "1.0% escrow fee applied to vendor share only. Buyer receives full split amount with $0 deductions.",
       },
     },
   });
