@@ -25,19 +25,21 @@ const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
 // ─── Fee Rate Constants ──────────────────────────────────
-// Checkout: 0.5% escrow deposit moves with principal to escrow wallet
-// Release:  1.0% escrow service fee trickles from escrow → transaction wallet
-// Refund:   ALL fees waived — $0 to buyer
+// CORRECTED FEE MODEL:
+//   At checkout: ALL post-processor funds → Transaction Fee Wallet
+//     Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//     Transaction Fee Wallet routes principal → Escrow Wallet
+//     (principal has 1% escrow service fee baked in)
+//   At release: 1% extracted from principal → trickled to Transaction Fee Wallet
+//   Refund: ALL fees waived
+//   The 0.5% is TrustLock's upfront transaction fee — NOT an escrow deposit
+//
 // GAS MODEL: Gasless (ERC-2771 Meta-Transactions)
 //   All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
-//   No stablecoin (USDC/USDT) deductions for gas. Gas is an internal
-//   operational cost absorbed by platform fee revenue.
+//   No stablecoin (USDC/USDT) deductions for gas.
 const FEE_RATES = {
-  platform_fiat: 1.5,       // 1.5% platform fee at checkout (fiat)
-  platform_crypto: 1.0,     // 1.0% platform fee at checkout (crypto)
-  escrow_deposit: 0.5,      // 0.5% escrow deposit at checkout
-  escrow_service: 1.0,      // 1.0% escrow service fee at release (trickle-down)
-  // No gas fees in stablecoin — MATIC gas paid by TrustLock Relayer Wallet
+  trustlock_transaction_fee: 0.5, // 0.5% TrustLock upfront transaction fee (kept in Transaction Fee Wallet)
+  escrow_service: 1.0,           // 1.0% escrow service fee at release (extracted from vendor principal)
   processor: {
     stripe: 2.9,
     coinbase: 1.5,
