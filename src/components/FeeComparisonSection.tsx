@@ -86,8 +86,8 @@ const FeeComparisonSection = () => {
                 <span className="text-right font-medium">{FEE_CATEGORIES.processor.range}</span>
               </div>
               <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.escrowDeposit.label} (at checkout)</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.escrowDeposit.display}</span>
+                <span className="text-muted-foreground">Escrow Service Fee (at release)</span>
+                <span className="text-right font-medium">1.0% of vendor principal</span>
               </div>
               <div className="grid grid-cols-2 gap-1">
                 <span className="text-muted-foreground">{FEE_CATEGORIES.escrowService.label} (at release)</span>
