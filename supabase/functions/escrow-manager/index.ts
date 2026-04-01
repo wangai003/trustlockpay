@@ -98,26 +98,29 @@ function calculateFees(
   const trustlockFee = amount * (rule.trustlockRate / 100);
   const processorFee = processorId === "direct" ? 0 : amount * (processorRate / 100);
 
+  // Escrow service fee: 1% at release/split (baked into principal)
+  // At checkout: escrowServiceRate = 0 (no separate escrow deposit)
+  // At split: fee applies to vendor share ONLY
   let escrowFee = 0;
-  if (rule.escrowRate > 0) {
+  if (rule.escrowServiceRate > 0) {
     if (type === "split" && vendorShareFraction !== undefined) {
-      escrowFee = amount * vendorShareFraction * (rule.escrowRate / 100);
+      escrowFee = amount * vendorShareFraction * (rule.escrowServiceRate / 100);
     } else {
-      escrowFee = amount * (rule.escrowRate / 100);
+      escrowFee = amount * (rule.escrowServiceRate / 100);
     }
   }
 
-  const gasFee = rule.gasEstimate;
-  const totalFees = trustlockFee + processorFee + escrowFee + gasFee;
+  // Gas = 0 — gasless architecture (MATIC paid by TrustLock Relayer)
+  const totalFees = trustlockFee + processorFee + escrowFee;
 
   return {
     trustlockFee: round(trustlockFee),
     processorFee: round(processorFee),
     escrowFee: round(escrowFee),
-    gasFee,
+    gasFee: 0, // Gasless — MATIC paid by Relayer
     totalFees: round(totalFees),
     netAmount: round(amount - totalFees),
-    transactionWalletReceives: round(trustlockFee + processorFee),
+    transactionWalletReceives: round(trustlockFee),
     escrowWalletReceives: round(escrowFee),
     feePercentage: amount > 0 ? round((totalFees / amount) * 100) : 0,
   };
