@@ -372,10 +372,11 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
 
   // Fee breakdown JSON for storage
   const feeBreakdownJson = {
+    trustlockFee: fees.trustlockFee,
     platformFee: fees.platformFee,
     processorFee: fees.processorFee,
-    escrowDeposit: fees.escrowDeposit,
-    // gasFee removed — gasless
+    combinedTransactionFee: fees.combinedTransactionFee,
+    escrowDeposit: 0, // DEPRECATED — no escrow deposit
     totalFees: fees.totalFees,
     taxTotal,
     taxBreakdown,
