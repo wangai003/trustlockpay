@@ -405,7 +405,7 @@ export interface InvoiceFeeCalculation {
   platformFee: number;         // TrustLock platform fee — added on top
   processorFee: number;        // Processor fee — added on top
   taxAmount: number;           // Taxes/tariffs from invoice
-  gasFee: number;              // $0.02 gas
+  // No gasFee — gasless architecture
   totalBuyerCharge: number;    // What the buyer actually pays
   escrowWalletReceives: number;  // principal + escrow deposit
   transactionWalletReceives: number; // platform fee + taxes
@@ -426,9 +426,9 @@ export function calculateInvoiceFees(
   const platformFee = round(escrowPrincipal * (platformRate / 100));
   const processorFee = processorId === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
   const tax = round(taxAmount);
-  const gasFee = 0.02;
 
-  const totalBuyerCharge = round(escrowPrincipal + escrowDeposit + platformFee + processorFee + tax + gasFee);
+  // No gas fee — gasless (MATIC paid by TrustLock Relayer)
+  const totalBuyerCharge = round(escrowPrincipal + escrowDeposit + platformFee + processorFee + tax);
 
   return {
     escrowPrincipal,
@@ -437,7 +437,6 @@ export function calculateInvoiceFees(
     platformFee,
     processorFee,
     taxAmount: tax,
-    gasFee,
     totalBuyerCharge,
     escrowWalletReceives: round(escrowPrincipal + escrowDeposit),
     transactionWalletReceives: round(platformFee + tax),
