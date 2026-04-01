@@ -616,12 +616,12 @@ Deno.serve(async (req) => {
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
         `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
-        `$0 gas fees — absorbed from the pre-paid escrow fee. No TrustLock service fees on your portion.`,
+        `$0 fees on your portion. Gas covered by TrustLock.`,
         "info", transactionId);
       await notify(supabase, tx.vendor_id,
         "Dispute Resolved",
         `You receive $${vendorNet.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
-        `Escrow fee: $${vendorEscrowFee.toFixed(2)} (halved rate: ${halvedRate.toFixed(2)}%). $0 gas fees — absorbed from escrow fee.`,
+        `1% escrow fee on your share: $${vendorEscrowFee.toFixed(2)}.`,
         "info", transactionId);
 
       return json({
@@ -629,17 +629,15 @@ Deno.serve(async (req) => {
         action: "route_split",
         transactionId,
         escrowPrincipal,
-        prePaidEscrowFee,
         buyerShare,
         vendorShare,
         buyerAmount,
         vendorGross,
         vendorEscrowFee,
         vendorNet,
-        halvedEscrowRate: halvedRate,
-        gasAbsorbedFromEscrowFee: estimatedGasTotal,
-        gasChargedToParties: 0,
         feeToTrickle,
+        gasChargedToParties: 0,
+        gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         transfers,
       });
     }
