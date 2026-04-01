@@ -304,7 +304,7 @@ Deno.serve(async (req) => {
         `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
         `Fees paid: Platform $${platformFee.toFixed(2)}, Escrow service $${escrowFee.toFixed(2)}` +
         `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
-        `In case of refund, you receive 100% of the escrow amount — only gas fees apply.`,
+        `In case of refund, you receive 100% of the escrow amount — $0 fees.`,
         "success", transactionId
       );
 
