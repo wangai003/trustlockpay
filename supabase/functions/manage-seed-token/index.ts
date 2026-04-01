@@ -47,11 +47,16 @@ function generateConfirmationCode(): string {
 //   REFUND:  Escrow returns full principal → buyer gets 100% → NO fees → NO trickle-down
 //   SPLIT:   1% fee from VENDOR share only → trickles to Transaction Wallet
 //            → buyer receives full split amount with zero fee deduction
+//
+// GAS MODEL (Gasless / Meta-Transactions):
+//   All on-chain gas is paid in MATIC by TrustLock's Relayer Wallet.
+//   Users NEVER see or pay gas. Gas is an internal operational cost absorbed
+//   by TrustLock's platform fee revenue. No stablecoin deductions for gas.
+//   Implementation: ERC-2771 meta-transactions via Polygon GSN or custom relayer.
 interface FeeResult {
   trustlockFee: number;
   processorFee: number;
   escrowFee: number;
-  gasFee: number;
   totalFees: number;
   netAmount: number;
   transactionWalletReceives: number;
