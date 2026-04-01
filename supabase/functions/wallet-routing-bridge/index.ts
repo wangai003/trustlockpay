@@ -346,35 +346,33 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_RELEASE — Vendor gets 100% principal
+    //  ACTION: ROUTE_RELEASE — Atomic (non-milestone) release
+    //  1% escrow service fee extracted from principal → trickled to Transaction Wallet
+    //  Vendor receives: principal minus 1% escrow fee
+    //  Escrow Wallet net balance = 0 after forwarding
     // ══════════════════════════════════════════════════
     if (action === "route_release") {
-      // Escrow wallet holds: principal + escrow deposit
-      // Release: 1.0% escrow service fee deducted from locked amount → Transaction Wallet
-      // Vendor gets: locked amount minus escrow service fee
-      // Escrow wallet net balance = 0 after forwarding
       const escrowPrincipal = tx.amount;
       const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
-      const escrowFee = escrowServiceFee; // alias
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
+      const vendorPayout = round(escrowPrincipal - escrowServiceFee);
 
       // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
       const trickleTransfer = await transferOnChain(
         WALLETS.escrow.address,
         WALLETS.transaction.address,
-        escrowFee,
+        escrowServiceFee,
         token,
         `Escrow fee trickle-down for TX ${tx.tx_id}`
       );
 
-      // Transfer 2: Full principal → Vendor (100%, no deductions)
+      // Transfer 2: Vendor payout (principal minus 1% escrow fee)
       const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTransfer = await transferOnChain(
         WALLETS.escrow.address,
         vendorWallet,
-        escrowPrincipal,
+        vendorPayout,
         token,
-        `Vendor payout (100% principal) for TX ${tx.tx_id}`
+        `Vendor payout for TX ${tx.tx_id} (principal - 1% escrow fee)`
       );
 
       await supabase
@@ -402,9 +400,9 @@ Deno.serve(async (req) => {
 
       await notify(
         supabase, tx.vendor_id,
-        "Funds Released — Full Amount",
-        `$${escrowPrincipal.toFixed(2)} released to your account (100% of escrow principal, no deductions). ` +
-        `Escrow service fee of $${escrowFee.toFixed(2)} was pre-paid by the buyer at checkout.`,
+        "Funds Released",
+        `$${vendorPayout.toFixed(2)} released to your account. ` +
+        `1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`,
         "success", transactionId
       );
 
@@ -420,25 +418,25 @@ Deno.serve(async (req) => {
         action: "route_release",
         transactionId,
         escrowPrincipal,
-        escrowFee,
-        vendorPayout: escrowPrincipal,
-        trickleToTransactionWallet: escrowFee,
+        escrowServiceFee,
+        vendorPayout,
+        trickleToTransactionWallet: escrowServiceFee,
         transfers: [
           {
             from: WALLETS.escrow.address,
             to: WALLETS.transaction.address,
-            amount: escrowFee,
+            amount: escrowServiceFee,
             token,
-            memo: "Escrow fee trickle-down",
+            memo: "Escrow service fee trickle-down (1% of principal)",
             txHash: trickleTransfer.txHash,
             status: trickleTransfer.status,
           },
           {
             from: WALLETS.escrow.address,
             to: vendorWallet,
-            amount: escrowPrincipal,
+            amount: vendorPayout,
             token,
-            memo: "Vendor payout (100% principal)",
+            memo: "Vendor payout (principal - 1% escrow fee)",
             txHash: payoutTransfer.txHash,
             status: payoutTransfer.status,
           },
@@ -447,23 +445,23 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: ROUTE_REFUND — 100% principal back, $0 fees
-    //  Gas paid in MATIC by TrustLock Relayer — not deducted from stablecoins
+    //  ACTION: ROUTE_REFUND — 100% of locked principal back to buyer
+    //  $0 fees — ALL fees waived. Gas paid in MATIC by Relayer.
+    //  The 0.5% transaction fee was already kept by Transaction Wallet at checkout
+    //  and is NOT refunded (it's TrustLock revenue, not an escrow deposit).
     // ══════════════════════════════════════════════════
     if (action === "route_refund") {
-      const escrowPrincipal = tx.amount;
-      // Refund: ALL fees waived. Gasless (MATIC paid by relayer).
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      // Buyer gets: full locked amount (principal + escrow deposit) — $0 deductions
-      const totalRefund = round(escrowPrincipal + escrowDeposit);
+      // Escrow Wallet holds ONLY the vendor principal (1% escrow fee baked in).
+      // On refund, return the FULL locked amount to buyer — $0 deductions.
+      const lockedPrincipal = tx.amount;
       const buyerWallet = body.buyerWallet || "buyer_pending";
 
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
         buyerWallet,
-        totalRefund,
+        lockedPrincipal,
         token,
-        `Full refund (principal + escrow deposit) for TX ${tx.tx_id}`
+        `Full refund (locked principal) for TX ${tx.tx_id}`
       );
 
       await supabase
@@ -491,8 +489,7 @@ Deno.serve(async (req) => {
       await notify(
         supabase, tx.buyer_id,
         "Refund Processed — $0 Fees",
-        `Full refund of $${totalRefund.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
-        `This includes your escrow principal ($${escrowPrincipal.toFixed(2)}) and pre-paid escrow deposit ($${escrowDeposit.toFixed(2)}). ` +
+        `Full refund of $${lockedPrincipal.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
         `No fees charged. Gas is covered by TrustLock.`,
         "success", transactionId
       );
@@ -501,15 +498,14 @@ Deno.serve(async (req) => {
         success: true,
         action: "route_refund",
         transactionId,
-        refundAmount: totalRefund,
-        escrowPrincipal,
-        escrowDepositReturned: escrowDeposit,
+        refundAmount: lockedPrincipal,
         feesChargedToBuyer: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
+        note: "The 0.5% transaction fee collected at checkout is NOT refunded — it is TrustLock revenue.",
         transfers: [{
           from: WALLETS.escrow.address,
           to: buyerWallet,
-          amount: totalRefund,
+          amount: lockedPrincipal,
           token,
           memo: "Full refund — $0 fees, gasless",
           txHash: refundTransfer.txHash,
@@ -528,8 +524,7 @@ Deno.serve(async (req) => {
       }
 
       const escrowPrincipal = tx.amount;
-      const escrowDeposit = round(escrowPrincipal * (FEE_RATES.escrow_deposit / 100));
-      const totalInEscrow = round(escrowPrincipal + escrowDeposit);
+      // No escrow deposit — the 0.5% was a transaction fee kept by Transaction Wallet at checkout
 
       const buyerAmount = round(escrowPrincipal * buyerShare);
       const vendorGross = round(escrowPrincipal * vendorShare);
@@ -538,9 +533,8 @@ Deno.serve(async (req) => {
       const vendorEscrowFee = round(vendorGross * (FEE_RATES.escrow_service / 100));
       const vendorNet = round(vendorGross - vendorEscrowFee);
 
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
-      // Trickle vendor escrow fee + remaining deposit to Transaction Wallet
-      const feeToTrickle = round(vendorEscrowFee + escrowDeposit);
+      // Trickle vendor escrow fee → Transaction Wallet
+      const feeToTrickle = vendorEscrowFee;
 
       const transfers = [];
 
@@ -622,12 +616,12 @@ Deno.serve(async (req) => {
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
         `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
-        `$0 gas fees — absorbed from the pre-paid escrow fee. No TrustLock service fees on your portion.`,
+        `$0 fees on your portion. Gas covered by TrustLock.`,
         "info", transactionId);
       await notify(supabase, tx.vendor_id,
         "Dispute Resolved",
         `You receive $${vendorNet.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
-        `Escrow fee: $${vendorEscrowFee.toFixed(2)} (halved rate: ${halvedRate.toFixed(2)}%). $0 gas fees — absorbed from escrow fee.`,
+        `1% escrow fee on your share: $${vendorEscrowFee.toFixed(2)}.`,
         "info", transactionId);
 
       return json({
@@ -635,17 +629,15 @@ Deno.serve(async (req) => {
         action: "route_split",
         transactionId,
         escrowPrincipal,
-        prePaidEscrowFee,
         buyerShare,
         vendorShare,
         buyerAmount,
         vendorGross,
         vendorEscrowFee,
         vendorNet,
-        halvedEscrowRate: halvedRate,
-        gasAbsorbedFromEscrowFee: estimatedGasTotal,
-        gasChargedToParties: 0,
         feeToTrickle,
+        gasChargedToParties: 0,
+        gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         transfers,
       });
     }
@@ -832,7 +824,103 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone` }, 400);
+    // ══════════════════════════════════════════════════
+    //  ACTION: ROUTE_REFUND_MILESTONE — Refund a single milestone
+    //  $0 fees — returns milestone amount to buyer, no trickle
+    // ══════════════════════════════════════════════════
+    if (action === "route_refund_milestone") {
+      const { milestoneId } = body;
+      if (!milestoneId) return json({ error: "milestoneId is required" }, 400);
+
+      const { data: milestone } = await supabase
+        .from("transaction_milestones")
+        .select("*")
+        .eq("id", milestoneId)
+        .single();
+
+      if (!milestone) return json({ error: "Milestone not found" }, 404);
+
+      const milestoneAmount = Number(milestone.amount) || 0;
+      const buyerWallet = body.buyerWallet || "buyer_pending";
+
+      const transfers = [];
+
+      if (milestoneAmount > 0) {
+        const refundTx = await transferOnChain(
+          WALLETS.escrow.address, buyerWallet,
+          milestoneAmount, token,
+          `Milestone "${milestone.title}" refund for TX ${tx.tx_id}`
+        );
+        transfers.push({
+          from: WALLETS.escrow.address, to: buyerWallet,
+          amount: milestoneAmount, token,
+          memo: `Milestone refund — $0 fees, gasless`,
+          txHash: refundTx.txHash, status: refundTx.status,
+        });
+      }
+
+      await supabase
+        .from("transaction_milestones")
+        .update({ status: "refunded", completed_at: new Date().toISOString() })
+        .eq("id", milestoneId);
+
+      // Check if all milestones resolved
+      const { data: pendingMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id")
+        .eq("transaction_id", transactionId)
+        .not("status", "in", '("completed","refunded")');
+
+      const allResolved = !pendingMilestones?.length;
+
+      if (allResolved) {
+        await supabase
+          .from("transactions")
+          .update({
+            status: "refunded",
+            milestone_status: "all_completed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", transactionId);
+      }
+
+      // Forward to escrow-bridge
+      try {
+        const escrowUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/escrow-bridge`;
+        await fetch(escrowUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "refund_milestone",
+            transactionId,
+            milestoneIndex: milestone.order_index,
+          }),
+        });
+      } catch (e) {
+        console.warn("Escrow bridge milestone refund forward failed:", e);
+      }
+
+      await notify(supabase, tx.buyer_id,
+        "Milestone Refunded",
+        `$${milestoneAmount.toFixed(2)} refunded for milestone "${milestone.title}" — $0 fees. Gas covered by TrustLock.`,
+        "success", transactionId);
+
+      return json({
+        success: true,
+        action: "route_refund_milestone",
+        transactionId,
+        milestoneId,
+        refundAmount: milestoneAmount,
+        feesCharged: 0,
+        allResolved,
+        transfers,
+      });
+    }
+
+    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone, route_refund_milestone` }, 400);
   } catch (err) {
     console.error("wallet-routing-bridge error:", err);
     return json({ success: false, error: err.message }, 500);

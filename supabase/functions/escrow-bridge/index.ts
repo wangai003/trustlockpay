@@ -383,6 +383,7 @@ Deno.serve(async (req) => {
 
     // ══════════════════════════════════════════════════
     //  ACTION: RELEASE_MILESTONE — Release single milestone
+    //  Fee: 1% ÷ totalMilestones per release, remainder absorbed by final
     // ══════════════════════════════════════════════════
     if (action === "release_milestone") {
       if (milestoneIndex == null) {
@@ -413,7 +414,6 @@ Deno.serve(async (req) => {
       }
 
       // ── Fractionalized escrow fee: 1% ÷ total milestones ──
-      // Get total milestone count for this transaction
       const { count: totalMilestoneCount } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -421,7 +421,6 @@ Deno.serve(async (req) => {
 
       const msCount = totalMilestoneCount || 1;
       const totalEscrowFee = Math.round(tx.amount * 0.01 * 100) / 100;
-      // Each milestone gets an equal fraction: 1% / totalMilestones
       const fractionalFee = Math.round((totalEscrowFee / msCount) * 100) / 100;
 
       // Check if this is the last milestone — use remainder absorption
@@ -440,7 +439,7 @@ Deno.serve(async (req) => {
         .eq("transaction_id", transactionId)
         .eq("status", "completed");
 
-      const priorCompleted = (completedBefore || 1) - 1; // subtract current one just marked
+      const priorCompleted = (completedBefore || 1) - 1;
       const feesAlreadyCharged = Math.round(fractionalFee * priorCompleted * 100) / 100;
       const milestoneEscrowFee = isLast
         ? Math.round((totalEscrowFee - feesAlreadyCharged) * 100) / 100
@@ -458,11 +457,15 @@ Deno.serve(async (req) => {
           .eq("id", transactionId);
       }
 
+      const milestoneAmount = Number(milestone?.amount) || (tx.amount / msCount);
+      const vendorPayout = Math.round((milestoneAmount - milestoneEscrowFee) * 100) / 100;
+
       await notify(
         supabase,
         tx.vendor_id,
         "Milestone Released",
-        `Milestone "${milestone?.title || milestoneIndex}" funds released. Escrow fee: $${milestoneEscrowFee.toFixed(2)} (${(1 / msCount).toFixed(2)}% of 1%).`,
+        `Milestone "${milestone?.title || milestoneIndex}" — $${vendorPayout.toFixed(2)} released. ` +
+        `Escrow fee: $${milestoneEscrowFee.toFixed(2)} (1% ÷ ${msCount} milestones = ${(1 / msCount).toFixed(4)}% per milestone).`,
         "success",
         transactionId
       );
@@ -474,10 +477,86 @@ Deno.serve(async (req) => {
         milestoneIndex,
         contractTx: result,
         allCompleted: isLast,
+        milestoneAmount,
         milestoneEscrowFee,
+        vendorPayout,
         totalEscrowFee,
         milestoneCount: msCount,
-        feeFormula: `1% / ${msCount} milestones = ${(1 / msCount).toFixed(4)}% per milestone`,
+        feeFormula: `1% ÷ ${msCount} milestones = ${(1 / msCount).toFixed(4)}% per milestone`,
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: REFUND_MILESTONE — Refund a single milestone to buyer
+    //  Fee: $0 — all fees waived on refund
+    // ══════════════════════════════════════════════════
+    if (action === "refund_milestone") {
+      if (milestoneIndex == null) {
+        return json({ error: "milestoneIndex is required" }, 400);
+      }
+
+      const result = await sendContractCall(
+        ESCROW_ABI.refundMilestone,
+        JSON.stringify({ escrowId, milestoneIndex })
+      );
+
+      const { data: milestone } = await supabase
+        .from("transaction_milestones")
+        .select("id, order_index, amount, title")
+        .eq("transaction_id", transactionId)
+        .eq("order_index", milestoneIndex)
+        .single();
+
+      const milestoneAmount = Number(milestone?.amount) || 0;
+
+      if (milestone) {
+        await supabase
+          .from("transaction_milestones")
+          .update({
+            status: "refunded",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", milestone.id);
+      }
+
+      // Check if all milestones are now resolved (completed or refunded)
+      const { data: pendingMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id")
+        .eq("transaction_id", transactionId)
+        .not("status", "in", '("completed","refunded")');
+
+      const allResolved = !pendingMilestones?.length;
+
+      if (allResolved) {
+        await supabase
+          .from("transactions")
+          .update({
+            status: "refunded",
+            milestone_status: "all_completed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", transactionId);
+      }
+
+      await notify(
+        supabase,
+        tx.buyer_id,
+        "Milestone Refunded",
+        `$${milestoneAmount.toFixed(2)} refunded for milestone "${milestone?.title || milestoneIndex}" — $0 fees.`,
+        "success",
+        transactionId
+      );
+
+      return json({
+        success: true,
+        action: "refund_milestone",
+        escrowId,
+        milestoneIndex,
+        contractTx: result,
+        refundAmount: milestoneAmount,
+        feesCharged: 0,
+        allResolved,
       });
     }
 
@@ -505,7 +584,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({ error: `Unknown action: ${action}` }, 400);
+    return json({ error: `Unknown action: ${action}. Supported: lock, release, refund, split, release_milestone, refund_milestone, approve_milestone` }, 400);
   } catch (err) {
     console.error("escrow-bridge error:", err);
     return json({ success: false, error: err.message }, 500);
