@@ -64,7 +64,8 @@ function calculatePayoutFees(
   payoutType: string,
   paymentCategory: string,
   processorId: string,
-  splitVendorShare?: number
+  splitVendorShare?: number,
+  milestoneCount?: number
 ): FeeResult {
   const isCrypto = paymentCategory === "crypto_wallet";
   const processorRate = PROCESSOR_FEES[processorId] || 0;
@@ -77,9 +78,10 @@ function calculatePayoutFees(
 
   switch (payoutType) {
     case "release":
-      // 1.0% escrow service fee only + $0.02 gas
+      // 1.0% escrow service fee — fractionalized across milestones
+      // If milestoneCount > 1, each milestone release only charges 1% / milestoneCount
       trustlockRate = 0;
-      escrowRate = 0.01;  // 1.0%
+      escrowRate = 0.01;  // 1.0% total across all milestones
       gasEstimate = 0.02;
       applyEscrow = true;
       break;
@@ -114,7 +116,10 @@ function calculatePayoutFees(
     if (escrowVendorOnly && splitVendorShare !== undefined) {
       escrowFee = (amount * splitVendorShare) * escrowRate;
     } else {
-      escrowFee = amount * escrowRate;
+      // Fractionalize: 1% of TOTAL transaction divided by number of milestones
+      // For atomic (non-milestone) releases, milestoneCount is 1 → full 1%
+      const effectiveMilestoneCount = (milestoneCount && milestoneCount > 0) ? milestoneCount : 1;
+      escrowFee = (amount * escrowRate) / effectiveMilestoneCount;
     }
   }
 
@@ -231,7 +236,7 @@ Deno.serve(async (req) => {
         const {
           seedToken, role: payoutRole, payoutType, transactionId, orderNumber,
           amount, paymentCategory, paymentProvider, providerDetails, mode,
-          processorId, splitVendorShare,
+          processorId, splitVendorShare, milestoneCount: paramMilestoneCount,
         } = params;
 
         if (!amount || parseFloat(amount) <= 0) throw new Error("Valid amount required");
@@ -240,12 +245,24 @@ Deno.serve(async (req) => {
         const amountNum = parseFloat(amount);
         const processor = processorId || (paymentCategory === "crypto_wallet" ? "direct" : "coinbase");
 
+        // Resolve milestone count for fractionalized escrow fee
+        // If not passed, look up from transaction_milestones (count payment milestones with amount > 0)
+        let resolvedMilestoneCount = paramMilestoneCount ? parseInt(paramMilestoneCount) : 1;
+        if (!paramMilestoneCount && transactionId) {
+          const { count } = await supabase
+            .from("transaction_milestones")
+            .select("id", { count: "exact", head: true })
+            .eq("transaction_id", transactionId);
+          if (count && count > 1) resolvedMilestoneCount = count;
+        }
+
         const fees = calculatePayoutFees(
           amountNum,
           payoutType || "release",
           paymentCategory,
           processor,
-          splitVendorShare
+          splitVendorShare,
+          resolvedMilestoneCount
         );
 
         const confirmationCode = generateConfirmationCode();
@@ -553,12 +570,23 @@ Deno.serve(async (req) => {
 
         // Create verified payout request
         const confirmationCode = generateConfirmationCode();
+        // Resolve milestone count for fractionalized escrow fee
+        let verifyMilestoneCount = 1;
+        if (order.transaction_id) {
+          const { count } = await supabase
+            .from("transaction_milestones")
+            .select("id", { count: "exact", head: true })
+            .eq("transaction_id", order.transaction_id);
+          if (count && count > 1) verifyMilestoneCount = count;
+        }
+
         const fees = calculatePayoutFees(
           order.amount || 0,
           payoutType,
           "crypto_wallet",
           "direct",
-          payoutType === "split" && userRole === "vendor" ? 1 : undefined
+          payoutType === "split" && userRole === "vendor" ? 1 : undefined,
+          verifyMilestoneCount
         );
 
         const vpTrickleRule = payoutType === "refund"
