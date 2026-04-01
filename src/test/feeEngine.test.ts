@@ -87,7 +87,7 @@ describe("Fee Engine V2", () => {
       const result = calculateFeesV2(100, "checkout_crypto", "direct");
       expect(result.processorFee).toBe(0);
       expect(result.trustlockFee).toBe(1.0);
-      expect(result.escrowFee).toBe(1);           // 1% escrow
+      expect(result.escrowFee).toBe(0.5);         // 0.5% escrow deposit
       // gasFee removed — gasless
     });
 
