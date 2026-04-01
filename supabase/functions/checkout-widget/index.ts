@@ -146,10 +146,9 @@ function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypt
   // Escrow deposit: 0.5% (held until release when 1.0% escrow service fee applies)
   const escrowDeposit = round(amount * (0.5 / 100));
 
-  // Gas fee
-  const gasFee = 0.02;
+  // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
 
-  const totalFees = round(platformFee + processorFee + escrowDeposit + gasFee);
+  const totalFees = round(platformFee + processorFee + escrowDeposit);
   const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
   // Build lockFunds calldata for smart contract
