@@ -134,21 +134,28 @@ function selectCheapestProcessor(country: string, isCrypto: boolean): ProcessorR
   };
 }
 
-// ─── 3-Way Fee Routing ────────────────────────────────────
+// ─── Fee Routing (Corrected Model) ────────────────────────
+// At checkout:
+//   1. Processor takes their cut (before funds reach TrustLock)
+//   2. ALL remaining funds → Transaction Fee Wallet
+//   3. Transaction Fee Wallet keeps: 0.5% TrustLock transaction fee + taxes
+//   4. Transaction Fee Wallet routes principal → Escrow Wallet
+//      (principal has 1% escrow service fee baked in — extracted at release)
+//   The 0.5% is TrustLock's upfront transaction fee (NOT an escrow deposit)
 function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypto: boolean, taxTotal: number = 0) {
-  // Platform fee: 1.0% crypto, 1.5% fiat
-  const platformRate = isCrypto ? 1.0 : 1.5;
-  const platformFee = round(amount * (platformRate / 100));
+  // TrustLock transaction fee: always 0.5% (same for fiat and crypto)
+  const trustlockFee = round(amount * (0.5 / 100));
 
   // Processor fee: 0 for direct crypto, else processor rate
   const processorFee = isCrypto && processorFeeRate === 0 ? 0 : round(amount * (processorFeeRate / 100));
 
-  // Escrow deposit: 0.5% (held until release when 1.0% escrow service fee applies)
-  const escrowDeposit = round(amount * (0.5 / 100));
+  // Combined "Transaction Fee" shown on invoice = processor + TrustLock 0.5%
+  const combinedTransactionFee = round(trustlockFee + processorFee);
 
+  // No escrow deposit — the 0.5% is TrustLock's transaction fee, NOT an escrow deposit
   // No gas fee — MATIC gas paid by TrustLock Relayer Wallet (gasless meta-transactions)
 
-  const totalFees = round(platformFee + processorFee + escrowDeposit);
+  const totalFees = combinedTransactionFee;
   const totalBuyerCharge = round(amount + totalFees + taxTotal);
 
   // Build lockFunds calldata for smart contract
@@ -156,24 +163,25 @@ function calculateCheckoutFees(amount: number, processorFeeRate: number, isCrypt
     function: "lockFunds",
     params: {
       amount: Math.round(amount * 1e6), // USDC 6 decimals
-      platformFee: Math.round(platformFee * 1e6),
-      escrowDeposit: Math.round(escrowDeposit * 1e6),
+      platformFee: Math.round(trustlockFee * 1e6),
+      escrowDeposit: 0, // No escrow deposit
       processorFee: Math.round(processorFee * 1e6),
     },
   };
 
   return {
-    platformFee,
+    platformFee: trustlockFee,       // 0.5% TrustLock transaction fee
+    trustlockFee,
     processorFee,
-    escrowDeposit,
-    // gasFee removed — gasless architecture
+    escrowDeposit: 0,                // DEPRECATED — no escrow deposit
+    combinedTransactionFee,          // What buyer sees as "Transaction Fee"
     totalFees,
     taxTotal,
     totalBuyerCharge,
-    netAmount: amount, // Vendor receives 100% of escrow principal
-    // 3-way wallet routing
-    transactionWalletReceives: round(platformFee + taxTotal), // immediate at checkout
-    escrowWalletReceives: round(amount + escrowDeposit), // principal + deposit held in escrow
+    netAmount: amount,               // Vendor principal (1% escrow fee baked in)
+    // Fund flow: ALL → Transaction Fee Wallet → keeps 0.5% + taxes → routes principal → Escrow Wallet
+    transactionWalletReceives: round(trustlockFee + taxTotal), // TrustLock keeps this
+    escrowWalletReceives: amount,    // principal only (routed from Transaction Fee Wallet)
     processorReceives: processorFee,
     lockFundsCalldata,
   };
