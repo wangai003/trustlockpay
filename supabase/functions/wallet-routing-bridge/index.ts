@@ -227,18 +227,18 @@ Deno.serve(async (req) => {
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount },
+          breakdown: { escrowPrincipal, trustlockFee, processorFee, taxAmount },
         }, 400);
       }
 
-      // 7) Transfer: Transaction Wallet → Escrow Wallet (principal + escrow fee)
-      // Gas for this internal transfer is covered by TrustLock platform revenue
+      // 6) Transfer: Transaction Fee Wallet → Escrow Wallet (principal only)
+      // The principal has 1% baked in — extracted at release
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
         WALLETS.escrow.address,
         escrowWalletReceives,
         token,
-        `Escrow principal ($${escrowPrincipal}) + escrow fee ($${escrowFee}) for TX ${tx.tx_id}`
+        `Vendor principal ($${escrowPrincipal}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
 
       // 8) Update transaction
