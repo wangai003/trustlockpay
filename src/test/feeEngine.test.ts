@@ -128,13 +128,13 @@ describe("Fee Engine V2", () => {
       expect(result.trustlockFee).toBe(0.75);
     });
 
-    it("release_to_vendor charges $0 — escrow fee pre-paid at checkout", () => {
+    it("release_to_vendor charges 1% escrow service fee (gasless)", () => {
       const result = calculateFeesV2(500, "release_to_vendor", "direct");
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
-      expect(result.escrowFee).toBe(0);            // Pre-paid, no additional charge
+      expect(result.escrowFee).toBe(5);             // 1% escrow service fee at release
       // gasFee removed — gasless
-      expect(result.totalFees).toBe(0);
+      expect(result.totalFees).toBe(5);
     });
   });
 
