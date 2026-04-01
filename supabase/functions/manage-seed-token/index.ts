@@ -64,7 +64,8 @@ function calculatePayoutFees(
   payoutType: string,
   paymentCategory: string,
   processorId: string,
-  splitVendorShare?: number
+  splitVendorShare?: number,
+  milestoneCount?: number
 ): FeeResult {
   const isCrypto = paymentCategory === "crypto_wallet";
   const processorRate = PROCESSOR_FEES[processorId] || 0;
@@ -77,9 +78,10 @@ function calculatePayoutFees(
 
   switch (payoutType) {
     case "release":
-      // 1.0% escrow service fee only + $0.02 gas
+      // 1.0% escrow service fee — fractionalized across milestones
+      // If milestoneCount > 1, each milestone release only charges 1% / milestoneCount
       trustlockRate = 0;
-      escrowRate = 0.01;  // 1.0%
+      escrowRate = 0.01;  // 1.0% total across all milestones
       gasEstimate = 0.02;
       applyEscrow = true;
       break;
@@ -114,7 +116,10 @@ function calculatePayoutFees(
     if (escrowVendorOnly && splitVendorShare !== undefined) {
       escrowFee = (amount * splitVendorShare) * escrowRate;
     } else {
-      escrowFee = amount * escrowRate;
+      // Fractionalize: 1% of TOTAL transaction divided by number of milestones
+      // For atomic (non-milestone) releases, milestoneCount is 1 → full 1%
+      const effectiveMilestoneCount = (milestoneCount && milestoneCount > 0) ? milestoneCount : 1;
+      escrowFee = (amount * escrowRate) / effectiveMilestoneCount;
     }
   }
 
