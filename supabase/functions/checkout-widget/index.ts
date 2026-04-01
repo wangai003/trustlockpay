@@ -406,7 +406,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     escrowFee: fees.escrowDeposit,
     platformFee: fees.platformFee,
     processorFee: fees.processorFee,
-    gasFee: fees.gasFee,
+    // gasFee removed — gasless
     orderType,
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
