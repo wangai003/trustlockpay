@@ -474,10 +474,10 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         feeRate: processor.feeRate,
       },
       feeBreakdown: {
-        platformFee: fees.platformFee,
+        trustlockFee: fees.trustlockFee,
         processorFee: fees.processorFee,
-        escrowDeposit: fees.escrowDeposit,
-        // gasFee removed — gasless
+        combinedTransactionFee: fees.combinedTransactionFee,
+        escrowDeposit: 0,
         totalFees: fees.totalFees,
         taxBreakdown,
         taxTotal,
