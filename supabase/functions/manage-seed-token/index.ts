@@ -77,33 +77,28 @@ function calculatePayoutFees(
 
   let trustlockRate = 0;
   let escrowRate = 0;
-  let gasEstimate = 0.02;
   let applyEscrow = true;
   let escrowVendorOnly = false;
 
   switch (payoutType) {
     case "release":
       // 1.0% escrow service fee — fractionalized across milestones
-      // If milestoneCount > 1, each milestone release only charges 1% / milestoneCount
       trustlockRate = 0;
       escrowRate = 0.01;  // 1.0% total across all milestones
-      gasEstimate = 0.02;
       applyEscrow = true;
       break;
     case "refund":
-      // ALL fees waived — gas only
+      // ALL fees waived — gasless (MATIC paid by TrustLock Relayer)
       trustlockRate = 0;
       escrowRate = 0;
       applyEscrow = false;
-      gasEstimate = isCrypto ? 0.02 : 0.05;
       break;
     case "split":
-      // 1.0% escrow fee on VENDOR share only + $0.04 gas
+      // 1.0% escrow fee on VENDOR share only
       trustlockRate = 0;
       escrowRate = 0.01;
       applyEscrow = true;
       escrowVendorOnly = true;
-      gasEstimate = 0.04;
       break;
     default:
       // os_payment: 1.5% platform fee, no escrow
@@ -128,7 +123,9 @@ function calculatePayoutFees(
     }
   }
 
-  const totalFees = trustlockFee + processorFee + escrowFee + gasEstimate;
+  // No gas fee — all gas is paid in MATIC by TrustLock's Relayer Wallet
+  // Gas is an internal operational cost, never deducted from stablecoin amounts
+  const totalFees = trustlockFee + processorFee + escrowFee;
 
   // Trickle-down: escrow wallet forwards collected fees to transaction wallet
   // Escrow wallet net balance = 0 after forwarding
@@ -138,7 +135,6 @@ function calculatePayoutFees(
     trustlockFee,
     processorFee,
     escrowFee,
-    gasFee: gasEstimate,
     totalFees,
     netAmount: amount - totalFees,
     transactionWalletReceives: trustlockFee + feeTrickleToTransactionWallet,

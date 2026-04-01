@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
       if (escrowPrincipal <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount, gasFee },
+          breakdown: { escrowPrincipal, platformFee, processorFee, escrowDeposit, taxAmount },
         }, 400);
       }
 
