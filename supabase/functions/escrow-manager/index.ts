@@ -7,12 +7,16 @@ const corsHeaders = {
 };
 
 // ─── Fee Constants ─────────────────────────────────────────
+// CORRECTED FEE MODEL:
+//   0.5% = TrustLock upfront transaction fee (kept by Transaction Wallet at checkout)
+//   1.0% = Escrow service fee (baked into principal, extracted at release/split)
+//   Gas  = Gasless — MATIC paid by TrustLock Relayer Wallet
 const FEE_RULES = {
-  checkout_fiat: { trustlockRate: 1.5, escrowRate: 0.5, gasEstimate: 0.02 },
-  checkout_crypto: { trustlockRate: 1.0, escrowRate: 0.5, gasEstimate: 0.02 },
-  release: { trustlockRate: 0, escrowRate: 1.0, gasEstimate: 0.02 },
-  refund: { trustlockRate: 0, escrowRate: 0, gasEstimate: 0.05 },
-  split: { trustlockRate: 0, escrowRate: 1.0, gasEstimate: 0.04 },
+  checkout_fiat: { trustlockRate: 1.5, escrowServiceRate: 0, gasEstimate: 0 },
+  checkout_crypto: { trustlockRate: 1.0, escrowServiceRate: 0, gasEstimate: 0 },
+  release: { trustlockRate: 0, escrowServiceRate: 1.0, gasEstimate: 0 },
+  refund: { trustlockRate: 0, escrowServiceRate: 0, gasEstimate: 0 },
+  split: { trustlockRate: 0, escrowServiceRate: 1.0, gasEstimate: 0 },
 } as const;
 
 const PROCESSOR_RATES: Record<string, number> = {
