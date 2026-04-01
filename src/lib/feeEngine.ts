@@ -624,7 +624,7 @@ export const FEE_DISCLOSURE_FULL = `TrustLock Pay fee schedule per transaction t
 **Refund Policy:** On refund, the buyer receives 100% of locked funds. No fees charged. Gas covered by TrustLock.`;
 
 // ─── Invoice Mandatory Disclosure ──────────────────────────
-export const INVOICE_MANDATORY_DISCLOSURE = \`**Fee Transparency Notice**
+export const INVOICE_MANDATORY_DISCLOSURE = `**Fee Transparency Notice**
 
 The total amount charged includes the following fees added on top of the escrow principal:
 • **Transaction Fee** (${FEE_CATEGORIES.platform.range}): Combined platform and processing fee
@@ -633,4 +633,4 @@ The total amount charged includes the following fees added on top of the escrow 
 
 The escrow principal is preserved in full. The vendor receives their principal minus the 1.0% escrow service fee at release.
 
-**Refund Policy:** If a refund is processed, the buyer receives 100% of locked funds. $0 fees — gasless.\`;
+**Refund Policy:** If a refund is processed, the buyer receives 100% of locked funds. $0 fees — gasless.`;
