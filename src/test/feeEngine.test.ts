@@ -70,17 +70,17 @@ describe("Fee Engine V2", () => {
   });
 
   describe("calculateFeesV2", () => {
-    it("calculates checkout_fiat fees correctly (1% escrow, $0 gas)", () => {
+    it("calculates checkout_fiat fees correctly (0.5% escrow deposit, gasless)", () => {
       const result = calculateFeesV2(100, "checkout_fiat", "stripe");
       expect(result.trustlockFee).toBe(1.5);
       expect(result.processorFee).toBe(2.9);
-      expect(result.escrowFee).toBe(1);          // 1% upfront escrow fee
+      expect(result.escrowFee).toBe(0.5);          // 0.5% escrow deposit at checkout
       // gasFee removed — gasless architecture
-      expect(result.totalFees).toBeCloseTo(5.4, 2);
-      expect(result.netAmount).toBeCloseTo(94.6, 2);
-      expect(result.transactionWalletReceives).toBe(2.5); // trustlock 1.5 + escrow trickle 1
-      expect(result.escrowWalletReceives).toBe(101);      // principal + escrow fee
-      expect(result.feeTrickleToTransactionWallet).toBe(1);
+      expect(result.totalFees).toBeCloseTo(4.9, 2);
+      expect(result.netAmount).toBeCloseTo(95.1, 2);
+      expect(result.transactionWalletReceives).toBe(2); // trustlock 1.5 + escrow trickle 0.5
+      expect(result.escrowWalletReceives).toBe(100.5);  // principal + 0.5% escrow deposit
+      expect(result.feeTrickleToTransactionWallet).toBe(0.5);
     });
 
     it("calculates checkout_crypto with direct (no processor fee)", () => {
