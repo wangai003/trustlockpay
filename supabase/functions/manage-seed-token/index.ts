@@ -301,7 +301,7 @@ Deno.serve(async (req) => {
                 trustlockFee: fees.trustlockFee,
                 processorFee: fees.processorFee,
                 escrowFee: fees.escrowFee,
-                gasFee: fees.gasFee,
+                gasModel: "Gasless — MATIC paid by TrustLock Relayer",
                 transactionWallet: AZIX_TRANSACTION_WALLET,
                 escrowWallet: AZIX_ESCROW_WALLET,
                 transactionWalletReceives: fees.transactionWalletReceives,
