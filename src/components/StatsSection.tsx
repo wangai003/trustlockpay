@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
+import { Target, Globe, Shield, TrendingDown, Users } from "lucide-react";
 
 const stats = [
-  { value: "8,500+", label: "Registered Users" },
-  { value: "420+", label: "Verified Vendors" },
-  { value: "$3.2M+", label: "Escrow Transactions" },
-  { value: "12", label: "Countries Connected" },
-  { value: "85%", label: "Reduction in Risk" },
+  { value: "54", label: "African Markets Targeted", icon: Globe },
+  { value: "1.5%", label: "All-In Escrow Fee", icon: TrendingDown },
+  { value: "100%", label: "Blockchain-Verified Proofs", icon: Shield },
+  { value: "15+", label: "Industries Supported", icon: Target },
+  { value: "∞", label: "Vendors Welcome", icon: Users },
 ];
 
 const StatsSection = () => {
@@ -19,10 +20,10 @@ const StatsSection = () => {
           className="text-center mb-12"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground">
-            Trusted by a Growing Global Community
+            Built for Global African Commerce
           </h2>
           <p className="mt-3 text-primary-foreground/70 text-lg">
-            People trust platforms with visible numbers and proven success records.
+            A platform designed from the ground up to serve diaspora buyers and African vendors.
           </p>
         </motion.div>
 
