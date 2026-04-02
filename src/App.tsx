@@ -185,6 +185,7 @@ const App = () => (
                 <Route path="os-pay" element={<BuyerOSPay />} />
                 <Route path="payout" element={<BuyerPayout />} />
                 <Route path="teams" element={<BuyerTeams />} />
+                <Route path="messages" element={<BuyerMessages />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
                 <Route path="settings" element={<BuyerSettings />} />
               </Route>
