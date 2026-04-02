@@ -29,6 +29,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Record pending ToS acceptance from signup
+      if (session?.user?.id) {
+        const pendingTos = localStorage.getItem("tl_pending_tos");
+        if (pendingTos) {
+          try {
+            const { version, userAgent } = JSON.parse(pendingTos);
+            supabase.from("tos_acceptances").insert({
+              user_id: session.user.id,
+              tos_version: version,
+              user_agent: userAgent,
+            }).then(() => {
+              localStorage.removeItem("tl_pending_tos");
+            });
+          } catch { /* ignore parse errors */ }
+        }
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {

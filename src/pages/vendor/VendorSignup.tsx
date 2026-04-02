@@ -9,6 +9,7 @@ import { Store, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import { supabase } from "@/integrations/supabase/client";
+import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
@@ -24,11 +25,17 @@ const VendorSignup = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setResendMessage("");
+
+    if (!tosAccepted) {
+      setError("You must accept the Terms of Service to create an account");
+      return;
+    }
 
     if (!isPasswordStrong(password)) {
       setError("Password does not meet all strength requirements");
@@ -46,6 +53,12 @@ const VendorSignup = () => {
         setError(error.message);
       }
     } else {
+      // Store ToS acceptance flag for recording after login
+      localStorage.setItem("tl_pending_tos", JSON.stringify({
+        version: CURRENT_TOS_VERSION,
+        userAgent: navigator.userAgent,
+        acceptedAt: new Date().toISOString(),
+      }));
       // Auto-confirm is enabled, so redirect straight to dashboard
       localStorage.setItem("tl_vendor_auth", "true");
       localStorage.setItem("tl_vendor_network", "mainnet");
@@ -143,8 +156,9 @@ const VendorSignup = () => {
                 </div>
                 <PasswordStrengthMeter password={password} />
               </div>
+              <TermsOfServiceGate accepted={tosAccepted} onAcceptChange={setTosAccepted} />
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password)}>
+              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password) || !tosAccepted}>
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">

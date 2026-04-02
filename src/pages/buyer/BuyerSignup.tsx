@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { ShoppingBag, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
-
+import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
+import { supabase } from "@/integrations/supabase/client";
 const BuyerSignup = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -19,10 +20,16 @@ const BuyerSignup = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!tosAccepted) {
+      setError("You must accept the Terms of Service to create an account");
+      return;
+    }
 
     if (!isPasswordStrong(password)) {
       setError("Password does not meet all strength requirements");
@@ -31,11 +38,17 @@ const BuyerSignup = () => {
 
     setLoading(true);
     const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
-    setLoading(false);
-
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else {
+      // Store ToS acceptance flag for recording after email verification & first login
+      localStorage.setItem("tl_pending_tos", JSON.stringify({
+        version: CURRENT_TOS_VERSION,
+        userAgent: navigator.userAgent,
+        acceptedAt: new Date().toISOString(),
+      }));
+      setLoading(false);
       setSuccess(true);
     }
   };
@@ -96,8 +109,9 @@ const BuyerSignup = () => {
                 </div>
                 <PasswordStrengthMeter password={password} />
               </div>
+              <TermsOfServiceGate accepted={tosAccepted} onAcceptChange={setTosAccepted} />
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password)}>
+              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password) || !tosAccepted}>
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">

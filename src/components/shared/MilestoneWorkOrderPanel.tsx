@@ -26,12 +26,15 @@ import {
 } from "@/hooks/useSupabaseData";
 import type { MockMilestone } from "@/hooks/useTestnetData";
 
+type OrderType = "simple" | "milestone" | "hybrid";
+
 interface MilestoneWorkOrderPanelProps {
   transactionId?: string | null;
   txId: string;
   industry?: string | null;
   role: "buyer" | "vendor";
   transactionStatus?: string;
+  orderType?: OrderType;
   isTestnet?: boolean;
   testnetMilestones?: MockMilestone[];
   onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
@@ -48,6 +51,51 @@ const FUNDS_LOCKED_STATUSES = new Set([
   "compliance_hold", "compliance_review", "blocked",
 ]);
 
+/**
+ * Industry layout mode determines how the work order panel renders:
+ * - "linear"     → Traditional milestone progression (manufacturing, freelance, etc.)
+ * - "single"     → Single escrow release, no progressive milestones (real estate, ecommerce)
+ * - "inspection" → Milestone + mandatory observer/inspection gates (mining, oil & gas, pharma)
+ * - "offline"    → Steps happen offline, parties confirm receipt digitally (real estate, legal)
+ */
+type LayoutMode = "linear" | "single" | "inspection" | "offline";
+
+/** Map industries to their default layout mode */
+const INDUSTRY_LAYOUT: Record<string, LayoutMode> = {
+  "real-estate": "offline",
+  "real_estate": "offline",
+  "legal": "offline",
+  "insurance": "offline",
+  "ecommerce": "single",
+  "e-commerce": "single",
+  "freelance": "linear",
+  "digital-services": "linear",
+  "education": "linear",
+  "tourism": "single",
+  "hospitality-travel": "single",
+  "mining": "inspection",
+  "oil-gas": "inspection",
+  "energy": "inspection",
+  "renewable-energy": "inspection",
+  "pharma": "inspection",
+  "agriculture": "inspection",
+  "marine": "inspection",
+  "water-wash": "inspection",
+};
+
+function resolveLayoutMode(industry?: string | null, orderType?: OrderType): LayoutMode {
+  if (orderType === "simple") return "single";
+  if (industry && INDUSTRY_LAYOUT[industry]) return INDUSTRY_LAYOUT[industry];
+  if (orderType === "milestone") return "linear";
+  return "linear"; // default
+}
+
+/** Industries where observer is NOT required on any milestone */
+const OBSERVER_FREE_INDUSTRIES = new Set([
+  "ecommerce", "tourism", "freelance", "education",
+  "e-commerce", "digital-services", "hospitality-travel", "professional-services",
+]);
+
 const statusLabel: Record<string, string> = {
   pending: "Pending",
   in_progress: "In Progress",
@@ -56,11 +104,12 @@ const statusLabel: Record<string, string> = {
   deleted: "Removed",
 };
 
-/** Industries where observer is NOT required on any milestone */
-const OBSERVER_FREE_INDUSTRIES = new Set([
-  "ecommerce", "tourism", "freelance", "education",
-  "e-commerce", "digital-services", "hospitality-travel", "professional-services",
-]);
+const LAYOUT_MODE_LABELS: Record<LayoutMode, { title: string; description: string }> = {
+  linear: { title: "Milestone Work Order Flow", description: "Progressive milestone delivery" },
+  single: { title: "Escrow Release Flow", description: "Single release upon delivery confirmation" },
+  inspection: { title: "Inspection-Gated Work Order", description: "Observer-verified milestone delivery" },
+  offline: { title: "Offline Confirmation Flow", description: "Parties confirm offline steps digitally" },
+};
 
 /* ---------- Sub-components ---------- */
 
@@ -155,6 +204,7 @@ const MilestoneWorkOrderPanel = ({
   industry,
   role,
   transactionStatus,
+  orderType,
   isTestnet = false,
   testnetMilestones,
   onTestnetUpdateStatus,
@@ -181,6 +231,9 @@ const MilestoneWorkOrderPanel = ({
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
+
+  const layoutMode = resolveLayoutMode(industry, orderType);
+  const layoutLabels = LAYOUT_MODE_LABELS[layoutMode];
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
@@ -322,14 +375,19 @@ const MilestoneWorkOrderPanel = ({
       <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+            <CardTitle className="text-sm">{layoutLabels.title}</CardTitle>
+            <p className="text-[10px] text-muted-foreground">{layoutLabels.description}</p>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
+            <p className="text-xs text-muted-foreground">
+              {layoutMode === "single"
+                ? `No escrow record found for ${txId} yet.`
+                : `No milestone records found for ${txId} yet.`}
+            </p>
             <TLId code={`TL-${rolePrefix}-WO-BTN-INIT`} inline>
               <Button size="sm" variant="outline" className="mt-2" onClick={handleInitializeMilestones} disabled={createMilestones.isPending}>
                 {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                Initialize Milestones
+                {layoutMode === "single" ? "Initialize Escrow Release" : "Initialize Milestones"}
               </Button>
             </TLId>
           </CardContent>
@@ -345,10 +403,32 @@ const MilestoneWorkOrderPanel = ({
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
-            {isTestnet && <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">Testnet Simulation</Badge>}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-sm">{layoutLabels.title}</CardTitle>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{layoutLabels.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] capitalize">{layoutMode}</Badge>
+              {isTestnet && <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">Testnet Simulation</Badge>}
+            </div>
           </div>
+          {/* Layout-specific guidance banners */}
+          {layoutMode === "single" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Simple Escrow:</strong> Funds are held until delivery is confirmed. No progressive milestones — a single release completes the transaction.
+            </div>
+          )}
+          {layoutMode === "offline" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Offline Confirmation:</strong> Steps in this transaction (e.g., title transfer, notary signing, property inspection) happen offline. Each party confirms completion digitally to move the escrow forward.
+            </div>
+          )}
+          {layoutMode === "inspection" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Inspection-Gated:</strong> Milestones require third-party observer verification before release. Invite inspectors, auditors, or certifiers for each stage.
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           {milestones.map((ms: any, idx: number) => {
@@ -363,13 +443,15 @@ const MilestoneWorkOrderPanel = ({
             const hasObserver = isTestnet ? !!ms.observer_id : !!ms.observer_id;
 
             return (
-              <div key={ms.id} className="rounded-lg border border-border p-3 space-y-2">
+              <div key={ms.id} className={`rounded-lg border border-border p-3 space-y-2 ${layoutMode === "single" ? "bg-muted/20" : ""}`}>
                 {/* Row Header */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold">#{row}</span>
+                    {layoutMode !== "single" && <span className="text-xs font-bold">#{row}</span>}
                     <TLId code={woTLId(role, row, "LBL-TITLE")} inline>
-                      <span className="text-sm font-medium">{ms.title}</span>
+                      <span className="text-sm font-medium">
+                        {layoutMode === "single" ? "Escrow Delivery Confirmation" : ms.title}
+                      </span>
                     </TLId>
                   </div>
                   <div className="flex items-center gap-2">
@@ -575,12 +657,20 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 )}
 
+                {/* Offline mode — contextual guidance */}
+                {layoutMode === "offline" && ms.status === "pending" && (
+                  <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground">
+                    💼 This step is expected to happen offline (e.g., property inspection, title signing, notary visit). Once completed, use the button below to confirm digitally.
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap">
                   {canVendorFulfill ? (
                     <TLId code={woTLId(role, row, "BTN-FULFILL")} inline>
                       <Button size="sm" onClick={() => handleMarkFulfilled(ms.id)}>
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> Mark Fulfilled
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
                       </Button>
                     </TLId>
                   ) : null}
