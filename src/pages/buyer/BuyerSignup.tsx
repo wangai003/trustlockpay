@@ -37,20 +37,17 @@ const BuyerSignup = () => {
     }
 
     setLoading(true);
-    const { error, data } = await signUp(email, password, { full_name: fullName, role: "buyer" });
+    const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      // Record ToS acceptance
-      if (data?.user?.id) {
-        await supabase.from("tos_acceptances").insert({
-          user_id: data.user.id,
-          tos_version: CURRENT_TOS_VERSION,
-          ip_address: null,
-          user_agent: navigator.userAgent,
-        });
-      }
+      // Store ToS acceptance flag for recording after email verification & first login
+      localStorage.setItem("tl_pending_tos", JSON.stringify({
+        version: CURRENT_TOS_VERSION,
+        userAgent: navigator.userAgent,
+        acceptedAt: new Date().toISOString(),
+      }));
       setLoading(false);
       setSuccess(true);
     }

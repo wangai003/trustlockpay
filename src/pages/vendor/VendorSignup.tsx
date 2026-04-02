@@ -9,6 +9,7 @@ import { Store, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import { supabase } from "@/integrations/supabase/client";
+import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
