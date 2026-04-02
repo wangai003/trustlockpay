@@ -96,6 +96,21 @@ const OBSERVER_FREE_INDUSTRIES = new Set([
   "e-commerce", "digital-services", "hospitality-travel", "professional-services",
 ]);
 
+const statusLabel: Record<string, string> = {
+  pending: "Pending",
+  in_progress: "In Progress",
+  completed: "Fulfilled",
+  released: "Released",
+  deleted: "Removed",
+};
+
+const LAYOUT_MODE_LABELS: Record<LayoutMode, { title: string; description: string }> = {
+  linear: { title: "Milestone Work Order Flow", description: "Progressive milestone delivery" },
+  single: { title: "Escrow Release Flow", description: "Single release upon delivery confirmation" },
+  inspection: { title: "Inspection-Gated Work Order", description: "Observer-verified milestone delivery" },
+  offline: { title: "Offline Confirmation Flow", description: "Parties confirm offline steps digitally" },
+};
+
 /* ---------- Sub-components ---------- */
 
 interface ObserverInviteProps {
