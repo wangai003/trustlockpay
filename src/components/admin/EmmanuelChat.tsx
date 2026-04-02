@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Send, User, Search, Archive, X, Paperclip, FileText, ImageIcon } from "lucide-react";
+import { Send, User, Search, Archive, X, Paperclip, FileText, ImageIcon, Database } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import aiEmmanuel from "@/assets/ai-emmanuel.png";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Attachment = {
   type: "image" | "document";
