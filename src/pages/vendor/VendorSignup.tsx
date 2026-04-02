@@ -32,6 +32,11 @@ const VendorSignup = () => {
     setError("");
     setResendMessage("");
 
+    if (!tosAccepted) {
+      setError("You must accept the Terms of Service to create an account");
+      return;
+    }
+
     if (!isPasswordStrong(password)) {
       setError("Password does not meet all strength requirements");
       return;
