@@ -82,6 +82,7 @@
 
   html {
     font-size: 17px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   @media (min-width: 640px) {
@@ -92,9 +93,33 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    overscroll-behavior-y: contain;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+
+  /* Mobile touch targets - minimum 44px */
+  @media (max-width: 640px) {
+    button, a, [role="button"], input, select, textarea {
+      min-height: 44px;
+    }
+
+    /* Exceptions for inline/icon elements */
+    .inline-touch button,
+    table button,
+    .text-\[9px\],
+    .text-\[10px\],
+    badge {
+      min-height: unset;
+    }
+  }
+}
+
+/* Safe area for bottom nav on notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
