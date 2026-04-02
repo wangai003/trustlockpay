@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { toast } from "sonner";
 
 const WIDGET_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || "dbajucxswcgxllmwxnia"}.supabase.co/functions/v1/widget-embed`;
@@ -63,6 +63,7 @@ const TesterLanding = () => {
   const [copied, setCopied] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   const siteSlug = siteName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-site";
   const vendorSlug = vendorName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tester";
@@ -204,6 +205,39 @@ const TesterLanding = () => {
                 </ol>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Tutorial Video */}
+        <Card className="border-primary/20">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0">
+                <Play className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">Watch: WordPress Installation Tutorial</h2>
+                <p className="text-xs text-muted-foreground">See the full install & removal process in 25 seconds</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                poster=""
+                className="w-full"
+                style={{ aspectRatio: "16/9" }}
+              >
+                <source src="/TrustLock_WordPress_Tutorial.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground text-center">
+              This tutorial shows a WordPress install — the same process works on Shopify, Wix, Squarespace & any HTML site.
+            </p>
           </CardContent>
         </Card>
 
