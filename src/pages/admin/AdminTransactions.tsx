@@ -98,6 +98,51 @@ const AdminTransactions = () => {
     setSelected([]);
   };
 
+  // Compliance hold actions
+  const [unfreezeTarget, setUnfreezeTarget] = useState<{ txId: string; orderNum: string } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ txId: string; orderNum: string } | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [restoreStatus, setRestoreStatus] = useState("locked");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleUnfreeze = async () => {
+    if (!unfreezeTarget || !resolutionNote.trim()) return toast.error("Resolution note is required");
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-transaction", {
+        body: { action: "unfreeze_transaction", txId: unfreezeTarget.txId, restore_status: restoreStatus, resolution_note: resolutionNote.trim() },
+      });
+      if (error || !data?.success) throw new Error(data?.error || "Failed to unfreeze");
+      toast.success(`Transaction ${unfreezeTarget.txId} unfrozen → ${restoreStatus}`);
+      setUnfreezeTarget(null);
+      setResolutionNote("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleComplianceReject = async () => {
+    if (!rejectTarget || !resolutionNote.trim()) return toast.error("Rejection note is required");
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-transaction", {
+        body: { action: "compliance_reject_refund", txId: rejectTarget.txId, rejection_note: resolutionNote.trim() },
+      });
+      if (error || !data?.success) throw new Error(data?.error || "Failed to reject");
+      toast.success(`Transaction ${rejectTarget.txId} rejected — buyer refunded`);
+      setRejectTarget(null);
+      setResolutionNote("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const isComplianceHeld = (status: string) => ["compliance_hold", "compliance_review", "blocked"].includes(status);
+
   return (
     <div>
       <AdminHeader title="Transactions" />
