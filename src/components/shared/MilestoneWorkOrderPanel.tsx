@@ -26,12 +26,15 @@ import {
 } from "@/hooks/useSupabaseData";
 import type { MockMilestone } from "@/hooks/useTestnetData";
 
+type OrderType = "simple" | "milestone" | "hybrid";
+
 interface MilestoneWorkOrderPanelProps {
   transactionId?: string | null;
   txId: string;
   industry?: string | null;
   role: "buyer" | "vendor";
   transactionStatus?: string;
+  orderType?: OrderType;
   isTestnet?: boolean;
   testnetMilestones?: MockMilestone[];
   onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
@@ -48,13 +51,44 @@ const FUNDS_LOCKED_STATUSES = new Set([
   "compliance_hold", "compliance_review", "blocked",
 ]);
 
-const statusLabel: Record<string, string> = {
-  pending: "Pending",
-  in_progress: "In Progress",
-  completed: "Fulfilled",
-  released: "Released",
-  deleted: "Removed",
+/**
+ * Industry layout mode determines how the work order panel renders:
+ * - "linear"     → Traditional milestone progression (manufacturing, freelance, etc.)
+ * - "single"     → Single escrow release, no progressive milestones (real estate, ecommerce)
+ * - "inspection" → Milestone + mandatory observer/inspection gates (mining, oil & gas, pharma)
+ * - "offline"    → Steps happen offline, parties confirm receipt digitally (real estate, legal)
+ */
+type LayoutMode = "linear" | "single" | "inspection" | "offline";
+
+/** Map industries to their default layout mode */
+const INDUSTRY_LAYOUT: Record<string, LayoutMode> = {
+  "real-estate": "offline",
+  "real_estate": "offline",
+  "legal": "offline",
+  "insurance": "offline",
+  "ecommerce": "single",
+  "e-commerce": "single",
+  "freelance": "linear",
+  "digital-services": "linear",
+  "education": "linear",
+  "tourism": "single",
+  "hospitality-travel": "single",
+  "mining": "inspection",
+  "oil-gas": "inspection",
+  "energy": "inspection",
+  "renewable-energy": "inspection",
+  "pharma": "inspection",
+  "agriculture": "inspection",
+  "marine": "inspection",
+  "water-wash": "inspection",
 };
+
+function resolveLayoutMode(industry?: string | null, orderType?: OrderType): LayoutMode {
+  if (orderType === "simple") return "single";
+  if (industry && INDUSTRY_LAYOUT[industry]) return INDUSTRY_LAYOUT[industry];
+  if (orderType === "milestone") return "linear";
+  return "linear"; // default
+}
 
 /** Industries where observer is NOT required on any milestone */
 const OBSERVER_FREE_INDUSTRIES = new Set([
