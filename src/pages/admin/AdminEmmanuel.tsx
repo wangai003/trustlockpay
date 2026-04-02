@@ -91,9 +91,9 @@ const AdminEmmanuel = () => {
                 <div className="flex-1">
                   <h2 className="font-heading text-xl font-bold text-foreground">Emmanuel</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    AI-powered dispute resolution engine. Analyzes evidence, detects contradictions, and recommends fair outcomes.
+                    AI-powered dispute resolution engine with 8 analytical capabilities. Analyzes evidence, detects fraud patterns, predicts escalations, and drafts admin communications.
                   </p>
-                  <div className="flex items-center gap-4 mt-3">
+                  <div className="flex items-center gap-4 mt-3 flex-wrap">
                     <Badge className="bg-primary/15 text-primary">Online</Badge>
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Activity className="w-3 h-3" /> Processing 3 cases
@@ -101,6 +101,22 @@ const AdminEmmanuel = () => {
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Zap className="w-3 h-3" /> Avg response: 6 min
                     </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {[
+                      { icon: Target, label: "Risk Scoring" },
+                      { icon: Heart, label: "Vendor Health" },
+                      { icon: Search, label: "Fraud Detection" },
+                      { icon: AlertTriangle, label: "Escalation Predict" },
+                      { icon: HelpCircle, label: "Policy Q&A" },
+                      { icon: Mail, label: "Draft Comms" },
+                      { icon: BarChart3, label: "Audit Reports" },
+                      { icon: TrendingUp, label: "KYC Nudging" },
+                    ].map((cap) => (
+                      <Badge key={cap.label} variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5">
+                        <cap.icon className="w-2.5 h-2.5" /> {cap.label}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
                 <Button variant="outline" className="shrink-0">Kill Switch</Button>
