@@ -313,6 +313,7 @@ const MilestoneWorkOrderPanel = ({
   if (milestones.length === 0) return null;
 
   return (
+    <>
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
