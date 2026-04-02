@@ -153,6 +153,7 @@ const MilestoneWorkOrderPanel = ({
   txId,
   industry,
   role,
+  transactionStatus,
   isTestnet = false,
   testnetMilestones,
   onTestnetUpdateStatus,
