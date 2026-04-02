@@ -662,7 +662,7 @@ const MilestoneWorkOrderPanel = ({
           </AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to remove <strong>"{pendingDeleteMilestone?.title}"</strong> from this work order?
-            This action cannot be undone. The counterparty will be notified.
+            You can restore it later if you change your mind (before funds are locked). The counterparty will be notified.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -683,11 +683,50 @@ const MilestoneWorkOrderPanel = ({
                 body: { action: "delete_milestone", milestone_id: pendingDeleteMilestone.id, user_id: userId },
               });
               if (error) toast.error("Failed to remove milestone");
-              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed from work order`);
+              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed — you can restore it before funds are locked`);
               setPendingDeleteMilestone(null);
             }}
           >
             Yes, Remove Stage
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Milestone Restore Confirmation Dialog */}
+    <AlertDialog open={!!pendingRestoreMilestone} onOpenChange={(open) => !open && setPendingRestoreMilestone(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <RotateCcw className="w-4 h-4 text-primary" /> Restore Milestone Stage?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This will restore <strong>"{pendingRestoreMilestone?.title}"</strong> back to active status.
+            The milestone will return to "Pending" and the counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              if (!pendingRestoreMilestone) return;
+              if (isTestnet) {
+                onTestnetUpdateStatus?.(pendingRestoreMilestone.id, "pending");
+                toast.success(`Stage "${pendingRestoreMilestone.title}" restored`);
+                setPendingRestoreMilestone(null);
+                return;
+              }
+              const userId = await getUserId();
+              if (!userId) return toast.error("Sign in required");
+              const { error } = await supabase.functions.invoke("escrow-manager", {
+                body: { action: "restore_milestone", milestone_id: pendingRestoreMilestone.id, user_id: userId },
+              });
+              if (error) toast.error("Failed to restore milestone");
+              else toast.success(`Stage "${pendingRestoreMilestone.title}" restored to work order`);
+              setPendingRestoreMilestone(null);
+            }}
+          >
+            Yes, Restore Stage
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
