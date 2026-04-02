@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
@@ -37,6 +37,13 @@ const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("tl-open-sidebar", handler);
+    return () => window.removeEventListener("tl-open-sidebar", handler);
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("tl_vendor_auth");

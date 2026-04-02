@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
@@ -34,6 +34,12 @@ const navItems = [
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("tl-open-sidebar", handler);
+    return () => window.removeEventListener("tl-open-sidebar", handler);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("tl_admin_auth");

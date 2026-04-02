@@ -19,7 +19,7 @@ const HeroSection = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight">
                 <span className="text-foreground">Securely Do Business</span>
                 <br />
                 <span className="text-accent">Back Home</span>
@@ -52,7 +52,7 @@ const HeroSection = () => {
                 <img
                   src={heroImage}
                   alt="African artisan working in workshop"
-                  className="w-full h-[400px] lg:h-[480px] object-cover"
+                  className="w-full h-[280px] sm:h-[400px] lg:h-[480px] object-cover"
                   loading="eager"
                 />
 
