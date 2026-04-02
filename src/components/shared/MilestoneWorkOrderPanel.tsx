@@ -60,27 +60,57 @@ const FUNDS_LOCKED_STATUSES = new Set([
  */
 type LayoutMode = "linear" | "single" | "inspection" | "offline";
 
-/** Map industries to their default layout mode */
+/** Map all 25+ industries to their default layout mode */
 const INDUSTRY_LAYOUT: Record<string, LayoutMode> = {
+  // ── Inspection-Gated (observer/inspector required, heavy compliance) ──
+  "oil-gas": "inspection",
+  "oil_gas": "inspection",
+  "energy": "inspection",
+  "renewable-energy": "inspection",
+  "renewable_energy": "inspection",
+  "mining": "inspection",
+  "pharma": "inspection",
+  "pharmaceutical": "inspection",
+  "agriculture": "inspection",
+  "marine": "inspection",
+  "water-wash": "inspection",
+  "water_wash": "inspection",
+  "food-beverage": "inspection",
+  "food_beverage": "inspection",
+  "waste-recycling": "inspection",
+  "waste_recycling": "inspection",
+  "aviation": "inspection",
+
+  // ── Offline Confirmation (steps happen offline, digital confirmation) ──
   "real-estate": "offline",
   "real_estate": "offline",
   "legal": "offline",
   "insurance": "offline",
+  "construction": "offline",
+
+  // ── Single Release (simple delivery → release) ──
   "ecommerce": "single",
   "e-commerce": "single",
-  "freelance": "linear",
-  "digital-services": "linear",
-  "education": "linear",
   "tourism": "single",
   "hospitality-travel": "single",
-  "mining": "inspection",
-  "oil-gas": "inspection",
-  "energy": "inspection",
-  "renewable-energy": "inspection",
-  "pharma": "inspection",
-  "agriculture": "inspection",
-  "marine": "inspection",
-  "water-wash": "inspection",
+  "hospitality_travel": "single",
+
+  // ── Linear Progressive (milestone-by-milestone delivery) ──
+  "freelance": "linear",
+  "digital-services": "linear",
+  "digital_services": "linear",
+  "professional-services": "linear",
+  "professional_services": "linear",
+  "education": "linear",
+  "manufacturing": "linear",
+  "textiles": "linear",
+  "automotive": "linear",
+  "telecom": "linear",
+  "telecommunications": "linear",
+  "media": "linear",
+  "media-entertainment": "linear",
+  "media_entertainment": "linear",
+  "logistics": "linear",
 };
 
 function resolveLayoutMode(industry?: string | null, orderType?: OrderType): LayoutMode {
