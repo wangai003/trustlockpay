@@ -570,6 +570,18 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   const signupLink = `${baseUrl}/buyer/signup?ref=${txId}&vendor=${session.vendorId}`;
   const loginLink = `${baseUrl}/buyer/login?ref=${txId}`;
 
+  // Build checkout details with marketplace flag
+  const checkoutDetailsWithSource = {
+    ...session.feeBreakdownJson,
+    ...(session.marketplaceMetadata ? {
+      marketplace_source: true,
+      marketplace_platform: session.marketplaceMetadata.platform_name || session.marketplaceMetadata.platform,
+      marketplace_order_id: session.marketplaceMetadata.marketplace_order_id || null,
+      marketplace_invoice_ref: session.marketplaceMetadata.marketplace_invoice_number || null,
+      integration_id: session.marketplaceMetadata.integration_id || null,
+    } : { marketplace_source: false }),
+  };
+
   // Store in order_carbon_copies
   await supabase.from("order_carbon_copies").insert({
     transaction_id: transactionId || null,
@@ -583,7 +595,7 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     fee: session.fee,
     status: "active",
     confirmation_code: confirmationCode,
-    checkout_details: session.feeBreakdownJson,
+    checkout_details: checkoutDetailsWithSource,
     signup_link: signupLink,
     login_link: loginLink,
   });
