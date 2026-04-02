@@ -438,7 +438,21 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                           <div>
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Actions</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {prio === "critical" && (
+                              {/* Action-required: prominent Go To button */}
+                              {isActionPending && n.action_url && (
+                                <button
+                                  onClick={() => handleGoTo(n)}
+                                  className="text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium flex items-center gap-1"
+                                >
+                                  <ArrowRight className="w-3 h-3" /> Complete Required Action
+                                </button>
+                              )}
+                              {isActionPending && !n.action_url && (
+                                <span className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground font-medium flex items-center gap-1">
+                                  <ShieldAlert className="w-3 h-3" /> Action required — cannot dismiss
+                                </span>
+                              )}
+                              {prio === "critical" && !isActionPending && (
                                 <button
                                   onClick={() => { toast.info("Navigating to related record..."); setOpen(false); }}
                                   className="text-[10px] px-2 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium flex items-center gap-1"
@@ -446,7 +460,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                                   <ExternalLink className="w-3 h-3" /> Investigate
                                 </button>
                               )}
-                              {prio === "high" && (
+                              {prio === "high" && !isActionPending && (
                                 <button
                                   onClick={() => { toast.info("Opening related record..."); setOpen(false); }}
                                   className="text-[10px] px-2 py-1 rounded bg-orange-500 text-white hover:bg-orange-600 font-medium flex items-center gap-1"
@@ -463,11 +477,14 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                               >
                                 <Copy className="w-3 h-3" /> Copy
                               </button>
-                              <button
-                                onClick={() => { dismiss(n.id); setExpandedId(null); }}
-                                className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3 h-3" /> Dismiss
+                              {!isActionPending && (
+                                <button
+                                  onClick={() => { dismiss(n.id); setExpandedId(null); }}
+                                  className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Dismiss
+                                </button>
+                              )}
                               </button>
                             </div>
                           </div>
