@@ -232,6 +232,20 @@ const MilestoneWorkOrderPanel = ({
       onTestnetUpdateStatus?.(milestoneId, "completed");
       return;
     }
+
+    // Document gate enforcement: check required docs are uploaded
+    const milestone = milestones.find((m: any) => m.id === milestoneId);
+    if (milestone) {
+      const requiredDocs: string[] = milestone.required_documents || [];
+      const uploadedDocs: any[] = milestone.uploaded_documents || [];
+      const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
+      const missingDocs = requiredDocs.filter((d: string) => !uploadedTypes.has(d));
+      if (missingDocs.length > 0) {
+        toast.error(`Cannot fulfill — missing required documents: ${missingDocs.join(", ")}`);
+        return;
+      }
+    }
+
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     const geo = await capturePosition();
