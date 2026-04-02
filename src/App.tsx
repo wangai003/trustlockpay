@@ -165,8 +165,12 @@ const App = () => (
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="messages" element={<VendorMessages />} />
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
+                <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
+
+              {/* Vendor Claim (public — outside protected route) */}
+              <Route path="/vendor/claim" element={<VendorClaimAccount />} />
 
               {/* Buyer Dashboard */}
               <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />

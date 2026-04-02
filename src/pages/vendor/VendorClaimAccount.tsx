@@ -107,8 +107,8 @@ const VendorClaimAccount = () => {
 
           {claimed && (
             <div className="text-center space-y-3">
-              <div className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
               <p className="text-sm font-semibold">Account Claimed Successfully!</p>
               <p className="text-xs text-muted-foreground">

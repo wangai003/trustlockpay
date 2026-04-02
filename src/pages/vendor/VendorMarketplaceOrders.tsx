@@ -167,7 +167,7 @@ const VendorMarketplaceOrders = () => {
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-accent-foreground">
                 ${orders.filter(o => o.status === "locked").reduce((s, o) => s + o.amount, 0).toLocaleString()}
               </p>
               <p className="text-[10px] text-muted-foreground">In Escrow</p>
