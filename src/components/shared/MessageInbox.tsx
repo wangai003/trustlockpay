@@ -15,6 +15,17 @@ import { format } from "date-fns";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
+// URL pattern to detect and neutralize links in messages
+const URL_REGEX = /(?:https?:\/\/|ftp:\/\/|www\.)[^\s<>\"')\]]+|[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\/[^\s<>\"')\]]*)?/gi;
+
+/** Strips all URLs from text and replaces with a safe placeholder */
+const sanitizeLinks = (text: string): { sanitized: string; hadLinks: boolean } => {
+  const hadLinks = URL_REGEX.test(text);
+  URL_REGEX.lastIndex = 0; // reset regex state
+  const sanitized = text.replace(URL_REGEX, "[link removed]");
+  return { sanitized, hadLinks };
+};
+
 const CONTACT_REASONS = [
   { value: "dispute", label: "Dispute Resolution" },
   { value: "milestone", label: "Milestone Question" },
