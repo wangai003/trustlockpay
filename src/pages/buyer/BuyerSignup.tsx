@@ -26,18 +26,32 @@ const BuyerSignup = () => {
     e.preventDefault();
     setError("");
 
+    if (!tosAccepted) {
+      setError("You must accept the Terms of Service to create an account");
+      return;
+    }
+
     if (!isPasswordStrong(password)) {
       setError("Password does not meet all strength requirements");
       return;
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
-    setLoading(false);
-
+    const { error, data } = await signUp(email, password, { full_name: fullName, role: "buyer" });
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else {
+      // Record ToS acceptance
+      if (data?.user?.id) {
+        await supabase.from("tos_acceptances").insert({
+          user_id: data.user.id,
+          tos_version: CURRENT_TOS_VERSION,
+          ip_address: null,
+          user_agent: navigator.userAgent,
+        });
+      }
+      setLoading(false);
       setSuccess(true);
     }
   };
