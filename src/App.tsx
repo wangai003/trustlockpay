@@ -132,6 +132,7 @@ const App = () => (
                 <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="tax-remittance" element={<AdminTaxRemittance />} />
                 <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
+                <Route path="messages" element={<AdminMessages />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
