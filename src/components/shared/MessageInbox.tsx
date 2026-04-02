@@ -421,7 +421,19 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
                     "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                     isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                   )}>
-                    <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                    {(() => {
+                      const { sanitized, hadLinks } = sanitizeLinks(msg.body);
+                      return (
+                        <>
+                          <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+                          {hadLinks && (
+                            <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+                              <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                     <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {format(new Date(msg.created_at), "MMM d, h:mm a")}
                     </p>
