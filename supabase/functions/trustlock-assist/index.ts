@@ -196,7 +196,7 @@ const BUYER_SYSTEM_PROMPT = `You are Zawadi, a female TrustLock AI assistant emb
 - Format responses with markdown for readability.
 - NEVER hallucinate or fabricate information. If uncertain, say so.
 - NEVER give false promises or speculate on outcomes.
-- Always re-verify if client needs further assistance before closing.\`;
+- Always re-verify if client needs further assistance before closing.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
