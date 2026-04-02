@@ -158,9 +158,10 @@ Deno.serve(async (req) => {
         if ((count || 0) === 0) {
           await insertNotification(
             c.vendor_id,
-            "Pending Contract Reminder",
+            "⚠️ Pending Contract Reminder",
             `Order ${c.order_number || "N/A"} has been awaiting your signature for over 14 days. Please sign or decline in your Work Log.`,
-            "reminder", "pre_order_contract", c.id
+            "high", "pre_order_contract", c.id,
+            { is_action_required: true, action_url: "/trustlock/vendor/transactions" }
           );
           reminded++;
         }
