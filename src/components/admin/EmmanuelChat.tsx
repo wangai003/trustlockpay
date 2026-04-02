@@ -30,9 +30,10 @@ const EmmanuelChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showLookup, setShowLookup] = useState(true);
   const [caseInfo, setCaseInfo] = useState<CaseInfo>({ caseRef: "" });
-  const [archivedCases, setArchivedCases] = useState<{ info: CaseInfo; messages: Msg[]; date: string }[]>([]);
+  const [archivedCases, setArchivedCases] = useState<{ id?: string; info: CaseInfo; messages: Msg[]; date: string }[]>([]);
   const [showArchive, setShowArchive] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -40,23 +41,70 @@ const EmmanuelChat = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Load archived conversations from database
   useEffect(() => {
-    const saved = localStorage.getItem("emmanuel_archive");
-    if (saved) setArchivedCases(JSON.parse(saved));
+    const loadArchive = async () => {
+      try {
+        const { data } = await supabase
+          .from("emmanuel_conversations")
+          .select("id, case_ref, title, messages, created_at")
+          .eq("is_archived", true)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (data) {
+          setArchivedCases(data.map((c: any) => ({
+            id: c.id,
+            info: { caseRef: c.case_ref || "" },
+            messages: c.messages as Msg[],
+            date: new Date(c.created_at).toLocaleDateString(),
+          })));
+        }
+      } catch {
+        // Fallback to localStorage
+        const saved = localStorage.getItem("emmanuel_archive");
+        if (saved) setArchivedCases(JSON.parse(saved));
+      }
+    };
+    loadArchive();
   }, []);
 
-  const saveToArchive = () => {
+  // Auto-save conversation to database
+  const persistConversation = useCallback(async (msgs: Msg[], caseRef: string, archived = false) => {
+    try {
+      if (conversationId) {
+        await supabase.from("emmanuel_conversations").update({
+          messages: msgs as any,
+          case_ref: caseRef,
+          is_archived: archived,
+          updated_at: new Date().toISOString(),
+        }).eq("id", conversationId);
+      } else if (msgs.length > 0) {
+        const { data } = await supabase.from("emmanuel_conversations").insert({
+          case_ref: caseRef,
+          title: caseRef || "New Session",
+          messages: msgs as any,
+          is_archived: archived,
+        }).select("id").single();
+        if (data) setConversationId(data.id);
+      }
+    } catch {
+      // Silent fallback — localStorage backup
+      localStorage.setItem("emmanuel_current", JSON.stringify({ caseRef, messages: msgs }));
+    }
+  }, [conversationId]);
+
+  const saveToArchive = async () => {
     if (messages.length === 0) return;
+    await persistConversation(messages, caseInfo.caseRef, true);
     const entry = { info: caseInfo, messages, date: new Date().toLocaleDateString() };
-    const updated = [entry, ...archivedCases];
-    setArchivedCases(updated);
-    localStorage.setItem("emmanuel_archive", JSON.stringify(updated));
+    setArchivedCases(prev => [entry, ...prev]);
   };
 
   const loadFromArchive = (index: number) => {
     const entry = archivedCases[index];
     setCaseInfo(entry.info);
     setMessages(entry.messages);
+    setConversationId(entry.id || null);
     setShowArchive(false);
     setShowLookup(false);
   };
@@ -68,11 +116,12 @@ const EmmanuelChat = () => {
     sendMessage(intro);
   };
 
-  const newCase = () => {
-    saveToArchive();
+  const newCase = async () => {
+    await saveToArchive();
     setMessages([]);
     setCaseInfo({ caseRef: "" });
     setPendingAttachments([]);
+    setConversationId(null);
     setShowLookup(true);
   };
 
