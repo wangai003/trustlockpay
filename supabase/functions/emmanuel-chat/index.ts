@@ -187,17 +187,100 @@ serve(async (req) => {
     const hasImages = JSON.stringify(finalMessages).includes("image_url");
     const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "risk_score",
+          description: "Compute a risk profile for a buyer or vendor based on dispute rate, compliance flags, and sanctions hits.",
+          parameters: {
+            type: "object",
+            properties: {
+              user_id: { type: "string", description: "UUID of the user" },
+              role: { type: "string", enum: ["buyer", "vendor"], description: "User role" },
+            },
+            required: ["user_id", "role"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "vendor_health",
+          description: "Generate a trust score and health report for a vendor.",
+          parameters: {
+            type: "object",
+            properties: { vendor_id: { type: "string", description: "UUID of the vendor" } },
+            required: ["vendor_id"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "fraud_patterns",
+          description: "Detect coordinated fraud patterns and dispute clustering in the last 30 days.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "escalation_predict",
+          description: "Score all open disputes by escalation risk and prioritize them.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "audit_summary",
+          description: "Generate a compliance and financial audit summary for a date range.",
+          parameters: {
+            type: "object",
+            properties: {
+              start_date: { type: "string", description: "Start date YYYY-MM-DD" },
+              end_date: { type: "string", description: "End date YYYY-MM-DD" },
+            },
+            required: ["start_date", "end_date"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "kyc_nudge",
+          description: "Find vendors at low KYC tiers with growing volume who should upgrade.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+    ];
+
+    // Helper to call emmanuel-analytics
+    async function callAnalytics(action: string, params: Record<string, any> = {}) {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ action, ...params }),
+      });
+      return await resp.json();
+    }
+
+    // First call — may trigger tool calls
+    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages];
+    let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages],
-        stream: true,
-      }),
+      body: JSON.stringify({ model, messages: aiMessages, tools, stream: false }),
     });
 
     if (!response.ok) {
@@ -207,6 +290,74 @@ serve(async (req) => {
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    let result = await response.json();
+    let choice = result.choices?.[0];
+
+    // Tool call loop (max 3 iterations)
+    let iterations = 0;
+    while (choice?.finish_reason === "tool_calls" && choice?.message?.tool_calls && iterations < 3) {
+      iterations++;
+      aiMessages.push(choice.message);
+
+      for (const tc of choice.message.tool_calls) {
+        const fnName = tc.function.name;
+        let fnArgs: Record<string, any> = {};
+        try { fnArgs = JSON.parse(tc.function.arguments || "{}"); } catch { /* empty */ }
+
+        console.log(`Emmanuel calling tool: ${fnName}`, fnArgs);
+        const toolResult = await callAnalytics(fnName, fnArgs);
+
+        aiMessages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: JSON.stringify(toolResult),
+        });
+      }
+
+      // Follow-up call with tool results — stream this one
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, messages: aiMessages, tools, stream: true }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("AI gateway follow-up error:", response.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Check if this is a streaming response or another tool call
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream")) {
+        return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      }
+
+      result = await response.json();
+      choice = result.choices?.[0];
+    }
+
+    // If no tool calls, stream the response
+    if (choice?.message?.content) {
+      // Non-streamed final response
+      return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: choice.message.content } }] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fallback: re-do as streaming without tools
+    response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model, messages: aiMessages, stream: true }),
+    });
 
     return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
