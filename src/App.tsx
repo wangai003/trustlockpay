@@ -57,6 +57,7 @@ const BuyerPayout = lazy(() => import("./pages/buyer/BuyerPayout"));
 const BuyerBillPayments = lazy(() => import("./pages/buyer/BuyerBillPayments"));
 const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlaybook"));
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
+const BuyerMessages = lazy(() => import("./pages/buyer/BuyerMessages"));
 
 // Vendor
 const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
