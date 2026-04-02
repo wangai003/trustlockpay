@@ -25,6 +25,7 @@ const VendorSignup = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
