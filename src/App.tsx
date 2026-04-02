@@ -36,6 +36,7 @@ const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlay
 const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
 const AdminTaxRemittance = lazy(() => import("./pages/admin/AdminTaxRemittance"));
 const AdminBlockchainProofs = lazy(() => import("./pages/admin/AdminBlockchainProofs"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -56,6 +57,7 @@ const BuyerPayout = lazy(() => import("./pages/buyer/BuyerPayout"));
 const BuyerBillPayments = lazy(() => import("./pages/buyer/BuyerBillPayments"));
 const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlaybook"));
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
+const BuyerMessages = lazy(() => import("./pages/buyer/BuyerMessages"));
 
 // Vendor
 const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
@@ -80,6 +82,7 @@ const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"
 const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
 const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
+const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
@@ -129,6 +132,7 @@ const App = () => (
                 <Route path="tl-id" element={<AdminTLIdSearch />} />
                 <Route path="tax-remittance" element={<AdminTaxRemittance />} />
                 <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
+                <Route path="messages" element={<AdminMessages />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
@@ -157,6 +161,7 @@ const App = () => (
                 <Route path="payout" element={<VendorPayout />} />
                 <Route path="standalone-links" element={<VendorStandaloneLinks />} />
                 <Route path="teams" element={<VendorTeams />} />
+                <Route path="messages" element={<VendorMessages />} />
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
@@ -180,6 +185,7 @@ const App = () => (
                 <Route path="os-pay" element={<BuyerOSPay />} />
                 <Route path="payout" element={<BuyerPayout />} />
                 <Route path="teams" element={<BuyerTeams />} />
+                <Route path="messages" element={<BuyerMessages />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
                 <Route path="settings" element={<BuyerSettings />} />
               </Route>
