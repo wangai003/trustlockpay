@@ -202,6 +202,7 @@ const App = () => (
               <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
               <Route path="/pay/:linkId" element={<PublicCheckout />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
+              <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
