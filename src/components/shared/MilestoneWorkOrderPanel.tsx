@@ -236,8 +236,8 @@ const MilestoneWorkOrderPanel = ({
     // Document gate enforcement: check required docs are uploaded
     const milestone = milestones.find((m: any) => m.id === milestoneId);
     if (milestone) {
-      const requiredDocs: string[] = milestone.required_documents || [];
-      const uploadedDocs: any[] = milestone.uploaded_documents || [];
+      const requiredDocs: string[] = Array.isArray((milestone as any).required_documents) ? (milestone as any).required_documents : [];
+      const uploadedDocs: any[] = Array.isArray((milestone as any).uploaded_documents) ? (milestone as any).uploaded_documents : [];
       const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
       const missingDocs = requiredDocs.filter((d: string) => !uploadedTypes.has(d));
       if (missingDocs.length > 0) {
