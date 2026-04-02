@@ -388,33 +388,116 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
 
-        // If both accepted, resolve and trigger payout
+        // If both accepted, resolve and trigger the correct payout action
         if (data.ruling_accepted_buyer && data.ruling_accepted_vendor) {
           await supabase
             .from("disputes")
             .update({ status: "resolved", updated_at: new Date().toISOString() })
             .eq("dispute_id", disputeId);
 
-          // Trigger payout based on ruling
-          if (data.transaction_id && data.arbitration_ruling !== "dismiss") {
-            try {
-              const fnUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/escrow-manager";
-              await fetch(fnUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                },
-                body: JSON.stringify({
-                  action: "release_funds",
-                  transaction_id: data.transaction_id,
-                }),
-              });
-            } catch (_) { /* best-effort */ }
+          if (data.transaction_id) {
+            await executeDisputeResolution(supabase, data.transaction_id, data.arbitration_ruling, data.resolution, data.dispute_id);
           }
         }
 
         result = data;
+        break;
+      }
+
+      // ─── Direct Admin Resolution (non-arbitration) ──────────
+      case "resolve_vendor_wins": {
+        // 100% release to vendor
+        const { data: dispute, error: dErr } = await supabase
+          .from("disputes")
+          .select("*")
+          .eq("dispute_id", disputeId)
+          .single();
+        if (dErr) throw dErr;
+
+        await supabase
+          .from("disputes")
+          .update({
+            status: "resolved",
+            resolution: "Admin ruling: Full release to vendor — vendor wins",
+            arbitration_ruling: "vendor_release",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId);
+
+        if (dispute.transaction_id) {
+          await executeDisputeResolution(supabase, dispute.transaction_id, "vendor_release", null, disputeId);
+        }
+
+        // Notify both parties
+        await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved in vendor's favor. Funds will be released to ${dispute.vendor_name || "the vendor"}.`);
+
+        result = { ...dispute, status: "resolved", resolution: "vendor_wins" };
+        break;
+      }
+
+      case "resolve_buyer_wins": {
+        // 100% refund to buyer
+        const { data: dispute, error: dErr } = await supabase
+          .from("disputes")
+          .select("*")
+          .eq("dispute_id", disputeId)
+          .single();
+        if (dErr) throw dErr;
+
+        await supabase
+          .from("disputes")
+          .update({
+            status: "resolved",
+            resolution: "Admin ruling: Full refund to buyer — buyer wins",
+            arbitration_ruling: "full_refund",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId);
+
+        if (dispute.transaction_id) {
+          await executeDisputeResolution(supabase, dispute.transaction_id, "full_refund", null, disputeId);
+        }
+
+        await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved in buyer's favor. A full refund will be initiated for ${dispute.buyer_name || "the buyer"}.`);
+
+        result = { ...dispute, status: "resolved", resolution: "buyer_wins" };
+        break;
+      }
+
+      case "resolve_compromise": {
+        // Split payout — buyer gets splitPercentage%, vendor gets the rest
+        const { splitPercentage } = body;
+        if (!splitPercentage || splitPercentage < 1 || splitPercentage > 99) {
+          throw new Error("splitPercentage must be between 1 and 99");
+        }
+
+        const { data: dispute, error: dErr } = await supabase
+          .from("disputes")
+          .select("*")
+          .eq("dispute_id", disputeId)
+          .single();
+        if (dErr) throw dErr;
+
+        const vendorPct = 100 - splitPercentage;
+        const resText = `Admin ruling: Compromise — ${splitPercentage}% to buyer, ${vendorPct}% to vendor`;
+
+        await supabase
+          .from("disputes")
+          .update({
+            status: "resolved",
+            resolution: resText,
+            arbitration_ruling: "partial_refund",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("dispute_id", disputeId);
+
+        if (dispute.transaction_id) {
+          await executeDisputeResolution(supabase, dispute.transaction_id, "partial_refund", resText, disputeId, splitPercentage);
+        }
+
+        await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved via compromise: ${splitPercentage}% refunded to buyer, ${vendorPct}% released to vendor.`);
+
+        result = { ...dispute, status: "resolved", resolution: resText };
         break;
       }
 
