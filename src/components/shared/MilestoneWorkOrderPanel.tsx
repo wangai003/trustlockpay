@@ -31,6 +31,7 @@ interface MilestoneWorkOrderPanelProps {
   txId: string;
   industry?: string | null;
   role: "buyer" | "vendor";
+  transactionStatus?: string;
   isTestnet?: boolean;
   testnetMilestones?: MockMilestone[];
   onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
@@ -40,6 +41,12 @@ interface MilestoneWorkOrderPanelProps {
   onTestnetRelease?: (milestoneId: string) => void;
   onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number) => void;
 }
+
+/** Statuses where funds are already locked — milestone deletion is blocked */
+const FUNDS_LOCKED_STATUSES = new Set([
+  "locked", "shipped", "delivered", "released", "disputed",
+  "compliance_hold", "compliance_review", "blocked",
+]);
 
 const statusLabel: Record<string, string> = {
   pending: "Pending",
