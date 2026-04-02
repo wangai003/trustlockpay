@@ -375,14 +375,19 @@ const MilestoneWorkOrderPanel = ({
       <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
+            <CardTitle className="text-sm">{layoutLabels.title}</CardTitle>
+            <p className="text-[10px] text-muted-foreground">{layoutLabels.description}</p>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">No milestone records found for {txId} yet.</p>
+            <p className="text-xs text-muted-foreground">
+              {layoutMode === "single"
+                ? `No escrow record found for ${txId} yet.`
+                : `No milestone records found for ${txId} yet.`}
+            </p>
             <TLId code={`TL-${rolePrefix}-WO-BTN-INIT`} inline>
               <Button size="sm" variant="outline" className="mt-2" onClick={handleInitializeMilestones} disabled={createMilestones.isPending}>
                 {createMilestones.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                Initialize Milestones
+                {layoutMode === "single" ? "Initialize Escrow Release" : "Initialize Milestones"}
               </Button>
             </TLId>
           </CardContent>
