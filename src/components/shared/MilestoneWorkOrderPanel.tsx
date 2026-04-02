@@ -375,6 +375,64 @@ const MilestoneWorkOrderPanel = ({
                   </div>
                 </TLId>
 
+                {/* Required Documents Checklist */}
+                {(() => {
+                  const requiredDocs: string[] = ms.required_documents || [];
+                  const uploadedDocs: any[] = ms.uploaded_documents || [];
+                  if (requiredDocs.length === 0) return null;
+                  const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
+                  const allSatisfied = requiredDocs.every((d: string) => uploadedTypes.has(d));
+                  return (
+                    <div className="rounded-md border border-border p-2 space-y-1">
+                      <p className="text-[10px] font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> Required Documents
+                        {allSatisfied ? (
+                          <Badge variant="outline" className="text-[8px] ml-1 border-primary/30 text-primary">All uploaded</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[8px] ml-1 border-destructive/30 text-destructive">Incomplete</Badge>
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {requiredDocs.map((doc: string) => {
+                          const isMet = uploadedTypes.has(doc);
+                          return (
+                            <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"}`}>
+                              {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                              {doc}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Previously Uploaded Documents — visible to both parties with attribution */}
+                {(() => {
+                  const uploadedDocs: any[] = ms.uploaded_documents || [];
+                  if (uploadedDocs.length === 0) return null;
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold">Uploaded Documents</p>
+                      <div className="flex flex-wrap gap-1">
+                        {uploadedDocs.map((doc: any, i: number) => (
+                          <Badge key={i} variant="outline" className="text-[8px] gap-1">
+                            <FileText className="w-2.5 h-2.5" />
+                            {doc.document_type ? <span className="font-semibold">[{doc.document_type}]</span> : null}
+                            {doc.name}
+                            {doc.uploaded_by_role && (
+                              <span className="text-muted-foreground ml-0.5 flex items-center gap-0.5">
+                                <User className="w-2 h-2" />
+                                {doc.uploaded_by_role}
+                              </span>
+                            )}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Description */}
                 {ms.description && (
                   <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>
