@@ -1377,6 +1377,8 @@ Deno.serve(async (req) => {
         return await reorderMilestones(body);
       case "delete_milestone":
         return await deleteMilestone(body);
+      case "restore_milestone":
+        return await restoreMilestone(body);
       case "release_milestone_payment":
         return await releaseMilestonePayment(body);
       case "check_auto_release":
@@ -1386,7 +1388,7 @@ Deno.serve(async (req) => {
 
       default:
         return errorResponse(
-          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, release_milestone_payment, check_auto_release, add_observer`,
+          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, restore_milestone, release_milestone_payment, check_auto_release, add_observer`,
           400
         );
     }
