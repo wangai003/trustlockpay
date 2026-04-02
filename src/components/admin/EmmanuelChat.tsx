@@ -149,6 +149,18 @@ const EmmanuelChat = () => {
         return;
       }
 
+      const contentType = resp.headers.get("content-type") || "";
+
+      // Handle non-streamed JSON response (from tool-call resolution)
+      if (contentType.includes("application/json")) {
+        const data = await resp.json();
+        const content = data.choices?.[0]?.message?.content || "I processed the data but couldn't generate a summary.";
+        setMessages(prev => [...prev, { role: "assistant", content }]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Handle SSE streaming response
       const reader = resp.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
