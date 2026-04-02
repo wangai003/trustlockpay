@@ -52,7 +52,7 @@ const HeroSection = () => {
                 <img
                   src={heroImage}
                   alt="African artisan working in workshop"
-                  className="w-full h-[400px] lg:h-[480px] object-cover"
+                  className="w-full h-[280px] sm:h-[400px] lg:h-[480px] object-cover"
                   loading="eager"
                 />
 
