@@ -167,6 +167,7 @@ const MilestoneWorkOrderPanel = ({
   const [observerEmail, setObserverEmail] = useState("");
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
+  const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
