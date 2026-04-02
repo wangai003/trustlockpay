@@ -82,6 +82,7 @@ const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"
 const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
 const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
+const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
