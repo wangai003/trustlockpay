@@ -1,18 +1,26 @@
 import { motion } from "framer-motion";
-import { Quote } from "lucide-react";
+import { Shield, Lock, Globe, Zap } from "lucide-react";
 
-const testimonials = [
+const promises = [
   {
-    initials: "DO",
-    name: "Daniel O.",
-    location: "Dallas, USA (Diaspora User)",
-    text: "I wanted to hire a contractor in Nairobi but I was nervous about sending money without protection. With Azix escrow, the payment stayed secure until the work was confirmed. That level of protection gives me real peace of mind.",
+    icon: Shield,
+    title: "Buyer Protection First",
+    text: "Every transaction is held in escrow until you confirm the goods or services meet your expectations. No more sending money into the unknown.",
   },
   {
-    initials: "MN",
-    name: "Mary N.",
-    location: "Nairobi, Kenya (Vendor Partner)",
-    text: "Escrow protection helps international clients trust our business. Customers feel more comfortable placing orders when they know their payment is secured until delivery.",
+    icon: Lock,
+    title: "Blockchain-Verified Trust",
+    text: "Each escrow event is anchored on-chain, creating an immutable proof trail that both parties — and auditors — can verify at any time.",
+  },
+  {
+    icon: Globe,
+    title: "Built for Cross-Border",
+    text: "Whether you're in Dallas sending to Nairobi, or London to Lagos — Azix handles multi-currency, compliance, and settlement so you don't have to.",
+  },
+  {
+    icon: Zap,
+    title: "Low-Cost, Transparent Fees",
+    text: "Our 1.5% all-in fee is a fraction of what banks, wire services, and traditional escrow charge. No hidden costs, ever.",
   },
 ];
 
@@ -27,31 +35,28 @@ const TestimonialsSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Trusted by Diaspora Buyers and African Businesses
+            Why Diaspora Buyers & African Vendors Choose Azix
           </h2>
+          <p className="mt-3 text-muted-foreground text-lg">
+            Trust isn't claimed — it's engineered into every layer of the platform.
+          </p>
         </motion.div>
 
         <div className="mt-12 grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {testimonials.map((t, i) => (
+          {promises.map((p, i) => (
             <motion.div
-              key={t.name}
+              key={p.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
+              transition={{ delay: i * 0.1 }}
               className="bg-background rounded-xl p-8 border border-border shadow-sm"
             >
-              <Quote className="w-8 h-8 text-accent mb-4" />
-              <p className="text-foreground leading-relaxed">{t.text}</p>
-              <div className="mt-6 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground text-sm font-bold">{t.initials}</span>
-                </div>
-                <div>
-                  <div className="font-heading font-semibold text-sm text-foreground">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.location}</div>
-                </div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <p.icon className="w-5 h-5 text-primary" />
               </div>
+              <h3 className="font-heading font-bold text-lg text-foreground">{p.title}</h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{p.text}</p>
             </motion.div>
           ))}
         </div>

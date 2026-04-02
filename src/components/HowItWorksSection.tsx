@@ -1,30 +1,30 @@
 import { motion } from "framer-motion";
-import { Search, Lock, Truck, CheckCircle } from "lucide-react";
+import { ShoppingBag, Lock, Truck, CheckCircle } from "lucide-react";
 
 const steps = [
   {
     num: "01",
-    icon: Search,
-    title: "Enter Vendor Wallet",
-    desc: "Browse trusted businesses across construction, agriculture, tourism, retail, and real estate on our marketplace.",
+    icon: ShoppingBag,
+    title: "Place Your Order",
+    desc: "Find a vendor or paste a checkout link. Review the item, milestones, and pricing before you commit.",
   },
   {
     num: "02",
     icon: Lock,
-    title: "Secure Payment",
-    desc: "Funds are safely locked in our cryptographic escrow smart contracts instantly.",
+    title: "Payment Held in Escrow",
+    desc: "Your funds are locked in a blockchain-secured smart contract — the vendor can see them but can't access them yet.",
   },
   {
     num: "03",
     icon: Truck,
-    title: "Service Delivery",
-    desc: "The verified vendor receives notification and completes work or delivers goods.",
+    title: "Vendor Delivers",
+    desc: "The vendor fulfils each milestone. You track progress in real time from your dashboard.",
   },
   {
     num: "04",
     icon: CheckCircle,
-    title: "Payment Released",
-    desc: "Funds are released to the vendor only after you confirm satisfaction.",
+    title: "You Approve & Release",
+    desc: "Once you're satisfied, approve the release. Funds transfer to the vendor instantly.",
   },
 ];
 
