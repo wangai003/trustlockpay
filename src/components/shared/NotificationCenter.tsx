@@ -18,6 +18,9 @@ interface DbNotification {
   related_entity_type: string | null;
   related_entity_id: string | null;
   user_id: string;
+  is_action_required?: boolean;
+  action_url?: string | null;
+  action_completed_at?: string | null;
 }
 
 /* ─── Priority meta ─────────────────────────────────────── */
