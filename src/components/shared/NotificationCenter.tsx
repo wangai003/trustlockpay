@@ -485,7 +485,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                                   <Trash2 className="w-3 h-3" /> Dismiss
                                 </button>
                               )}
-                              </button>
+                            </div>
                             </div>
                           </div>
                         </div>
