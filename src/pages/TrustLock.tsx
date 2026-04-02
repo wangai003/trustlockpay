@@ -9,6 +9,7 @@ import TrustLockBuyerFlow from "@/components/trustlock/TrustLockBuyerFlow";
 import TrustLockDashboard from "@/components/trustlock/TrustLockDashboard";
 import TrustLockIntegration from "@/components/trustlock/TrustLockIntegration";
 import TrustLockCta from "@/components/trustlock/TrustLockCta";
+import TrustLockPromoCard from "@/components/trustlock/TrustLockPromoCard";
 import TrustLockTestWidget from "@/components/trustlock/TrustLockTestWidget";
 import Footer from "@/components/Footer";
 
@@ -66,6 +67,7 @@ const TrustLock = () => {
       <TrustLockDashboard />
       <TrustLockIntegration />
       <TrustLockTestWidget />
+      <TrustLockPromoCard />
       <TrustLockCta />
       <Footer />
     </div>
