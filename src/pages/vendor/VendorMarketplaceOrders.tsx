@@ -159,7 +159,7 @@ const VendorMarketplaceOrders = () => {
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-primary">
                 ${orders.filter(o => o.status === "released").reduce((s, o) => s + o.amount, 0).toLocaleString()}
               </p>
               <p className="text-[10px] text-muted-foreground">Released</p>
