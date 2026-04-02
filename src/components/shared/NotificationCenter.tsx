@@ -490,7 +490,6 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                         </div>
                       )}
                     </div>
-                    </div>
                   );
                 })
               )}
