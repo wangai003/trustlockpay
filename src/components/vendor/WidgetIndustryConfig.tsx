@@ -710,6 +710,68 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
           )}
         </div>
 
+        {/* ─── Marketplace Integration Mode ─── */}
+        <div className="border border-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setExpandMarketplace(!expandMarketplace)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors"
+          >
+            <span className="text-xs font-semibold flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-primary" /> Marketplace Integration Mode
+            </span>
+            {expandMarketplace ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          {expandMarketplace && (
+            <div className="p-3 space-y-3">
+              <p className="text-[10px] text-muted-foreground">
+                Enable this if your widget is embedded on a third-party marketplace (Jumia, Amazon, Shopify, etc.) that already has its own checkout and payment system.
+              </p>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Enable Marketplace Mode</Label>
+                <Switch checked={marketplaceMode} onCheckedChange={setMarketplaceMode} />
+              </div>
+              {marketplaceMode && (
+                <div className="space-y-2 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Platform</Label>
+                    <Select value={marketplacePlatform} onValueChange={setMarketplacePlatform}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select marketplace..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MARKETPLACE_OPTIONS.map(p => (
+                          <SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Settlement Callback URL (optional)</Label>
+                    <Input
+                      value={marketplaceCallback}
+                      onChange={e => setMarketplaceCallback(e.target.value)}
+                      placeholder="https://your-marketplace.com/api/trustlock-callback"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="bg-muted/50 rounded p-2 space-y-1">
+                    <p className="text-[10px] font-medium">How it works:</p>
+                    <ul className="text-[9px] text-muted-foreground space-y-0.5 list-disc list-inside">
+                      <li>Widget accepts pre-filled order data from the marketplace</li>
+                      <li>Buyer identity is resolved via email match or SSO passthrough</li>
+                      <li>TrustLock's 1.5% escrow fee is shown separately (additive)</li>
+                      <li>Settlement callbacks notify the marketplace when funds are released</li>
+                    </ul>
+                  </div>
+                  <Badge variant="outline" className="text-[9px]">
+                    Identity Bridge: {marketplacePlatform === "amazon" ? "SSO Passthrough" : marketplacePlatform === "jiji" ? "Guest Mode" : "Email Match"}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Custom Notes */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Additional Setup Notes (optional)</Label>
