@@ -5,18 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Truck, PackageCheck, FileText } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Truck, PackageCheck, FileText, ShieldX, ShieldCheck, RotateCcw, Ban } from "lucide-react";
 import { useTransactions, useFlagForReview } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-type TxStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed" | "cancelled";
+type TxStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed" | "cancelled" | "compliance_hold" | "compliance_review";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -25,6 +32,11 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   released: { label: "Released", color: "bg-primary/15 text-primary", icon: CheckCircle },
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
   cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: XCircle },
+  compliance_hold: { label: "Compliance Hold", color: "bg-destructive/20 text-destructive", icon: ShieldX },
+  compliance_review: { label: "Under Review", color: "bg-yellow-500/15 text-yellow-700", icon: ShieldCheck },
+  blocked: { label: "Blocked", color: "bg-destructive/25 text-destructive", icon: Ban },
+  refunded: { label: "Refunded", color: "bg-muted text-muted-foreground", icon: RotateCcw },
+  vendor_rejected: { label: "Vendor Rejected", color: "bg-muted text-muted-foreground", icon: XCircle },
 };
 
 const industryLabels: Record<string, string> = {
@@ -85,6 +97,51 @@ const AdminTransactions = () => {
     await flagForReview.mutateAsync(selected);
     setSelected([]);
   };
+
+  // Compliance hold actions
+  const [unfreezeTarget, setUnfreezeTarget] = useState<{ txId: string; orderNum: string } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ txId: string; orderNum: string } | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [restoreStatus, setRestoreStatus] = useState("locked");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleUnfreeze = async () => {
+    if (!unfreezeTarget || !resolutionNote.trim()) return toast.error("Resolution note is required");
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-transaction", {
+        body: { action: "unfreeze_transaction", txId: unfreezeTarget.txId, restore_status: restoreStatus, resolution_note: resolutionNote.trim() },
+      });
+      if (error || !data?.success) throw new Error(data?.error || "Failed to unfreeze");
+      toast.success(`Transaction ${unfreezeTarget.txId} unfrozen → ${restoreStatus}`);
+      setUnfreezeTarget(null);
+      setResolutionNote("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleComplianceReject = async () => {
+    if (!rejectTarget || !resolutionNote.trim()) return toast.error("Rejection note is required");
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-transaction", {
+        body: { action: "compliance_reject_refund", txId: rejectTarget.txId, rejection_note: resolutionNote.trim() },
+      });
+      if (error || !data?.success) throw new Error(data?.error || "Failed to reject");
+      toast.success(`Transaction ${rejectTarget.txId} rejected — buyer refunded`);
+      setRejectTarget(null);
+      setResolutionNote("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const isComplianceHeld = (status: string) => ["compliance_hold", "compliance_review", "blocked"].includes(status);
 
   return (
     <div>
@@ -247,6 +304,34 @@ const AdminTransactions = () => {
                                     compact
                                   />
                                 </div>
+
+                                {/* Compliance Hold Actions */}
+                                {isComplianceHeld(tx.status) && (
+                                  <div className="pt-3 border-t border-destructive/20">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <ShieldX className="w-4 h-4 text-destructive" />
+                                      <p className="text-xs font-semibold text-destructive">Compliance Hold Actions</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1 text-xs"
+                                        onClick={() => { setUnfreezeTarget({ txId: tx.id, orderNum: tx.id }); setResolutionNote(""); setRestoreStatus("locked"); }}
+                                      >
+                                        <ShieldCheck className="w-3.5 h-3.5" /> Lift Hold & Restore
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="gap-1 text-xs"
+                                        onClick={() => { setRejectTarget({ txId: tx.id, orderNum: tx.id }); setResolutionNote(""); }}
+                                      >
+                                        <Ban className="w-3.5 h-3.5" /> Reject & Refund Buyer
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -260,6 +345,83 @@ const AdminTransactions = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Unfreeze Dialog */}
+      <AlertDialog open={!!unfreezeTarget} onOpenChange={(open) => !open && setUnfreezeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" /> Lift Compliance Hold
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>You are about to lift the compliance hold on <strong>{unfreezeTarget?.txId}</strong>. This will restore the transaction and notify both parties.</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Restore to Status</label>
+                  <Select value={restoreStatus} onValueChange={setRestoreStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="locked">Locked (Funds in Escrow)</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Resolution Note <span className="text-destructive">*</span></label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Explain why this hold is being lifted (e.g., false positive confirmed, additional KYC verified)..."
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnfreeze} disabled={actionLoading || !resolutionNote.trim()}>
+              {actionLoading ? "Processing..." : "Lift Hold"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject & Refund Dialog */}
+      <AlertDialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ban className="w-5 h-5 text-destructive" /> Reject Transaction & Refund Buyer
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>This will <strong>permanently reject</strong> transaction <strong>{rejectTarget?.txId}</strong> and initiate a full refund to the buyer. The compliance flag will be marked as confirmed.</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Rejection Reason <span className="text-destructive">*</span></label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Document the compliance reason for rejection (e.g., sanctions match confirmed, KYC fraud detected)..."
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleComplianceReject}
+              disabled={actionLoading || !resolutionNote.trim()}
+            >
+              {actionLoading ? "Processing..." : "Reject & Refund"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
