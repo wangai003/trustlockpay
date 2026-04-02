@@ -46,15 +46,22 @@ const WidgetCheckout = () => {
       // Try to load vendor info from vendor_settings
       const { data } = await supabase
         .from("vendor_settings")
-        .select("business_name, industry, preferred_currency")
-        .eq("user_id", vendorId)
+        .select("industry_category, supported_currencies, vendor_id")
+        .eq("vendor_id", vendorId)
         .maybeSingle();
 
       if (data) {
+        // Also try to get vendor name from profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", vendorId)
+          .maybeSingle();
+
         setVendor({
-          name: data.business_name || "Vendor",
-          industry: data.industry || "general",
-          currency: data.preferred_currency || "USD",
+          name: profile?.full_name || "Vendor",
+          industry: data.industry_category || "general",
+          currency: (data.supported_currencies as string[] | null)?.[0] || "USD",
         });
       }
     } catch {
