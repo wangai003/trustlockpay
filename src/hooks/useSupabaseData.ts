@@ -392,6 +392,45 @@ export function useAcceptRuling() {
   });
 }
 
+export function useResolveDisputeVendorWins() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (disputeId: string) =>
+      callEdgeFunction("manage-dispute", { action: "resolve_vendor_wins", disputeId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute resolved — vendor wins, funds released");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useResolveDisputeBuyerWins() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (disputeId: string) =>
+      callEdgeFunction("manage-dispute", { action: "resolve_buyer_wins", disputeId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute resolved — buyer wins, refund initiated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useResolveDisputeCompromise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { disputeId: string; splitPercentage: number }) =>
+      callEdgeFunction("manage-dispute", { action: "resolve_compromise", ...params }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disputes"] });
+      toast.success("Dispute resolved — compromise split executed");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ─── Payouts ────────────────────────────────────────────────
 export function usePayouts() {
   return useQuery({

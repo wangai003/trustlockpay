@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image } from "lucide-react";
-import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence } from "@/hooks/useSupabaseData";
+import { Slider } from "@/components/ui/slider";
+import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal } from "lucide-react";
+import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence, useResolveDisputeVendorWins, useResolveDisputeBuyerWins, useResolveDisputeCompromise } from "@/hooks/useSupabaseData";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pending Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -32,10 +33,12 @@ const AdminDisputes = () => {
   const [search, setSearch] = useState("");
   const [assignDialog, setAssignDialog] = useState<string | null>(null);
   const [rulingDialog, setRulingDialog] = useState<string | null>(null);
+  const [compromiseDialog, setCompromiseDialog] = useState<string | null>(null);
   const [arbName, setArbName] = useState("");
   const [arbEmail, setArbEmail] = useState("");
   const [ruling, setRuling] = useState("");
   const [splitPct, setSplitPct] = useState("50");
+  const [compromisePct, setCompromisePct] = useState(50);
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
 
   const { data: rawDisputes = [] } = useDisputes();
@@ -45,6 +48,9 @@ const AdminDisputes = () => {
   const submitRuling = useSubmitRuling();
   const uploadEvidence = useUploadDisputeEvidence();
   const { data: evidenceFiles = [] } = useDisputeEvidence(expandedEvidence || undefined);
+  const resolveVendorWins = useResolveDisputeVendorWins();
+  const resolveBuyerWins = useResolveDisputeBuyerWins();
+  const resolveCompromise = useResolveDisputeCompromise();
 
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
@@ -170,6 +176,22 @@ const AdminDisputes = () => {
                       {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
                         <Button size="sm" className="gap-1" onClick={() => reviewDispute.mutate(dispute.dbId)}>Review</Button>
                       )}
+
+                      {/* ── Three-Outcome Resolution Buttons ── */}
+                      {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
+                        <>
+                          <Button size="sm" variant="outline" className="gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => resolveVendorWins.mutate(dispute.id)}>
+                            <ShieldCheck className="w-3 h-3" /> Vendor Wins
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => resolveBuyerWins.mutate(dispute.id)}>
+                            <UserX className="w-3 h-3" /> Buyer Wins
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1 border-accent/30 text-accent-foreground hover:bg-accent/10" onClick={() => setCompromiseDialog(dispute.id)}>
+                            <SplitSquareHorizontal className="w-3 h-3" /> Compromise
+                          </Button>
+                        </>
+                      )}
+
                       {isArbEligible(dispute) && (
                         <Button size="sm" variant="destructive" className="gap-1" onClick={() => escalateToArb.mutate(dispute.id)}>
                           <Scale className="w-3 h-3" /> Arbitrate
@@ -303,6 +325,51 @@ const AdminDisputes = () => {
                 setSplitPct("50");
               }
             }}>Submit Ruling</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compromise Split Dialog */}
+      <Dialog open={!!compromiseDialog} onOpenChange={() => setCompromiseDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Compromise Resolution</DialogTitle></DialogHeader>
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">
+              Use the slider to set how the escrowed funds are split between buyer and vendor.
+            </p>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium">
+                <span className="text-destructive">Buyer: {compromisePct}%</span>
+                <span className="text-primary">Vendor: {100 - compromisePct}%</span>
+              </div>
+              <Slider
+                value={[compromisePct]}
+                onValueChange={(v) => setCompromisePct(v[0])}
+                min={1}
+                max={99}
+                step={1}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p>• <strong>Buyer</strong> will receive {compromisePct}% of escrowed principal as a refund</p>
+              <p>• <strong>Vendor</strong> will receive {100 - compromisePct}% of escrowed principal as release</p>
+              <p>• TrustLock 1% escrow fee applies only to vendor's share</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompromiseDialog(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (compromiseDialog) {
+                resolveCompromise.mutate({
+                  disputeId: compromiseDialog,
+                  splitPercentage: compromisePct,
+                });
+                setCompromiseDialog(null);
+                setCompromisePct(50);
+              }
+            }}>
+              <SplitSquareHorizontal className="w-4 h-4 mr-1" /> Execute Split
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
