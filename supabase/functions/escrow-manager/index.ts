@@ -840,6 +840,43 @@ async function updateMilestone(body: Record<string, unknown>) {
 
   if (upErr) return errorResponse(upErr.message, 500);
 
+  // Notify counterparty when milestone is marked fulfilled
+  if (status === "completed" && role === "vendor") {
+    const buyerId = String(txData.buyer_id);
+    await supabase.from("notifications").insert({
+      user_id: buyerId,
+      title: "Milestone Fulfilled by Vendor",
+      message: `The vendor has marked milestone "${updated.title || "Untitled"}" as fulfilled. Please review and confirm receipt to release funds, or file a dispute within 14 days.${updated.description ? ` Vendor note: "${updated.description}"` : ""}`,
+      type: "info",
+      related_entity_type: "milestone",
+      related_entity_id: String(milestone_id),
+    });
+  } else if (status === "completed" && role === "buyer") {
+    const vendorId = String(txData.vendor_id);
+    await supabase.from("notifications").insert({
+      user_id: vendorId,
+      title: "Milestone Confirmed by Buyer",
+      message: `The buyer has confirmed milestone "${updated.title || "Untitled"}" as complete.`,
+      type: "info",
+      related_entity_type: "milestone",
+      related_entity_id: String(milestone_id),
+    });
+  }
+
+  // Notify counterparty when a milestone note is updated
+  if (description !== undefined && !status) {
+    const counterpartyId = role === "vendor" ? String(txData.buyer_id) : String(txData.vendor_id);
+    const fromRole = role === "vendor" ? "Vendor" : "Buyer";
+    await supabase.from("notifications").insert({
+      user_id: counterpartyId,
+      title: `Milestone Note Updated by ${fromRole}`,
+      message: `${fromRole} updated the note on milestone "${milestone.title || "Untitled"}": "${String(description).slice(0, 200)}"`,
+      type: "info",
+      related_entity_type: "milestone",
+      related_entity_id: String(milestone_id),
+    });
+  }
+
   await logAuditAction(supabase, String(user_id), "update_milestone", {
     transaction_id: txData.id,
     milestone_id: String(milestone_id),
