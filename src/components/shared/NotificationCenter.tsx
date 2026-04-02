@@ -157,21 +157,34 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   }, [role, fetchTriaged]);
 
 
-  /* ── Counts ───────────────────────────────────────────── */
+  /* ── Counts (action-required with incomplete actions always count as unread) ── */
   const counts = useMemo(() => {
     const c = { all: 0, critical: 0, high: 0, medium: 0, low: 0 };
     for (const n of notifications) {
-      if (n.is_read) continue;
+      const isActionPending = n.is_action_required && !n.action_completed_at;
+      if (n.is_read && !isActionPending) continue;
       c.all++;
       c[toPriority(n.type)]++;
     }
     return c;
   }, [notifications]);
 
-  /* ── Filtered list ────────────────────────────────────── */
+  /** Count of action-required notifications still pending */
+  const actionRequiredCount = useMemo(() =>
+    notifications.filter(n => n.is_action_required && !n.action_completed_at).length
+  , [notifications]);
+
+  /* ── Filtered list — action-required items pinned to top ── */
   const filtered = useMemo(() => {
     const list = activeTab === "all" ? notifications : notifications.filter((n) => toPriority(n.type) === activeTab);
-    return list.slice(0, 100);
+    // Sort: action-required pending first, then unread, then by date
+    return [...list].sort((a, b) => {
+      const aAction = a.is_action_required && !a.action_completed_at ? 1 : 0;
+      const bAction = b.is_action_required && !b.action_completed_at ? 1 : 0;
+      if (aAction !== bAction) return bAction - aAction;
+      if (a.is_read !== b.is_read) return a.is_read ? 1 : -1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }).slice(0, 100);
   }, [notifications, activeTab]);
 
   /* ── Actions ──────────────────────────────────────────── */
