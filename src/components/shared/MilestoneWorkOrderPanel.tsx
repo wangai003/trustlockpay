@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
@@ -161,6 +165,7 @@ const MilestoneWorkOrderPanel = ({
   const [observerName, setObserverName] = useState("");
   const [observerEmail, setObserverEmail] = useState("");
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
+  const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
@@ -308,6 +313,7 @@ const MilestoneWorkOrderPanel = ({
   if (milestones.length === 0) return null;
 
   return (
+    <>
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
@@ -486,20 +492,7 @@ const MilestoneWorkOrderPanel = ({
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
-                        onClick={async () => {
-                          if (isTestnet) {
-                            onTestnetUpdateStatus?.(ms.id, "released"); // simulate removal in testnet
-                            toast.success(`Stage "${ms.title}" removed`);
-                            return;
-                          }
-                          const userId = await getUserId();
-                          if (!userId) return toast.error("Sign in required");
-                          const { error } = await supabase.functions.invoke("escrow-manager", {
-                            body: { action: "delete_milestone", milestone_id: ms.id, user_id: userId },
-                          });
-                          if (error) toast.error("Failed to remove milestone");
-                          else toast.success(`Stage "${ms.title}" removed from work order`);
-                        }}
+                        onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}
                       >
                         <Trash2 className="w-3 h-3 mr-1" /> Remove Stage
                       </Button>
@@ -524,6 +517,47 @@ const MilestoneWorkOrderPanel = ({
         </CardContent>
       </Card>
     </TLId>
+
+    {/* Milestone Delete Confirmation Dialog */}
+    <AlertDialog open={!!pendingDeleteMilestone} onOpenChange={(open) => !open && setPendingDeleteMilestone(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" /> Remove Milestone Stage?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove <strong>"{pendingDeleteMilestone?.title}"</strong> from this work order?
+            This action cannot be undone. The counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => {
+              if (!pendingDeleteMilestone) return;
+              if (isTestnet) {
+                onTestnetUpdateStatus?.(pendingDeleteMilestone.id, "released");
+                toast.success(`Stage "${pendingDeleteMilestone.title}" removed`);
+                setPendingDeleteMilestone(null);
+                return;
+              }
+              const userId = await getUserId();
+              if (!userId) return toast.error("Sign in required");
+              const { error } = await supabase.functions.invoke("escrow-manager", {
+                body: { action: "delete_milestone", milestone_id: pendingDeleteMilestone.id, user_id: userId },
+              });
+              if (error) toast.error("Failed to remove milestone");
+              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed from work order`);
+              setPendingDeleteMilestone(null);
+            }}
+          >
+            Yes, Remove Stage
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 

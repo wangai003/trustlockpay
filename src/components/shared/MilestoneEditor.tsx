@@ -8,6 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus, X, GripVertical, Upload, Check, AlertTriangle, ArrowRight,
   FileText, Lock, Unlock, RotateCcw, Eye, UserPlus, Mail, Trash2, Loader2
 } from "lucide-react";
@@ -317,19 +321,23 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
   };
 
   // ─── Delete milestone ─────────────────────────────────────
-  const deleteMilestone = async (milestoneId: string) => {
+  const [pendingDeleteId, setPendingDeleteId] = useState<{ id: string; title: string } | null>(null);
+
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteId) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data, error } = await supabase.functions.invoke("escrow-manager", {
-      body: { action: "delete_milestone", milestone_id: milestoneId, user_id: user.id },
+      body: { action: "delete_milestone", milestone_id: pendingDeleteId.id, user_id: user.id },
     });
 
     if (error || !data?.success) {
       toast.error(data?.error || "Failed to delete milestone");
-      return;
+    } else {
+      toast.success("Milestone deleted");
     }
-    toast.success("Milestone deleted");
+    setPendingDeleteId(null);
   };
 
   // ─── Drag-to-reorder ──────────────────────────────────────
@@ -479,6 +487,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
   }
 
   return (
+    <>
     <div className="space-y-4">
       {/* Industry Template Selector — only when no milestones exist */}
       {milestones.length === 0 && !locked && (
@@ -667,7 +676,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                           size="sm"
                           variant="ghost"
                           className="h-6 text-[10px] gap-1 text-destructive hover:text-destructive"
-                          onClick={() => deleteMilestone(ms.id)}
+                          onClick={() => setPendingDeleteId({ id: ms.id, title: ms.title })}
                         >
                           <Trash2 className="w-3 h-3" /> Delete
                         </Button>
@@ -851,6 +860,31 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* Milestone Delete Confirmation */}
+    <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => !open && setPendingDeleteId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" /> Delete Milestone?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <strong>"{pendingDeleteId?.title}"</strong>?
+            This action cannot be undone and the counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={confirmDeleteMilestone}
+          >
+            Yes, Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
