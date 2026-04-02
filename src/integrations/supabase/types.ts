@@ -762,6 +762,94 @@ export type Database = {
         }
         Relationships: []
       }
+      message_threads: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_message_at: string | null
+          participant_1: string
+          participant_2: string
+          status: string
+          subject: string | null
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_1: string
+          participant_2: string
+          status?: string
+          subject?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_1?: string
+          participant_2?: string
+          status?: string
+          subject?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_threads_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_url: string | null
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_id: string
+          thread_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id: string
+          thread_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_negotiations: {
         Row: {
           agreed_at: string | null
