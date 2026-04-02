@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, Store, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Shield, Store, ShoppingBag, Code } from "lucide-react";
 import { Link } from "react-router-dom";
 import TrustLockHero from "@/components/trustlock/TrustLockHero";
 import TrustLockFeatures from "@/components/trustlock/TrustLockFeatures";
@@ -9,6 +9,7 @@ import TrustLockBuyerFlow from "@/components/trustlock/TrustLockBuyerFlow";
 import TrustLockDashboard from "@/components/trustlock/TrustLockDashboard";
 import TrustLockIntegration from "@/components/trustlock/TrustLockIntegration";
 import TrustLockCta from "@/components/trustlock/TrustLockCta";
+import TrustLockTestWidget from "@/components/trustlock/TrustLockTestWidget";
 import Footer from "@/components/Footer";
 
 const TrustLock = () => {
@@ -30,8 +31,14 @@ const TrustLock = () => {
             <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Live Demo</a>
             <a href="#dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
             <a href="#integrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Integrate</a>
+            <Link to="/test-widget" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Test Widget</Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Link to="/test-widget">
+              <Button variant="default" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+                <Code className="w-3.5 h-3.5 shrink-0" /> Test Widget
+              </Button>
+            </Link>
             <Link to="/trustlock/admin/login">
               <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
                 <Shield className="w-3.5 h-3.5 shrink-0" /> Admin
@@ -58,6 +65,7 @@ const TrustLock = () => {
       <TrustLockBuyerFlow />
       <TrustLockDashboard />
       <TrustLockIntegration />
+      <TrustLockTestWidget />
       <TrustLockCta />
       <Footer />
     </div>
