@@ -87,6 +87,7 @@ const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketpl
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
+const TesterLanding = lazy(() => import("./pages/public/TesterLanding"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
 const queryClient = new QueryClient();
