@@ -53,6 +53,12 @@ const VendorSignup = () => {
         setError(error.message);
       }
     } else {
+      // Store ToS acceptance flag for recording after login
+      localStorage.setItem("tl_pending_tos", JSON.stringify({
+        version: CURRENT_TOS_VERSION,
+        userAgent: navigator.userAgent,
+        acceptedAt: new Date().toISOString(),
+      }));
       // Auto-confirm is enabled, so redirect straight to dashboard
       localStorage.setItem("tl_vendor_auth", "true");
       localStorage.setItem("tl_vendor_network", "mainnet");
