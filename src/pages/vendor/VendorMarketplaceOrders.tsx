@@ -64,26 +64,32 @@ const VendorMarketplaceOrders = () => {
       const platforms = [...new Set((tokens || []).map(t => t.platform))];
       setClaimedPlatforms(platforms);
 
-      // Fetch marketplace-origin transactions
-      const { data: txs } = await supabase
-        .from("transactions")
-        .select("id, tx_id, amount, status, buyer_name, item, created_at, order_type, metadata")
+      // Fetch marketplace-origin transactions via order_carbon_copies
+      const { data: carbonCopies } = await supabase
+        .from("order_carbon_copies")
+        .select("transaction_id, order_number, amount, status, buyer_name, item, created_at, checkout_details")
         .eq("vendor_id", userId)
-        .not("metadata", "is", null)
         .order("created_at", { ascending: false })
         .limit(100);
 
-      const marketplaceOrders = (txs || [])
-        .filter(t => {
-          const meta = t.metadata as Record<string, unknown> | null;
-          return meta?.platform || meta?.marketplace_order_id;
+      const marketplaceOrders = (carbonCopies || [])
+        .filter(cc => {
+          const details = cc.checkout_details as Record<string, unknown> | null;
+          return details?.marketplace_source === true;
         })
-        .map(t => {
-          const meta = t.metadata as Record<string, unknown>;
+        .map(cc => {
+          const details = cc.checkout_details as Record<string, unknown>;
           return {
-            ...t,
-            platform: String(meta?.platform_name || meta?.platform || "Marketplace"),
-            marketplace_order_id: String(meta?.marketplace_order_id || "—"),
+            id: cc.transaction_id || cc.order_number || String(Math.random()),
+            tx_id: cc.order_number || "—",
+            amount: cc.amount || 0,
+            status: cc.status || "active",
+            buyer_name: cc.buyer_name || "Unknown",
+            item: cc.item || "—",
+            created_at: cc.created_at,
+            order_type: "simple",
+            platform: String(details?.marketplace_platform || "Marketplace"),
+            marketplace_order_id: String(details?.marketplace_order_id || "—"),
           };
         });
 
