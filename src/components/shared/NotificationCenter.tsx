@@ -74,6 +74,7 @@ const mockNotifications: Record<string, DbNotification[]> = {
 
 /* ─── Component ─────────────────────────────────────────── */
 const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<DbNotification[]>([]);
   const [activeTab, setActiveTab] = useState<Priority | "all">("all");
