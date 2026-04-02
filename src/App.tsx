@@ -198,8 +198,8 @@ const App = () => (
               </Route>
 
               <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
-              <Route path="/pay/:linkId" element={<PublicCheckout />} />
               <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
+              <Route path="/pay/:linkId" element={<PublicCheckout />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
               <Route path="*" element={<NotFound />} />
