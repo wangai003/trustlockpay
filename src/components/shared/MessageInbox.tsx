@@ -58,7 +58,6 @@ interface Message {
   is_read: boolean;
   created_at: string;
 }
-}
 
 interface Contact {
   id: string;
