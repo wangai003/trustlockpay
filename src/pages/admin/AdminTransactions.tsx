@@ -5,18 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Truck, PackageCheck, FileText } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Download, Eye, Clock, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Truck, PackageCheck, FileText, ShieldX, ShieldCheck, RotateCcw, Ban } from "lucide-react";
 import { useTransactions, useFlagForReview } from "@/hooks/useSupabaseData";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-type TxStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed" | "cancelled";
+type TxStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed" | "cancelled" | "compliance_hold" | "compliance_review";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -25,6 +32,11 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   released: { label: "Released", color: "bg-primary/15 text-primary", icon: CheckCircle },
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
   cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: XCircle },
+  compliance_hold: { label: "Compliance Hold", color: "bg-destructive/20 text-destructive", icon: ShieldX },
+  compliance_review: { label: "Under Review", color: "bg-yellow-500/15 text-yellow-700", icon: ShieldCheck },
+  blocked: { label: "Blocked", color: "bg-destructive/25 text-destructive", icon: Ban },
+  refunded: { label: "Refunded", color: "bg-muted text-muted-foreground", icon: RotateCcw },
+  vendor_rejected: { label: "Vendor Rejected", color: "bg-muted text-muted-foreground", icon: XCircle },
 };
 
 const industryLabels: Record<string, string> = {
