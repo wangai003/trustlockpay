@@ -845,11 +845,13 @@ async function updateMilestone(body: Record<string, unknown>) {
     const buyerId = String(txData.buyer_id);
     await supabase.from("notifications").insert({
       user_id: buyerId,
-      title: "Milestone Fulfilled by Vendor",
-      message: `The vendor has marked milestone "${updated.title || "Untitled"}" as fulfilled. Please review and confirm receipt to release funds, or file a dispute within 14 days.${updated.description ? ` Vendor note: "${updated.description}"` : ""}`,
-      type: "info",
+      title: "⚠️ Signature Required — Milestone Fulfilled",
+      message: `The vendor has marked milestone "${updated.title || "Untitled"}" as fulfilled. Review the deliverables and sign the Milestone Acknowledgement Form to release funds, or file a dispute within 14 days.${updated.description ? ` Vendor note: "${updated.description}"` : ""}`,
+      type: "high",
       related_entity_type: "milestone",
       related_entity_id: String(milestone_id),
+      is_action_required: true,
+      action_url: "/trustlock/buyer/orders",
     });
   } else if (status === "completed" && role === "buyer") {
     const vendorId = String(txData.vendor_id);
