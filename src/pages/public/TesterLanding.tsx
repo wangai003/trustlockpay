@@ -63,6 +63,7 @@ const TesterLanding = () => {
   const [copied, setCopied] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   const siteSlug = siteName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-site";
   const vendorSlug = vendorName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tester";
