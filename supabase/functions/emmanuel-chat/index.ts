@@ -442,9 +442,41 @@ serve(async (req) => {
       {
         type: "function",
         function: {
-          name: "kyc_nudge",
-          description: "Find vendors at low KYC tiers with growing volume who should upgrade.",
-          parameters: { type: "object", properties: {} },
+          name: "lookup",
+          description: "Look up a specific transaction or dispute by ID (TX-ID, dispute ID, or UUID). Returns full details including milestones, related disputes, compliance flags, and blockchain proofs.",
+          parameters: {
+            type: "object",
+            properties: { query: { type: "string", description: "Transaction ID (e.g., TL-2026-0001), dispute ID (e.g., DSP-001), or UUID" } },
+            required: ["query"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "manage_sar",
+          description: "Create or manage Suspicious Activity Report (SAR) filings. Sub-actions: 'create' (draft a new SAR), 'list' (view recent SARs), 'update_status' (change SAR status to submitted/acknowledged).",
+          parameters: {
+            type: "object",
+            properties: {
+              sub_action: { type: "string", enum: ["create", "list", "update_status"], description: "SAR management action" },
+              subject_name: { type: "string", description: "Name of the suspicious subject (for create)" },
+              subject_id: { type: "string", description: "UUID of the subject (for create)" },
+              subject_role: { type: "string", description: "buyer or vendor (for create)" },
+              subject_country: { type: "string", description: "Country of the subject (for create)" },
+              narrative: { type: "string", description: "SAR narrative text (for create)" },
+              evidence_refs: { type: "array", items: { type: "string" }, description: "Evidence references (for create)" },
+              related_transaction_ids: { type: "array", items: { type: "string" }, description: "Related transaction UUIDs (for create)" },
+              related_flag_ids: { type: "array", items: { type: "string" }, description: "Related compliance flag UUIDs (for create)" },
+              regulatory_authority: { type: "string", description: "Regulatory body (default: FinCEN)" },
+              sar_id: { type: "string", description: "SAR UUID (for update_status)" },
+              status: { type: "string", enum: ["submitted", "acknowledged"], description: "New status (for update_status)" },
+              acknowledgement_ref: { type: "string", description: "Reference number from regulator (for update_status)" },
+              reviewed_by: { type: "string", description: "Admin who reviewed (for update_status)" },
+              admin_notes: { type: "string", description: "Admin notes (for update_status)" },
+            },
+            required: ["sub_action"],
+          },
         },
       },
     ];
