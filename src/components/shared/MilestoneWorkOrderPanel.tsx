@@ -53,6 +53,7 @@ const statusLabel: Record<string, string> = {
   in_progress: "In Progress",
   completed: "Fulfilled",
   released: "Released",
+  deleted: "Removed",
 };
 
 /** Industries where observer is NOT required on any milestone */
