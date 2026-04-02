@@ -36,6 +36,7 @@ const AdminIndustryPlaybook = lazy(() => import("./pages/admin/AdminIndustryPlay
 const AdminTLIdSearch = lazy(() => import("./pages/admin/AdminTLIdSearch"));
 const AdminTaxRemittance = lazy(() => import("./pages/admin/AdminTaxRemittance"));
 const AdminBlockchainProofs = lazy(() => import("./pages/admin/AdminBlockchainProofs"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
