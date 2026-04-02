@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X, AlertTriangle, User, ShieldCheck } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -166,6 +167,7 @@ const MilestoneWorkOrderPanel = ({
   const [observerEmail, setObserverEmail] = useState("");
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
+  const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
@@ -230,6 +232,20 @@ const MilestoneWorkOrderPanel = ({
       onTestnetUpdateStatus?.(milestoneId, "completed");
       return;
     }
+
+    // Document gate enforcement: check required docs are uploaded
+    const milestone = milestones.find((m: any) => m.id === milestoneId);
+    if (milestone) {
+      const requiredDocs: string[] = Array.isArray((milestone as any).required_documents) ? (milestone as any).required_documents : [];
+      const uploadedDocs: any[] = Array.isArray((milestone as any).uploaded_documents) ? (milestone as any).uploaded_documents : [];
+      const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
+      const missingDocs = requiredDocs.filter((d: string) => !uploadedTypes.has(d));
+      if (missingDocs.length > 0) {
+        toast.error(`Cannot fulfill — missing required documents: ${missingDocs.join(", ")}`);
+        return;
+      }
+    }
+
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     const geo = await capturePosition();
@@ -373,6 +389,64 @@ const MilestoneWorkOrderPanel = ({
                   </div>
                 </TLId>
 
+                {/* Required Documents Checklist */}
+                {(() => {
+                  const requiredDocs: string[] = ms.required_documents || [];
+                  const uploadedDocs: any[] = ms.uploaded_documents || [];
+                  if (requiredDocs.length === 0) return null;
+                  const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
+                  const allSatisfied = requiredDocs.every((d: string) => uploadedTypes.has(d));
+                  return (
+                    <div className="rounded-md border border-border p-2 space-y-1">
+                      <p className="text-[10px] font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> Required Documents
+                        {allSatisfied ? (
+                          <Badge variant="outline" className="text-[8px] ml-1 border-primary/30 text-primary">All uploaded</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[8px] ml-1 border-destructive/30 text-destructive">Incomplete</Badge>
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {requiredDocs.map((doc: string) => {
+                          const isMet = uploadedTypes.has(doc);
+                          return (
+                            <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"}`}>
+                              {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                              {doc}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Previously Uploaded Documents — visible to both parties with attribution */}
+                {(() => {
+                  const uploadedDocs: any[] = ms.uploaded_documents || [];
+                  if (uploadedDocs.length === 0) return null;
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold">Uploaded Documents</p>
+                      <div className="flex flex-wrap gap-1">
+                        {uploadedDocs.map((doc: any, i: number) => (
+                          <Badge key={i} variant="outline" className="text-[8px] gap-1">
+                            <FileText className="w-2.5 h-2.5" />
+                            {doc.document_type ? <span className="font-semibold">[{doc.document_type}]</span> : null}
+                            {doc.name}
+                            {doc.uploaded_by_role && (
+                              <span className="text-muted-foreground ml-0.5 flex items-center gap-0.5">
+                                <User className="w-2 h-2" />
+                                {doc.uploaded_by_role}
+                              </span>
+                            )}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Description */}
                 {ms.description && (
                   <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>
@@ -417,6 +491,31 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 </div>
 
+                {/* Document Type Selector (for required document gates) */}
+                {(() => {
+                  const requiredDocs: string[] = ms.required_documents || [];
+                  if (requiredDocs.length === 0) return null;
+                  return (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium">Tag upload as document type:</label>
+                      <Select
+                        value={docTypeSelections[ms.id] || ""}
+                        onValueChange={(val) => setDocTypeSelections(prev => ({ ...prev, [ms.id]: val }))}
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General Evidence</SelectItem>
+                          {requiredDocs.map((doc: string) => (
+                            <SelectItem key={doc} value={doc}>{doc}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })()}
+
                 {/* Document Upload */}
                 {isTestnet ? (
                   <div className="space-y-1">
@@ -432,15 +531,6 @@ const MilestoneWorkOrderPanel = ({
                     >
                       <FileText className="w-3 h-3 mr-1" /> Simulate Upload
                     </Button>
-                    {(ms.uploaded_documents || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {ms.uploaded_documents.map((doc: any, i: number) => (
-                          <Badge key={i} variant="outline" className="text-[9px]">
-                            <FileText className="w-2.5 h-2.5 mr-0.5" /> {doc.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <TLId code={woTLId(role, row, "UPL-EVIDENCE")}>
@@ -451,6 +541,7 @@ const MilestoneWorkOrderPanel = ({
                         void (async () => {
                           const userId = await getUserId();
                           if (!userId) return;
+                          const selectedDocType = docTypeSelections[ms.id] || "general";
                           await updateMilestone.mutateAsync({
                             milestoneId: ms.id,
                             userId,
@@ -459,8 +550,13 @@ const MilestoneWorkOrderPanel = ({
                               url: file.url,
                               path: file.path,
                               uploadedAt: new Date().toISOString(),
+                              uploaded_by: userId,
+                              uploaded_by_role: role,
+                              document_type: selectedDocType,
                             })),
                           });
+                          // Reset doc type selection after upload
+                          setDocTypeSelections(prev => ({ ...prev, [ms.id]: "" }));
                         })();
                       }}
                     />
