@@ -325,11 +325,128 @@ function groupBy(arr: any[], key: string): Record<string, number> {
   return result;
 }
 
+// 7. Lookup — find a specific transaction or dispute by ID
+async function lookup(query: string) {
+  const sb = getSupabase();
+  const q = query.trim();
+  const results: any = {};
+
+  // Try transaction lookup (by tx_id or UUID)
+  const { data: txByRef } = await sb.from("transactions").select("*").eq("tx_id", q).limit(1);
+  if (txByRef && txByRef.length > 0) {
+    results.transaction = txByRef[0];
+  } else {
+    const { data: txById } = await sb.from("transactions").select("*").eq("id", q).limit(1);
+    if (txById && txById.length > 0) results.transaction = txById[0];
+  }
+
+  // Try dispute lookup (by dispute_id or UUID)
+  const { data: dspByRef } = await sb.from("disputes").select("*").eq("dispute_id", q).limit(1);
+  if (dspByRef && dspByRef.length > 0) {
+    results.dispute = dspByRef[0];
+  } else {
+    const { data: dspById } = await sb.from("disputes").select("*").eq("id", q).limit(1);
+    if (dspById && dspById.length > 0) results.dispute = dspById[0];
+  }
+
+  // If we found a transaction, also pull related data
+  if (results.transaction) {
+    const txId = results.transaction.id;
+    const { data: milestones } = await sb.from("transaction_milestones").select("*").eq("transaction_id", txId).order("order_index");
+    const { data: disputes } = await sb.from("disputes").select("*").eq("transaction_id", txId);
+    const { data: carbonCopy } = await sb.from("order_carbon_copies").select("*").eq("transaction_id", txId).limit(1);
+    const { data: flags } = await sb.from("compliance_flags").select("*").or(`related_buyer_id.eq.${results.transaction.buyer_id},related_vendor_id.eq.${results.transaction.vendor_id}`);
+    const { data: proofs } = await sb.from("blockchain_proofs").select("id, record_type, chain_status, anchored_at").eq("transaction_id", txId);
+
+    results.milestones = milestones || [];
+    results.related_disputes = disputes || [];
+    results.carbon_copy = carbonCopy?.[0] || null;
+    results.compliance_flags = flags || [];
+    results.blockchain_proofs = proofs || [];
+  }
+
+  // If we found a dispute, pull related transaction
+  if (results.dispute && !results.transaction && results.dispute.transaction_id) {
+    const { data: tx } = await sb.from("transactions").select("*").eq("id", results.dispute.transaction_id).limit(1);
+    if (tx && tx.length > 0) results.transaction = tx[0];
+    const { data: evidence } = await sb.from("dispute_evidence").select("*").eq("dispute_id", results.dispute.id);
+    results.evidence = evidence || [];
+  }
+
+  if (!results.transaction && !results.dispute) {
+    return { found: false, message: `No transaction or dispute found for "${q}". Try a TX-ID (e.g., TL-2026-0001) or dispute ID (e.g., DSP-001).` };
+  }
+
+  return { found: true, ...results };
+}
+
+// 8. Log tool usage
+async function logToolUsage(toolName: string, params: Record<string, any>, resultSummary: string, executionMs: number, conversationId?: string) {
+  try {
+    const sb = getSupabase();
+    await sb.from("emmanuel_tool_usage").insert({
+      tool_name: toolName,
+      parameters: params,
+      result_summary: resultSummary.substring(0, 500),
+      execution_ms: executionMs,
+      conversation_id: conversationId || null,
+    });
+  } catch (e) {
+    console.error("Failed to log tool usage:", e);
+  }
+}
+
+// 9. SAR management
+async function manageSar(subAction: string, params: Record<string, any>) {
+  const sb = getSupabase();
+
+  switch (subAction) {
+    case "create": {
+      const sarNumber = `SAR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9999)).padStart(4, "0")}`;
+      const { data, error } = await sb.from("sar_filings").insert({
+        sar_number: sarNumber,
+        subject_name: params.subject_name,
+        subject_id: params.subject_id || null,
+        subject_role: params.subject_role || null,
+        subject_country: params.subject_country || null,
+        narrative: params.narrative,
+        evidence_refs: params.evidence_refs || [],
+        related_transaction_ids: params.related_transaction_ids || [],
+        related_flag_ids: params.related_flag_ids || [],
+        regulatory_authority: params.regulatory_authority || "FinCEN",
+        drafted_by: "emmanuel_ai",
+      }).select().single();
+      if (error) throw new Error(`Failed to create SAR: ${error.message}`);
+      return { created: true, sar: data };
+    }
+    case "list": {
+      const { data } = await sb.from("sar_filings").select("*").order("created_at", { ascending: false }).limit(20);
+      return { filings: data || [] };
+    }
+    case "update_status": {
+      const { data, error } = await sb.from("sar_filings").update({
+        filing_status: params.status,
+        submitted_at: params.status === "submitted" ? new Date().toISOString() : undefined,
+        acknowledged_at: params.status === "acknowledged" ? new Date().toISOString() : undefined,
+        acknowledgement_ref: params.acknowledgement_ref || undefined,
+        reviewed_by: params.reviewed_by || undefined,
+        admin_notes: params.admin_notes || undefined,
+        updated_at: new Date().toISOString(),
+      }).eq("id", params.sar_id).select().single();
+      if (error) throw new Error(`Failed to update SAR: ${error.message}`);
+      return { updated: true, sar: data };
+    }
+    default:
+      throw new Error(`Unknown SAR sub-action: ${subAction}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { action, ...params } = await req.json();
+    const { action, conversation_id, ...params } = await req.json();
+    const startTime = Date.now();
 
     let result;
     switch (action) {
@@ -354,9 +471,22 @@ serve(async (req) => {
       case "kyc_nudge":
         result = await kycNudge();
         break;
+      case "lookup":
+        if (!params.query) throw new Error("query required");
+        result = await lookup(params.query);
+        break;
+      case "manage_sar":
+        if (!params.sub_action) throw new Error("sub_action required");
+        result = await manageSar(params.sub_action, params);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
+
+    // Log usage asynchronously
+    const executionMs = Date.now() - startTime;
+    const summary = typeof result === "object" ? JSON.stringify(result).substring(0, 200) : String(result);
+    logToolUsage(action, params, summary, executionMs, conversation_id);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
