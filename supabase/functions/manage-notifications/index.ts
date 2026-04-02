@@ -53,11 +53,17 @@ Deno.serve(async (req) => {
     );
 
     // --- Contract notification helpers ---
-    const insertNotification = async (userId: string, title: string, message: string, type: string, entityType?: string, entityId?: string) => {
+    const insertNotification = async (
+      userId: string, title: string, message: string, type: string,
+      entityType?: string, entityId?: string,
+      opts?: { is_action_required?: boolean; action_url?: string }
+    ) => {
       const { data, error } = await supabaseAdmin.from("notifications").insert({
         user_id: userId, title, message, type,
         related_entity_type: entityType || null,
         related_entity_id: entityId || null,
+        is_action_required: opts?.is_action_required || false,
+        action_url: opts?.action_url || null,
       }).select().single();
       if (error) throw error;
       return data;
