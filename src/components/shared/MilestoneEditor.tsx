@@ -859,6 +859,31 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
         </DialogContent>
       </Dialog>
     </div>
+
+    {/* Milestone Delete Confirmation */}
+    <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => !open && setPendingDeleteId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" /> Delete Milestone?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <strong>"{pendingDeleteId?.title}"</strong>?
+            This action cannot be undone and the counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={confirmDeleteMilestone}
+          >
+            Yes, Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
