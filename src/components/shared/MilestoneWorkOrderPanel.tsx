@@ -652,12 +652,20 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 )}
 
+                {/* Offline mode — contextual guidance */}
+                {layoutMode === "offline" && ms.status === "pending" && (
+                  <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground">
+                    💼 This step is expected to happen offline (e.g., property inspection, title signing, notary visit). Once completed, use the button below to confirm digitally.
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap">
                   {canVendorFulfill ? (
                     <TLId code={woTLId(role, row, "BTN-FULFILL")} inline>
                       <Button size="sm" onClick={() => handleMarkFulfilled(ms.id)}>
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> Mark Fulfilled
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
                       </Button>
                     </TLId>
                   ) : null}
