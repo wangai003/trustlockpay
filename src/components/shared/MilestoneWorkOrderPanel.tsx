@@ -585,12 +585,26 @@ const MilestoneWorkOrderPanel = ({
                     </TLId>
                   ) : null}
 
-                  {canBuyerRelease ? (
-                    <TLId code={woTLId(role, row, "BTN-RELEASE")} inline>
-                      <Button size="sm" onClick={() => handleReleaseMilestone(ms.id)}>
-                        <FileText className="w-3 h-3 mr-1" /> Release Milestone
-                      </Button>
-                    </TLId>
+                {canBuyerRelease ? (
+                    <>
+                      {/* ⚠️ Signature Required Banner */}
+                      <div className="w-full flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs mb-1">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-amber-700">⚠️ Your Signature is Required</p>
+                          <p className="text-amber-600 mt-0.5">
+                            The vendor has marked <strong>Stage #{row} — {ms.title}</strong> as fulfilled.
+                            Review the deliverables and sign the Milestone Acknowledgement Form to release funds.
+                            If unresolved, funds auto-release after 14 days.
+                          </p>
+                        </div>
+                      </div>
+                      <TLId code={woTLId(role, row, "BTN-RELEASE")} inline>
+                        <Button size="sm" onClick={() => handleReleaseMilestone(ms.id)}>
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Sign &amp; Release Milestone
+                        </Button>
+                      </TLId>
+                    </>
                   ) : null}
 
                   {/* Delete — only pending milestones during pre-order (before funds locked) */}
