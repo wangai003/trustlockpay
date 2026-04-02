@@ -304,6 +304,34 @@ const AdminTransactions = () => {
                                     compact
                                   />
                                 </div>
+
+                                {/* Compliance Hold Actions */}
+                                {isComplianceHeld(tx.status) && (
+                                  <div className="pt-3 border-t border-destructive/20">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <ShieldX className="w-4 h-4 text-destructive" />
+                                      <p className="text-xs font-semibold text-destructive">Compliance Hold Actions</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1 text-xs"
+                                        onClick={() => { setUnfreezeTarget({ txId: tx.id, orderNum: tx.id }); setResolutionNote(""); setRestoreStatus("locked"); }}
+                                      >
+                                        <ShieldCheck className="w-3.5 h-3.5" /> Lift Hold & Restore
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="gap-1 text-xs"
+                                        onClick={() => { setRejectTarget({ txId: tx.id, orderNum: tx.id }); setResolutionNote(""); }}
+                                      >
+                                        <Ban className="w-3.5 h-3.5" /> Reject & Refund Buyer
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -317,6 +345,83 @@ const AdminTransactions = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Unfreeze Dialog */}
+      <AlertDialog open={!!unfreezeTarget} onOpenChange={(open) => !open && setUnfreezeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" /> Lift Compliance Hold
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>You are about to lift the compliance hold on <strong>{unfreezeTarget?.txId}</strong>. This will restore the transaction and notify both parties.</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Restore to Status</label>
+                  <Select value={restoreStatus} onValueChange={setRestoreStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="locked">Locked (Funds in Escrow)</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Resolution Note <span className="text-destructive">*</span></label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Explain why this hold is being lifted (e.g., false positive confirmed, additional KYC verified)..."
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnfreeze} disabled={actionLoading || !resolutionNote.trim()}>
+              {actionLoading ? "Processing..." : "Lift Hold"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject & Refund Dialog */}
+      <AlertDialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ban className="w-5 h-5 text-destructive" /> Reject Transaction & Refund Buyer
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>This will <strong>permanently reject</strong> transaction <strong>{rejectTarget?.txId}</strong> and initiate a full refund to the buyer. The compliance flag will be marked as confirmed.</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Rejection Reason <span className="text-destructive">*</span></label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Document the compliance reason for rejection (e.g., sanctions match confirmed, KYC fraud detected)..."
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleComplianceReject}
+              disabled={actionLoading || !resolutionNote.trim()}
+            >
+              {actionLoading ? "Processing..." : "Reject & Refund"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
