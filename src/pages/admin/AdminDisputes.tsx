@@ -176,6 +176,22 @@ const AdminDisputes = () => {
                       {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
                         <Button size="sm" className="gap-1" onClick={() => reviewDispute.mutate(dispute.dbId)}>Review</Button>
                       )}
+
+                      {/* ── Three-Outcome Resolution Buttons ── */}
+                      {dispute.status !== "resolved" && !["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status) && (
+                        <>
+                          <Button size="sm" variant="outline" className="gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => resolveVendorWins.mutate(dispute.id)}>
+                            <ShieldCheck className="w-3 h-3" /> Vendor Wins
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => resolveBuyerWins.mutate(dispute.id)}>
+                            <UserX className="w-3 h-3" /> Buyer Wins
+                          </Button>
+                          <Button size="sm" variant="outline" className="gap-1 border-accent/30 text-accent-foreground hover:bg-accent/10" onClick={() => setCompromiseDialog(dispute.id)}>
+                            <SplitSquareHorizontal className="w-3 h-3" /> Compromise
+                          </Button>
+                        </>
+                      )}
+
                       {isArbEligible(dispute) && (
                         <Button size="sm" variant="destructive" className="gap-1" onClick={() => escalateToArb.mutate(dispute.id)}>
                           <Scale className="w-3 h-3" /> Arbitrate
