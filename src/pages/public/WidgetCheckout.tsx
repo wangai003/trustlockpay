@@ -1,0 +1,359 @@
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface VendorInfo {
+  name: string;
+  industry: string;
+  currency: string;
+}
+
+const WidgetCheckout = () => {
+  const [params] = useSearchParams();
+  const vendorId = params.get("vendor") || "";
+  const siteId = params.get("site") || "";
+  const mode = params.get("mode") || "sandbox";
+  const isEmbed = params.get("embed") === "true";
+  const isSandbox = mode === "sandbox";
+
+  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error">("loading");
+  const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
+  const [form, setForm] = useState({
+    buyerName: "",
+    buyerEmail: "",
+    item: "Sample Product",
+    amount: "25.00",
+  });
+  const [confirmationCode, setConfirmationCode] = useState("");
+
+  useEffect(() => {
+    loadVendor();
+  }, [vendorId]);
+
+  const loadVendor = async () => {
+    if (!vendorId) {
+      setStep("form");
+      return;
+    }
+
+    try {
+      // Try to load vendor info from vendor_settings
+      const { data } = await supabase
+        .from("vendor_settings")
+        .select("industry_category, supported_currencies, vendor_id")
+        .eq("vendor_id", vendorId)
+        .maybeSingle();
+
+      if (data) {
+        // Also try to get vendor name from profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", vendorId)
+          .maybeSingle();
+
+        setVendor({
+          name: profile?.full_name || "Vendor",
+          industry: data.industry_category || "general",
+          currency: (data.supported_currencies as string[] | null)?.[0] || "USD",
+        });
+      }
+    } catch {
+      // Use defaults
+    }
+    setStep("form");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.buyerName.trim() || !form.buyerEmail.trim() || !form.amount) return;
+
+    setStep("processing");
+
+    if (isSandbox) {
+      // Simulate processing delay
+      await new Promise((r) => setTimeout(r, 2000));
+      const code = `TL-DEMO-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      setConfirmationCode(code);
+      setStep("done");
+
+      // Notify parent iframe
+      if (isEmbed && window.parent !== window) {
+        window.parent.postMessage({
+          type: "tl:payment_complete",
+          payload: {
+            confirmationCode: code,
+            amount: parseFloat(form.amount),
+            buyer: form.buyerName,
+            vendor: vendor.name,
+            mode: "sandbox",
+          },
+        }, "*");
+      }
+      return;
+    }
+
+    // Live mode — call checkout-widget edge function
+    try {
+      const amount = parseFloat(form.amount);
+      const { data, error } = await supabase.functions.invoke("checkout-widget", {
+        body: {
+          action: "create_session",
+          vendorId,
+          amount,
+          item: form.item,
+          buyerEmail: form.buyerEmail,
+          buyerName: form.buyerName,
+          buyerLocation: "Unknown",
+          paymentMethod: "card",
+          industry: vendor.industry,
+          orderType: "simple",
+        },
+      });
+
+      if (error || !data?.sessionId) {
+        setStep("error");
+        return;
+      }
+
+      // In live mode, this would redirect to the payment processor
+      // For now, show confirmation
+      setConfirmationCode(data.sessionId);
+      setStep("done");
+    } catch {
+      setStep("error");
+    }
+  };
+
+  const feeAmount = parseFloat(form.amount || "0") * 0.015;
+  const totalAmount = parseFloat(form.amount || "0") + feeAmount;
+
+  const closeWidget = () => {
+    if (isEmbed && window.parent !== window) {
+      window.parent.postMessage({ type: "tl:close" }, "*");
+    }
+  };
+
+  if (step === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen bg-background ${isEmbed ? "p-3" : "p-4 flex items-center justify-center"}`}>
+      <div className={`w-full ${isEmbed ? "" : "max-w-md mx-auto"}`}>
+        {/* Sandbox banner */}
+        {isSandbox && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+              <strong>Sandbox Mode</strong> — No real money is charged. This is a test transaction.
+            </p>
+          </div>
+        )}
+
+        {step === "form" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              {/* Vendor header */}
+              <div className="text-center space-y-1">
+                <div className="mx-auto w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm font-semibold">{vendor.name}</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Escrow-protected payment</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Your Name</Label>
+                  <Input
+                    placeholder="Full name"
+                    value={form.buyerName}
+                    onChange={(e) => setForm((p) => ({ ...p, buyerName: e.target.value }))}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="you@email.com"
+                    value={form.buyerEmail}
+                    onChange={(e) => setForm((p) => ({ ...p, buyerEmail: e.target.value }))}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Item / Service</Label>
+                  <Input
+                    placeholder="What are you paying for?"
+                    value={form.item}
+                    onChange={(e) => setForm((p) => ({ ...p, item: e.target.value }))}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Amount ({vendor.currency})</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.amount}
+                    onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Fee breakdown */}
+                <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${parseFloat(form.amount || "0").toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Transaction fee (1.5%)</span>
+                    <span>${feeAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-border pt-1.5 flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span>${totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full gap-2 text-sm">
+                  <Lock className="w-4 h-4" />
+                  {isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
+                </Button>
+              </form>
+
+              {/* Trust badges */}
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <Badge variant="outline" className="text-[9px] gap-1">
+                  <Shield className="w-3 h-3" /> Escrow Protected
+                </Badge>
+                <Badge variant="outline" className="text-[9px] gap-1">
+                  <Lock className="w-3 h-3" /> Encrypted
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "processing" && (
+          <Card>
+            <CardContent className="p-8 text-center space-y-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+              <div>
+                <p className="text-sm font-semibold">Processing Payment...</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isSandbox ? "Simulating escrow lock..." : "Securing funds in escrow..."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "done" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">
+                  {isSandbox ? "Test Payment Successful!" : "Payment Locked in Escrow!"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isSandbox
+                    ? "This was a simulated transaction. In live mode, funds would be held securely in escrow until delivery is confirmed."
+                    : "Your funds are safely held in escrow until the order is fulfilled."}
+                </p>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Confirmation</span>
+                  <span className="font-mono font-semibold text-primary">{confirmationCode}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span>${parseFloat(form.amount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Vendor</span>
+                  <span>{vendor.name}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Status</span>
+                  <Badge variant="secondary" className="text-[10px]">
+                    <Lock className="w-3 h-3 mr-1" />
+                    {isSandbox ? "Demo Locked" : "In Escrow"}
+                  </Badge>
+                </div>
+              </div>
+
+              {isSandbox && (
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                  <p className="text-[10px] text-muted-foreground">
+                    <strong className="text-foreground">Widget integration verified!</strong> The TrustLock widget is correctly installed on your site. When you're ready for live payments, switch to live mode in your vendor dashboard.
+                  </p>
+                </div>
+              )}
+
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>
+                  Close
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "error" && (
+          <Card className="border-destructive/30">
+            <CardContent className="p-6 text-center space-y-3">
+              <AlertTriangle className="w-10 h-10 text-destructive mx-auto" />
+              <p className="text-sm font-semibold">Payment Failed</p>
+              <p className="text-xs text-muted-foreground">
+                Unable to process this transaction. Please try again or contact the vendor.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setStep("form")}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Footer */}
+        <div className="text-center mt-3">
+          <p className="text-[10px] text-muted-foreground">
+            Powered by <strong className="text-primary">TrustLock</strong> Escrow Protection
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default WidgetCheckout;

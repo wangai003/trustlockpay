@@ -86,6 +86,7 @@ const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketplaceOrders"));
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
+const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
 const queryClient = new QueryClient();
@@ -197,6 +198,7 @@ const App = () => (
               </Route>
 
               <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
+              <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
               <Route path="/pay/:linkId" element={<PublicCheckout />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />

@@ -10,8 +10,10 @@ interface WidgetInstallGuideProps {
   vendorSlug: string;
 }
 
+const WIDGET_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || "dbajucxswcgxllmwxnia"}.supabase.co/functions/v1/widget-embed`;
+
 const SCRIPT_TAG = (siteId: string, vendorSlug: string) =>
-  `<script src="https://cdn.trustlock.africa/widget.js" data-site-id="${siteId}" data-vendor-id="${vendorSlug}"></script>`;
+  `<script src="${WIDGET_URL}" data-site-id="${siteId}" data-vendor-id="${vendorSlug}" data-mode="sandbox"></script>`;
 
 type PlatformGuide = {
   steps: { title: string; detail: string; shortcut?: string; link?: { url: string; label: string } }[];
