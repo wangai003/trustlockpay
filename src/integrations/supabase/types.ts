@@ -577,6 +577,77 @@ export type Database = {
         }
         Relationships: []
       }
+      emmanuel_conversations: {
+        Row: {
+          admin_user_id: string
+          case_ref: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          messages: Json
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id?: string
+          case_ref?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          case_ref?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      emmanuel_tool_usage: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          execution_ms: number | null
+          id: string
+          parameters: Json | null
+          result_summary: string | null
+          tool_name: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          execution_ms?: number | null
+          id?: string
+          parameters?: Json | null
+          result_summary?: string | null
+          tool_name: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          execution_ms?: number | null
+          id?: string
+          parameters?: Json | null
+          result_summary?: string | null
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emmanuel_tool_usage_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "emmanuel_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       industry_templates: {
         Row: {
           compliance_requirements: string[] | null
@@ -1585,6 +1656,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sar_filings: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledgement_ref: string | null
+          admin_notes: string | null
+          created_at: string
+          drafted_by: string | null
+          evidence_refs: Json | null
+          filing_status: string
+          id: string
+          narrative: string
+          regulatory_authority: string | null
+          related_flag_ids: Json | null
+          related_transaction_ids: Json | null
+          reviewed_by: string | null
+          sar_number: string
+          subject_country: string | null
+          subject_id: string | null
+          subject_name: string
+          subject_role: string | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledgement_ref?: string | null
+          admin_notes?: string | null
+          created_at?: string
+          drafted_by?: string | null
+          evidence_refs?: Json | null
+          filing_status?: string
+          id?: string
+          narrative: string
+          regulatory_authority?: string | null
+          related_flag_ids?: Json | null
+          related_transaction_ids?: Json | null
+          reviewed_by?: string | null
+          sar_number: string
+          subject_country?: string | null
+          subject_id?: string | null
+          subject_name: string
+          subject_role?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledgement_ref?: string | null
+          admin_notes?: string | null
+          created_at?: string
+          drafted_by?: string | null
+          evidence_refs?: Json | null
+          filing_status?: string
+          id?: string
+          narrative?: string
+          regulatory_authority?: string | null
+          related_flag_ids?: Json | null
+          related_transaction_ids?: Json | null
+          reviewed_by?: string | null
+          sar_number?: string
+          subject_country?: string | null
+          subject_id?: string | null
+          subject_name?: string
+          subject_role?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       seed_token_audit_logs: {
         Row: {
