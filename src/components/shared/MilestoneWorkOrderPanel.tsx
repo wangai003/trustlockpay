@@ -175,8 +175,11 @@ const MilestoneWorkOrderPanel = ({
   const [observerEmail, setObserverEmail] = useState("");
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
+  const [pendingRestoreMilestone, setPendingRestoreMilestone] = useState<{ id: string; title: string } | null>(null);
   const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+
+  const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
