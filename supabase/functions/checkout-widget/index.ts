@@ -420,6 +420,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     orderType,
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
+    marketplaceMetadata: (params.marketplace_metadata as Record<string, unknown>) || null,
   };
 
   sessions.set(sessionId, session);
