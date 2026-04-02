@@ -123,8 +123,8 @@ const VendorMarketplaceOrders = () => {
       <div className="p-3 sm:p-6 space-y-4">
         {/* Payout Warning */}
         {!hasPayoutMethod && !isTestnet && (
-          <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-900/20">
-            <AlertTriangle className="w-4 h-4 text-yellow-600" />
+          <Alert className="border-destructive/50 bg-destructive/10">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
             <AlertDescription className="text-xs">
               <strong>Payout method not configured.</strong> You must set up a payout method before released marketplace funds can be sent to you.{" "}
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate("/trustlock/vendor/payout")}>
