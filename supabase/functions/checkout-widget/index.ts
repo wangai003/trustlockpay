@@ -551,12 +551,17 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
 
   // Store fee breakdown in the transaction (update with JSON)
   if (transactionId) {
+    const updatePayload: Record<string, unknown> = {
+      fee: session.fee,
+      order_type: session.orderType,
+    };
+    // Persist marketplace metadata on the transaction for downstream callbacks
+    if (session.marketplaceMetadata) {
+      updatePayload.metadata = session.marketplaceMetadata;
+    }
     await supabase
       .from("transactions")
-      .update({
-        fee: session.fee,
-        order_type: session.orderType,
-      })
+      .update(updatePayload)
       .eq("id", transactionId);
   }
 
