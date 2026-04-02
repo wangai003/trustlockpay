@@ -87,6 +87,7 @@ const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketpl
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
+const TesterLanding = lazy(() => import("./pages/public/TesterLanding"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
 const queryClient = new QueryClient();
@@ -201,6 +202,7 @@ const App = () => (
               <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
               <Route path="/pay/:linkId" element={<PublicCheckout />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
+              <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
