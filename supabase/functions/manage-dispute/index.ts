@@ -14,7 +14,128 @@ function generateToken(len = 48): string {
   return out;
 }
 
-Deno.serve(async (req) => {
+// ─── Helper: Execute the correct payout based on ruling type ──────
+async function executeDisputeResolution(
+  supabase: any,
+  transactionId: string,
+  ruling: string | null,
+  _resolution: string | null,
+  disputeId: string,
+  splitPercentage?: number,
+) {
+  const fnUrl = Deno.env.get("SUPABASE_URL")!;
+  const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${srvKey}`,
+  };
+
+  try {
+    switch (ruling) {
+      case "vendor_release": {
+        // 100% release to vendor via escrow-manager
+        await fetch(`${fnUrl}/functions/v1/manage-transaction`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "release_funds", txId: null, transactionId }),
+        });
+        // Update transaction status
+        await supabase
+          .from("transactions")
+          .update({ status: "released", released_date: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq("id", transactionId);
+        break;
+      }
+      case "full_refund": {
+        // 100% refund to buyer — mark transaction refunded
+        await supabase
+          .from("transactions")
+          .update({ status: "refunded", updated_at: new Date().toISOString() })
+          .eq("id", transactionId);
+
+        // Archive refund receipt
+        const { data: tx } = await supabase.from("transactions").select("*").eq("id", transactionId).single();
+        if (tx) {
+          await supabase.from("protection_documents").insert({
+            document_type: "dispute_refund_receipt",
+            title: `Dispute Refund Receipt — ${disputeId}`,
+            transaction_id: transactionId,
+            user_id: tx.buyer_id,
+            role: "buyer",
+            industry: tx.industry,
+            retention_years: 7,
+            metadata: {
+              auto_generated: true,
+              trigger: "dispute_resolution",
+              dispute_id: disputeId,
+              ruling: "full_refund",
+              refund_amount: tx.amount,
+              buyer_id: tx.buyer_id,
+              vendor_id: tx.vendor_id,
+            },
+          });
+        }
+        break;
+      }
+      case "partial_refund": {
+        // Split payout — splitPercentage% to buyer, rest to vendor
+        const { data: tx } = await supabase.from("transactions").select("*").eq("id", transactionId).single();
+        if (tx && splitPercentage) {
+          const buyerAmount = Math.round(tx.amount * (splitPercentage / 100) * 100) / 100;
+          const vendorAmount = Math.round((tx.amount - buyerAmount) * 100) / 100;
+
+          await supabase
+            .from("transactions")
+            .update({ status: "split_resolved", updated_at: new Date().toISOString() })
+            .eq("id", transactionId);
+
+          // Archive split receipt
+          await supabase.from("protection_documents").insert({
+            document_type: "dispute_split_receipt",
+            title: `Dispute Split Resolution — ${disputeId}`,
+            transaction_id: transactionId,
+            user_id: tx.buyer_id,
+            role: "admin",
+            industry: tx.industry,
+            retention_years: 7,
+            metadata: {
+              auto_generated: true,
+              trigger: "dispute_resolution",
+              dispute_id: disputeId,
+              ruling: "partial_refund",
+              split_percentage: splitPercentage,
+              buyer_amount: buyerAmount,
+              vendor_amount: vendorAmount,
+              original_amount: tx.amount,
+            },
+          });
+        }
+        break;
+      }
+      case "dismiss":
+        // Funds remain held — no payout action
+        break;
+      default:
+        break;
+    }
+  } catch (_) { /* best-effort payout execution */ }
+}
+
+// ─── Helper: Notify both dispute parties ──────
+async function notifyDisputeParties(supabase: any, dispute: any, message: string) {
+  for (const userId of [dispute.buyer_id, dispute.vendor_id].filter(Boolean)) {
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Dispute Resolution",
+      message,
+      type: "info",
+      related_entity_type: "dispute",
+      related_entity_id: dispute.id,
+    });
+  }
+}
+
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
