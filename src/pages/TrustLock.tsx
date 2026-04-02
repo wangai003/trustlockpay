@@ -9,6 +9,7 @@ import TrustLockBuyerFlow from "@/components/trustlock/TrustLockBuyerFlow";
 import TrustLockDashboard from "@/components/trustlock/TrustLockDashboard";
 import TrustLockIntegration from "@/components/trustlock/TrustLockIntegration";
 import TrustLockCta from "@/components/trustlock/TrustLockCta";
+import TrustLockTestWidget from "@/components/trustlock/TrustLockTestWidget";
 import Footer from "@/components/Footer";
 
 const TrustLock = () => {
