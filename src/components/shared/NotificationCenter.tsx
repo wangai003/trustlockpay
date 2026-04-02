@@ -341,6 +341,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                   const meta = priorityMeta[prio];
                   const PrioIcon = meta.Icon;
                   const isExpanded = expandedId === n.id;
+                  const isActionPending = n.is_action_required && !n.action_completed_at;
                   return (
                     <div key={n.id} className="border-b border-border last:border-0">
                       <div
@@ -350,14 +351,24 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                         }}
                         className={cn(
                           "p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer",
-                          !n.is_read && "bg-primary/5",
-                          !n.is_read && meta.borderCls
+                          isActionPending && "bg-primary/10 border-l-2 border-primary",
+                          !isActionPending && !n.is_read && "bg-primary/5",
+                          !isActionPending && !n.is_read && meta.borderCls
                         )}
                       >
-                        <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
+                        {isActionPending ? (
+                          <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                        ) : (
+                          <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className={cn("text-xs flex-1 truncate", !n.is_read && "font-semibold")}>{n.title}</p>
+                            <p className={cn("text-xs flex-1 truncate", (isActionPending || !n.is_read) && "font-semibold")}>{n.title}</p>
+                            {isActionPending && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0 flex items-center gap-0.5">
+                                ACTION
+                              </span>
+                            )}
                             <span className={cn("text-[8px] px-1 py-0.5 rounded font-bold shrink-0", meta.badgeCls)}>
                               {meta.label}
                             </span>
@@ -369,12 +380,25 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                               <span className="text-[8px] px-1 py-0.5 rounded bg-muted text-muted-foreground">{n.related_entity_type.replace(/_/g, " ")}</span>
                             )}
                           </div>
+                          {/* Go To button for action-required with URL */}
+                          {isActionPending && n.action_url && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleGoTo(n); }}
+                              className="mt-1.5 text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium flex items-center gap-1 w-fit"
+                            >
+                              <ArrowRight className="w-3 h-3" /> Go to action
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {isExpanded ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
-                          <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground">
-                            <X className="w-3 h-3" />
-                          </button>
+                          {isActionPending ? (
+                            <span className="w-3 h-3" title="Complete the required action to dismiss" />
+                          ) : (
+                            <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
