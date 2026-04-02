@@ -385,8 +385,204 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ══════════════════════════════════════════════════
+    //  ACTION: GENERATE_VENDOR_INVITE — Create claim token for marketplace vendor
+    // ══════════════════════════════════════════════════
+    if (action === "generate_vendor_invite") {
+      const { vendor_email, vendor_name, platform, integration_id, transaction_id, marketplace_vendor_id } = body;
+      if (!platform) return json({ error: "platform is required" }, 400);
+
+      const supabase = getSupabase();
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+
+      // Check if vendor already has a TrustLock account (by email)
+      let existingVendorId: string | null = null;
+      if (vendor_email) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", vendor_email)
+          .single();
+        existingVendorId = profile?.id || null;
+      }
+
+      if (existingVendorId) {
+        // Vendor already exists — link transaction directly
+        if (transaction_id) {
+          await supabase
+            .from("transactions")
+            .update({ vendor_id: existingVendorId })
+            .eq("id", transaction_id);
+        }
+        return json({
+          success: true,
+          already_registered: true,
+          vendor_id: existingVendorId,
+          message: "Vendor already has a TrustLock account. Transaction linked automatically.",
+        });
+      }
+
+      // Generate claim token
+      const { data: token, error: tokenErr } = await supabase
+        .from("vendor_claim_tokens")
+        .insert({
+          vendor_email: vendor_email || null,
+          vendor_name: vendor_name || null,
+          platform,
+          integration_id: integration_id || null,
+          transaction_id: transaction_id || null,
+          marketplace_vendor_id: marketplace_vendor_id || null,
+        })
+        .select("token")
+        .single();
+
+      if (tokenErr) {
+        return json({ error: "Failed to generate claim token", details: tokenErr.message }, 500);
+      }
+
+      const claimUrl = `${baseUrl}/vendor/claim?token=${token.token}`;
+
+      // Notify admin about unclaimed marketplace vendor
+      await supabase.from("notifications").insert({
+        user_id: "00000000-0000-0000-0000-000000000000", // system placeholder
+        type: "marketplace_vendor_invite",
+        title: "New Marketplace Vendor Awaiting Claim",
+        message: `${vendor_name || vendor_email || "Unknown vendor"} on ${platform} needs to claim their TrustLock account. Claim link: ${claimUrl}`,
+        related_entity_type: "vendor_claim_token",
+        related_entity_id: token.token,
+        is_action_required: true,
+      });
+
+      return json({
+        success: true,
+        claim_url: claimUrl,
+        token: token.token,
+        vendor_email,
+        platform,
+        instructions: vendor_email
+          ? `Send claim link to ${vendor_email}: ${claimUrl}`
+          : `Share this claim link with the vendor: ${claimUrl}`,
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: CLAIM_VENDOR — Vendor claims their marketplace account
+    // ══════════════════════════════════════════════════
+    if (action === "claim_vendor") {
+      const { token: claimToken, user_id } = body;
+      if (!claimToken || !user_id) {
+        return json({ error: "token and user_id are required" }, 400);
+      }
+
+      const supabase = getSupabase();
+
+      // Look up token
+      const { data: claim } = await supabase
+        .from("vendor_claim_tokens")
+        .select("*")
+        .eq("token", claimToken)
+        .single();
+
+      if (!claim) return json({ error: "Invalid or expired claim token" }, 404);
+      if (claim.status !== "pending") return json({ error: "Token already claimed" }, 400);
+      if (new Date(claim.expires_at) < new Date()) {
+        await supabase
+          .from("vendor_claim_tokens")
+          .update({ status: "expired" })
+          .eq("id", claim.id);
+        return json({ error: "Claim token has expired" }, 410);
+      }
+
+      // Claim the token
+      await supabase
+        .from("vendor_claim_tokens")
+        .update({
+          claimed_by: user_id,
+          status: "claimed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", claim.id);
+
+      // Link any associated transaction to this vendor
+      if (claim.transaction_id) {
+        await supabase
+          .from("transactions")
+          .update({ vendor_id: user_id })
+          .eq("id", claim.transaction_id);
+      }
+
+      // Link ALL pending transactions from this marketplace vendor
+      // Look for other unclaimed tokens from the same platform vendor
+      const { data: otherTokens } = await supabase
+        .from("vendor_claim_tokens")
+        .select("id, transaction_id")
+        .eq("marketplace_vendor_id", claim.marketplace_vendor_id || "")
+        .eq("status", "pending")
+        .neq("id", claim.id);
+
+      if (otherTokens?.length) {
+        for (const t of otherTokens) {
+          await supabase
+            .from("vendor_claim_tokens")
+            .update({ claimed_by: user_id, status: "claimed", updated_at: new Date().toISOString() })
+            .eq("id", t.id);
+          if (t.transaction_id) {
+            await supabase
+              .from("transactions")
+              .update({ vendor_id: user_id })
+              .eq("id", t.transaction_id);
+          }
+        }
+      }
+
+      // Notify the vendor
+      await supabase.from("notifications").insert({
+        user_id,
+        type: "success",
+        title: "Marketplace Account Claimed",
+        message: `You've successfully claimed your ${claim.platform} vendor account on TrustLock. Marketplace orders will now appear in your dashboard.`,
+        is_action_required: true,
+        action_url: "/trustlock/vendor/marketplace-orders",
+      });
+
+      return json({
+        success: true,
+        claimed: true,
+        platform: claim.platform,
+        transactions_linked: (otherTokens?.length || 0) + (claim.transaction_id ? 1 : 0),
+        message: "Account claimed. Configure your payout method to receive funds.",
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: LOOKUP_TOKEN — Public token validation for claim page
+    // ══════════════════════════════════════════════════
+    if (action === "lookup_token") {
+      const { token: lookupToken } = body;
+      if (!lookupToken) return json({ error: "token is required" }, 400);
+
+      const supabase = getSupabase();
+      const { data: claim } = await supabase
+        .from("vendor_claim_tokens")
+        .select("vendor_name, vendor_email, platform, status, expires_at, marketplace_vendor_id")
+        .eq("token", lookupToken)
+        .single();
+
+      if (!claim) return json({ error: "Invalid token" }, 404);
+
+      return json({
+        success: true,
+        valid: claim.status === "pending" && new Date(claim.expires_at) > new Date(),
+        status: claim.status,
+        vendor_name: claim.vendor_name,
+        vendor_email: claim.vendor_email,
+        platform: claim.platform,
+        expired: new Date(claim.expires_at) < new Date(),
+      });
+    }
+
     return json({
-      error: `Unknown action: ${action}. Supported: register, ingest_order, settlement_callback, list_platforms, list_integrations`,
+      error: `Unknown action: ${action}. Supported: register, ingest_order, settlement_callback, list_platforms, list_integrations, generate_vendor_invite, claim_vendor, lookup_token`,
     }, 400);
   } catch (err) {
     console.error("marketplace-bridge error:", err);

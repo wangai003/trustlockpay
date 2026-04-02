@@ -83,6 +83,8 @@ const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandalone
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
 const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
 const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
+const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketplaceOrders"));
+const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
@@ -163,8 +165,12 @@ const App = () => (
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="messages" element={<VendorMessages />} />
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
+                <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
+
+              {/* Vendor Claim (public — outside protected route) */}
+              <Route path="/vendor/claim" element={<VendorClaimAccount />} />
 
               {/* Buyer Dashboard */}
               <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />

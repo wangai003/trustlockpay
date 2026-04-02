@@ -29,6 +29,7 @@ const navItems = [
   { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK" },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages", tip: "Direct messaging with buyers and admin support", tlId: "TL-V-SB-NAV-MESSAGES" },
+  { label: "Marketplace Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders from integrated marketplace platforms (Jumia, Amazon, etc.)", tlId: "TL-V-SB-NAV-MARKETPLACE" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS" },
 ];
 
