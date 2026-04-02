@@ -28,6 +28,13 @@ const BuyerSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("buyer");
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("tl-open-sidebar", handler);
+    return () => window.removeEventListener("tl-open-sidebar", handler);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");

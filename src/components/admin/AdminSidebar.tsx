@@ -35,6 +35,12 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("tl-open-sidebar", handler);
+    return () => window.removeEventListener("tl-open-sidebar", handler);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("tl_admin_auth");
     localStorage.removeItem("tl_network");
