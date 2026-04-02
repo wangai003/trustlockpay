@@ -33,10 +33,12 @@ const AdminDisputes = () => {
   const [search, setSearch] = useState("");
   const [assignDialog, setAssignDialog] = useState<string | null>(null);
   const [rulingDialog, setRulingDialog] = useState<string | null>(null);
+  const [compromiseDialog, setCompromiseDialog] = useState<string | null>(null);
   const [arbName, setArbName] = useState("");
   const [arbEmail, setArbEmail] = useState("");
   const [ruling, setRuling] = useState("");
   const [splitPct, setSplitPct] = useState("50");
+  const [compromisePct, setCompromisePct] = useState(50);
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
 
   const { data: rawDisputes = [] } = useDisputes();
@@ -46,6 +48,9 @@ const AdminDisputes = () => {
   const submitRuling = useSubmitRuling();
   const uploadEvidence = useUploadDisputeEvidence();
   const { data: evidenceFiles = [] } = useDisputeEvidence(expandedEvidence || undefined);
+  const resolveVendorWins = useResolveDisputeVendorWins();
+  const resolveBuyerWins = useResolveDisputeBuyerWins();
+  const resolveCompromise = useResolveDisputeCompromise();
 
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
