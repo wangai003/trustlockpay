@@ -479,7 +479,7 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   }, [role, userId]);
 
   return (
-    <div className="h-[calc(100vh-8rem)] border border-border rounded-lg bg-background overflow-hidden">
+    <div className="h-[calc(100vh-12rem)] min-h-[400px] border border-border rounded-lg bg-background overflow-hidden flex flex-col">
       {selectedThread ? <ThreadView /> : <ThreadList />}
     </div>
   );
