@@ -86,9 +86,10 @@ Deno.serve(async (req) => {
       if (!vendor_id) return json({ success: false, error: "vendor_id required" }, 400);
       const n = await insertNotification(
         vendor_id,
-        "Manual Signature Required",
-        `Order ${order_number || "N/A"} requires your manual signature. Go to Work Log to review.`,
-        "action_required", "pre_order_contract", contract_id
+        "⚠️ Manual Signature Required",
+        `Order ${order_number || "N/A"} requires your manual signature. Go to Work Log to review and sign.`,
+        "high", "pre_order_contract", contract_id,
+        { is_action_required: true, action_url: "/trustlock/vendor/transactions" }
       );
       return json({ success: true, notification: n });
     }
