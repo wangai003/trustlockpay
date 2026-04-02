@@ -232,6 +232,9 @@ const MilestoneWorkOrderPanel = ({
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
 
+  const layoutMode = resolveLayoutMode(industry, orderType);
+  const layoutLabels = LAYOUT_MODE_LABELS[layoutMode];
+
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
   const rolePrefix = role === "vendor" ? "V" : "B";
