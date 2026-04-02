@@ -56,9 +56,8 @@ interface Message {
   sender_id: string;
   body: string;
   is_read: boolean;
-  attachment_url: string | null;
-  attachment_name: string | null;
   created_at: string;
+}
 }
 
 interface Contact {
