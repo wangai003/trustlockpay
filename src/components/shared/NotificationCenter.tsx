@@ -187,8 +187,11 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
     }).slice(0, 100);
   }, [notifications, activeTab]);
 
-  /* ── Actions ──────────────────────────────────────────── */
+  /* ── Actions — action-required items are protected ───── */
   const markRead = async (id: string) => {
+    const n = notifications.find(x => x.id === id);
+    // Action-required items stay "unread" until action is completed
+    if (n?.is_action_required && !n.action_completed_at) return;
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
     if (isMainnet) {
       await supabase.from("notifications").update({ is_read: true }).eq("id", id);
@@ -196,9 +199,15 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const markAllRead = async () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    // Only mark non-action-required as read; action-required stay pinned
+    setNotifications((prev) => prev.map((n) => {
+      if (n.is_action_required && !n.action_completed_at) return n;
+      return { ...n, is_read: true };
+    }));
     if (isMainnet) {
-      const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+      const unreadIds = notifications
+        .filter((n) => !n.is_read && !(n.is_action_required && !n.action_completed_at))
+        .map((n) => n.id);
       if (unreadIds.length > 0) {
         await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
       }
@@ -206,7 +215,9 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const dismissLow = async () => {
-    const lowIds = notifications.filter((n) => !n.is_read && toPriority(n.type) === "low").map((n) => n.id);
+    const lowIds = notifications
+      .filter((n) => !n.is_read && toPriority(n.type) === "low" && !(n.is_action_required && !n.action_completed_at))
+      .map((n) => n.id);
     if (lowIds.length === 0) return;
     setNotifications((prev) => prev.map((n) => lowIds.includes(n.id) ? { ...n, is_read: true } : n));
     if (isMainnet && userIdRef.current) {
@@ -218,9 +229,22 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const dismiss = (id: string) => {
+    const n = notifications.find(x => x.id === id);
+    // Block dismissal of action-required items
+    if (n?.is_action_required && !n.action_completed_at) {
+      toast.error("This notification requires you to complete an action before it can be dismissed");
+      return;
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     if (isMainnet) {
       supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    }
+  };
+
+  const handleGoTo = (n: DbNotification) => {
+    if (n.action_url) {
+      setOpen(false);
+      navigate(n.action_url);
     }
   };
 
