@@ -204,6 +204,7 @@ const MilestoneWorkOrderPanel = ({
   industry,
   role,
   transactionStatus,
+  orderType,
   isTestnet = false,
   testnetMilestones,
   onTestnetUpdateStatus,
