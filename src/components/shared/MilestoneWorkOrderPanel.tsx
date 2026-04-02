@@ -438,13 +438,15 @@ const MilestoneWorkOrderPanel = ({
             const hasObserver = isTestnet ? !!ms.observer_id : !!ms.observer_id;
 
             return (
-              <div key={ms.id} className="rounded-lg border border-border p-3 space-y-2">
+              <div key={ms.id} className={`rounded-lg border border-border p-3 space-y-2 ${layoutMode === "single" ? "bg-muted/20" : ""}`}>
                 {/* Row Header */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold">#{row}</span>
+                    {layoutMode !== "single" && <span className="text-xs font-bold">#{row}</span>}
                     <TLId code={woTLId(role, row, "LBL-TITLE")} inline>
-                      <span className="text-sm font-medium">{ms.title}</span>
+                      <span className="text-sm font-medium">
+                        {layoutMode === "single" ? "Escrow Delivery Confirmation" : ms.title}
+                      </span>
                     </TLId>
                   </div>
                   <div className="flex items-center gap-2">
