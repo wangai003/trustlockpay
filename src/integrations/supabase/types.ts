@@ -2973,6 +2973,7 @@ export type Database = {
           auto_milestone_template: boolean
           id: string
           industry_category: string | null
+          marketplace_integrations: Json | null
           notifications: Json | null
           pay_enabled: boolean | null
           payout_tier: string | null
@@ -2990,6 +2991,7 @@ export type Database = {
           auto_milestone_template?: boolean
           id?: string
           industry_category?: string | null
+          marketplace_integrations?: Json | null
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
@@ -3007,6 +3009,7 @@ export type Database = {
           auto_milestone_template?: boolean
           id?: string
           industry_category?: string | null
+          marketplace_integrations?: Json | null
           notifications?: Json | null
           pay_enabled?: boolean | null
           payout_tier?: string | null
