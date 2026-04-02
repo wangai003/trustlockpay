@@ -1033,6 +1033,7 @@ async function restoreMilestone(body: Record<string, unknown>) {
   });
 
   return jsonResponse({ success: true, message: "Milestone restored to pending" });
+}
 
 async function releaseMilestonePayment(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
