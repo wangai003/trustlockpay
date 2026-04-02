@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Bell, AlertOctagon, AlertTriangle, Info, CheckCircle, X, Trash2, ChevronDown, ChevronUp, ExternalLink, Copy, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, AlertOctagon, AlertTriangle, Info, CheckCircle, X, Trash2, ChevronDown, ChevronUp, ExternalLink, Copy, Clock, ArrowRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +18,9 @@ interface DbNotification {
   related_entity_type: string | null;
   related_entity_id: string | null;
   user_id: string;
+  is_action_required?: boolean;
+  action_url?: string | null;
+  action_completed_at?: string | null;
 }
 
 /* ─── Priority meta ─────────────────────────────────────── */
@@ -70,6 +74,7 @@ const mockNotifications: Record<string, DbNotification[]> = {
 
 /* ─── Component ─────────────────────────────────────────── */
 const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<DbNotification[]>([]);
   const [activeTab, setActiveTab] = useState<Priority | "all">("all");
@@ -152,25 +157,41 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   }, [role, fetchTriaged]);
 
 
-  /* ── Counts ───────────────────────────────────────────── */
+  /* ── Counts (action-required with incomplete actions always count as unread) ── */
   const counts = useMemo(() => {
     const c = { all: 0, critical: 0, high: 0, medium: 0, low: 0 };
     for (const n of notifications) {
-      if (n.is_read) continue;
+      const isActionPending = n.is_action_required && !n.action_completed_at;
+      if (n.is_read && !isActionPending) continue;
       c.all++;
       c[toPriority(n.type)]++;
     }
     return c;
   }, [notifications]);
 
-  /* ── Filtered list ────────────────────────────────────── */
+  /** Count of action-required notifications still pending */
+  const actionRequiredCount = useMemo(() =>
+    notifications.filter(n => n.is_action_required && !n.action_completed_at).length
+  , [notifications]);
+
+  /* ── Filtered list — action-required items pinned to top ── */
   const filtered = useMemo(() => {
     const list = activeTab === "all" ? notifications : notifications.filter((n) => toPriority(n.type) === activeTab);
-    return list.slice(0, 100);
+    // Sort: action-required pending first, then unread, then by date
+    return [...list].sort((a, b) => {
+      const aAction = a.is_action_required && !a.action_completed_at ? 1 : 0;
+      const bAction = b.is_action_required && !b.action_completed_at ? 1 : 0;
+      if (aAction !== bAction) return bAction - aAction;
+      if (a.is_read !== b.is_read) return a.is_read ? 1 : -1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }).slice(0, 100);
   }, [notifications, activeTab]);
 
-  /* ── Actions ──────────────────────────────────────────── */
+  /* ── Actions — action-required items are protected ───── */
   const markRead = async (id: string) => {
+    const n = notifications.find(x => x.id === id);
+    // Action-required items stay "unread" until action is completed
+    if (n?.is_action_required && !n.action_completed_at) return;
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
     if (isMainnet) {
       await supabase.from("notifications").update({ is_read: true }).eq("id", id);
@@ -178,9 +199,15 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const markAllRead = async () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    // Only mark non-action-required as read; action-required stay pinned
+    setNotifications((prev) => prev.map((n) => {
+      if (n.is_action_required && !n.action_completed_at) return n;
+      return { ...n, is_read: true };
+    }));
     if (isMainnet) {
-      const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+      const unreadIds = notifications
+        .filter((n) => !n.is_read && !(n.is_action_required && !n.action_completed_at))
+        .map((n) => n.id);
       if (unreadIds.length > 0) {
         await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
       }
@@ -188,7 +215,9 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const dismissLow = async () => {
-    const lowIds = notifications.filter((n) => !n.is_read && toPriority(n.type) === "low").map((n) => n.id);
+    const lowIds = notifications
+      .filter((n) => !n.is_read && toPriority(n.type) === "low" && !(n.is_action_required && !n.action_completed_at))
+      .map((n) => n.id);
     if (lowIds.length === 0) return;
     setNotifications((prev) => prev.map((n) => lowIds.includes(n.id) ? { ...n, is_read: true } : n));
     if (isMainnet && userIdRef.current) {
@@ -200,9 +229,22 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   };
 
   const dismiss = (id: string) => {
+    const n = notifications.find(x => x.id === id);
+    // Block dismissal of action-required items
+    if (n?.is_action_required && !n.action_completed_at) {
+      toast.error("This notification requires you to complete an action before it can be dismissed");
+      return;
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     if (isMainnet) {
       supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    }
+  };
+
+  const handleGoTo = (n: DbNotification) => {
+    if (n.action_url) {
+      setOpen(false);
+      navigate(n.action_url);
     }
   };
 
@@ -232,8 +274,13 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
           <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
                 Notifications
+                {actionRequiredCount > 0 && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-bold flex items-center gap-1">
+                    <ShieldAlert className="w-3 h-3" /> {actionRequiredCount} ACTION
+                  </span>
+                )}
                 {counts.critical > 0 && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-bold animate-pulse">
                     {counts.critical} CRITICAL
@@ -294,6 +341,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                   const meta = priorityMeta[prio];
                   const PrioIcon = meta.Icon;
                   const isExpanded = expandedId === n.id;
+                  const isActionPending = n.is_action_required && !n.action_completed_at;
                   return (
                     <div key={n.id} className="border-b border-border last:border-0">
                       <div
@@ -303,14 +351,24 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                         }}
                         className={cn(
                           "p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer",
-                          !n.is_read && "bg-primary/5",
-                          !n.is_read && meta.borderCls
+                          isActionPending && "bg-primary/10 border-l-2 border-primary",
+                          !isActionPending && !n.is_read && "bg-primary/5",
+                          !isActionPending && !n.is_read && meta.borderCls
                         )}
                       >
-                        <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
+                        {isActionPending ? (
+                          <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                        ) : (
+                          <PrioIcon className={cn("w-4 h-4 mt-0.5 shrink-0", prio === "critical" ? "text-destructive" : prio === "high" ? "text-orange-500" : prio === "medium" ? "text-blue-500" : "text-muted-foreground")} />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className={cn("text-xs flex-1 truncate", !n.is_read && "font-semibold")}>{n.title}</p>
+                            <p className={cn("text-xs flex-1 truncate", (isActionPending || !n.is_read) && "font-semibold")}>{n.title}</p>
+                            {isActionPending && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0 flex items-center gap-0.5">
+                                ACTION
+                              </span>
+                            )}
                             <span className={cn("text-[8px] px-1 py-0.5 rounded font-bold shrink-0", meta.badgeCls)}>
                               {meta.label}
                             </span>
@@ -322,12 +380,25 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                               <span className="text-[8px] px-1 py-0.5 rounded bg-muted text-muted-foreground">{n.related_entity_type.replace(/_/g, " ")}</span>
                             )}
                           </div>
+                          {/* Go To button for action-required with URL */}
+                          {isActionPending && n.action_url && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleGoTo(n); }}
+                              className="mt-1.5 text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium flex items-center gap-1 w-fit"
+                            >
+                              <ArrowRight className="w-3 h-3" /> Go to action
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {isExpanded ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
-                          <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground">
-                            <X className="w-3 h-3" />
-                          </button>
+                          {isActionPending ? (
+                            <span className="w-3 h-3" title="Complete the required action to dismiss" />
+                          ) : (
+                            <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }} className="text-muted-foreground hover:text-foreground">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -367,7 +438,21 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                           <div>
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Actions</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {prio === "critical" && (
+                              {/* Action-required: prominent Go To button */}
+                              {isActionPending && n.action_url && (
+                                <button
+                                  onClick={() => handleGoTo(n)}
+                                  className="text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium flex items-center gap-1"
+                                >
+                                  <ArrowRight className="w-3 h-3" /> Complete Required Action
+                                </button>
+                              )}
+                              {isActionPending && !n.action_url && (
+                                <span className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground font-medium flex items-center gap-1">
+                                  <ShieldAlert className="w-3 h-3" /> Action required — cannot dismiss
+                                </span>
+                              )}
+                              {prio === "critical" && !isActionPending && (
                                 <button
                                   onClick={() => { toast.info("Navigating to related record..."); setOpen(false); }}
                                   className="text-[10px] px-2 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium flex items-center gap-1"
@@ -375,7 +460,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                                   <ExternalLink className="w-3 h-3" /> Investigate
                                 </button>
                               )}
-                              {prio === "high" && (
+                              {prio === "high" && !isActionPending && (
                                 <button
                                   onClick={() => { toast.info("Opening related record..."); setOpen(false); }}
                                   className="text-[10px] px-2 py-1 rounded bg-orange-500 text-white hover:bg-orange-600 font-medium flex items-center gap-1"
@@ -392,12 +477,14 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                               >
                                 <Copy className="w-3 h-3" /> Copy
                               </button>
-                              <button
-                                onClick={() => { dismiss(n.id); setExpandedId(null); }}
-                                className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3 h-3" /> Dismiss
-                              </button>
+                              {!isActionPending && (
+                                <button
+                                  onClick={() => { dismiss(n.id); setExpandedId(null); }}
+                                  className="text-[10px] px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 font-medium flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Dismiss
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

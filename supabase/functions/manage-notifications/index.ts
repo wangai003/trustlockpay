@@ -53,11 +53,17 @@ Deno.serve(async (req) => {
     );
 
     // --- Contract notification helpers ---
-    const insertNotification = async (userId: string, title: string, message: string, type: string, entityType?: string, entityId?: string) => {
+    const insertNotification = async (
+      userId: string, title: string, message: string, type: string,
+      entityType?: string, entityId?: string,
+      opts?: { is_action_required?: boolean; action_url?: string }
+    ) => {
       const { data, error } = await supabaseAdmin.from("notifications").insert({
         user_id: userId, title, message, type,
         related_entity_type: entityType || null,
         related_entity_id: entityId || null,
+        is_action_required: opts?.is_action_required || false,
+        action_url: opts?.action_url || null,
       }).select().single();
       if (error) throw error;
       return data;
@@ -80,9 +86,10 @@ Deno.serve(async (req) => {
       if (!vendor_id) return json({ success: false, error: "vendor_id required" }, 400);
       const n = await insertNotification(
         vendor_id,
-        "Manual Signature Required",
-        `Order ${order_number || "N/A"} requires your manual signature. Go to Work Log to review.`,
-        "action_required", "pre_order_contract", contract_id
+        "⚠️ Manual Signature Required",
+        `Order ${order_number || "N/A"} requires your manual signature. Go to Work Log to review and sign.`,
+        "high", "pre_order_contract", contract_id,
+        { is_action_required: true, action_url: "/trustlock/vendor/transactions" }
       );
       return json({ success: true, notification: n });
     }
@@ -151,9 +158,10 @@ Deno.serve(async (req) => {
         if ((count || 0) === 0) {
           await insertNotification(
             c.vendor_id,
-            "Pending Contract Reminder",
+            "⚠️ Pending Contract Reminder",
             `Order ${c.order_number || "N/A"} has been awaiting your signature for over 14 days. Please sign or decline in your Work Log.`,
-            "reminder", "pre_order_contract", c.id
+            "high", "pre_order_contract", c.id,
+            { is_action_required: true, action_url: "/trustlock/vendor/transactions" }
           );
           reminded++;
         }
@@ -168,7 +176,7 @@ Deno.serve(async (req) => {
       });
 
     if (action === "create") {
-      const { user_id, title, message, type, related_entity_type, related_entity_id } = params;
+      const { user_id, title, message, type, related_entity_type, related_entity_id, is_action_required, action_url } = params;
       if (!title) return json({ success: false, error: "title is required" }, 400);
 
       // Use service role client so we can insert for any user
@@ -188,6 +196,8 @@ Deno.serve(async (req) => {
           type: type || "info",
           related_entity_type: related_entity_type || null,
           related_entity_id: related_entity_id || null,
+          is_action_required: is_action_required || false,
+          action_url: action_url || null,
         })
         .select()
         .single();
