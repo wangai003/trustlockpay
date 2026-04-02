@@ -2830,6 +2830,62 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_claim_tokens: {
+        Row: {
+          claimed_by: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          integration_id: string | null
+          marketplace_vendor_id: string | null
+          platform: string
+          status: string
+          token: string
+          transaction_id: string | null
+          updated_at: string
+          vendor_email: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          claimed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          integration_id?: string | null
+          marketplace_vendor_id?: string | null
+          platform: string
+          status?: string
+          token?: string
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_email?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          claimed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          integration_id?: string | null
+          marketplace_vendor_id?: string | null
+          platform?: string
+          status?: string
+          token?: string
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_email?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_claim_tokens_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_consent_records: {
         Row: {
           auto_accept_enabled: boolean | null
