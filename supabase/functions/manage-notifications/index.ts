@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
       });
 
     if (action === "create") {
-      const { user_id, title, message, type, related_entity_type, related_entity_id } = params;
+      const { user_id, title, message, type, related_entity_type, related_entity_id, is_action_required, action_url } = params;
       if (!title) return json({ success: false, error: "title is required" }, 400);
 
       // Use service role client so we can insert for any user
@@ -196,6 +196,8 @@ Deno.serve(async (req) => {
           type: type || "info",
           related_entity_type: related_entity_type || null,
           related_entity_id: related_entity_id || null,
+          is_action_required: is_action_required || false,
+          action_url: action_url || null,
         })
         .select()
         .single();
