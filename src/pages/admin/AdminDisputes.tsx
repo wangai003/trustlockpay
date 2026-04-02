@@ -328,6 +328,51 @@ const AdminDisputes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Compromise Split Dialog */}
+      <Dialog open={!!compromiseDialog} onOpenChange={() => setCompromiseDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Compromise Resolution</DialogTitle></DialogHeader>
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">
+              Use the slider to set how the escrowed funds are split between buyer and vendor.
+            </p>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium">
+                <span className="text-destructive">Buyer: {compromisePct}%</span>
+                <span className="text-primary">Vendor: {100 - compromisePct}%</span>
+              </div>
+              <Slider
+                value={[compromisePct]}
+                onValueChange={(v) => setCompromisePct(v[0])}
+                min={1}
+                max={99}
+                step={1}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p>• <strong>Buyer</strong> will receive {compromisePct}% of escrowed principal as a refund</p>
+              <p>• <strong>Vendor</strong> will receive {100 - compromisePct}% of escrowed principal as release</p>
+              <p>• TrustLock 1% escrow fee applies only to vendor's share</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompromiseDialog(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (compromiseDialog) {
+                resolveCompromise.mutate({
+                  disputeId: compromiseDialog,
+                  splitPercentage: compromisePct,
+                });
+                setCompromiseDialog(null);
+                setCompromisePct(50);
+              }
+            }}>
+              <SplitSquareHorizontal className="w-4 h-4 mr-1" /> Execute Split
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
