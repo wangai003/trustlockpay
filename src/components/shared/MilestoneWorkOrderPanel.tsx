@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X, AlertTriangle, User, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2, UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -31,6 +31,7 @@ interface MilestoneWorkOrderPanelProps {
   txId: string;
   industry?: string | null;
   role: "buyer" | "vendor";
+  transactionStatus?: string;
   isTestnet?: boolean;
   testnetMilestones?: MockMilestone[];
   onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
@@ -41,11 +42,18 @@ interface MilestoneWorkOrderPanelProps {
   onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number) => void;
 }
 
+/** Statuses where funds are already locked — milestone deletion is blocked */
+const FUNDS_LOCKED_STATUSES = new Set([
+  "locked", "shipped", "delivered", "released", "disputed",
+  "compliance_hold", "compliance_review", "blocked",
+]);
+
 const statusLabel: Record<string, string> = {
   pending: "Pending",
   in_progress: "In Progress",
   completed: "Fulfilled",
   released: "Released",
+  deleted: "Removed",
 };
 
 /** Industries where observer is NOT required on any milestone */
@@ -146,6 +154,7 @@ const MilestoneWorkOrderPanel = ({
   txId,
   industry,
   role,
+  transactionStatus,
   isTestnet = false,
   testnetMilestones,
   onTestnetUpdateStatus,
@@ -167,8 +176,11 @@ const MilestoneWorkOrderPanel = ({
   const [observerEmail, setObserverEmail] = useState("");
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
+  const [pendingRestoreMilestone, setPendingRestoreMilestone] = useState<{ id: string; title: string } | null>(null);
   const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+
+  const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
 
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
 
@@ -581,8 +593,8 @@ const MilestoneWorkOrderPanel = ({
                     </TLId>
                   ) : null}
 
-                  {/* Delete — only pending milestones can be removed during negotiation */}
-                  {ms.status === "pending" && (
+                  {/* Delete — only pending milestones during pre-order (before funds locked) */}
+                  {ms.status === "pending" && !fundsAreLocked && (
                     <TLId code={woTLId(role, row, "BTN-DELETE")} inline>
                       <Button
                         size="sm"
@@ -591,6 +603,34 @@ const MilestoneWorkOrderPanel = ({
                         onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}
                       >
                         <Trash2 className="w-3 h-3 mr-1" /> Remove Stage
+                      </Button>
+                    </TLId>
+                  )}
+
+                  {/* Restore — only for soft-deleted milestones during pre-order */}
+                  {ms.status === "deleted" && !fundsAreLocked && (
+                    <TLId code={woTLId(role, row, "BTN-RESTORE")} inline>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-primary border-primary/30"
+                        onClick={() => setPendingRestoreMilestone({ id: ms.id, title: ms.title })}
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" /> Restore Stage
+                      </Button>
+                    </TLId>
+                  )}
+
+                  {/* Request Amendment — shown after funds locked instead of delete */}
+                  {ms.status === "pending" && fundsAreLocked && (
+                    <TLId code={woTLId(role, row, "BTN-AMEND")} inline>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-muted-foreground"
+                        onClick={() => toast.info("Amendment requests are handled through the milestone negotiation workflow. Contact admin or use the Change Request feature.")}
+                      >
+                        <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
                       </Button>
                     </TLId>
                   )}
@@ -623,7 +663,7 @@ const MilestoneWorkOrderPanel = ({
           </AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to remove <strong>"{pendingDeleteMilestone?.title}"</strong> from this work order?
-            This action cannot be undone. The counterparty will be notified.
+            You can restore it later if you change your mind (before funds are locked). The counterparty will be notified.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -644,11 +684,50 @@ const MilestoneWorkOrderPanel = ({
                 body: { action: "delete_milestone", milestone_id: pendingDeleteMilestone.id, user_id: userId },
               });
               if (error) toast.error("Failed to remove milestone");
-              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed from work order`);
+              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed — you can restore it before funds are locked`);
               setPendingDeleteMilestone(null);
             }}
           >
             Yes, Remove Stage
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Milestone Restore Confirmation Dialog */}
+    <AlertDialog open={!!pendingRestoreMilestone} onOpenChange={(open) => !open && setPendingRestoreMilestone(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <RotateCcw className="w-4 h-4 text-primary" /> Restore Milestone Stage?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This will restore <strong>"{pendingRestoreMilestone?.title}"</strong> back to active status.
+            The milestone will return to "Pending" and the counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              if (!pendingRestoreMilestone) return;
+              if (isTestnet) {
+                onTestnetUpdateStatus?.(pendingRestoreMilestone.id, "pending");
+                toast.success(`Stage "${pendingRestoreMilestone.title}" restored`);
+                setPendingRestoreMilestone(null);
+                return;
+              }
+              const userId = await getUserId();
+              if (!userId) return toast.error("Sign in required");
+              const { error } = await supabase.functions.invoke("escrow-manager", {
+                body: { action: "restore_milestone", milestone_id: pendingRestoreMilestone.id, user_id: userId },
+              });
+              if (error) toast.error("Failed to restore milestone");
+              else toast.success(`Stage "${pendingRestoreMilestone.title}" restored to work order`);
+              setPendingRestoreMilestone(null);
+            }}
+          >
+            Yes, Restore Stage
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

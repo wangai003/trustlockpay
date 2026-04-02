@@ -286,6 +286,7 @@ const AdminTransactions = () => {
                                     txId={tx.id}
                                     transactionId={tx.dbId}
                                     industry={tx.industry}
+                                    transactionStatus={tx.status}
                                   />
                                 )}
                                 <div className="pt-2 border-t border-border">

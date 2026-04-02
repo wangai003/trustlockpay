@@ -402,6 +402,7 @@ const BuyerOrders = () => {
                         txId={order.id}
                         transactionId={order.dbId}
                         industry={order.industry}
+                        transactionStatus={order.status}
                         isTestnet={isTestnet}
                         testnetMilestones={isTestnet ? testnet.getMilestones(order.dbId) : undefined}
                         onTestnetUpdateStatus={testnet.updateMilestoneStatus}

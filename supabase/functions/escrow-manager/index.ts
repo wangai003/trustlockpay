@@ -954,10 +954,10 @@ async function deleteMilestone(body: Record<string, unknown>) {
   const { role } = await getTransactionParty(supabase, String(txData.id), String(user_id));
   if (!role) return errorResponse("Unauthorized", 403);
 
-  // Delete the milestone
+  // Soft-delete: mark status as 'deleted' (restorable during pre-order)
   const { error: delErr } = await supabase
     .from("transaction_milestones")
-    .delete()
+    .update({ status: "deleted", updated_at: new Date().toISOString() })
     .eq("id", String(milestone_id));
 
   if (delErr) return errorResponse(delErr.message, 500);
@@ -968,7 +968,71 @@ async function deleteMilestone(body: Record<string, unknown>) {
     title: milestone.title,
   });
 
-  return jsonResponse({ success: true, message: "Milestone deleted" });
+  // Notify counterparty
+  const counterpartyId = String(user_id) === String(txData.buyer_id) ? String(txData.vendor_id) : String(txData.buyer_id);
+  await supabase.from("notifications").insert({
+    user_id: counterpartyId,
+    title: "Milestone Stage Removed",
+    message: `"${milestone.title}" was removed from the work order. It can be restored before funds are locked.`,
+    type: "warning",
+    related_entity_type: "transaction",
+    related_entity_id: String(txData.id),
+  });
+
+  return jsonResponse({ success: true, message: "Milestone soft-deleted — restorable before funds are locked" });
+}
+
+// ─── Restore Milestone ──────────────────────────────────────
+async function restoreMilestone(body: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  const { milestone_id, user_id } = body;
+  if (!milestone_id || !user_id) return errorResponse("milestone_id and user_id required", 400);
+
+  const { data: milestone, error: mErr } = await supabase
+    .from("transaction_milestones")
+    .select("*, transactions!inner(buyer_id, vendor_id, id, status)")
+    .eq("id", String(milestone_id))
+    .single();
+
+  if (mErr || !milestone) return errorResponse("Milestone not found", 404);
+  if (milestone.status !== "deleted") return errorResponse("Only deleted milestones can be restored", 400);
+
+  const txData = milestone.transactions as Record<string, unknown>;
+
+  // Block restore if funds are already locked
+  const lockedStatuses = new Set(["locked", "shipped", "delivered", "released", "disputed", "compliance_hold", "compliance_review", "blocked"]);
+  if (lockedStatuses.has(String(txData.status))) {
+    return errorResponse("Cannot restore milestone after funds are locked. Use the amendment workflow instead.", 400);
+  }
+
+  const { role } = await getTransactionParty(supabase, String(txData.id), String(user_id));
+  if (!role) return errorResponse("Unauthorized", 403);
+
+  const { error: restoreErr } = await supabase
+    .from("transaction_milestones")
+    .update({ status: "pending", updated_at: new Date().toISOString() })
+    .eq("id", String(milestone_id));
+
+  if (restoreErr) return errorResponse(restoreErr.message, 500);
+
+  await logAuditAction(supabase, String(user_id), "restore_milestone", {
+    transaction_id: txData.id,
+    milestone_id: String(milestone_id),
+    title: milestone.title,
+  });
+
+  // Notify counterparty
+  const counterpartyId = String(user_id) === String(txData.buyer_id) ? String(txData.vendor_id) : String(txData.buyer_id);
+  await supabase.from("notifications").insert({
+    user_id: counterpartyId,
+    title: "Milestone Stage Restored",
+    message: `"${milestone.title}" has been restored to the work order.`,
+    type: "info",
+    related_entity_type: "transaction",
+    related_entity_id: String(txData.id),
+  });
+
+  return jsonResponse({ success: true, message: "Milestone restored to pending" });
 }
 
 async function releaseMilestonePayment(body: Record<string, unknown>) {
@@ -1314,6 +1378,8 @@ Deno.serve(async (req) => {
         return await reorderMilestones(body);
       case "delete_milestone":
         return await deleteMilestone(body);
+      case "restore_milestone":
+        return await restoreMilestone(body);
       case "release_milestone_payment":
         return await releaseMilestonePayment(body);
       case "check_auto_release":
@@ -1323,7 +1389,7 @@ Deno.serve(async (req) => {
 
       default:
         return errorResponse(
-          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, release_milestone_payment, check_auto_release, add_observer`,
+          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, restore_milestone, release_milestone_payment, check_auto_release, add_observer`,
           400
         );
     }

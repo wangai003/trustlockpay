@@ -436,6 +436,7 @@ const VendorTransactions = () => {
                                 txId={tx.id}
                                 transactionId={tx.dbId}
                                 industry={tx.industry}
+                                transactionStatus={tx.status}
                                 isTestnet={isTestnet}
                                 testnetMilestones={isTestnet ? testnet.getMilestones(tx.dbId) : undefined}
                                 onTestnetUpdateStatus={testnet.updateMilestoneStatus}
