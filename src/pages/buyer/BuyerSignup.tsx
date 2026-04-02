@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { ShoppingBag, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
-
+import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
+import { supabase } from "@/integrations/supabase/client";
 const BuyerSignup = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
