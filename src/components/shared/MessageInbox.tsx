@@ -7,13 +7,24 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Plus, Shield, Paperclip, Circle } from "lucide-react";
+import { ArrowLeft, Send, Plus, Shield, LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
+
+// URL pattern to detect and neutralize links in messages
+const URL_REGEX = /(?:https?:\/\/|ftp:\/\/|www\.)[^\s<>\"')\]]+|[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\/[^\s<>\"')\]]*)?/gi;
+
+/** Strips all URLs from text and replaces with a safe placeholder */
+const sanitizeLinks = (text: string): { sanitized: string; hadLinks: boolean } => {
+  const hadLinks = URL_REGEX.test(text);
+  URL_REGEX.lastIndex = 0; // reset regex state
+  const sanitized = text.replace(URL_REGEX, "[link removed]");
+  return { sanitized, hadLinks };
+};
 
 const CONTACT_REASONS = [
   { value: "dispute", label: "Dispute Resolution" },
@@ -45,8 +56,6 @@ interface Message {
   sender_id: string;
   body: string;
   is_read: boolean;
-  attachment_url: string | null;
-  attachment_name: string | null;
   created_at: string;
 }
 
@@ -411,7 +420,19 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
                     "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                     isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                   )}>
-                    <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                    {(() => {
+                      const { sanitized, hadLinks } = sanitizeLinks(msg.body);
+                      return (
+                        <>
+                          <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+                          {hadLinks && (
+                            <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+                              <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                     <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {format(new Date(msg.created_at), "MMM d, h:mm a")}
                     </p>
