@@ -516,6 +516,47 @@ const MilestoneWorkOrderPanel = ({
         </CardContent>
       </Card>
     </TLId>
+
+    {/* Milestone Delete Confirmation Dialog */}
+    <AlertDialog open={!!pendingDeleteMilestone} onOpenChange={(open) => !open && setPendingDeleteMilestone(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" /> Remove Milestone Stage?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove <strong>"{pendingDeleteMilestone?.title}"</strong> from this work order?
+            This action cannot be undone. The counterparty will be notified.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={async () => {
+              if (!pendingDeleteMilestone) return;
+              if (isTestnet) {
+                onTestnetUpdateStatus?.(pendingDeleteMilestone.id, "released");
+                toast.success(`Stage "${pendingDeleteMilestone.title}" removed`);
+                setPendingDeleteMilestone(null);
+                return;
+              }
+              const userId = await getUserId();
+              if (!userId) return toast.error("Sign in required");
+              const { error } = await supabase.functions.invoke("escrow-manager", {
+                body: { action: "delete_milestone", milestone_id: pendingDeleteMilestone.id, user_id: userId },
+              });
+              if (error) toast.error("Failed to remove milestone");
+              else toast.success(`Stage "${pendingDeleteMilestone.title}" removed from work order`);
+              setPendingDeleteMilestone(null);
+            }}
+          >
+            Yes, Remove Stage
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
