@@ -472,6 +472,16 @@ interface WidgetIndustryConfigProps {
   onConfigSave: (config: Record<string, unknown>) => void;
 }
 
+const MARKETPLACE_OPTIONS = [
+  { value: "jumia", label: "Jumia" },
+  { value: "jiji", label: "Jiji" },
+  { value: "amazon", label: "Amazon" },
+  { value: "shopify", label: "Shopify Storefront" },
+  { value: "kilimall", label: "Kilimall" },
+  { value: "konga", label: "Konga" },
+  { value: "custom", label: "Custom Marketplace" },
+];
+
 const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigProps) => {
   const [subcategory, setSubcategory] = useState("");
   const [expandPricing, setExpandPricing] = useState(true);
