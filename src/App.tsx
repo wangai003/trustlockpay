@@ -81,6 +81,7 @@ const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandalone
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
 const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
+const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 
 const queryClient = new QueryClient();
 
