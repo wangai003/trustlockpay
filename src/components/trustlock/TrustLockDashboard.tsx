@@ -88,8 +88,38 @@ const TrustLockDashboard = () => {
             ))}
           </div>
 
-          {/* Transaction table */}
-          <Card>
+          {/* Mobile card view */}
+          <div className="sm:hidden space-y-3">
+            {filtered.map((tx) => {
+              const cfg = statusConfig[tx.status];
+              return (
+                <Card key={tx.id}>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs text-muted-foreground">{tx.id}</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${cfg.color}`}>
+                        <cfg.icon className="w-3 h-3" /> {cfg.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{tx.buyer}</p>
+                        <p className="text-[11px] text-muted-foreground">{tx.vendor}</p>
+                      </div>
+                      <span className="text-base font-bold">{tx.amount}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span>{tx.date}</span>
+                      <Badge variant="secondary" className="text-[9px]">{tx.industry}</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Desktop table view */}
+          <Card className="hidden sm:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
