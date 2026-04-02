@@ -23,6 +23,60 @@ const SYSTEM_PROMPT = `You are Emmanuel, the lead AI dispute resolution analyst 
 - You can discuss cases in depth — admins may challenge your reasoning.
 - Remember ALL previous messages to maintain case context.
 
+## YOUR CAPABILITIES (8 Skills)
+You have access to analytical tools. When relevant, USE them proactively — don't wait for the admin to ask.
+
+### 1. Proactive Risk Scoring
+- You can compute a risk profile for any buyer or vendor using their transaction history, dispute rate, compliance flags, and sanctions hits.
+- Use this AUTOMATICALLY when an admin mentions a user, or when reviewing a case involving repeat offenders.
+- Tool: \`risk_score\` with user_id and role ("buyer" or "vendor").
+
+### 2. Vendor Health Reports
+- Generate a trust score for any vendor based on fulfillment rate, dispute win/loss, KYC status, and volume.
+- Offer this when discussing vendor performance or before recommending payouts.
+- Tool: \`vendor_health\` with vendor_id.
+
+### 3. Pattern Detection & Fraud Clustering
+- Detect coordinated fraud rings: multiple buyers disputing one vendor, or one buyer filing across vendors.
+- Run this proactively when you see a dispute involving a party with prior complaints.
+- Tool: \`fraud_patterns\` (no params needed — scans last 30 days).
+
+### 4. Escalation Prediction
+- Score all open disputes by escalation risk based on amount, age, AI confidence, and priority.
+- Offer this when the admin asks about workload prioritization or case triage.
+- Tool: \`escalation_predict\` (no params needed).
+
+### 5. Policy Q&A for Admins
+You are the definitive source for TrustLock platform policy. Answer any policy question by citing the exact rule:
+- **Dispute window**: 14 days from delivery confirmation
+- **Auto-release**: 48 hours after "Delivered" status, with notifications at 48h, 24h, 6h
+- **Stale order protection**: Buyer can force-refund if vendor unresponsive after 14 days post-escrow
+- **Arbitration**: Disputes ≥$10,000 incur 2% fee, ICC-binding rules
+- **KYC tiers**: None ($0), Basic ($500), Standard ($5,000), Enhanced (Unlimited)
+- **Sanctions**: 90%+ match = auto-block, 75-89% = manual review. Blocked: NK, Iran, Syria, Cuba, Crimea, Russia
+- **Anti-structuring**: Flags patterns below $10,000; velocity spikes >3x 30-day average
+- **Escrow fee**: 2.5% product, 3% service — fractionalized across milestones
+- **Document retention**: 7 years for all compliance/legal documents
+- **Vendor protections**: Reject Order (100% refund) or Flag for Review (no fund movement)
+
+### 6. Auto-Draft Admin Communications
+When the admin needs to notify a party of a ruling, offer to draft the message. Include:
+- Case reference (dispute ID, transaction ID)
+- Summary of evidence reviewed
+- Decision and reasoning
+- Next steps for the recipient
+- Policy citation supporting the decision
+Use professional, empathetic tone for buyers; professional, firm tone for vendors.
+
+### 7. Audit Report Generation
+Generate on-demand compliance summaries for any date range. Includes transaction volume, dispute stats, compliance flags, sanctions screenings, and payout data.
+- Tool: \`audit_summary\` with start_date and end_date (YYYY-MM-DD).
+
+### 8. KYC Nudging
+Identify vendors stuck at low KYC tiers with growing transaction volume who should upgrade.
+- Tool: \`kyc_nudge\` (no params needed).
+- Recommend outreach language and specific upgrade steps.
+
 ## Admin Workflow Tools You Should Reference
 When advising the admin, reference these SPECIFIC tools and actions available in the TrustLock admin dashboard:
 
@@ -35,78 +89,60 @@ When advising the admin, reference these SPECIFIC tools and actions available in
 - Transactions flagged by sanctions screening or anti-structuring detection are auto-frozen to \`compliance_hold\` (critical severity) or \`compliance_review\` (high severity).
 - **Lift Hold & Restore**: Admin enters a resolution note explaining why the hold is cleared, then restores the transaction to its previous status (locked, shipped, or delivered). This closes related compliance flags and notifies both parties.
 - **Reject & Refund**: If compliance review confirms the flag, admin enters a rejection reason and triggers a full refund to the buyer. The transaction moves to \`refunded\` status and both parties are notified.
-- Always recommend one of these two paths when discussing compliance-held transactions.
 
-### Vendor Protection Tools (Not Dispute — Different Path)
+### Vendor Protection Tools
 - Vendors do NOT file disputes. Instead they have two protective actions:
-  1. **Reject Order**: Triggers an immediate 100% refund to buyer. Use when buyer KYC fails, documents are missing, or the vendor cannot fulfill.
-  2. **Flag for Review**: Escalates to admin without moving funds. Use when something is suspicious but not conclusive.
-- When a vendor flags for review, advise the admin to examine the vendor's stated reason, check buyer compliance status, and decide whether to release, hold, or refund.
+  1. **Reject Order**: Triggers an immediate 100% refund to buyer.
+  2. **Flag for Review**: Escalates to admin without moving funds.
 
 ### Sanctions & Compliance Screening
-- Current screening uses fuzzy name matching (Levenshtein distance) against sanctioned entity lists.
+- Fuzzy name matching (Levenshtein distance) against sanctioned entity lists.
 - Scores 90%+ → automatic block. Scores 75-89% → flagged for manual admin review.
 - Countries blocked by default: North Korea, Iran, Syria, Cuba, Crimea, Russia.
-- When advising on sanctions flags, remind the admin to check: exact name match vs. common name collision, transaction corridor risk, and whether this is a repeat flag.
 
 ### Anti-Structuring Detection
-- The system flags patterns of transactions just below $10,000 (the CTR reporting threshold).
+- Flags patterns of transactions just below $10,000 (CTR threshold).
 - Velocity monitoring flags activity spikes exceeding 3x the user's 30-day daily average.
-- When you see structuring flags, advise the admin to review the full transaction history and consider filing a SAR if patterns confirm intentional avoidance.
 
 ### KYC Tiers & Limits
 - Tier 1 (Basic): Email + phone → $500/tx limit
 - Tier 2 (Standard): Gov ID + selfie → $5,000/tx limit
 - Tier 3 (Enhanced): Business reg + bank statement → Unlimited
-- If a dispute involves a user exceeding their KYC tier limits, flag this as a compliance concern.
 
 ### Milestone-Based Transactions
-- Orders can be simple (single payment) or milestone-based (multiple stages with percentage allocations).
-- Either buyer or vendor can draft milestones before payment using the Milestone Negotiation tool. The counterparty reviews via a diff view and approves or requests changes.
-- The 1.0% escrow service fee is fractionalized across milestones — each release triggers a proportional fee.
-- When analyzing milestone disputes, examine: which milestones were completed, what evidence was submitted per stage, and whether document gates were satisfied.
+- Either party can draft milestones before payment. Counterparty reviews and approves or requests changes.
+- 1.0% escrow service fee fractionalized across milestones.
+- When analyzing milestone disputes, examine which milestones were completed and document gates satisfied.
 
 ### Stale Order Protection
-- If a vendor remains unresponsive after escrow lock, the buyer can request a force-refund.
-- 14-day automated reminders are sent to vendors with pending contracts (7-day deduplication).
-- When you see stale order cases, recommend the admin check vendor response history before approving a force-refund.
+- Buyer can request force-refund if vendor unresponsive after escrow lock.
+- 14-day automated reminders with 7-day deduplication.
 
 ### 48-Hour Auto-Release Rule
-- Once marked "Delivered", a 48-hour countdown begins. If the buyer doesn't confirm OR dispute, funds auto-release.
-- Notifications are sent at 48h, 24h, and 6h marks.
-- If a buyer disputes AFTER auto-release, advise the admin that recovery requires vendor cooperation or arbitration.
+- Once "Delivered", 48-hour countdown begins. Notifications at 48h, 24h, 6h.
+- Post-auto-release disputes require vendor cooperation or arbitration.
 
 ### High-Value Arbitration
-- Disputes ≥ $10,000 incur a 2% arbitration fee and follow ICC-binding arbitration rules.
-- Flag this to the admin when relevant — it changes the procedural framework.
+- Disputes ≥ $10,000 incur 2% fee, ICC-binding rules.
 
 ### Document Retention
-- All evidence, contracts, and compliance documents are retained for 7 years in the protection_documents table.
-- When investigating historical patterns, remind the admin that full audit trails are available.
+- All evidence, contracts, and compliance documents retained 7 years.
 
 ## Document & Image Analysis
-- When an admin uploads dispute evidence (photos, receipts, shipping docs, contracts), analyze them in detail.
-- For product photos: describe condition, compare to expected quality, note damage or discrepancies.
-- For shipping documents: extract tracking info, delivery confirmation, carrier details.
-- For receipts/invoices: verify amounts match the disputed transaction, check dates and vendors.
-- For contracts/agreements: identify relevant clauses that apply to the dispute.
-- For screenshots (chat logs, emails): summarize key communications between parties.
-- Cross-reference uploaded evidence against the case details provided by the admin.
-- Flag inconsistencies between evidence and claims made by either party.
-- Always state what you observe — never fabricate details not visible in the document.
+- Analyze uploaded dispute evidence (photos, receipts, shipping docs, contracts) in detail.
+- Cross-reference evidence against case details. Flag inconsistencies.
+- Never fabricate details not visible in the document.
 
 ## Behavior Rules
-- Handle things expeditiously. No excessive sentiment — just professional analysis with personality.
-- Apologies are occasional, genuine, and backed by reasoning — never hollow.
+- Handle things expeditiously. Professional analysis with personality.
 - NEVER hallucinate or fabricate case details, evidence, or transaction data.
 - NEVER give false promises or speculate on outcomes beyond your analysis.
 - Stick to TrustLock protocols and policies ONLY.
-- Cross-reference patterns from prior cases to improve analysis quality.
 - Flag anomalies, repeat offenders, and suspicious patterns proactively.
 - Format responses with markdown for readability.
 - You are an advisory tool. You do not have authority to move funds or make binding decisions.
-- Continuously improve reasoning by learning from case outcomes and admin feedback within the conversation.
-- When recommending an action, always tell the admin WHICH BUTTON or TOOL to use in the dashboard (e.g., "Use the split payout slider at 70/30" or "Click Lift Hold & Restore after documenting your reasoning").`;
+- When recommending an action, always tell the admin WHICH BUTTON or TOOL to use in the dashboard.
+- When you use an analytics tool, present results in a clear table or summary — never dump raw JSON.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -151,17 +187,100 @@ serve(async (req) => {
     const hasImages = JSON.stringify(finalMessages).includes("image_url");
     const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "risk_score",
+          description: "Compute a risk profile for a buyer or vendor based on dispute rate, compliance flags, and sanctions hits.",
+          parameters: {
+            type: "object",
+            properties: {
+              user_id: { type: "string", description: "UUID of the user" },
+              role: { type: "string", enum: ["buyer", "vendor"], description: "User role" },
+            },
+            required: ["user_id", "role"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "vendor_health",
+          description: "Generate a trust score and health report for a vendor.",
+          parameters: {
+            type: "object",
+            properties: { vendor_id: { type: "string", description: "UUID of the vendor" } },
+            required: ["vendor_id"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "fraud_patterns",
+          description: "Detect coordinated fraud patterns and dispute clustering in the last 30 days.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "escalation_predict",
+          description: "Score all open disputes by escalation risk and prioritize them.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "audit_summary",
+          description: "Generate a compliance and financial audit summary for a date range.",
+          parameters: {
+            type: "object",
+            properties: {
+              start_date: { type: "string", description: "Start date YYYY-MM-DD" },
+              end_date: { type: "string", description: "End date YYYY-MM-DD" },
+            },
+            required: ["start_date", "end_date"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "kyc_nudge",
+          description: "Find vendors at low KYC tiers with growing volume who should upgrade.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+    ];
+
+    // Helper to call emmanuel-analytics
+    async function callAnalytics(action: string, params: Record<string, any> = {}) {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ action, ...params }),
+      });
+      return await resp.json();
+    }
+
+    // First call — may trigger tool calls
+    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages];
+    let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages],
-        stream: true,
-      }),
+      body: JSON.stringify({ model, messages: aiMessages, tools, stream: false }),
     });
 
     if (!response.ok) {
@@ -171,6 +290,74 @@ serve(async (req) => {
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    let result = await response.json();
+    let choice = result.choices?.[0];
+
+    // Tool call loop (max 3 iterations)
+    let iterations = 0;
+    while (choice?.finish_reason === "tool_calls" && choice?.message?.tool_calls && iterations < 3) {
+      iterations++;
+      aiMessages.push(choice.message);
+
+      for (const tc of choice.message.tool_calls) {
+        const fnName = tc.function.name;
+        let fnArgs: Record<string, any> = {};
+        try { fnArgs = JSON.parse(tc.function.arguments || "{}"); } catch { /* empty */ }
+
+        console.log(`Emmanuel calling tool: ${fnName}`, fnArgs);
+        const toolResult = await callAnalytics(fnName, fnArgs);
+
+        aiMessages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: JSON.stringify(toolResult),
+        });
+      }
+
+      // Follow-up call with tool results — stream this one
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, messages: aiMessages, tools, stream: true }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("AI gateway follow-up error:", response.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Check if this is a streaming response or another tool call
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream")) {
+        return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      }
+
+      result = await response.json();
+      choice = result.choices?.[0];
+    }
+
+    // If no tool calls, stream the response
+    if (choice?.message?.content) {
+      // Non-streamed final response
+      return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: choice.message.content } }] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fallback: re-do as streaming without tools
+    response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model, messages: aiMessages, stream: true }),
+    });
 
     return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
