@@ -321,19 +321,23 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
   };
 
   // ─── Delete milestone ─────────────────────────────────────
-  const deleteMilestone = async (milestoneId: string) => {
+  const [pendingDeleteId, setPendingDeleteId] = useState<{ id: string; title: string } | null>(null);
+
+  const confirmDeleteMilestone = async () => {
+    if (!pendingDeleteId) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data, error } = await supabase.functions.invoke("escrow-manager", {
-      body: { action: "delete_milestone", milestone_id: milestoneId, user_id: user.id },
+      body: { action: "delete_milestone", milestone_id: pendingDeleteId.id, user_id: user.id },
     });
 
     if (error || !data?.success) {
       toast.error(data?.error || "Failed to delete milestone");
-      return;
+    } else {
+      toast.success("Milestone deleted");
     }
-    toast.success("Milestone deleted");
+    setPendingDeleteId(null);
   };
 
   // ─── Drag-to-reorder ──────────────────────────────────────
