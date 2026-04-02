@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Bot, Brain, Eye, FileText, MessageSquare, Shield, TrendingUp,
-  Clock, CheckCircle, AlertTriangle, ArrowRight, Zap, Activity
+  Clock, CheckCircle, AlertTriangle, ArrowRight, Zap, Activity,
+  Target, Heart, Search, BarChart3, Mail, HelpCircle
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
