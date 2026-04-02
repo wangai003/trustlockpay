@@ -477,6 +477,31 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 </div>
 
+                {/* Document Type Selector (for required document gates) */}
+                {(() => {
+                  const requiredDocs: string[] = ms.required_documents || [];
+                  if (requiredDocs.length === 0) return null;
+                  return (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium">Tag upload as document type:</label>
+                      <Select
+                        value={docTypeSelections[ms.id] || ""}
+                        onValueChange={(val) => setDocTypeSelections(prev => ({ ...prev, [ms.id]: val }))}
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General Evidence</SelectItem>
+                          {requiredDocs.map((doc: string) => (
+                            <SelectItem key={doc} value={doc}>{doc}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })()}
+
                 {/* Document Upload */}
                 {isTestnet ? (
                   <div className="space-y-1">
@@ -492,15 +517,6 @@ const MilestoneWorkOrderPanel = ({
                     >
                       <FileText className="w-3 h-3 mr-1" /> Simulate Upload
                     </Button>
-                    {(ms.uploaded_documents || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {ms.uploaded_documents.map((doc: any, i: number) => (
-                          <Badge key={i} variant="outline" className="text-[9px]">
-                            <FileText className="w-2.5 h-2.5 mr-0.5" /> {doc.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <TLId code={woTLId(role, row, "UPL-EVIDENCE")}>
@@ -511,6 +527,7 @@ const MilestoneWorkOrderPanel = ({
                         void (async () => {
                           const userId = await getUserId();
                           if (!userId) return;
+                          const selectedDocType = docTypeSelections[ms.id] || "general";
                           await updateMilestone.mutateAsync({
                             milestoneId: ms.id,
                             userId,
@@ -519,8 +536,13 @@ const MilestoneWorkOrderPanel = ({
                               url: file.url,
                               path: file.path,
                               uploadedAt: new Date().toISOString(),
+                              uploaded_by: userId,
+                              uploaded_by_role: role,
+                              document_type: selectedDocType,
                             })),
                           });
+                          // Reset doc type selection after upload
+                          setDocTypeSelections(prev => ({ ...prev, [ms.id]: "" }));
                         })();
                       }}
                     />
