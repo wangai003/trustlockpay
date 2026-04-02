@@ -42,6 +42,7 @@ interface CheckoutSession {
   orderType: "simple" | "milestone" | "hybrid";
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
+  marketplaceMetadata?: Record<string, unknown> | null;
 }
 
 interface ProcessorResult {
