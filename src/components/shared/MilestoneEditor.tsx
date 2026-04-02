@@ -487,6 +487,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
   }
 
   return (
+    <>
     <div className="space-y-4">
       {/* Industry Template Selector — only when no milestones exist */}
       {milestones.length === 0 && !locked && (
