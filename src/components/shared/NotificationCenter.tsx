@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Bell, AlertOctagon, AlertTriangle, Info, CheckCircle, X, Trash2, ChevronDown, ChevronUp, ExternalLink, Copy, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, AlertOctagon, AlertTriangle, Info, CheckCircle, X, Trash2, ChevronDown, ChevronUp, ExternalLink, Copy, Clock, ArrowRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
