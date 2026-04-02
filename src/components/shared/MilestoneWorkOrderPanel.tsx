@@ -398,10 +398,32 @@ const MilestoneWorkOrderPanel = ({
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Milestone Work Order Flow</CardTitle>
-            {isTestnet && <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">Testnet Simulation</Badge>}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-sm">{layoutLabels.title}</CardTitle>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{layoutLabels.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] capitalize">{layoutMode}</Badge>
+              {isTestnet && <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">Testnet Simulation</Badge>}
+            </div>
           </div>
+          {/* Layout-specific guidance banners */}
+          {layoutMode === "single" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Simple Escrow:</strong> Funds are held until delivery is confirmed. No progressive milestones — a single release completes the transaction.
+            </div>
+          )}
+          {layoutMode === "offline" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Offline Confirmation:</strong> Steps in this transaction (e.g., title transfer, notary signing, property inspection) happen offline. Each party confirms completion digitally to move the escrow forward.
+            </div>
+          )}
+          {layoutMode === "inspection" && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+              <strong>Inspection-Gated:</strong> Milestones require third-party observer verification before release. Invite inspectors, auditors, or certifiers for each stage.
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           {milestones.map((ms: any, idx: number) => {
