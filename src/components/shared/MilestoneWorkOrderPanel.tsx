@@ -592,8 +592,8 @@ const MilestoneWorkOrderPanel = ({
                     </TLId>
                   ) : null}
 
-                  {/* Delete — only pending milestones can be removed during negotiation */}
-                  {ms.status === "pending" && (
+                  {/* Delete — only pending milestones during pre-order (before funds locked) */}
+                  {ms.status === "pending" && !fundsAreLocked && (
                     <TLId code={woTLId(role, row, "BTN-DELETE")} inline>
                       <Button
                         size="sm"
@@ -602,6 +602,34 @@ const MilestoneWorkOrderPanel = ({
                         onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}
                       >
                         <Trash2 className="w-3 h-3 mr-1" /> Remove Stage
+                      </Button>
+                    </TLId>
+                  )}
+
+                  {/* Restore — only for soft-deleted milestones during pre-order */}
+                  {ms.status === "deleted" && !fundsAreLocked && (
+                    <TLId code={woTLId(role, row, "BTN-RESTORE")} inline>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-primary border-primary/30"
+                        onClick={() => setPendingRestoreMilestone({ id: ms.id, title: ms.title })}
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" /> Restore Stage
+                      </Button>
+                    </TLId>
+                  )}
+
+                  {/* Request Amendment — shown after funds locked instead of delete */}
+                  {ms.status === "pending" && fundsAreLocked && (
+                    <TLId code={woTLId(role, row, "BTN-AMEND")} inline>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-muted-foreground"
+                        onClick={() => toast.info("Amendment requests are handled through the milestone negotiation workflow. Contact admin or use the Change Request feature.")}
+                      >
+                        <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
                       </Button>
                     </TLId>
                   )}
