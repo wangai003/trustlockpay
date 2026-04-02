@@ -205,7 +205,7 @@ const UNIVERSAL_CLAUSES = [
   "All escrow actions (lock, release, refund, split) are executed via smart contracts on the Polygon blockchain. Gas fees apply.",
   "TrustLock reserves the right to freeze funds and escalate to external arbitration if fraud, sanctions violations, or AML red flags are detected.",
   "TrustLock's total liability in any transaction is limited to the platform fees collected for that transaction. TrustLock shall not be liable for indirect, consequential, or punitive damages.",
-  "By proceeding, both parties consent to electronic signatures, digital record-keeping, and TrustLock's dispute resolution process as outlined in the Terms of Service.",
+  "By proceeding, both parties consent to electronic signatures, digital record-keeping, and TrustLock's dispute resolution process as outlined in the Dispute Resolution Policy (available at /dispute-policy). Buyers may file disputes within 14 days of delivery; vendors protect their interests via Reject Order or Flag for Review. Resolution outcomes include: Vendor Wins (100% release), Buyer Wins (100% refund), or Compromise (admin-determined split).",
   "Sanctions screening is performed using OFAC, EU, and UN consolidated lists. Flagged transactions are blocked pending manual review.",
   "TrustLock may update its fee schedule, policies, and protocols with 30 days' notice. Continued use constitutes acceptance.",
 ];

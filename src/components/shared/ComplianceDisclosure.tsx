@@ -81,15 +81,16 @@ const ComplianceDisclosure = ({ amount, paymentMethod, userRole, onAccept }: Com
           </span>
         </label>
 
-        {/* Escrow Understanding */}
+        {/* Escrow & Dispute Understanding */}
         <label className="flex items-start gap-2 cursor-pointer">
           <Checkbox checked={checks.escrow} onCheckedChange={() => toggle("escrow")} className="mt-0.5" />
           <span className="text-[11px] text-muted-foreground">
             I understand that funds will be held in <strong className="text-foreground">escrow</strong> until
             milestone conditions are met. {userRole === "buyer"
-              ? "Funds are released only upon my approval or after the 14-day auto-release window."
-              : "I will fulfill the agreed milestones before funds are released."}
-            {" "}Disputes are subject to TrustLock's arbitration protocol.
+              ? "Funds are released only upon my approval or after the 48-hour auto-release window. I may file a dispute within 14 days of delivery."
+              : "I will fulfill the agreed milestones before funds are released. I understand that buyers may file disputes and that I cannot file disputes directly — my protections are Reject Order and Flag for Review."}
+            {" "}All disputes are subject to TrustLock's{" "}
+            <a href="/dispute-policy" target="_blank" rel="noopener" className="text-primary underline font-medium">Dispute Resolution Policy</a>.
           </span>
         </label>
 
