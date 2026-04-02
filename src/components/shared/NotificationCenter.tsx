@@ -274,8 +274,13 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
           <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
                 Notifications
+                {actionRequiredCount > 0 && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-bold flex items-center gap-1">
+                    <ShieldAlert className="w-3 h-3" /> {actionRequiredCount} ACTION
+                  </span>
+                )}
                 {counts.critical > 0 && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-bold animate-pulse">
                     {counts.critical} CRITICAL
