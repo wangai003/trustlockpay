@@ -675,7 +675,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
                           size="sm"
                           variant="ghost"
                           className="h-6 text-[10px] gap-1 text-destructive hover:text-destructive"
-                          onClick={() => deleteMilestone(ms.id)}
+                          onClick={() => setPendingDeleteId({ id: ms.id, title: ms.title })}
                         >
                           <Trash2 className="w-3 h-3" /> Delete
                         </Button>
