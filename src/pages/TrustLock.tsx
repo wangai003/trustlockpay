@@ -30,6 +30,7 @@ const TrustLock = () => {
             <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Live Demo</a>
             <a href="#dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
             <a href="#integrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Integrate</a>
+            <Link to="/test-widget" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Test Widget</Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <Link to="/trustlock/admin/login">
