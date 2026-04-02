@@ -278,6 +278,35 @@ Deno.serve(async (req) => {
         transactionId
       );
 
+      // ── Auto-fire marketplace settlement callback if applicable ──
+      const txMetadata = tx.metadata as Record<string, unknown> | null;
+      let marketplaceCallbackStatus = "not_marketplace";
+      if (txMetadata?.platform || txMetadata?.integration_id) {
+        try {
+          const cbResult = await fetch(
+            `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketplace-bridge`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({
+                action: "settlement_callback",
+                transaction_id: transactionId,
+                vendor_id: tx.vendor_id,
+                integration_id: txMetadata.integration_id || null,
+              }),
+            }
+          );
+          const cbData = await cbResult.json() as Record<string, unknown>;
+          marketplaceCallbackStatus = String(cbData.callback_status || "fired");
+        } catch (e) {
+          marketplaceCallbackStatus = `error_${(e as Error).message}`;
+          console.error("Marketplace callback error:", e);
+        }
+      }
+
       return json({
         success: true,
         action: "release",
@@ -285,6 +314,7 @@ Deno.serve(async (req) => {
         contractTx: result,
         vendorPayout,
         escrowFee,
+        marketplaceCallbackStatus,
       });
     }
 

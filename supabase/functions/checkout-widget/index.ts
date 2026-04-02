@@ -42,6 +42,7 @@ interface CheckoutSession {
   orderType: "simple" | "milestone" | "hybrid";
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
+  marketplaceMetadata?: Record<string, unknown> | null;
 }
 
 interface ProcessorResult {
@@ -419,6 +420,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     orderType,
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
+    marketplaceMetadata: (params.marketplace_metadata as Record<string, unknown>) || null,
   };
 
   sessions.set(sessionId, session);
@@ -549,12 +551,17 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
 
   // Store fee breakdown in the transaction (update with JSON)
   if (transactionId) {
+    const updatePayload: Record<string, unknown> = {
+      fee: session.fee,
+      order_type: session.orderType,
+    };
+    // Persist marketplace metadata on the transaction for downstream callbacks
+    if (session.marketplaceMetadata) {
+      updatePayload.metadata = session.marketplaceMetadata;
+    }
     await supabase
       .from("transactions")
-      .update({
-        fee: session.fee,
-        order_type: session.orderType,
-      })
+      .update(updatePayload)
       .eq("id", transactionId);
   }
 
@@ -562,6 +569,18 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
   const signupLink = `${baseUrl}/buyer/signup?ref=${txId}&vendor=${session.vendorId}`;
   const loginLink = `${baseUrl}/buyer/login?ref=${txId}`;
+
+  // Build checkout details with marketplace flag
+  const checkoutDetailsWithSource = {
+    ...session.feeBreakdownJson,
+    ...(session.marketplaceMetadata ? {
+      marketplace_source: true,
+      marketplace_platform: session.marketplaceMetadata.platform_name || session.marketplaceMetadata.platform,
+      marketplace_order_id: session.marketplaceMetadata.marketplace_order_id || null,
+      marketplace_invoice_ref: session.marketplaceMetadata.marketplace_invoice_number || null,
+      integration_id: session.marketplaceMetadata.integration_id || null,
+    } : { marketplace_source: false }),
+  };
 
   // Store in order_carbon_copies
   await supabase.from("order_carbon_copies").insert({
@@ -576,7 +595,7 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     fee: session.fee,
     status: "active",
     confirmation_code: confirmationCode,
-    checkout_details: session.feeBreakdownJson,
+    checkout_details: checkoutDetailsWithSource,
     signup_link: signupLink,
     login_link: loginLink,
   });
