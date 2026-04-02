@@ -230,6 +230,169 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "unfreeze_transaction": {
+        // Admin lifts compliance hold after review
+        const restoreStatus = body.restore_status || "locked";
+        const resolutionNote = body.resolution_note;
+        if (!txId || !resolutionNote) throw new Error("txId and resolution_note are required");
+
+        const validStatuses = ["locked", "shipped", "delivered", "pending"];
+        if (!validStatuses.includes(restoreStatus)) throw new Error(`Invalid restore_status. Must be one of: ${validStatuses.join(", ")}`);
+
+        // Fetch the frozen transaction
+        const { data: frozenTx, error: fErr } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("tx_id", txId)
+          .single();
+        if (fErr || !frozenTx) throw new Error("Transaction not found");
+        if (!["compliance_hold", "compliance_review"].includes(frozenTx.status)) {
+          throw new Error(`Transaction is not frozen (current status: ${frozenTx.status})`);
+        }
+
+        // Restore status
+        const { data: unfrozen, error: uErr } = await supabase
+          .from("transactions")
+          .update({ status: restoreStatus, updated_at: new Date().toISOString() })
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (uErr) throw uErr;
+
+        // Close related compliance flags
+        await supabase
+          .from("compliance_flags")
+          .update({ status: "resolved" })
+          .or(`related_buyer_id.eq.${frozenTx.buyer_id},related_vendor_id.eq.${frozenTx.vendor_id}`)
+          .in("status", ["open"]);
+
+        // Archive resolution document
+        await supabase.from("protection_documents").insert({
+          document_type: "compliance_hold_resolution",
+          title: `Compliance Hold Lifted — ${txId}`,
+          transaction_id: frozenTx.id,
+          user_id: frozenTx.vendor_id,
+          role: "admin",
+          industry: frozenTx.industry,
+          retention_years: 7,
+          metadata: {
+            auto_generated: true,
+            trigger: "admin_unfreeze",
+            previous_status: frozenTx.status,
+            restored_status: restoreStatus,
+            resolution_note: resolutionNote,
+            unfrozen_at: new Date().toISOString(),
+          },
+        });
+
+        // Notify buyer
+        if (frozenTx.buyer_id) {
+          await supabase.from("notifications").insert({
+            user_id: frozenTx.buyer_id,
+            title: "Compliance Hold Lifted",
+            message: `The compliance hold on order #${frozenTx.order_number || txId} has been resolved. Your transaction has been restored to "${restoreStatus}" status.`,
+            type: "info",
+            related_entity_type: "transaction",
+            related_entity_id: frozenTx.id,
+          });
+        }
+
+        // Notify vendor
+        if (frozenTx.vendor_id) {
+          await supabase.from("notifications").insert({
+            user_id: frozenTx.vendor_id,
+            title: "Compliance Hold Lifted",
+            message: `The compliance hold on order #${frozenTx.order_number || txId} has been resolved. Transaction restored to "${restoreStatus}".`,
+            type: "info",
+            related_entity_type: "transaction",
+            related_entity_id: frozenTx.id,
+          });
+        }
+
+        result = unfrozen;
+        break;
+      }
+
+      case "compliance_reject_refund": {
+        // Admin rejects compliance-held transaction and refunds buyer
+        const rejectionNote = body.rejection_note;
+        if (!txId || !rejectionNote) throw new Error("txId and rejection_note are required");
+
+        const { data: heldTx, error: hErr } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("tx_id", txId)
+          .single();
+        if (hErr || !heldTx) throw new Error("Transaction not found");
+        if (!["compliance_hold", "compliance_review", "blocked"].includes(heldTx.status)) {
+          throw new Error(`Transaction is not in a compliance hold state (current: ${heldTx.status})`);
+        }
+
+        // Update to refunded
+        const { data: refundedTx, error: rErr } = await supabase
+          .from("transactions")
+          .update({ status: "refunded", updated_at: new Date().toISOString() })
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (rErr) throw rErr;
+
+        // Close compliance flags
+        await supabase
+          .from("compliance_flags")
+          .update({ status: "confirmed" })
+          .or(`related_buyer_id.eq.${heldTx.buyer_id},related_vendor_id.eq.${heldTx.vendor_id}`)
+          .in("status", ["open"]);
+
+        // Archive rejection document
+        await supabase.from("protection_documents").insert({
+          document_type: "compliance_rejection_refund",
+          title: `Compliance Rejection & Refund — ${txId}`,
+          transaction_id: heldTx.id,
+          user_id: heldTx.buyer_id,
+          role: "admin",
+          industry: heldTx.industry,
+          retention_years: 7,
+          metadata: {
+            auto_generated: true,
+            trigger: "admin_compliance_reject",
+            rejection_note: rejectionNote,
+            original_amount: heldTx.amount,
+            refund_amount: heldTx.amount,
+            buyer_id: heldTx.buyer_id,
+            vendor_id: heldTx.vendor_id,
+            rejected_at: new Date().toISOString(),
+          },
+        });
+
+        // Notify buyer of full refund
+        if (heldTx.buyer_id) {
+          await supabase.from("notifications").insert({
+            user_id: heldTx.buyer_id,
+            title: "Transaction Rejected — Full Refund Initiated",
+            message: `Order #${heldTx.order_number || txId} has been rejected following a compliance review. A full refund of $${Number(heldTx.amount).toFixed(2)} has been initiated to your original payment method.`,
+            type: "warning",
+            related_entity_type: "transaction",
+            related_entity_id: heldTx.id,
+          });
+        }
+
+        // Notify vendor
+        if (heldTx.vendor_id) {
+          await supabase.from("notifications").insert({
+            user_id: heldTx.vendor_id,
+            title: "Transaction Rejected by Compliance",
+            message: `Order #${heldTx.order_number || txId} has been rejected following compliance review. The buyer has been refunded in full. Reason: ${rejectionNote}`,
+            type: "warning",
+            related_entity_type: "transaction",
+            related_entity_id: heldTx.id,
+          });
+        }
+
+        result = refundedTx;
+        break;
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }
