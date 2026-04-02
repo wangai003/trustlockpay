@@ -208,6 +208,39 @@ const TesterLanding = () => {
           </CardContent>
         </Card>
 
+        {/* Tutorial Video */}
+        <Card className="border-primary/20">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0">
+                <Play className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">Watch: WordPress Installation Tutorial</h2>
+                <p className="text-xs text-muted-foreground">See the full install & removal process in 25 seconds</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                poster=""
+                className="w-full"
+                style={{ aspectRatio: "16/9" }}
+              >
+                <source src="/TrustLock_WordPress_Tutorial.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground text-center">
+              This tutorial shows a WordPress install — the same process works on Shopify, Wix, Squarespace & any HTML site.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Step 3: Test */}
         <Card>
           <CardContent className="p-5 space-y-4">
