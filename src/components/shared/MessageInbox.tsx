@@ -353,6 +353,13 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
               <DialogTitle>New Message</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
+              {transactionId && transactionLabel && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs">
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-muted-foreground">Order context:</span>
+                  <Badge variant="outline" className="text-[10px]">{transactionLabel}</Badge>
+                </div>
+              )}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">To</label>
                 <Select value={composeRecipient} onValueChange={setComposeRecipient}>
