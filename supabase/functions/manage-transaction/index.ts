@@ -297,6 +297,18 @@ Deno.serve(async (req) => {
         await supabase.from("transactions").update({ status: "disputed", updated_at: new Date().toISOString() }).eq("tx_id", txId);
 
         result = data;
+
+        // Anchor: dispute filed
+        await anchorProof(supabase, txData.data.id, "dispute_ruling", {
+          event: "dispute_opened",
+          dispute_id: disputeId,
+          tx_id: txId,
+          reason: reason || "Dispute filed by buyer",
+          amount: txData.data.amount,
+          buyer_name: txData.data.buyer_name,
+          vendor_name: txData.data.vendor_name,
+          filed_at: new Date().toISOString(),
+        });
         break;
       }
 
