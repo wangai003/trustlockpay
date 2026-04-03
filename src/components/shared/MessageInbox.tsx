@@ -74,6 +74,9 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const { user } = useAuth();
   const userId = user?.id;
 
+  // Admin uses the sentinel ID for thread participation
+  const effectiveUserId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
+
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -92,13 +95,20 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const loadThreads = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("message_threads")
       .select("*")
       .order("last_message_at", { ascending: false });
+
+    // Admin sees threads where ADMIN_SENTINEL_ID is a participant (messages sent TO admin)
+    if (role === "admin") {
+      query = query.or(`participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${ADMIN_SENTINEL_ID}`);
+    }
+
+    const { data, error } = await query;
     if (!error && data) setThreads(data as Thread[]);
     setLoading(false);
-  }, [userId]);
+  }, [userId, role]);
 
   // Load contacts (counterparties from transactions + admin)
   const loadContacts = useCallback(async () => {
