@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import TLId from "@/components/shared/TLId";
 import {
@@ -20,7 +21,7 @@ import {
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useSaveProfile } from "@/hooks/useBackendSync";
 const notificationKeys = [
   { key: "new_escrow", label: "New escrow created" },
   { key: "buyer_confirms", label: "Buyer confirms delivery" },
