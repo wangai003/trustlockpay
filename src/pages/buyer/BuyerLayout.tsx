@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
 import BuyerSidebar from "@/components/buyer/BuyerSidebar";
 import { BuyerProvider } from "@/contexts/BuyerContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
