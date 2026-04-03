@@ -793,7 +793,7 @@ serve(async (req) => {
     }
 
     // First call — may trigger tool calls
-    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages];
+    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT + signalContext }, ...finalMessages];
     let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
