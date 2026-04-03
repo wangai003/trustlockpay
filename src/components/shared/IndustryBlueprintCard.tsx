@@ -96,9 +96,8 @@ const IndustryBlueprintCard = ({ industry }: IndustryBlueprintCardProps) => {
     || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => key.includes(k)) || ""]
     || null;
 
-  if (!milestones) return null;
-
   const stats = useMemo(() => {
+    if (!milestones) return null;
     const totalMilestones = milestones.length;
     const requiredDocs = milestones.flatMap(m => m.documentMode === "required" ? m.documents : []);
     const optionalDocs = milestones.flatMap(m => m.documentMode === "optional" ? m.documents : []);
@@ -106,6 +105,8 @@ const IndustryBlueprintCard = ({ industry }: IndustryBlueprintCardProps) => {
     const docGatedStages = milestones.filter(m => m.documentMode === "required");
     return { totalMilestones, requiredDocs, optionalDocs, observerStages, docGatedStages };
   }, [milestones]);
+
+  if (!milestones || !stats) return null;
 
   return (
     <Card className="border-primary/20 bg-primary/[0.02]">
