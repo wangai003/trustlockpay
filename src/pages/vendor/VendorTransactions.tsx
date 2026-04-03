@@ -27,6 +27,7 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 
@@ -52,6 +53,7 @@ const VendorTransactions = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
+  const [shipDialog, setShipDialog] = useState<string | null>(null);
 
   // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
@@ -138,14 +140,18 @@ const VendorTransactions = () => {
   };
 
   const handleMarkShipped = (txId: string) => {
-    void (async () => {
-      const tracking = prompt("Optional tracking number (leave blank for manual ship):")?.trim() || `MANUAL-${Date.now()}`;
-      if (isTestnet) {
-        testnet.addTracking(txId, tracking);
-      } else {
-        await addTrackingHook.mutateAsync({ txId, tracking });
-      }
-    })();
+    setShipDialog(txId);
+  };
+
+  const handleShipConfirmed = async (tracking: string) => {
+    const txId = shipDialog;
+    if (!txId) return;
+    if (isTestnet) {
+      testnet.addTracking(txId, tracking);
+    } else {
+      await addTrackingHook.mutateAsync({ txId, tracking });
+    }
+    setShipDialog(null);
   };
 
   const handleMarkDelivered = async (txId: string) => {
@@ -609,6 +615,23 @@ const VendorTransactions = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shipment Confirmation Modal */}
+      {shipDialog && (() => {
+        const tx = allTx.find((t) => t.id === shipDialog);
+        return (
+          <ShipmentConfirmModal
+            open={!!shipDialog}
+            onClose={() => setShipDialog(null)}
+            onConfirm={handleShipConfirmed}
+            txId={tx?.id || shipDialog}
+            orderNumber={tx?.order}
+            buyerName={tx?.buyer}
+            amount={tx?.amount}
+            industry={tx?.industry}
+          />
+        );
+      })()}
     </div>
   );
 };
