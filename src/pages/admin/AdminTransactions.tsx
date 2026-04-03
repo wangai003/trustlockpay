@@ -275,10 +275,10 @@ const AdminTransactions = () => {
                                     <p className="font-medium">{tx.vendorLocation}</p>
                                   </div>
                                 </div>
-                                <MilestoneTimeline industry={tx.industry} status={tx.status} />
+                                <MilestoneTimeline industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                                 <details className="text-xs">
                                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
-                                  <MilestoneProgress industry={tx.industry} status={tx.status} />
+                                  <MilestoneProgress industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                                 </details>
                                 {isMilestoneIndustry(tx.industry) && (
                                   <MilestoneWorkOrderPanel
