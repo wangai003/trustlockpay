@@ -263,6 +263,75 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ═══════════════════════════════════════════
+    //  ACTION: RESERVE — Auto-fund from settlement
+    // ═══════════════════════════════════════════
+    if (action === "reserve") {
+      const { transactionId, orderAmount } = body;
+      if (!orderAmount || orderAmount <= 0) return json({ error: "orderAmount required" }, 400);
+
+      const reserveRate = body.reserveRate || 0.0001; // 0.01%
+      const maticPriceUsd = 0.40;
+      const reserveUsd = orderAmount * reserveRate;
+      const reserveMatic = reserveUsd / maticPriceUsd;
+
+      const { data: entry, error: insertErr } = await supabase
+        .from("gas_reserve_ledger")
+        .insert({
+          transaction_id: transactionId || null,
+          order_amount: orderAmount,
+          reserve_rate: reserveRate,
+          reserve_usd: Math.round(reserveUsd * 10000) / 10000,
+          reserve_matic: Math.round(reserveMatic * 10000) / 10000,
+          matic_price_usd: maticPriceUsd,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (insertErr) return json({ error: insertErr.message }, 500);
+
+      return json({
+        success: true,
+        entry,
+        summary: {
+          orderAmount,
+          reserveRate: `${reserveRate * 100}%`,
+          reserveUsd: Math.round(reserveUsd * 10000) / 10000,
+          reserveMatic: Math.round(reserveMatic * 10000) / 10000,
+          anchorsItCovers: Math.floor(reserveMatic / (45000 * 30 / 1e9)),
+        },
+      });
+    }
+
+    // ═══════════════════════════════════════════
+    //  ACTION: RESERVE_STATUS — Cumulative reserve stats
+    // ═══════════════════════════════════════════
+    if (action === "reserve_status") {
+      const { data: reserves } = await supabase
+        .from("gas_reserve_ledger")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const all = reserves || [];
+      const totalUsd = all.reduce((s: number, r: any) => s + Number(r.reserve_usd), 0);
+      const totalMatic = all.reduce((s: number, r: any) => s + Number(r.reserve_matic), 0);
+      const pending = all.filter((r: any) => r.status === "pending");
+      const converted = all.filter((r: any) => r.status === "converted");
+
+      return json({
+        totalReserves: all.length,
+        totalUsd: Math.round(totalUsd * 100) / 100,
+        totalMatic: Math.round(totalMatic * 100) / 100,
+        pendingCount: pending.length,
+        pendingUsd: Math.round(pending.reduce((s: number, r: any) => s + Number(r.reserve_usd), 0) * 100) / 100,
+        convertedCount: converted.length,
+        convertedMatic: Math.round(converted.reduce((s: number, r: any) => s + Number(r.reserve_matic), 0) * 100) / 100,
+        recentReserves: all.slice(0, 10),
+        estimatedAnchors: Math.floor(totalMatic / (45000 * 30 / 1e9)),
+      });
+    }
+
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
     console.error("[gas-treasury] Error:", err);

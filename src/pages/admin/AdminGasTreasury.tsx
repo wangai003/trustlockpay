@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Fuel, Wallet, RefreshCw, Play, AlertTriangle, CheckCircle2,
-  TrendingUp, Database, Shield, Zap, DollarSign, Settings2
+  TrendingUp, Database, Shield, Zap, DollarSign, Settings2,
+  PiggyBank, ArrowDownToLine, Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -49,21 +50,37 @@ interface CostEstimate {
   totalUsd: number;
 }
 
+interface ReserveStatus {
+  totalReserves: number;
+  totalUsd: number;
+  totalMatic: number;
+  pendingCount: number;
+  pendingUsd: number;
+  convertedCount: number;
+  convertedMatic: number;
+  estimatedAnchors: number;
+  recentReserves: any[];
+}
+
 const AdminGasTreasury = () => {
   const [status, setStatus] = useState<TreasuryStatus | null>(null);
+  const [reserveStatus, setReserveStatus] = useState<ReserveStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [estimateOrders, setEstimateOrders] = useState("1000");
   const [customEstimate, setCustomEstimate] = useState<any>(null);
+  const [simAmount, setSimAmount] = useState("500");
 
   const fetchStatus = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("gas-treasury", {
-        body: { action: "status" },
-      });
-      if (error) throw error;
-      setStatus(data);
+      const [statusRes, reserveRes] = await Promise.all([
+        supabase.functions.invoke("gas-treasury", { body: { action: "status" } }),
+        supabase.functions.invoke("gas-treasury", { body: { action: "reserve_status" } }),
+      ]);
+      if (statusRes.error) throw statusRes.error;
+      setStatus(statusRes.data);
+      if (!reserveRes.error) setReserveStatus(reserveRes.data);
     } catch (err: any) {
       toast.error("Failed to fetch treasury status");
     }
@@ -102,12 +119,28 @@ const AdminGasTreasury = () => {
     }
   };
 
+  const simulateReserve = async () => {
+    const amt = parseFloat(simAmount);
+    if (!amt || amt <= 0) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("gas-treasury", {
+        body: { action: "reserve", orderAmount: amt },
+      });
+      if (error) throw error;
+      toast.success(`Reserved $${data.summary.reserveUsd} → ${data.summary.reserveMatic} MATIC (covers ~${data.summary.anchorsItCovers} anchors)`);
+      fetchStatus();
+    } catch {
+      toast.error("Reserve simulation failed");
+    }
+  };
+
   useEffect(() => { fetchStatus(); }, []);
 
   const q = status?.queue;
   const w = status?.wallet;
   const s = status?.sustainability;
   const c = status?.config;
+  const r = reserveStatus;
 
   return (
     <div>
@@ -120,7 +153,7 @@ const AdminGasTreasury = () => {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Gas Treasury</h1>
               <p className="text-sm text-muted-foreground">
-                Monitor Polygon wallet, anchoring costs, and batch processing
+                Monitor Polygon wallet, anchoring costs, and auto-reserve funding
               </p>
             </div>
           </div>
@@ -131,7 +164,7 @@ const AdminGasTreasury = () => {
         </div>
 
         {/* Config Status Banner */}
-        <Card className={`border-${c?.contractAddress ? "primary" : "amber-500"}/30 bg-${c?.contractAddress ? "primary" : "amber-500"}/5`}>
+        <Card className="border-border">
           <CardContent className="p-4">
             <div className="flex flex-wrap items-center gap-3">
               <Settings2 className="w-5 h-5 text-muted-foreground" />
@@ -216,6 +249,107 @@ const AdminGasTreasury = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Gas Reserve Auto-Fund */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <PiggyBank className="w-5 h-5 text-primary" /> Gas Reserve Auto-Fund
+            </CardTitle>
+            <CardDescription>
+              0.01% of every settled order is earmarked for gas. A single $500 order funds ~50 blockchain anchors.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Reserve stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="border border-border rounded-lg p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">Total Reserved</p>
+                <p className="text-xl font-bold text-foreground">${r?.totalUsd ?? "0.00"}</p>
+                <p className="text-[10px] text-muted-foreground">{r?.totalMatic ?? 0} MATIC</p>
+              </div>
+              <div className="border border-border rounded-lg p-3 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Clock className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground">Pending Conversion</p>
+                </div>
+                <p className="text-xl font-bold text-foreground">${r?.pendingUsd ?? "0.00"}</p>
+                <p className="text-[10px] text-muted-foreground">{r?.pendingCount ?? 0} entries</p>
+              </div>
+              <div className="border border-border rounded-lg p-3 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <ArrowDownToLine className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground">Converted</p>
+                </div>
+                <p className="text-xl font-bold text-foreground">{r?.convertedMatic ?? 0} MATIC</p>
+                <p className="text-[10px] text-muted-foreground">{r?.convertedCount ?? 0} batches</p>
+              </div>
+              <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">Anchors Funded</p>
+                <p className="text-xl font-bold text-primary">{r?.estimatedAnchors?.toLocaleString() ?? "0"}</p>
+                <p className="text-[10px] text-muted-foreground">at current gas prices</p>
+              </div>
+            </div>
+
+            {/* Simulate reserve */}
+            <div className="border border-dashed border-border rounded-lg p-4">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Simulate Settlement Reserve</p>
+              <div className="flex gap-3 items-end">
+                <div>
+                  <label className="text-[10px] text-muted-foreground mb-1 block">Order Amount ($)</label>
+                  <Input
+                    type="number"
+                    value={simAmount}
+                    onChange={(e) => setSimAmount(e.target.value)}
+                    className="w-32"
+                    placeholder="500"
+                  />
+                </div>
+                <Button onClick={simulateReserve} variant="outline" size="sm">
+                  <PiggyBank className="w-4 h-4 mr-2" />
+                  Reserve 0.01%
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                ${simAmount ? (parseFloat(simAmount) * 0.0001).toFixed(4) : "0"} earmarked → ≈{" "}
+                {simAmount ? ((parseFloat(simAmount) * 0.0001) / 0.40).toFixed(4) : "0"} MATIC →{" "}
+                ~{simAmount ? Math.floor(((parseFloat(simAmount) * 0.0001) / 0.40) / (45000 * 30 / 1e9)) : 0} anchors
+              </p>
+            </div>
+
+            {/* Recent reserves */}
+            {r?.recentReserves && r.recentReserves.length > 0 && (
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-2 font-medium text-muted-foreground">Date</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">Order</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">Reserved</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">MATIC</th>
+                      <th className="text-center p-2 font-medium text-muted-foreground">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {r.recentReserves.map((entry: any) => (
+                      <tr key={entry.id} className="border-b">
+                        <td className="p-2">{new Date(entry.created_at).toLocaleDateString()}</td>
+                        <td className="p-2 text-right font-mono">${Number(entry.order_amount).toFixed(2)}</td>
+                        <td className="p-2 text-right font-mono">${Number(entry.reserve_usd).toFixed(4)}</td>
+                        <td className="p-2 text-right font-mono">{Number(entry.reserve_matic).toFixed(4)}</td>
+                        <td className="p-2 text-center">
+                          <Badge variant={entry.status === "converted" ? "default" : "secondary"} className="text-[10px]">
+                            {entry.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Queue Progress + Batch Processor */}
         <Card>
