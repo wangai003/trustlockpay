@@ -140,14 +140,18 @@ const VendorTransactions = () => {
   };
 
   const handleMarkShipped = (txId: string) => {
-    void (async () => {
-      const tracking = prompt("Optional tracking number (leave blank for manual ship):")?.trim() || `MANUAL-${Date.now()}`;
-      if (isTestnet) {
-        testnet.addTracking(txId, tracking);
-      } else {
-        await addTrackingHook.mutateAsync({ txId, tracking });
-      }
-    })();
+    setShipDialog(txId);
+  };
+
+  const handleShipConfirmed = async (tracking: string) => {
+    const txId = shipDialog;
+    if (!txId) return;
+    if (isTestnet) {
+      testnet.addTracking(txId, tracking);
+    } else {
+      await addTrackingHook.mutateAsync({ txId, tracking });
+    }
+    setShipDialog(null);
   };
 
   const handleMarkDelivered = async (txId: string) => {
