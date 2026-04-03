@@ -594,6 +594,31 @@ serve(async (req) => {
       }
     }
 
+    // --- AI Signal Coordination: Read ALL active signals for Emmanuel ---
+    let signalContext = "";
+    try {
+      const svcClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: signals } = await svcClient
+        .from("ai_signals")
+        .select("*")
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (signals && signals.length > 0) {
+        signalContext = "\n\n## ⚡ LIVE INTELLIGENCE SIGNALS FROM AMANI & ZAWADI\nThese are real-time signals from your sibling AIs working with vendors and buyers. Use them to proactively brief the admin.\n";
+        for (const s of signals) {
+          signalContext += `- [${s.severity.toUpperCase()}] (${s.source_assistant} → ${s.target_role}) ${s.signal_type}: ${s.summary} | Signal ID: ${s.id}\n`;
+        }
+        signalContext += "\nYou can resolve signals using the resolve_signal tool after the admin has addressed the issue.\n";
+      }
+    } catch (sigErr) {
+      console.error("Signal read error (non-fatal):", sigErr);
+    }
+
     const hasImages = JSON.stringify(finalMessages).includes("image_url");
     const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
 
