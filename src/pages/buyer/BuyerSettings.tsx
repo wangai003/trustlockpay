@@ -39,6 +39,8 @@ const BuyerSettings = () => {
   const [profileName, setProfileName] = useState(buyer.name || "");
   const [profileLocation, setProfileLocation] = useState(buyer.location || "");
   const [profilePhone, setProfilePhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [entityType, setEntityType] = useState("individual");
 
   useEffect(() => {
     if (savedNotifs && typeof savedNotifs === "object") {
