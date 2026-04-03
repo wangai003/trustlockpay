@@ -4,6 +4,7 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
+import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const AdminLayoutInner = () => {
@@ -19,6 +20,9 @@ const AdminLayoutInner = () => {
         </main>
         <CommandPalette role="admin" />
         <MobileBottomNav role="admin" />
+        <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+          <BlockchainExplorerPanel />
+        </div>
       </div>
     </AdminProvider>
   );

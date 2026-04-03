@@ -4,6 +4,7 @@ import { BuyerProvider } from "@/contexts/BuyerContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
+import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const BuyerLayoutInner = () => {
@@ -19,6 +20,9 @@ const BuyerLayoutInner = () => {
         </main>
         <CommandPalette role="buyer" />
         <MobileBottomNav role="buyer" />
+        <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+          <BlockchainExplorerPanel />
+        </div>
       </div>
     </BuyerProvider>
   );
