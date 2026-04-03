@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import TLId from "@/components/shared/TLId";
 import {
@@ -20,7 +21,7 @@ import {
 import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useSaveProfile } from "@/hooks/useBackendSync";
 const notificationKeys = [
   { key: "new_escrow", label: "New escrow created" },
   { key: "buyer_confirms", label: "Buyer confirms delivery" },
@@ -37,7 +38,13 @@ const VendorSettings = () => {
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
+  const saveProfile = useSaveProfile();
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+  const [profileName, setProfileName] = useState(vendor.name || "");
+  const [profileLocation, setProfileLocation] = useState(vendor.location || "");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [entityType, setEntityType] = useState("individual");
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
@@ -105,22 +112,78 @@ const VendorSettings = () => {
           <CardContent className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Business Name</Label>
-                <Input defaultValue={vendor.name} />
+                <Label>Full Name</Label>
+                <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Your legal name" />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input defaultValue={vendor.email} />
+                <Input defaultValue={vendor.email} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Entity Type</Label>
+                <Select value={entityType} onValueChange={setEntityType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select entity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">Individual / Sole Trader</SelectItem>
+                    <SelectItem value="sole_proprietor">Sole Proprietor (Registered)</SelectItem>
+                    <SelectItem value="company">Registered Company</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Company Name
+                  {entityType === "individual" && <span className="text-muted-foreground text-[10px] ml-1">(optional)</span>}
+                  {entityType === "company" && <span className="text-destructive text-[10px] ml-1">*</span>}
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder={entityType === "individual" ? "Optional — leave blank if trading personally" : "Registered company name"}
+                    className="pl-9"
+                  />
+                </div>
+                {entityType === "company" && !companyName.trim() && (
+                  <p className="text-[10px] text-destructive">Company name is required for registered companies.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Location</Label>
-                <Input defaultValue={vendor.location} />
+                <Input value={profileLocation} onChange={(e) => setProfileLocation(e.target.value)} placeholder="City, Country" />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone (optional)</Label>
+                <Input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="+234 xxx xxx xxxx" />
               </div>
               <div className="space-y-2">
                 <Label>Vendor Type</Label>
                 <Input defaultValue={vendor.type || ""} readOnly className="bg-muted/50 capitalize" />
               </div>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (entityType === "company" && !companyName.trim()) {
+                  toast.error("Company name is required for registered companies.");
+                  return;
+                }
+                saveProfile.mutateAsync({
+                  fullName: profileName,
+                  location: profileLocation,
+                  phone: profilePhone,
+                  companyName: companyName || undefined,
+                  entityType,
+                });
+              }}
+              disabled={saveProfile.isPending}
+            >
+              <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
+            </Button>
           </CardContent>
         </Card>
 

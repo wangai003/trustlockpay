@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { User, Bell, Save, AlertTriangle, Pause, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Bell, Save, AlertTriangle, Pause, Trash2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import TLId from "@/components/shared/TLId";
 import {
@@ -38,6 +39,8 @@ const BuyerSettings = () => {
   const [profileName, setProfileName] = useState(buyer.name || "");
   const [profileLocation, setProfileLocation] = useState(buyer.location || "");
   const [profilePhone, setProfilePhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [entityType, setEntityType] = useState("individual");
 
   useEffect(() => {
     if (savedNotifs && typeof savedNotifs === "object") {
@@ -67,6 +70,35 @@ const BuyerSettings = () => {
                 <Input defaultValue={buyer.email} disabled />
               </div>
               <div className="space-y-2">
+                <Label>Entity Type</Label>
+                <Select value={entityType} onValueChange={setEntityType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select entity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">Individual</SelectItem>
+                    <SelectItem value="sole_proprietor">Sole Proprietor (Registered)</SelectItem>
+                    <SelectItem value="company">Registered Company</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Company Name
+                  {entityType === "individual" && <span className="text-muted-foreground text-[10px] ml-1">(optional)</span>}
+                  {entityType === "company" && <span className="text-destructive text-[10px] ml-1">*</span>}
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder={entityType === "individual" ? "Optional" : "Registered company name"}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>Location</Label>
                 <Input value={profileLocation} onChange={(e) => setProfileLocation(e.target.value)} />
               </div>
@@ -75,7 +107,19 @@ const BuyerSettings = () => {
                 <Input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="+1 (xxx) xxx-xxxx" />
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => saveProfile.mutateAsync({ fullName: profileName, location: profileLocation, phone: profilePhone })}>
+            <Button size="sm" variant="outline" onClick={() => {
+              if (entityType === "company" && !companyName.trim()) {
+                toast.error("Company name is required for registered companies.");
+                return;
+              }
+              saveProfile.mutateAsync({
+                fullName: profileName,
+                location: profileLocation,
+                phone: profilePhone,
+                companyName: companyName || undefined,
+                entityType,
+              });
+            }} disabled={saveProfile.isPending}>
               <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
             </Button>
           </CardContent>
