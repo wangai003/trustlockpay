@@ -112,35 +112,71 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
 
   // Load contacts (counterparties from transactions + admin)
   const loadContacts = useCallback(async () => {
-    if (!userId || role === "admin") return;
-    const contactList: Contact[] = [
-      { id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" },
-    ];
+    if (!userId) return;
+    const contactList: Contact[] = [];
 
-    const col = role === "vendor" ? "vendor_id" : "buyer_id";
-    const otherCol = role === "vendor" ? "buyer_id" : "buyer_name";
-    const otherNameCol = role === "vendor" ? "buyer_name" : "vendor_name";
-    const otherIdCol = role === "vendor" ? "buyer_id" : "vendor_id";
+    if (role === "admin") {
+      // Admin can message any user who has a profile
+      // Load recent thread participants first, then all profiles as fallback
+      const { data: recentThreads } = await supabase
+        .from("message_threads")
+        .select("participant_1, participant_2, subject")
+        .or(`participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${ADMIN_SENTINEL_ID}`)
+        .order("last_message_at", { ascending: false })
+        .limit(50);
 
-    const { data: txns } = await supabase
-      .from("transactions")
-      .select(`id, ${otherIdCol}, ${otherNameCol}, tx_id`)
-      .eq(col, userId)
-      .not(otherIdCol, "is", null);
+      const participantIds = new Set<string>();
+      recentThreads?.forEach((t) => {
+        if (t.participant_1 !== ADMIN_SENTINEL_ID) participantIds.add(t.participant_1);
+        if (t.participant_2 !== ADMIN_SENTINEL_ID) participantIds.add(t.participant_2);
+      });
 
-    if (txns) {
+      // Also load profiles to allow admin to initiate conversations
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
       const seen = new Set<string>();
-      for (const tx of txns) {
-        const otherId = (tx as any)[otherIdCol];
-        const otherName = (tx as any)[otherNameCol] || "Unknown";
-        if (otherId && !seen.has(otherId)) {
-          seen.add(otherId);
+      profiles?.forEach((p) => {
+        if (!seen.has(p.id) && p.id !== userId) {
+          seen.add(p.id);
           contactList.push({
-            id: otherId,
-            label: `${otherName} (${(tx as any).tx_id || tx.id.slice(0, 8)})`,
+            id: p.id,
+            label: `${p.full_name || p.email || p.id.slice(0, 8)}${participantIds.has(p.id) ? " (active)" : ""}`,
             type: "counterparty",
-            transaction_id: tx.id,
           });
+        }
+      });
+    } else {
+      // Buyer/Vendor: add admin as first contact
+      contactList.push({ id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" });
+
+      const col = role === "vendor" ? "vendor_id" : "buyer_id";
+      const otherNameCol = role === "vendor" ? "buyer_name" : "vendor_name";
+      const otherIdCol = role === "vendor" ? "buyer_id" : "vendor_id";
+
+      const { data: txns } = await supabase
+        .from("transactions")
+        .select(`id, ${otherIdCol}, ${otherNameCol}, tx_id`)
+        .eq(col, userId)
+        .not(otherIdCol, "is", null);
+
+      if (txns) {
+        const seen = new Set<string>();
+        for (const tx of txns) {
+          const otherId = (tx as any)[otherIdCol];
+          const otherName = (tx as any)[otherNameCol] || "Unknown";
+          if (otherId && !seen.has(otherId)) {
+            seen.add(otherId);
+            contactList.push({
+              id: otherId,
+              label: `${otherName} (${(tx as any).tx_id || tx.id.slice(0, 8)})`,
+              type: "counterparty",
+              transaction_id: tx.id,
+            });
+          }
         }
       }
     }
