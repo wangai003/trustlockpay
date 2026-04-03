@@ -149,7 +149,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages],
+        messages: [{ role: "system", content: SYSTEM_PROMPT + signalContext + `\n\n## Signal Writing Protocol\nWhen a buyer reports a significant issue (damaged goods, non-delivery, vendor fraud, payment problems), include a signal block at the END of your response in this exact format:\n<signal type="buyer_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` }, ...finalMessages],
         stream: true,
       }),
     });
@@ -162,7 +162,63 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    const originalBody = response.body;
+    if (!originalBody) {
+      return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    }
+
+    const [clientStream, captureStream] = originalBody.tee();
+
+    // Extract signals in the background
+    (async () => {
+      try {
+        const reader = captureStream.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) fullText += content;
+            } catch { /* ignore */ }
+          }
+        }
+
+        const signalRegex = /<signal\s+type="([^"]+)"\s+severity="([^"]+)"\s+summary="([^"]+)">/g;
+        let match;
+        while ((match = signalRegex.exec(fullText)) !== null) {
+          const adminClient = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          );
+          if (authHeader) {
+            const supabaseUser = createClient(
+              Deno.env.get("SUPABASE_URL")!,
+              Deno.env.get("SUPABASE_ANON_KEY")!,
+              { global: { headers: { Authorization: authHeader } } }
+            );
+            const { data: { user } } = await supabaseUser.auth.getUser();
+            await adminClient.from("ai_signals").insert({
+              signal_type: match[1],
+              source_assistant: "zawadi",
+              target_role: "admin",
+              user_id: user?.id,
+              severity: match[2],
+              summary: match[3],
+            });
+          }
+        }
+      } catch (extractErr) {
+        console.error("Signal extraction error (non-fatal):", extractErr);
+      }
+    })();
+
+    return new Response(clientStream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
     console.error("zawadi-chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

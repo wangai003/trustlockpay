@@ -221,7 +221,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: SYSTEM_PROMPT + signalContext + `\n\n## Signal Writing Protocol\nWhen a vendor reports a significant issue (damage reports, delivery problems, buyer unresponsiveness, fraud suspicion), include a signal block at the END of your response in this exact format:\n<signal type="vendor_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` },
           ...finalMessages,
         ],
         stream: true,
@@ -246,7 +246,70 @@ serve(async (req) => {
       });
     }
 
-    return new Response(response.body, {
+    // Stream response but also capture it to extract signals
+    const originalBody = response.body;
+    if (!originalBody) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // We'll tee the stream — one for the client, one for signal extraction
+    const [clientStream, captureStream] = originalBody.tee();
+
+    // Extract signals in the background (non-blocking)
+    (async () => {
+      try {
+        const reader = captureStream.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          // Parse SSE to extract content
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) fullText += content;
+            } catch { /* ignore */ }
+          }
+        }
+
+        // Check for signal tags in the response
+        const signalRegex = /<signal\s+type="([^"]+)"\s+severity="([^"]+)"\s+summary="([^"]+)">/g;
+        let match;
+        while ((match = signalRegex.exec(fullText)) !== null) {
+          const adminClient = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          );
+          // Get user for context
+          if (authHeader) {
+            const supabaseUser = createClient(
+              Deno.env.get("SUPABASE_URL")!,
+              Deno.env.get("SUPABASE_ANON_KEY")!,
+              { global: { headers: { Authorization: authHeader } } }
+            );
+            const { data: { user } } = await supabaseUser.auth.getUser();
+            await adminClient.from("ai_signals").insert({
+              signal_type: match[1],
+              source_assistant: "amani",
+              target_role: "admin",
+              user_id: user?.id,
+              severity: match[2],
+              summary: match[3],
+            });
+          }
+        }
+      } catch (extractErr) {
+        console.error("Signal extraction error (non-fatal):", extractErr);
+      }
+    })();
+
+    return new Response(clientStream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
