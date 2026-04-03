@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Eye, Download, Clock, Lock, AlertTriangle, RefreshCw, Search, X } from "lucide-react";
+import { Shield, Eye, Download, Clock, Lock, AlertTriangle, RefreshCw, Search, X, Layers } from "lucide-react";
 import { toast } from "sonner";
+import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-audit`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
