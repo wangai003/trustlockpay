@@ -344,15 +344,153 @@ serve(async (req) => {
 
       if (storeErr) console.error("Failed to store scan result:", storeErr);
 
-      // Determine signal severity based on dimensions
+      // ── ENFORCEMENT LAYER ─────────────────────────────────────────────
+      const dims = scanResult.dimensions || {};
+      const d4Failed = dims.d4_name_consistency && !dims.d4_name_consistency.pass;
+      const d5Failed = dims.d5_cross_document && !dims.d5_cross_document.pass;
+      const d7Failed = dims.d7_sanctions_indicators && !dims.d7_sanctions_indicators.pass;
+
+      // 1. SANCTIONS HIT → immediate compliance hold + SAR trigger
+      if (d7Failed && transaction_id) {
+        await adminClient.from("transactions").update({
+          status: "compliance_hold",
+          updated_at: new Date().toISOString(),
+        }).eq("id", transaction_id);
+
+        await adminClient.from("compliance_flags").insert({
+          flag_id: `SCAN-SANCTIONS-${stored?.id || Date.now()}`,
+          type: "sanctions_match",
+          severity: "critical",
+          description: `Document scanner detected potential sanctions match: ${dims.d7_sanctions_indicators?.notes || 'Entity flagged'}`,
+          related_buyer_id: null,
+          related_vendor_id: user_id || null,
+          status: "open",
+        });
+
+        // Notify user
+        if (user_id) {
+          await adminClient.from("notifications").insert({
+            user_id,
+            title: "Compliance Review Required",
+            message: "A document you uploaded has triggered a compliance review. Your transaction has been paused pending admin verification. No action is needed from you at this time.",
+            type: "warning",
+            is_action_required: false,
+            related_entity_type: "compliance_flag",
+            related_entity_id: stored?.id,
+          });
+        }
+      }
+
+      // 2. HARD NAME MISMATCH (D4 + confidence < 50%) → auto-pause transaction + profile lock
+      else if (d4Failed && scanResult.confidence_score < 50 && transaction_id) {
+        await adminClient.from("transactions").update({
+          status: "compliance_review",
+          updated_at: new Date().toISOString(),
+        }).eq("id", transaction_id).in("status", ["locked", "shipped", "delivered", "pending"]);
+
+        // Lock profile to prevent changes that would "fix" the mismatch
+        if (user_id) {
+          await adminClient.from("profiles").update({
+            status: "paused",
+            updated_at: new Date().toISOString(),
+          }).eq("id", user_id);
+
+          await adminClient.from("notifications").insert({
+            user_id,
+            title: "Document Mismatch Detected",
+            message: "The name on your uploaded document doesn't match your profile. Your account has been paused for review. Please contact support or wait for admin review.",
+            type: "warning",
+            is_action_required: true,
+            action_url: "/settings",
+            related_entity_type: "document_scan",
+            related_entity_id: stored?.id,
+          });
+        }
+
+        await adminClient.from("compliance_flags").insert({
+          flag_id: `SCAN-MISMATCH-${stored?.id || Date.now()}`,
+          type: "identity_mismatch",
+          severity: "high",
+          description: `Hard name mismatch: document entity "${scanResult.extracted_entities?.entity_name || 'unknown'}" does not match profile. Confidence: ${scanResult.confidence_score}%`,
+          related_vendor_id: user_id || null,
+          status: "open",
+        });
+      }
+
+      // 3. SOFT NAME MISMATCH (D4 fail but confidence >= 50%) → notify user to update, don't block
+      else if (d4Failed && scanResult.confidence_score >= 50) {
+        if (user_id) {
+          await adminClient.from("notifications").insert({
+            user_id,
+            title: "Profile Update Recommended",
+            message: `The name on your document ("${scanResult.extracted_entities?.entity_name || 'detected name'}") doesn't exactly match your profile. Please update your profile to ensure smooth processing.`,
+            type: "info",
+            is_action_required: true,
+            action_url: "/settings",
+            related_entity_type: "document_scan",
+            related_entity_id: stored?.id,
+          });
+        }
+      }
+
+      // 4. CROSS-DOC MISMATCH (D4 + D5 both fail) → freeze + compliance flag
+      if (d4Failed && d5Failed && transaction_id) {
+        await adminClient.from("transactions").update({
+          status: "compliance_hold",
+          updated_at: new Date().toISOString(),
+        }).eq("id", transaction_id);
+
+        await adminClient.from("compliance_flags").insert({
+          flag_id: `SCAN-CROSSDOC-${stored?.id || Date.now()}`,
+          type: "cross_document_mismatch",
+          severity: "critical",
+          description: `Cross-document identity conflict: entity name and amounts inconsistent across transaction documents. ${dims.d5_cross_document?.notes || ''}`,
+          related_vendor_id: user_id || null,
+          status: "open",
+        });
+      }
+
+      // 5. LIKELY FRAUDULENT (6+ dimensions failed) → freeze everything
+      if (scanResult.verdict === "likely_fraudulent") {
+        if (transaction_id) {
+          await adminClient.from("transactions").update({
+            status: "compliance_hold",
+            updated_at: new Date().toISOString(),
+          }).eq("id", transaction_id);
+        }
+
+        if (user_id) {
+          await adminClient.from("profiles").update({
+            status: "paused",
+            updated_at: new Date().toISOString(),
+          }).eq("id", user_id);
+
+          // Require re-verification
+          await adminClient.from("kyc_documents").update({
+            status: "rejected",
+            reviewed_at: new Date().toISOString(),
+          }).eq("vendor_id", user_id).eq("status", "pending");
+
+          await adminClient.from("notifications").insert({
+            user_id,
+            title: "Account Under Review",
+            message: "Multiple issues were detected with your uploaded documents. Your account and related transactions are under compliance review. You will need to re-submit verification documents.",
+            type: "warning",
+            is_action_required: true,
+            action_url: "/kyc",
+            related_entity_type: "document_scan",
+            related_entity_id: stored?.id,
+          });
+        }
+      }
+
+      // ── AI SIGNALS (unchanged) ────────────────────────────────────────
       const signalSeverity = scanResult.verdict === "likely_fraudulent" ? "critical"
         : scanResult.verdict === "red_flags" ? "warning"
         : hasCriticalFailure ? "warning"
         : null;
 
-      // Emit AI signal if problems detected
       if (signalSeverity) {
-        // Build detailed summary from failed dimensions
         const failedList = Object.entries(dims)
           .filter(([_, v]: [string, any]) => v && !v.pass)
           .map(([k, v]: [string, any]) => `${k}: ${v.notes}`)
@@ -374,10 +512,15 @@ serve(async (req) => {
             missing_companion_docs: scanResult.missing_companion_docs,
             extracted_entities: scanResult.extracted_entities,
             dimension_details: failedList,
+            enforcement_actions: [
+              d7Failed ? "compliance_hold_sanctions" : null,
+              d4Failed && scanResult.confidence_score < 50 ? "profile_locked" : null,
+              d4Failed && d5Failed ? "cross_doc_freeze" : null,
+              scanResult.verdict === "likely_fraudulent" ? "full_freeze_reverification" : null,
+            ].filter(Boolean),
           },
         });
 
-        // Also notify if missing companion documents detected
         if (scanResult.missing_companion_docs?.length > 0 && transaction_id) {
           await adminClient.from("ai_signals").insert({
             signal_type: "missing_companion_documents",
@@ -391,7 +534,6 @@ serve(async (req) => {
           });
         }
       }
-
       return new Response(JSON.stringify({ success: true, result: scanResult, scan_id: stored?.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
