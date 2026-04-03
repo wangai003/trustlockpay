@@ -757,6 +757,24 @@ serve(async (req) => {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "scan_document",
+          description: "Trigger an automated document scan using TrustLock's verification AI. Can scan a specific file from a storage bucket, batch-scan pending KYC documents, or scan all documents for a transaction.",
+          parameters: {
+            type: "object",
+            properties: {
+              scan_action: { type: "string", enum: ["scan_single", "scan_batch", "scan_transaction_docs"], description: "Type of scan to perform" },
+              bucket: { type: "string", description: "Storage bucket (for scan_single): kyc-documents, milestone-documents, dispute-evidence, invoices" },
+              file_path: { type: "string", description: "File path within the bucket (for scan_single)" },
+              user_id: { type: "string", description: "UUID of the document owner (optional)" },
+              transaction_id: { type: "string", description: "Transaction UUID (for scan_transaction_docs or context)" },
+            },
+            required: ["scan_action"],
+          },
+        },
+      },
     ];
 
     // Helper to call emmanuel-analytics or handle signal tools locally
@@ -779,6 +797,20 @@ serve(async (req) => {
           transaction_id: params.transaction_id || null,
         });
         return error ? { error: error.message } : { success: true, message: `Signal emitted to ${params.target_role}` };
+      }
+      if (action === "scan_document") {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/document-scanner`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            action: params.scan_action,
+            bucket: params.bucket,
+            file_path: params.file_path,
+            user_id: params.user_id,
+            transaction_id: params.transaction_id,
+          }),
+        });
+        return await resp.json();
       }
 
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {

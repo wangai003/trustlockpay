@@ -127,7 +127,8 @@ serve(async (req) => {
       }
     }
 
-    // --- AI Signal Coordination: Read active signals for this vendor ---
+    // --- Context Injection: Pull vendor's transactions, documents, and signals ---
+    let dataContext = "";
     let signalContext = "";
     if (authHeader) {
       try {
@@ -142,7 +143,63 @@ serve(async (req) => {
         );
         const { data: { user } } = await supabaseUser.auth.getUser();
         if (user) {
-          // Read signals targeting this vendor or their transactions
+          // 1. Pull vendor profile
+          const { data: profile } = await adminClient.from("profiles").select("full_name,email,location,corridor,onboarding_industry,preferred_currency,status").eq("id", user.id).single();
+
+          // 2. Pull active transactions (last 10)
+          const { data: txns } = await adminClient.from("transactions").select("id,tx_id,status,amount,currency,item,buyer_name,industry,milestone_count,created_at,fee").eq("vendor_id", user.id).order("created_at", { ascending: false }).limit(10);
+
+          // 3. Pull KYC status
+          const { data: kyc } = await adminClient.from("kyc_documents").select("name,status,created_at").eq("vendor_id", user.id).order("created_at", { ascending: false }).limit(5);
+
+          // 4. Pull recent disputes
+          const { data: disputes } = await adminClient.from("disputes").select("dispute_id,status,reason,amount,buyer_name,created_at").eq("vendor_id", user.id).order("created_at", { ascending: false }).limit(5);
+
+          // 5. Pull pending milestones
+          const { data: milestones } = await adminClient.from("transaction_milestones").select("id,title,status,amount,due_date,transaction_id").in("transaction_id", (txns || []).map(t => t.id)).in("status", ["pending", "in_progress"]).limit(10);
+
+          // 6. Pull protection documents
+          const { data: docs } = await adminClient.from("protection_documents").select("title,document_type,industry,created_at,signed_by_vendor,signed_by_buyer").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+
+          // 7. Pull payout requests
+          const { data: payouts } = await adminClient.from("payout_requests").select("amount,status,payment_provider,created_at,order_number").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5);
+
+          // 8. Pull document scan results
+          const { data: scans } = await adminClient.from("document_scan_results").select("document_type,verdict,confidence_score,findings,country_detected,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5);
+
+          // Build context
+          dataContext = "\n\n## 📊 VENDOR LIVE DATA (auto-injected — do NOT share raw data, use it to inform your answers)\n";
+          if (profile) dataContext += `### Profile\nName: ${profile.full_name || 'Not set'} | Industry: ${profile.onboarding_industry || 'Not set'} | Location: ${profile.location || 'Not set'} | Currency: ${profile.preferred_currency} | Status: ${profile.status}\n`;
+          if (txns && txns.length > 0) {
+            dataContext += `### Active Transactions (${txns.length})\n`;
+            for (const t of txns) dataContext += `- ${t.tx_id}: ${t.item || 'N/A'} | $${t.amount} ${t.currency || 'USD'} | Status: ${t.status} | Buyer: ${t.buyer_name || 'N/A'} | ${t.industry || ''}\n`;
+          }
+          if (milestones && milestones.length > 0) {
+            dataContext += `### Pending Milestones (${milestones.length})\n`;
+            for (const m of milestones) dataContext += `- "${m.title}" | $${m.amount || 0} | Status: ${m.status} | Due: ${m.due_date || 'No date'}\n`;
+          }
+          if (kyc && kyc.length > 0) {
+            dataContext += `### KYC Documents\n`;
+            for (const k of kyc) dataContext += `- ${k.name}: ${k.status}\n`;
+          }
+          if (disputes && disputes.length > 0) {
+            dataContext += `### Disputes (${disputes.length})\n`;
+            for (const d of disputes) dataContext += `- ${d.dispute_id}: ${d.reason || 'N/A'} | $${d.amount || 0} | Status: ${d.status} | Buyer: ${d.buyer_name || 'N/A'}\n`;
+          }
+          if (docs && docs.length > 0) {
+            dataContext += `### Protection Documents (${docs.length})\n`;
+            for (const d of docs) dataContext += `- ${d.title} (${d.document_type}) | Vendor signed: ${d.signed_by_vendor ? 'Yes' : 'No'} | Buyer signed: ${d.signed_by_buyer ? 'Yes' : 'No'}\n`;
+          }
+          if (payouts && payouts.length > 0) {
+            dataContext += `### Recent Payouts\n`;
+            for (const p of payouts) dataContext += `- $${p.amount} via ${p.payment_provider || 'N/A'} | Status: ${p.status} | Order: ${p.order_number || 'N/A'}\n`;
+          }
+          if (scans && scans.length > 0) {
+            dataContext += `### Document Scan Results\n`;
+            for (const s of scans) dataContext += `- ${s.document_type || 'Document'}: ${s.verdict} (${s.confidence_score || '?'}% confidence) | Country: ${s.country_detected || 'Unknown'}\n`;
+          }
+
+          // Signals
           const { data: signals } = await adminClient
             .from("ai_signals")
             .select("*")
@@ -152,14 +209,14 @@ serve(async (req) => {
             .limit(10);
 
           if (signals && signals.length > 0) {
-            signalContext = "\n\n## ⚡ ACTIVE SIGNALS FROM OTHER ASSISTANTS\nThese are live intelligence signals from your sibling AIs. Use them to proactively inform the vendor.\n";
+            signalContext = "\n\n## ⚡ ACTIVE SIGNALS FROM OTHER ASSISTANTS\n";
             for (const s of signals) {
               signalContext += `- [${s.severity.toUpperCase()}] (from ${s.source_assistant}) ${s.signal_type}: ${s.summary}\n`;
             }
           }
         }
-      } catch (sigErr) {
-        console.error("Signal read error (non-fatal):", sigErr);
+      } catch (ctxErr) {
+        console.error("Context injection error (non-fatal):", ctxErr);
       }
     }
 
@@ -221,7 +278,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT + signalContext + `\n\n## Signal Writing Protocol\nWhen a vendor reports a significant issue (damage reports, delivery problems, buyer unresponsiveness, fraud suspicion), include a signal block at the END of your response in this exact format:\n<signal type="vendor_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` },
+          { role: "system", content: SYSTEM_PROMPT + dataContext + signalContext + `\n\n## Signal Writing Protocol\nWhen a vendor reports a significant issue (damage reports, delivery problems, buyer unresponsiveness, fraud suspicion), include a signal block at the END of your response in this exact format:\n<signal type="vendor_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` },
           ...finalMessages,
         ],
         stream: true,
