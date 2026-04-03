@@ -67,7 +67,7 @@ const VendorOnboarding = lazy(() => import("./pages/vendor/VendorOnboarding"));
 const VendorLayout = lazy(() => import("./pages/vendor/VendorLayout"));
 const VendorOverview = lazy(() => import("./pages/vendor/VendorOverview"));
 const VendorTransactions = lazy(() => import("./pages/vendor/VendorTransactions"));
-const VendorPayouts = lazy(() => import("./pages/vendor/VendorPayouts"));
+
 const VendorSites = lazy(() => import("./pages/vendor/VendorSites"));
 const VendorKYC = lazy(() => import("./pages/vendor/VendorKYC"));
 const VendorDocuments = lazy(() => import("./pages/vendor/VendorDocuments"));
@@ -154,7 +154,7 @@ const App = () => (
                 <Route index element={<VendorOverview />} />
                 <Route path="bill-payments" element={<VendorBillPayments />} />
                 <Route path="transactions" element={<VendorTransactions />} />
-                <Route path="payouts" element={<VendorPayouts />} />
+                
                 <Route path="sites" element={<VendorSites />} />
                 <Route path="kyc" element={<VendorKYC />} />
                 <Route path="assistant" element={<VendorAssistant />} />
