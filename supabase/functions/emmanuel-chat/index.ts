@@ -724,6 +724,39 @@ serve(async (req) => {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "resolve_signal",
+          description: "Mark an AI coordination signal as resolved after the admin has addressed the issue.",
+          parameters: {
+            type: "object",
+            properties: {
+              signal_id: { type: "string", description: "UUID of the signal to resolve" },
+            },
+            required: ["signal_id"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "emit_signal",
+          description: "Create a new AI coordination signal to alert Amani (vendor assistant) or Zawadi (buyer assistant) about something important.",
+          parameters: {
+            type: "object",
+            properties: {
+              signal_type: { type: "string", description: "Type of signal (e.g., admin_warning, fraud_alert, compliance_hold)" },
+              target_role: { type: "string", enum: ["vendor", "buyer", "all"], description: "Which assistant should receive this signal" },
+              severity: { type: "string", enum: ["info", "warning", "critical"], description: "Severity level" },
+              summary: { type: "string", description: "Brief summary of the signal" },
+              user_id: { type: "string", description: "Optional: target user UUID" },
+              transaction_id: { type: "string", description: "Optional: related transaction UUID" },
+            },
+            required: ["signal_type", "target_role", "severity", "summary"],
+          },
+        },
+      },
     ];
 
     // Helper to call emmanuel-analytics
