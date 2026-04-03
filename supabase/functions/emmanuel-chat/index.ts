@@ -759,8 +759,28 @@ serve(async (req) => {
       },
     ];
 
-    // Helper to call emmanuel-analytics
+    // Helper to call emmanuel-analytics or handle signal tools locally
     async function callAnalytics(action: string, params: Record<string, any> = {}) {
+      // Handle signal tools locally
+      if (action === "resolve_signal") {
+        const svcClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const { error } = await svcClient.from("ai_signals").update({ is_resolved: true, resolved_at: new Date().toISOString() }).eq("id", params.signal_id);
+        return error ? { error: error.message } : { success: true, message: `Signal ${params.signal_id} resolved` };
+      }
+      if (action === "emit_signal") {
+        const svcClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const { error } = await svcClient.from("ai_signals").insert({
+          signal_type: params.signal_type,
+          source_assistant: "emmanuel",
+          target_role: params.target_role,
+          severity: params.severity,
+          summary: params.summary,
+          user_id: params.user_id || null,
+          transaction_id: params.transaction_id || null,
+        });
+        return error ? { error: error.message } : { success: true, message: `Signal emitted to ${params.target_role}` };
+      }
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {
         method: "POST",
         headers: {
