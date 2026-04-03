@@ -477,9 +477,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
           </Button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{getOtherParticipant(selectedThread)}</p>
-            <p className="text-[10px] text-muted-foreground truncate">
-              {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] text-muted-foreground truncate">
+                {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
+              </p>
+              {selectedThread.transaction_id && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">
+                  Order linked
+                </Badge>
+              )}
+            </div>
           </div>
           {isLocked && <Badge variant="destructive" className="text-[9px]">Locked</Badge>}
         </div>
