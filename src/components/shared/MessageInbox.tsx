@@ -74,6 +74,72 @@ interface MessageInboxProps {
   transactionLabel?: string;
 }
 
+const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
+  const [translated, setTranslated] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  let langCtx: ReturnType<typeof useLanguage> | null = null;
+  try { langCtx = useLanguage(); } catch { /* LanguageProvider may not be present */ }
+
+  const handleTranslate = async () => {
+    if (translated) { setTranslated(null); return; } // toggle off
+    if (!langCtx) return;
+    setTranslating(true);
+    try {
+      const result = await langCtx.translateMessage(msg.body);
+      setTranslated(result);
+    } catch {
+      toast.error("Translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const { sanitized, hadLinks } = sanitizeLinks(translated || msg.body);
+
+  return (
+    <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+      <div className={cn(
+        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+        isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+      )}>
+        <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+        {hadLinks && (
+          <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+            <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
+          </span>
+        )}
+        <div className={cn("flex items-center gap-1.5 mt-1", isMine ? "justify-end" : "justify-start")}>
+          <p className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
+            {format(new Date(msg.created_at), "MMM d, h:mm a")}
+          </p>
+          {langCtx && (
+            <button
+              onClick={handleTranslate}
+              disabled={translating}
+              className={cn(
+                "inline-flex items-center gap-0.5 text-[9px] rounded px-1 py-0.5 transition-colors",
+                isMine
+                  ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10",
+                translated && "underline"
+              )}
+              title={translated ? "Show original" : `Translate to ${langCtx.language.label}`}
+            >
+              {translating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Languages className="w-2.5 h-2.5" />}
+              {translated ? "Original" : "Translate"}
+            </button>
+          )}
+        </div>
+        {translated && (
+          <p className={cn("text-[9px] italic mt-0.5", isMine ? "text-primary-foreground/50" : "text-muted-foreground/70")}>
+            Translated to {langCtx?.language.label}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxProps) => {
   const { user } = useAuth();
   const userId = user?.id;
