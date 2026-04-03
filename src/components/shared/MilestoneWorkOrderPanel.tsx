@@ -322,18 +322,20 @@ const MilestoneWorkOrderPanel = ({
     await updateMilestone.mutateAsync({ milestoneId, userId, description: notes[milestoneId] ?? "" });
   };
 
-  /** Check if a milestone's required documents have been uploaded */
-  const isMilestoneDocGateSatisfied = (ms: any): boolean => {
-    const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
-    if (requiredDocs.length === 0) return true;
+  /** Build a set of uploaded doc keys for matching */
+  const getUploadedKeys = (ms: any): Set<string> => {
     const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
-    // Match by document_type OR by file name containing the required doc keyword
-    const uploadedKeys = new Set<string>();
+    const keys = new Set<string>();
     for (const d of uploadedDocs) {
-      if (d.document_type) uploadedKeys.add(d.document_type.toLowerCase());
-      if (d.name) uploadedKeys.add(d.name.toLowerCase());
+      if (d.document_type) keys.add(d.document_type.toLowerCase());
+      if (d.name) keys.add(d.name.toLowerCase());
     }
-    return requiredDocs.every((doc: string) => {
+    return keys;
+  };
+
+  /** Check if a specific doc list is satisfied against uploads */
+  const areDocsSatisfied = (docList: string[], uploadedKeys: Set<string>): boolean => {
+    return docList.every((doc: string) => {
       const docLower = doc.toLowerCase();
       for (const key of uploadedKeys) {
         if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
@@ -341,6 +343,48 @@ const MilestoneWorkOrderPanel = ({
       return false;
     });
   };
+
+  /** 
+   * Three-tier document gate:
+   * - "required" → hard block (must upload all required_documents)
+   * - "optional" → soft warning (recommend but allow)
+   * - "none"     → pass silently
+   */
+  const getDocGateStatus = (ms: any): { mode: string; satisfied: boolean; missingRequired: string[]; missingOptional: string[] } => {
+    const mode: string = ms.document_mode || "none";
+    const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
+    const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+    const uploadedKeys = getUploadedKeys(ms);
+
+    if (mode === "none" && requiredDocs.length === 0) {
+      return { mode: "none", satisfied: true, missingRequired: [], missingOptional: [] };
+    }
+
+    const effectiveMode = requiredDocs.length > 0 ? (mode === "none" ? "required" : mode) : mode;
+
+    const missingRequired = requiredDocs.filter((doc) => {
+      const docLower = doc.toLowerCase();
+      for (const key of uploadedKeys) {
+        if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return false;
+      }
+      return true;
+    });
+
+    const missingOptional = optionalDocs.filter((doc) => {
+      const docLower = doc.toLowerCase();
+      for (const key of uploadedKeys) {
+        if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return false;
+      }
+      return true;
+    });
+
+    const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
+
+    return { mode: effectiveMode, satisfied, missingRequired, missingOptional };
+  };
+
+  /** Legacy compat wrapper */
+  const isMilestoneDocGateSatisfied = (ms: any): boolean => getDocGateStatus(ms).satisfied;
 
   const handleMarkFulfilled = async (milestoneId: string) => {
     if (isTestnet) {
