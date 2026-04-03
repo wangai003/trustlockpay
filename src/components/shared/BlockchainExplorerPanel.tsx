@@ -592,6 +592,19 @@ function ProofDetail({ proof, onBack, copyHash, truncate, onNavigateToSource }: 
         </a>
       )}
 
+      {/* Navigate to Source */}
+      {proof.transaction_id && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center gap-2 border-primary/30 text-primary hover:bg-primary/10"
+          onClick={() => onNavigateToSource(proof.transaction_id!)}
+        >
+          <ArrowUpRight className="w-4 h-4" />
+          View Source Order / Transaction
+        </Button>
+      )}
+
       {/* Chain Link Visualization */}
       <div className="border border-primary/20 bg-primary/5 rounded-lg p-3">
         <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
