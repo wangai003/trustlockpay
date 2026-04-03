@@ -365,10 +365,10 @@ const BuyerOrders = () => {
                   </div>
                   {expandedOrder === order.id && (
                     <div className="mt-3 border-t border-border pt-3 space-y-3">
-                      <MilestoneTimeline industry={order.industry} status={order.status} />
+                      <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
-                        <MilestoneProgress industry={order.industry} status={order.status} />
+                        <MilestoneProgress industry={order.industry} status={order.status} transactionId={order.dbId} />
                       </details>
                       {isMilestoneIndustry(order.industry) && order.status === "locked" && (
                         <>
