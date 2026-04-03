@@ -648,6 +648,53 @@ export type Database = {
           },
         ]
       }
+      gas_reserve_ledger: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          id: string
+          matic_price_usd: number
+          order_amount: number
+          reserve_matic: number
+          reserve_rate: number
+          reserve_usd: number
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          id?: string
+          matic_price_usd?: number
+          order_amount?: number
+          reserve_matic?: number
+          reserve_rate?: number
+          reserve_usd?: number
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          id?: string
+          matic_price_usd?: number
+          order_amount?: number
+          reserve_matic?: number
+          reserve_rate?: number
+          reserve_usd?: number
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gas_reserve_ledger_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       industry_templates: {
         Row: {
           compliance_requirements: string[] | null
