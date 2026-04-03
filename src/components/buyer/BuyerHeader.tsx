@@ -2,16 +2,20 @@ import { useNavigate } from "react-router-dom";
 import { useBuyer } from "@/contexts/BuyerContext";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { LogOut } from "lucide-react";
+import { LogOut, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 import SearchBar from "@/components/shared/SearchBar";
 import LanguageSelector from "@/components/shared/LanguageSelector";
 import TLId from "@/components/shared/TLId";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useAuth } from "@/hooks/useAuth";
 
 const BuyerHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, buyer } = useBuyer();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const unread = useUnreadMessages("buyer", user?.id);
 
   const handleLogout = () => {
     localStorage.removeItem("tl_buyer_auth");
@@ -50,6 +54,23 @@ const BuyerHeader = ({ title }: { title: string }) => {
 
           <TLId code="TL-B-HDR-BTN-LANGUAGE" inline>
             <LanguageSelector compact />
+          </TLId>
+
+          <TLId code="TL-B-HDR-BTN-MESSAGES" inline>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative w-8 h-8"
+              onClick={() => navigate("/trustlock/buyer/messages")}
+              title="Messages"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-destructive rounded-full text-[9px] text-destructive-foreground flex items-center justify-center">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </Button>
           </TLId>
 
           <TLId code="TL-B-HDR-BTN-AVATAR" inline>
