@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, FileText, Send, ShieldCheck, Truck } from "lucide-react";
-import { milestoneTemplates } from "@/components/shared/industryPlaybookData";
+import { INDUSTRY_MILESTONE_MAP } from "@/components/shared/industryPlaybookData";
 
 interface ShipmentConfirmModalProps {
   open: boolean;
