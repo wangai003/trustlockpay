@@ -196,7 +196,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT + signalContext + `\n\n## Signal Writing Protocol\nWhen a buyer reports a significant issue (damaged goods, non-delivery, vendor fraud, payment problems), include a signal block at the END of your response in this exact format:\n<signal type="buyer_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` }, ...finalMessages],
+        messages: [{ role: "system", content: SYSTEM_PROMPT + dataContext + signalContext + `\n\n## Signal Writing Protocol\nWhen a buyer reports a significant issue (damaged goods, non-delivery, vendor fraud, payment problems), include a signal block at the END of your response in this exact format:\n<signal type="buyer_reported_issue" severity="warning" summary="Brief description"></signal>\nSeverity levels: info, warning, critical. Only emit signals for actionable issues — NOT for general questions.` }, ...finalMessages],
         stream: true,
       }),
     });
