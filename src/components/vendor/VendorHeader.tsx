@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 import SearchBar from "@/components/shared/SearchBar";
+import LanguageSelector from "@/components/shared/LanguageSelector";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
 
