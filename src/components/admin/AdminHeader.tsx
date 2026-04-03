@@ -37,6 +37,8 @@ const AdminHeader = ({ title }: { title: string }) => {
 
           <NotificationCenter role="admin" />
 
+          <LanguageSelector compact />
+
           <Button variant="ghost" size="icon" className="relative w-8 h-8 hidden sm:flex">
             <MessageSquare className="w-4 h-4" />
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent rounded-full text-[9px] text-accent-foreground flex items-center justify-center">
