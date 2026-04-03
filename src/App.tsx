@@ -154,7 +154,7 @@ const App = () => (
                 <Route index element={<VendorOverview />} />
                 <Route path="bill-payments" element={<VendorBillPayments />} />
                 <Route path="transactions" element={<VendorTransactions />} />
-                <Route path="payouts" element={<VendorPayouts />} />
+                
                 <Route path="sites" element={<VendorSites />} />
                 <Route path="kyc" element={<VendorKYC />} />
                 <Route path="assistant" element={<VendorAssistant />} />
