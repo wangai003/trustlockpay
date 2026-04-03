@@ -12,20 +12,22 @@ const AdminLayoutInner = () => {
   useSessionTimeout("/trustlock/admin/login");
 
   return (
-    <AdminProvider>
-      <div className="flex min-h-screen bg-background">
-        <AdminSidebar />
-        <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
-          <TestnetGuide role="admin" />
-          <Outlet />
-        </main>
-        <CommandPalette role="admin" />
-        <MobileBottomNav role="admin" />
-        <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
-          <BlockchainExplorerPanel />
+    <LanguageProvider>
+      <AdminProvider>
+        <div className="flex min-h-screen bg-background">
+          <AdminSidebar />
+          <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+            <TestnetGuide role="admin" />
+            <Outlet />
+          </main>
+          <CommandPalette role="admin" />
+          <MobileBottomNav role="admin" />
+          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+            <BlockchainExplorerPanel />
+          </div>
         </div>
-      </div>
-    </AdminProvider>
+      </AdminProvider>
+    </LanguageProvider>
   );
 };
 
