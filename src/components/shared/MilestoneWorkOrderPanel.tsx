@@ -485,6 +485,7 @@ const MilestoneWorkOrderPanel = ({
         <CardContent className="space-y-3">
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
+            const docGatePassed = isMilestoneDocGateSatisfied(ms);
             const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released";
             const canBuyerRelease =
               role === "buyer" &&
