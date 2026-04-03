@@ -760,6 +760,10 @@ async function createMilestones(body: Record<string, unknown>) {
       paymentAmount = idx === milestoneCount - 1 ? equalShareLast : equalShare;
     }
 
+    // Determine document mode: required (hard block), optional (warn), none (pass)
+    const docMode = typeof m.document_mode === "string" ? m.document_mode : "none";
+    const optionalDocs = Array.isArray(m.optional_documents) ? m.optional_documents : [];
+
     return {
       transaction_id: String(transaction_id),
       title: String(m.title ?? `Milestone ${idx + 1}`),
@@ -767,6 +771,8 @@ async function createMilestones(body: Record<string, unknown>) {
       position: idx,
       status: "pending",
       required_documents: Array.isArray(m.required_documents) ? m.required_documents : [],
+      optional_documents: optionalDocs,
+      document_mode: docMode,
       assigned_to: m.assigned_to ? String(m.assigned_to) : null,
       is_payment_milestone: Boolean(m.is_payment_milestone),
       payment_amount: paymentAmount,

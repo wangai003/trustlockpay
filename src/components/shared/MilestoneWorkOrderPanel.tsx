@@ -322,18 +322,20 @@ const MilestoneWorkOrderPanel = ({
     await updateMilestone.mutateAsync({ milestoneId, userId, description: notes[milestoneId] ?? "" });
   };
 
-  /** Check if a milestone's required documents have been uploaded */
-  const isMilestoneDocGateSatisfied = (ms: any): boolean => {
-    const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
-    if (requiredDocs.length === 0) return true;
+  /** Build a set of uploaded doc keys for matching */
+  const getUploadedKeys = (ms: any): Set<string> => {
     const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
-    // Match by document_type OR by file name containing the required doc keyword
-    const uploadedKeys = new Set<string>();
+    const keys = new Set<string>();
     for (const d of uploadedDocs) {
-      if (d.document_type) uploadedKeys.add(d.document_type.toLowerCase());
-      if (d.name) uploadedKeys.add(d.name.toLowerCase());
+      if (d.document_type) keys.add(d.document_type.toLowerCase());
+      if (d.name) keys.add(d.name.toLowerCase());
     }
-    return requiredDocs.every((doc: string) => {
+    return keys;
+  };
+
+  /** Check if a specific doc list is satisfied against uploads */
+  const areDocsSatisfied = (docList: string[], uploadedKeys: Set<string>): boolean => {
+    return docList.every((doc: string) => {
       const docLower = doc.toLowerCase();
       for (const key of uploadedKeys) {
         if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
@@ -342,25 +344,77 @@ const MilestoneWorkOrderPanel = ({
     });
   };
 
+  /** 
+   * Three-tier document gate:
+   * - "required" → hard block (must upload all required_documents)
+   * - "optional" → soft warning (recommend but allow)
+   * - "none"     → pass silently
+   */
+  const getDocGateStatus = (ms: any): { mode: string; satisfied: boolean; missingRequired: string[]; missingOptional: string[] } => {
+    const mode: string = ms.document_mode || "none";
+    const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
+    const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+    const uploadedKeys = getUploadedKeys(ms);
+
+    if (mode === "none" && requiredDocs.length === 0) {
+      return { mode: "none", satisfied: true, missingRequired: [], missingOptional: [] };
+    }
+
+    const effectiveMode = requiredDocs.length > 0 ? (mode === "none" ? "required" : mode) : mode;
+
+    const missingRequired = requiredDocs.filter((doc) => {
+      const docLower = doc.toLowerCase();
+      for (const key of uploadedKeys) {
+        if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return false;
+      }
+      return true;
+    });
+
+    const missingOptional = optionalDocs.filter((doc) => {
+      const docLower = doc.toLowerCase();
+      for (const key of uploadedKeys) {
+        if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return false;
+      }
+      return true;
+    });
+
+    const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
+
+    return { mode: effectiveMode, satisfied, missingRequired, missingOptional };
+  };
+
+  /** Legacy compat wrapper */
+  const isMilestoneDocGateSatisfied = (ms: any): boolean => getDocGateStatus(ms).satisfied;
+
   const handleMarkFulfilled = async (milestoneId: string) => {
     if (isTestnet) {
       // Even in testnet, enforce doc gate
       const milestone = (testnetMilestones || []).find((m) => m.id === milestoneId) as any;
-      if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
-        const requiredDocs: string[] = milestone.required_documents || [];
-        toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
-        return;
+      if (milestone) {
+        const gate = getDocGateStatus(milestone);
+        if (gate.mode === "required" && !gate.satisfied) {
+          toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
+          return;
+        }
+        if (gate.mode === "optional" && gate.missingOptional.length > 0) {
+          toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
+        }
       }
       onTestnetUpdateStatus?.(milestoneId, "completed");
       return;
     }
 
-    // Document gate enforcement
+    // 3-tier document gate enforcement
     const milestone = milestones.find((m: any) => m.id === milestoneId) as any;
-    if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
-      const requiredDocs: string[] = milestone.required_documents || [];
-      toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
-      return;
+    if (milestone) {
+      const gate = getDocGateStatus(milestone);
+      if (gate.mode === "required" && !gate.satisfied) {
+        toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
+        return;
+      }
+      if (gate.mode === "optional" && gate.missingOptional.length > 0) {
+        toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
+      }
     }
 
     const userId = await getUserId();
@@ -485,7 +539,8 @@ const MilestoneWorkOrderPanel = ({
         <CardContent className="space-y-3">
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
-            const docGatePassed = isMilestoneDocGateSatisfied(ms);
+            const gateStatus = getDocGateStatus(ms);
+            const docGatePassed = gateStatus.satisfied;
             const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released";
             const canBuyerRelease =
               role === "buyer" &&
@@ -536,34 +591,69 @@ const MilestoneWorkOrderPanel = ({
                   </div>
                 </TLId>
 
-                {/* Required Documents Checklist */}
+                {/* Document Gate Checklist — 3-tier: required / optional / none */}
                 {(() => {
                   const requiredDocs: string[] = ms.required_documents || [];
+                  const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
                   const uploadedDocs: any[] = ms.uploaded_documents || [];
-                  if (requiredDocs.length === 0) return null;
-                  const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
-                  const allSatisfied = requiredDocs.every((d: string) => uploadedTypes.has(d));
+                  if (requiredDocs.length === 0 && optionalDocs.length === 0) return null;
+
+                  const uploadedKeys = getUploadedKeys(ms);
+                  const checkDoc = (doc: string) => {
+                    const docLower = doc.toLowerCase();
+                    for (const key of uploadedKeys) {
+                      if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
+                    }
+                    return false;
+                  };
+
                   return (
-                    <div className="rounded-md border border-border p-2 space-y-1">
-                      <p className="text-[10px] font-semibold flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3" /> Required Documents
-                        {allSatisfied ? (
-                          <Badge variant="outline" className="text-[8px] ml-1 border-primary/30 text-primary">All uploaded</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[8px] ml-1 border-destructive/30 text-destructive">Incomplete</Badge>
-                        )}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {requiredDocs.map((doc: string) => {
-                          const isMet = uploadedTypes.has(doc);
-                          return (
-                            <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"}`}>
-                              {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
-                              {doc}
+                    <div className="rounded-md border border-border p-2 space-y-2">
+                      {/* Required docs — hard gate */}
+                      {requiredDocs.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-semibold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Required Documents
+                            <Badge variant="outline" className={`text-[8px] ml-1 ${gateStatus.missingRequired.length === 0 ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}`}>
+                              {gateStatus.missingRequired.length === 0 ? "All uploaded" : `${gateStatus.missingRequired.length} missing — blocks fulfillment`}
                             </Badge>
-                          );
-                        })}
-                      </div>
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {requiredDocs.map((doc: string) => {
+                              const isMet = checkDoc(doc);
+                              return (
+                                <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"}`}>
+                                  {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                                  {doc}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Optional docs — soft warning */}
+                      {optionalDocs.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-semibold flex items-center gap-1 text-muted-foreground">
+                            <FileWarning className="w-3 h-3" /> Recommended Documents
+                            <Badge variant="outline" className="text-[8px] ml-1 border-muted-foreground/30 text-muted-foreground">
+                              {gateStatus.missingOptional.length === 0 ? "All uploaded" : `${gateStatus.missingOptional.length} pending — won't block`}
+                            </Badge>
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {optionalDocs.map((doc: string) => {
+                              const isMet = checkDoc(doc);
+                              return (
+                                <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/30 text-muted-foreground"}`}>
+                                  {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <FileWarning className="w-2.5 h-2.5 mr-0.5" />}
+                                  {doc}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -638,10 +728,12 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 </div>
 
-                {/* Document Type Selector (for required document gates) */}
+                {/* Document Type Selector (for required + optional document gates) */}
                 {(() => {
                   const requiredDocs: string[] = ms.required_documents || [];
-                  if (requiredDocs.length === 0) return null;
+                  const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+                  const allDocs = [...requiredDocs, ...optionalDocs];
+                  if (allDocs.length === 0) return null;
                   return (
                     <div className="space-y-1">
                       <label className="text-[10px] font-medium">Tag upload as document type:</label>
@@ -655,7 +747,10 @@ const MilestoneWorkOrderPanel = ({
                         <SelectContent>
                           <SelectItem value="general">General Evidence</SelectItem>
                           {requiredDocs.map((doc: string) => (
-                            <SelectItem key={doc} value={doc}>{doc}</SelectItem>
+                            <SelectItem key={doc} value={doc}>🔒 {doc}</SelectItem>
+                          ))}
+                          {optionalDocs.map((doc: string) => (
+                            <SelectItem key={doc} value={doc}>📎 {doc} (recommended)</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -725,16 +820,22 @@ const MilestoneWorkOrderPanel = ({
                         <Button
                           size="sm"
                           onClick={() => handleMarkFulfilled(ms.id)}
-                          disabled={!docGatePassed && (ms.required_documents || []).length > 0}
-                          variant={!docGatePassed && (ms.required_documents || []).length > 0 ? "outline" : "default"}
+                          disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                          variant={gateStatus.mode === "required" && !gateStatus.satisfied ? "outline" : "default"}
                         >
                           <CheckCircle2 className="w-3 h-3 mr-1" />
                           {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
                         </Button>
-                        {!docGatePassed && (ms.required_documents || []).length > 0 && (
+                        {gateStatus.mode === "required" && !gateStatus.satisfied && (
                           <p className="text-[9px] text-destructive flex items-center gap-0.5">
                             <AlertTriangle className="w-2.5 h-2.5" />
-                            Upload required documents to unlock
+                            Upload {gateStatus.missingRequired.length} required document(s) to unlock
+                          </p>
+                        )}
+                        {gateStatus.mode === "optional" && gateStatus.missingOptional.length > 0 && gateStatus.satisfied && (
+                          <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                            <FileWarning className="w-2.5 h-2.5" />
+                            {gateStatus.missingOptional.length} recommended doc(s) pending — you can still proceed
                           </p>
                         )}
                       </div>
