@@ -322,23 +322,45 @@ const MilestoneWorkOrderPanel = ({
     await updateMilestone.mutateAsync({ milestoneId, userId, description: notes[milestoneId] ?? "" });
   };
 
+  /** Check if a milestone's required documents have been uploaded */
+  const isMilestoneDocGateSatisfied = (ms: any): boolean => {
+    const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
+    if (requiredDocs.length === 0) return true;
+    const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
+    // Match by document_type OR by file name containing the required doc keyword
+    const uploadedKeys = new Set<string>();
+    for (const d of uploadedDocs) {
+      if (d.document_type) uploadedKeys.add(d.document_type.toLowerCase());
+      if (d.name) uploadedKeys.add(d.name.toLowerCase());
+    }
+    return requiredDocs.every((doc: string) => {
+      const docLower = doc.toLowerCase();
+      for (const key of uploadedKeys) {
+        if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
+      }
+      return false;
+    });
+  };
+
   const handleMarkFulfilled = async (milestoneId: string) => {
     if (isTestnet) {
+      // Even in testnet, enforce doc gate
+      const milestone = (testnetMilestones || []).find((m) => m.id === milestoneId);
+      if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
+        const requiredDocs: string[] = milestone.required_documents || [];
+        toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
+        return;
+      }
       onTestnetUpdateStatus?.(milestoneId, "completed");
       return;
     }
 
-    // Document gate enforcement: check required docs are uploaded
+    // Document gate enforcement
     const milestone = milestones.find((m: any) => m.id === milestoneId);
-    if (milestone) {
-      const requiredDocs: string[] = Array.isArray((milestone as any).required_documents) ? (milestone as any).required_documents : [];
-      const uploadedDocs: any[] = Array.isArray((milestone as any).uploaded_documents) ? (milestone as any).uploaded_documents : [];
-      const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
-      const missingDocs = requiredDocs.filter((d: string) => !uploadedTypes.has(d));
-      if (missingDocs.length > 0) {
-        toast.error(`Cannot fulfill — missing required documents: ${missingDocs.join(", ")}`);
-        return;
-      }
+    if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
+      const requiredDocs: string[] = milestone.required_documents || [];
+      toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
+      return;
     }
 
     const userId = await getUserId();
