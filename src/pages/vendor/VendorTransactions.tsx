@@ -280,7 +280,7 @@ const VendorTransactions = () => {
                         <div><p className="text-muted-foreground">Buyer Location</p><p className="font-medium">{tx.buyerLocation}</p></div>
                         <div><p className="text-muted-foreground">Tracking</p><p className="font-medium font-mono">{tx.tracking || "—"}</p></div>
                       </div>
-                      <MilestoneTimeline industry={tx.industry} status={tx.status} />
+                      <MilestoneTimeline industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                     </div>
                   )}
                 </CardContent>
