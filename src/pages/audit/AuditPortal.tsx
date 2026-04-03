@@ -30,6 +30,7 @@ const TABLE_LABELS: Record<string, string> = {
   payout_requests: "Payout Requests",
   order_carbon_copies: "Order Carbon Copies",
   tax_ledger: "Tax & Tariff Collections",
+  blockchain_proofs: "Blockchain Proofs",
 };
 
 const AuditPortal = () => {
