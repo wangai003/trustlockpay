@@ -5,6 +5,7 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 import SearchBar from "@/components/shared/SearchBar";
+import LanguageSelector from "@/components/shared/LanguageSelector";
 
 const AdminHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet } = useAdmin();
@@ -35,6 +36,8 @@ const AdminHeader = ({ title }: { title: string }) => {
           <SearchBar onOpen={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))} />
 
           <NotificationCenter role="admin" />
+
+          <LanguageSelector compact />
 
           <Button variant="ghost" size="icon" className="relative w-8 h-8 hidden sm:flex">
             <MessageSquare className="w-4 h-4" />

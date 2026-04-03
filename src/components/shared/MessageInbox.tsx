@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Plus, Shield, LinkIcon } from "lucide-react";
+import { ArrowLeft, Send, Plus, Shield, LinkIcon, Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -72,6 +73,72 @@ interface MessageInboxProps {
   transactionId?: string;
   transactionLabel?: string;
 }
+
+const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
+  const [translated, setTranslated] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  let langCtx: ReturnType<typeof useLanguage> | null = null;
+  try { langCtx = useLanguage(); } catch { /* LanguageProvider may not be present */ }
+
+  const handleTranslate = async () => {
+    if (translated) { setTranslated(null); return; } // toggle off
+    if (!langCtx) return;
+    setTranslating(true);
+    try {
+      const result = await langCtx.translateMessage(msg.body);
+      setTranslated(result);
+    } catch {
+      toast.error("Translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const { sanitized, hadLinks } = sanitizeLinks(translated || msg.body);
+
+  return (
+    <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+      <div className={cn(
+        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+        isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+      )}>
+        <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+        {hadLinks && (
+          <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+            <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
+          </span>
+        )}
+        <div className={cn("flex items-center gap-1.5 mt-1", isMine ? "justify-end" : "justify-start")}>
+          <p className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
+            {format(new Date(msg.created_at), "MMM d, h:mm a")}
+          </p>
+          {langCtx && (
+            <button
+              onClick={handleTranslate}
+              disabled={translating}
+              className={cn(
+                "inline-flex items-center gap-0.5 text-[9px] rounded px-1 py-0.5 transition-colors",
+                isMine
+                  ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10",
+                translated && "underline"
+              )}
+              title={translated ? "Show original" : `Translate to ${langCtx.language.label}`}
+            >
+              {translating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Languages className="w-2.5 h-2.5" />}
+              {translated ? "Original" : "Translate"}
+            </button>
+          )}
+        </div>
+        {translated && (
+          <p className={cn("text-[9px] italic mt-0.5", isMine ? "text-primary-foreground/50" : "text-muted-foreground/70")}>
+            Translated to {langCtx?.language.label}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxProps) => {
   const { user } = useAuth();
@@ -496,29 +563,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             {messages.map((msg) => {
               const isMine = msg.sender_id === effectiveUserId;
               return (
-                <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
-                  <div className={cn(
-                    "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                    isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                  )}>
-                    {(() => {
-                      const { sanitized, hadLinks } = sanitizeLinks(msg.body);
-                      return (
-                        <>
-                          <p className="whitespace-pre-wrap break-words">{sanitized}</p>
-                          {hadLinks && (
-                            <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
-                              <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                    <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                      {format(new Date(msg.created_at), "MMM d, h:mm a")}
-                    </p>
-                  </div>
-                </div>
+                <MessageBubble key={msg.id} msg={msg} isMine={isMine} />
               );
             })}
             <div ref={messagesEndRef} />
