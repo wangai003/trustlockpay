@@ -27,6 +27,7 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 
