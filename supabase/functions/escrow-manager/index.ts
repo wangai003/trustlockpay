@@ -764,6 +764,11 @@ async function createMilestones(body: Record<string, unknown>) {
     const docMode = typeof m.document_mode === "string" ? m.document_mode : "none";
     const optionalDocs = Array.isArray(m.optional_documents) ? m.optional_documents : [];
 
+    // Estimated duration in days for Gantt timeline
+    const estimatedDays = typeof m.estimated_days === "number" && m.estimated_days > 0
+      ? m.estimated_days
+      : 7; // default 7 days per milestone
+
     return {
       transaction_id: String(transaction_id),
       title: String(m.title ?? `Milestone ${idx + 1}`),
@@ -776,6 +781,7 @@ async function createMilestones(body: Record<string, unknown>) {
       assigned_to: m.assigned_to ? String(m.assigned_to) : null,
       is_payment_milestone: Boolean(m.is_payment_milestone),
       payment_amount: paymentAmount,
+      estimated_days: estimatedDays,
     };
   });
 

@@ -2540,6 +2540,7 @@ export type Database = {
           created_at: string
           description: string | null
           document_mode: string
+          estimated_days: number
           gps_accuracy: number | null
           gps_captured_at: string | null
           gps_latitude: number | null
@@ -2567,6 +2568,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           document_mode?: string
+          estimated_days?: number
           gps_accuracy?: number | null
           gps_captured_at?: string | null
           gps_latitude?: number | null
@@ -2594,6 +2596,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           document_mode?: string
+          estimated_days?: number
           gps_accuracy?: number | null
           gps_captured_at?: string | null
           gps_latitude?: number | null
