@@ -2539,6 +2539,7 @@ export type Database = {
           completed_by: string | null
           created_at: string
           description: string | null
+          document_mode: string
           gps_accuracy: number | null
           gps_captured_at: string | null
           gps_latitude: number | null
@@ -2548,6 +2549,7 @@ export type Database = {
           observer_id: string | null
           observer_signed: boolean | null
           observer_signed_at: string | null
+          optional_documents: Json
           payment_amount: number | null
           payment_released: boolean | null
           position: number
@@ -2564,6 +2566,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          document_mode?: string
           gps_accuracy?: number | null
           gps_captured_at?: string | null
           gps_latitude?: number | null
@@ -2573,6 +2576,7 @@ export type Database = {
           observer_id?: string | null
           observer_signed?: boolean | null
           observer_signed_at?: string | null
+          optional_documents?: Json
           payment_amount?: number | null
           payment_released?: boolean | null
           position?: number
@@ -2589,6 +2593,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          document_mode?: string
           gps_accuracy?: number | null
           gps_captured_at?: string | null
           gps_latitude?: number | null
@@ -2598,6 +2603,7 @@ export type Database = {
           observer_id?: string | null
           observer_signed?: boolean | null
           observer_signed_at?: string | null
+          optional_documents?: Json
           payment_amount?: number | null
           payment_released?: boolean | null
           position?: number
