@@ -475,6 +475,7 @@ const VendorTransactions = () => {
                                   <p className="font-medium">{tx.date}</p>
                                 </div>
                               </div>
+                              <IndustryBlueprintCard industry={tx.industry} />
                               <MilestoneTimeline industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                               <details className="text-xs">
                                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
