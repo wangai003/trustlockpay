@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, FileText, Clock, ChevronRight, Layers, PlayCircle
+  Link2, Hash, FileText, Clock, ChevronRight, Layers, PlayCircle, ArrowUpRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -250,6 +251,8 @@ const DEMO_PROOFS: ProofRecord[] = [
 ];
 
 const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainExplorerPanelProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(defaultTransactionId || "");
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
@@ -394,7 +397,19 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
 
             <ScrollArea className="flex-1">
               {selectedProof ? (
-                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} />
+                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={(txId) => {
+                  setOpen(false);
+                  const path = location.pathname;
+                  if (path.includes("/admin")) {
+                    navigate(`/trustlock/admin/transactions`);
+                  } else if (path.includes("/buyer")) {
+                    navigate(`/trustlock/buyer/orders`);
+                  } else if (path.includes("/vendor")) {
+                    navigate(`/trustlock/vendor/transactions`);
+                  } else {
+                    navigate(`/trustlock/admin/transactions`);
+                  }
+                }} />
               ) : (
                 <ProofTimeline proofs={proofs} onSelect={setSelectedProof} truncate={truncate} loading={loading} />
               )}
@@ -494,11 +509,12 @@ function ProofTimeline({ proofs, onSelect, truncate, loading }: {
 }
 
 /* ─── Detail View ────────────────────────────────── */
-function ProofDetail({ proof, onBack, copyHash, truncate }: {
+function ProofDetail({ proof, onBack, copyHash, truncate, onNavigateToSource }: {
   proof: ProofRecord;
   onBack: () => void;
   copyHash: (h: string) => void;
   truncate: (h: string) => string;
+  onNavigateToSource: (transactionId: string) => void;
 }) {
   const typeInfo = RECORD_TYPE_LABELS[proof.record_type] || { label: proof.record_type, color: "bg-muted text-muted-foreground" };
 
@@ -574,6 +590,19 @@ function ProofDetail({ proof, onBack, copyHash, truncate }: {
           <ExternalLink className="w-4 h-4" />
           View on PolygonScan →
         </a>
+      )}
+
+      {/* Navigate to Source */}
+      {proof.transaction_id && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center gap-2 border-primary/30 text-primary hover:bg-primary/10"
+          onClick={() => onNavigateToSource(proof.transaction_id!)}
+        >
+          <ArrowUpRight className="w-4 h-4" />
+          View Source Order / Transaction
+        </Button>
       )}
 
       {/* Chain Link Visualization */}
