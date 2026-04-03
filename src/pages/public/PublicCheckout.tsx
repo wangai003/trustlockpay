@@ -308,6 +308,9 @@ const PublicCheckout = () => {
               <p className="text-xs text-muted-foreground">From: {vendorName} · Ref: {refId}</p>
             </div>
 
+            {/* Industry Blueprint — shows buyer what security protocols apply */}
+            <IndustryBlueprintCard industry={linkData?.industry} />
+
             {linkData ? (
               /* Read-only invoice display for saved links */
               <Card className="overflow-hidden border-2 border-primary/20 shadow-xl max-w-md mx-auto">
