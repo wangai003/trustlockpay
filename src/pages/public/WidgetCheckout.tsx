@@ -177,6 +177,9 @@ const WidgetCheckout = () => {
                 </div>
               </div>
 
+              {/* Industry Blueprint — shows buyer what security protocols apply */}
+              <IndustryBlueprintCard industry={vendor.industry} />
+
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Your Name</Label>
