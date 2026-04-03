@@ -53,6 +53,7 @@ const VendorTransactions = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
+  const [shipDialog, setShipDialog] = useState<string | null>(null);
 
   // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
