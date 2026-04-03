@@ -251,6 +251,8 @@ const DEMO_PROOFS: ProofRecord[] = [
 ];
 
 const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainExplorerPanelProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(defaultTransactionId || "");
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
