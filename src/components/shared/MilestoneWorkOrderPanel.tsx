@@ -356,7 +356,7 @@ const MilestoneWorkOrderPanel = ({
     }
 
     // Document gate enforcement
-    const milestone = milestones.find((m: any) => m.id === milestoneId);
+    const milestone = milestones.find((m: any) => m.id === milestoneId) as any;
     if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
       const requiredDocs: string[] = milestone.required_documents || [];
       toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
