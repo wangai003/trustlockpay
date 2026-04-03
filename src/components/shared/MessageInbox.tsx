@@ -74,6 +74,9 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const { user } = useAuth();
   const userId = user?.id;
 
+  // Admin uses the sentinel ID for thread participation
+  const effectiveUserId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
+
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -92,45 +95,88 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const loadThreads = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("message_threads")
       .select("*")
       .order("last_message_at", { ascending: false });
+
+    // Admin sees threads where ADMIN_SENTINEL_ID is a participant (messages sent TO admin)
+    if (role === "admin") {
+      query = query.or(`participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${ADMIN_SENTINEL_ID}`);
+    }
+
+    const { data, error } = await query;
     if (!error && data) setThreads(data as Thread[]);
     setLoading(false);
-  }, [userId]);
+  }, [userId, role]);
 
   // Load contacts (counterparties from transactions + admin)
   const loadContacts = useCallback(async () => {
-    if (!userId || role === "admin") return;
-    const contactList: Contact[] = [
-      { id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" },
-    ];
+    if (!userId) return;
+    const contactList: Contact[] = [];
 
-    const col = role === "vendor" ? "vendor_id" : "buyer_id";
-    const otherCol = role === "vendor" ? "buyer_id" : "buyer_name";
-    const otherNameCol = role === "vendor" ? "buyer_name" : "vendor_name";
-    const otherIdCol = role === "vendor" ? "buyer_id" : "vendor_id";
+    if (role === "admin") {
+      // Admin can message any user who has a profile
+      // Load recent thread participants first, then all profiles as fallback
+      const { data: recentThreads } = await supabase
+        .from("message_threads")
+        .select("participant_1, participant_2, subject")
+        .or(`participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${ADMIN_SENTINEL_ID}`)
+        .order("last_message_at", { ascending: false })
+        .limit(50);
 
-    const { data: txns } = await supabase
-      .from("transactions")
-      .select(`id, ${otherIdCol}, ${otherNameCol}, tx_id`)
-      .eq(col, userId)
-      .not(otherIdCol, "is", null);
+      const participantIds = new Set<string>();
+      recentThreads?.forEach((t) => {
+        if (t.participant_1 !== ADMIN_SENTINEL_ID) participantIds.add(t.participant_1);
+        if (t.participant_2 !== ADMIN_SENTINEL_ID) participantIds.add(t.participant_2);
+      });
 
-    if (txns) {
+      // Also load profiles to allow admin to initiate conversations
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
       const seen = new Set<string>();
-      for (const tx of txns) {
-        const otherId = (tx as any)[otherIdCol];
-        const otherName = (tx as any)[otherNameCol] || "Unknown";
-        if (otherId && !seen.has(otherId)) {
-          seen.add(otherId);
+      profiles?.forEach((p) => {
+        if (!seen.has(p.id) && p.id !== userId) {
+          seen.add(p.id);
           contactList.push({
-            id: otherId,
-            label: `${otherName} (${(tx as any).tx_id || tx.id.slice(0, 8)})`,
+            id: p.id,
+            label: `${p.full_name || p.email || p.id.slice(0, 8)}${participantIds.has(p.id) ? " (active)" : ""}`,
             type: "counterparty",
-            transaction_id: tx.id,
           });
+        }
+      });
+    } else {
+      // Buyer/Vendor: add admin as first contact
+      contactList.push({ id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" });
+
+      const col = role === "vendor" ? "vendor_id" : "buyer_id";
+      const otherNameCol = role === "vendor" ? "buyer_name" : "vendor_name";
+      const otherIdCol = role === "vendor" ? "buyer_id" : "vendor_id";
+
+      const { data: txns } = await supabase
+        .from("transactions")
+        .select(`id, ${otherIdCol}, ${otherNameCol}, tx_id`)
+        .eq(col, userId)
+        .not(otherIdCol, "is", null);
+
+      if (txns) {
+        const seen = new Set<string>();
+        for (const tx of txns) {
+          const otherId = (tx as any)[otherIdCol];
+          const otherName = (tx as any)[otherNameCol] || "Unknown";
+          if (otherId && !seen.has(otherId)) {
+            seen.add(otherId);
+            contactList.push({
+              id: otherId,
+              label: `${otherName} (${(tx as any).tx_id || tx.id.slice(0, 8)})`,
+              type: "counterparty",
+              transaction_id: tx.id,
+            });
+          }
         }
       }
     }
@@ -205,8 +251,9 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   }, [selectedThread, userId, loadThreads]);
 
   const getOtherParticipant = (thread: Thread) => {
-    if (!userId) return "";
-    const otherId = thread.participant_1 === userId ? thread.participant_2 : thread.participant_1;
+    if (!effectiveUserId) return "";
+    const otherId = thread.participant_1 === effectiveUserId ? thread.participant_2 : thread.participant_1;
+    if (otherId === ADMIN_SENTINEL_ID) return "TrustLock Admin";
     return participantNames[otherId] || otherId.slice(0, 8);
   };
 
@@ -218,9 +265,11 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   // Send message
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedThread || !userId) return;
+    // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
+    const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
     const { error } = await supabase.from("messages").insert({
       thread_id: selectedThread.id,
-      sender_id: userId,
+      sender_id: senderId,
       body: newMessage.trim(),
     });
     if (error) {
@@ -235,11 +284,13 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const handleCompose = async () => {
     if (!composeRecipient || !composeBody.trim() || !userId) return;
     const contact = contacts.find((c) => c.id === composeRecipient);
+    // Admin uses sentinel ID as their participant identity
+    const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
       .insert({
-        participant_1: userId,
+        participant_1: myParticipantId,
         participant_2: composeRecipient,
         subject: composeSubject || CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message",
         category: composeCategory,
@@ -255,7 +306,7 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
 
     await supabase.from("messages").insert({
       thread_id: thread.id,
-      sender_id: userId,
+      sender_id: myParticipantId,
       body: composeBody.trim(),
     });
 
@@ -413,7 +464,7 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
         <ScrollArea className="flex-1 p-3">
           <div className="space-y-3">
             {messages.map((msg) => {
-              const isMine = msg.sender_id === userId;
+              const isMine = msg.sender_id === effectiveUserId;
               return (
                 <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
                   <div className={cn(
@@ -471,12 +522,6 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
     );
   };
 
-  // Admin view: show all threads, for admin role contacts are loaded differently
-  useEffect(() => {
-    if (role === "admin" && userId) {
-      // Admin sees all threads; contacts are populated from thread participants
-    }
-  }, [role, userId]);
 
   return (
     <div className="h-[calc(100dvh-14rem)] sm:h-[calc(100dvh-12rem)] min-h-[300px] border border-border rounded-lg bg-background overflow-hidden flex flex-col">
