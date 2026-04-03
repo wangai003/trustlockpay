@@ -5,6 +5,7 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/shared/NotificationCenter";
 import SearchBar from "@/components/shared/SearchBar";
+import LanguageSelector from "@/components/shared/LanguageSelector";
 
 const AdminHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet } = useAdmin();
