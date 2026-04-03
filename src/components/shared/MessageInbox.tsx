@@ -464,7 +464,7 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
         <ScrollArea className="flex-1 p-3">
           <div className="space-y-3">
             {messages.map((msg) => {
-              const isMine = msg.sender_id === userId;
+              const isMine = msg.sender_id === effectiveUserId;
               return (
                 <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
                   <div className={cn(
