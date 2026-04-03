@@ -345,7 +345,7 @@ const MilestoneWorkOrderPanel = ({
   const handleMarkFulfilled = async (milestoneId: string) => {
     if (isTestnet) {
       // Even in testnet, enforce doc gate
-      const milestone = (testnetMilestones || []).find((m) => m.id === milestoneId);
+      const milestone = (testnetMilestones || []).find((m) => m.id === milestoneId) as any;
       if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
         const requiredDocs: string[] = milestone.required_documents || [];
         toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
