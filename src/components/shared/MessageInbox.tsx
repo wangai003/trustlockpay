@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Plus, Shield, LinkIcon, Languages, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Plus, Shield, LinkIcon, Languages, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -159,6 +159,10 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [composeCategory, setComposeCategory] = useState("general");
   const [composeBody, setComposeBody] = useState("");
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [adminContactSearch, setAdminContactSearch] = useState("");
+  const [adminSearchResults, setAdminSearchResults] = useState<Contact[]>([]);
+  const [adminSearching, setAdminSearching] = useState(false);
+  const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load threads
@@ -252,6 +256,36 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     }
     setContacts(contactList);
   }, [userId, role]);
+
+  // Admin: search profiles by name, email, or user ID
+  const handleAdminSearch = useCallback((query: string) => {
+    setAdminContactSearch(query);
+    setComposeRecipient("");
+    if (adminSearchTimeout.current) clearTimeout(adminSearchTimeout.current);
+
+    if (!query.trim() || query.trim().length < 2) {
+      setAdminSearchResults([]);
+      return;
+    }
+
+    adminSearchTimeout.current = setTimeout(async () => {
+      setAdminSearching(true);
+      const term = `%${query.trim()}%`;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .limit(15);
+
+      const results: Contact[] = (data || []).map((p) => ({
+        id: p.id,
+        label: `${p.full_name || "No name"} — ${p.email}`,
+        type: "counterparty" as const,
+      }));
+      setAdminSearchResults(results);
+      setAdminSearching(false);
+    }, 300);
+  }, []);
 
   // Load messages for a thread
   const loadMessages = useCallback(async (threadId: string) => {
@@ -429,21 +463,59 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
               )}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">To</label>
-                <Select value={composeRecipient} onValueChange={setComposeRecipient}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select recipient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {contacts.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        <span className="flex items-center gap-2">
-                          {c.type === "admin" && <Shield className="w-3 h-3 text-primary" />}
-                          {c.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {role === "admin" ? (
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input
+                        value={adminContactSearch}
+                        onChange={(e) => handleAdminSearch(e.target.value)}
+                        placeholder="Search by name, email, or ID..."
+                        className="h-9 text-sm pl-8"
+                      />
+                      {adminSearching && <Loader2 className="absolute right-2.5 top-2.5 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                    </div>
+                    {composeRecipient && (
+                      <div className="flex items-center gap-1.5 p-1.5 rounded bg-primary/10 text-xs">
+                        <Shield className="w-3 h-3 text-primary" />
+                        <span className="truncate">{adminSearchResults.find(c => c.id === composeRecipient)?.label || contacts.find(c => c.id === composeRecipient)?.label || composeRecipient.slice(0, 12)}</span>
+                        <button onClick={() => { setComposeRecipient(""); setAdminContactSearch(""); }} className="ml-auto text-muted-foreground hover:text-foreground text-[10px]">✕</button>
+                      </div>
+                    )}
+                    {adminContactSearch.trim().length >= 2 && adminSearchResults.length > 0 && !composeRecipient && (
+                      <ScrollArea className="max-h-36 border border-border rounded-md">
+                        {adminSearchResults.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => { setComposeRecipient(c.id); setAdminContactSearch(""); }}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors border-b border-border last:border-0 truncate"
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </ScrollArea>
+                    )}
+                    {adminContactSearch.trim().length >= 2 && adminSearchResults.length === 0 && !adminSearching && (
+                      <p className="text-[10px] text-muted-foreground px-1">No users found</p>
+                    )}
+                  </div>
+                ) : (
+                  <Select value={composeRecipient} onValueChange={setComposeRecipient}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Select recipient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {contacts.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          <span className="flex items-center gap-2">
+                            {c.type === "admin" && <Shield className="w-3 h-3 text-primary" />}
+                            {c.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Reason</label>
