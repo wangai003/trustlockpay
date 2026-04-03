@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -7,9 +7,14 @@ import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useMessageToast } from "@/hooks/useMessageToast";
+import { useAuth } from "@/hooks/useAuth";
 
 const AdminLayoutInner = () => {
   useSessionTimeout("/trustlock/admin/login");
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  useMessageToast("admin", user?.id, navigate);
 
   return (
     <LanguageProvider>

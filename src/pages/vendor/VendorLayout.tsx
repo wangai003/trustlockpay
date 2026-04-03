@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -8,9 +8,14 @@ import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useMessageToast } from "@/hooks/useMessageToast";
+import { useAuth } from "@/hooks/useAuth";
 
 const VendorLayout = () => {
   useSessionTimeout("/trustlock/vendor/login");
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  useMessageToast("vendor", user?.id, navigate);
 
   return (
     <LanguageProvider>
