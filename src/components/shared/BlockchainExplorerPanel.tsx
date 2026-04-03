@@ -397,7 +397,19 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
 
             <ScrollArea className="flex-1">
               {selectedProof ? (
-                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} />
+                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={(txId) => {
+                  setOpen(false);
+                  const path = location.pathname;
+                  if (path.includes("/admin")) {
+                    navigate(`/trustlock/admin/transactions`);
+                  } else if (path.includes("/buyer")) {
+                    navigate(`/trustlock/buyer/orders`);
+                  } else if (path.includes("/vendor")) {
+                    navigate(`/trustlock/vendor/transactions`);
+                  } else {
+                    navigate(`/trustlock/admin/transactions`);
+                  }
+                }} />
               ) : (
                 <ProofTimeline proofs={proofs} onSelect={setSelectedProof} truncate={truncate} loading={loading} />
               )}
