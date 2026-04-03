@@ -27,6 +27,7 @@ const navItems = [
   { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support" },
   { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance" },
   { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon" },
+  { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs" },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages", tip: "View and respond to all vendor and buyer messages" },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences" },
 ];
