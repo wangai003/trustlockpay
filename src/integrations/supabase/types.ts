@@ -630,6 +630,80 @@ export type Database = {
         }
         Relationships: []
       }
+      document_scan_results: {
+        Row: {
+          confidence_score: number | null
+          country_detected: string | null
+          created_at: string
+          document_ref: string
+          document_source: string
+          document_type: string | null
+          file_url: string | null
+          findings: Json | null
+          forgery_indicators: Json | null
+          id: string
+          industry_detected: string | null
+          is_reviewed: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scanned_by: string
+          transaction_id: string | null
+          user_id: string | null
+          verdict: string
+          verification_portal_url: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          country_detected?: string | null
+          created_at?: string
+          document_ref: string
+          document_source: string
+          document_type?: string | null
+          file_url?: string | null
+          findings?: Json | null
+          forgery_indicators?: Json | null
+          id?: string
+          industry_detected?: string | null
+          is_reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scanned_by?: string
+          transaction_id?: string | null
+          user_id?: string | null
+          verdict?: string
+          verification_portal_url?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          country_detected?: string | null
+          created_at?: string
+          document_ref?: string
+          document_source?: string
+          document_type?: string | null
+          file_url?: string | null
+          findings?: Json | null
+          forgery_indicators?: Json | null
+          id?: string
+          industry_detected?: string | null
+          is_reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scanned_by?: string
+          transaction_id?: string | null
+          user_id?: string | null
+          verdict?: string
+          verification_portal_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_scan_results_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emmanuel_conversations: {
         Row: {
           admin_user_id: string
