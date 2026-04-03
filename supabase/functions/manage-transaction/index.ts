@@ -234,6 +234,18 @@ Deno.serve(async (req) => {
             refund_status: "initiated",
           });
 
+          // Anchor: rejection record
+          await anchorProof(supabase, tx.id, "rejection", {
+            event: "vendor_rejection",
+            tx_id: tx.tx_id,
+            order_number: tx.order_number,
+            original_amount: tx.amount,
+            gas_deducted: gasDeduction,
+            refund_amount: refundAmount,
+            rejection_reason: reason || "Vendor declined order",
+            rejected_at: new Date().toISOString(),
+          });
+
           refundResults.push({
             tx_id: tx.tx_id,
             original_amount: tx.amount,
