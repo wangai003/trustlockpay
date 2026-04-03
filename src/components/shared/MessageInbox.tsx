@@ -232,6 +232,17 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   useEffect(() => { if (threads.length > 0) resolveNames(threads); }, [threads, resolveNames]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // Auto-open compose when a transactionId context is provided and no existing thread matches
+  useEffect(() => {
+    if (transactionId && threads.length >= 0 && !loading) {
+      const existingThread = threads.find((t) => t.transaction_id === transactionId);
+      if (existingThread) {
+        setSelectedThread(existingThread);
+        loadMessages(existingThread.id);
+      }
+    }
+  }, [transactionId, threads, loading, loadMessages]);
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
