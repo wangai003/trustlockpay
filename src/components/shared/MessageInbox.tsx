@@ -251,8 +251,9 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   }, [selectedThread, userId, loadThreads]);
 
   const getOtherParticipant = (thread: Thread) => {
-    if (!userId) return "";
-    const otherId = thread.participant_1 === userId ? thread.participant_2 : thread.participant_1;
+    if (!effectiveUserId) return "";
+    const otherId = thread.participant_1 === effectiveUserId ? thread.participant_2 : thread.participant_1;
+    if (otherId === ADMIN_SENTINEL_ID) return "TrustLock Admin";
     return participantNames[otherId] || otherId.slice(0, 8);
   };
 
