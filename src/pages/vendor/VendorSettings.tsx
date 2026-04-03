@@ -38,7 +38,13 @@ const VendorSettings = () => {
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
   const saveSettings = useSaveVendorSettings();
+  const saveProfile = useSaveProfile();
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+  const [profileName, setProfileName] = useState(vendor.name || "");
+  const [profileLocation, setProfileLocation] = useState(vendor.location || "");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [entityType, setEntityType] = useState("individual");
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
