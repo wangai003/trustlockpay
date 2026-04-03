@@ -6,34 +6,227 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SCAN_PROMPT = `You are TrustLock's automated document verification system. Analyze the provided document image and return a structured JSON assessment.
+// ── 11-Dimension Verification Prompt ────────────────────────────────────────
+const SCAN_PROMPT = `You are TrustLock's automated document intelligence system — the most thorough trade document scanner on the planet. Analyze the provided document image across ALL 11 verification dimensions below. Be aggressive about catching fraud; err on the side of flagging.
 
-## Verification Protocol
-1. Identify document type and issuing country from visible text, emblems, language, formatting.
-2. Check security features against known standards:
-   - Kenya: BRS coat of arms, KRA PIN format A0XXXXXXXXA, KEBS Diamond Mark
-   - Nigeria: CAC RC-XXXXXXX format, holographic sticker (post-2020), FIRS TIN 10 digits
-   - South Africa: CIPC YYYY/XXXXXX/XX format, digital TCS PINs (post-2019)
-   - Ghana: RGD registration, GRA TIN (C=company, P=individual)
-   - Rwanda: Fully digital via RDB since 2018
-   - International: Container ISO 6346, AWB 11-digit format, SWIFT 8/11 chars
-3. Scan for forgery indicators: font inconsistencies, pixelation around stamps, format violations, date mismatches, missing mandatory fields, QR codes to non-official domains.
-4. Issue verdict.
+## 11 VERIFICATION DIMENSIONS
 
-## Response Format (STRICT JSON)
+### D1 – Document Authenticity
+Check visible security features: official emblems, stamps, watermarks, holograms, QR codes to official domains, anti-counterfeit elements. Compare against known standards:
+- Kenya: BRS coat of arms, KRA PIN format A0XXXXXXXXA, KEBS Diamond Mark, eTIMS compliance
+- Nigeria: CAC RC-XXXXXXX format, holographic sticker (post-2020), FIRS TIN 10 digits, NAFDAC numbers
+- South Africa: CIPC YYYY/XXXXXX/XX format, digital TCS PINs (post-2019), SARS Tax Reference
+- Ghana: RGD registration, GRA TIN (C=company, P=individual)
+- Rwanda: Fully digital via RDB since 2018, RURA for telecoms
+- Tanzania: BRELA, TRA TIN 9 digits
+- Uganda: URSB, URA TIN format
+- Egypt: Commercial Registry CR, Tax Authority TIN
+- Ethiopia: Ministry of Trade license format
+- International: Container ISO 6346, AWB 11-digit format, SWIFT 8/11 chars, DUNS 9 digits, LEI 20 chars
+
+### D2 – Registration Number Format Validation
+Validate that all registration/tax/license numbers follow the exact regex pattern for their jurisdiction. Flag any deviation.
+
+### D3 – Expiry & Validity Dates
+Check for expiration dates, validity periods, "valid until" fields. Flag if:
+- Document appears expired
+- No validity period visible on a document that typically requires one
+- Date format is inconsistent within the same document
+
+### D4 – Name & Entity Consistency
+Extract the entity/person name. Flag if:
+- Name doesn't match what's expected for the user (if user context provided)
+- Multiple different entity names appear in the same document
+- Name appears altered or photoshopped
+
+### D5 – Cross-Document Consistency
+If transaction context is available, flag if:
+- Invoice amount doesn't match transaction amount
+- Entity name differs across documents in the same transaction
+- Currency mismatches between related documents
+
+### D6 – Jurisdiction & Corridor Compliance
+Check if the document satisfies corridor requirements:
+- Agricultural exports: Phytosanitary certificate, Certificate of Origin
+- Mining/commodities: Mineral export permit, assay certificates
+- Pharmaceuticals: GMP certificate, import permits, temperature logs
+- Cross-border: Bill of Lading, Commercial Invoice, Packing List
+- Financial services: AML certificate, source of funds declaration
+
+### D7 – Sanctions & Watchlist Indicators
+Flag any visible entity names that appear on:
+- OFAC SDN list patterns
+- EU consolidated sanctions
+- UN Security Council lists
+- Known shell company patterns (generic names + offshore jurisdictions)
+
+### D8 – Currency & Amount Anomalies
+Flag if:
+- Invoice currency doesn't match the typical corridor
+- Amounts are round numbers (potential structuring)
+- Multiple invoices with identical amounts (potential duplication)
+- Amount exceeds typical thresholds for the document type
+
+### D9 – Industry-Specific Document Gates
+Based on detected industry, check for REQUIRED companion documents:
+- Agriculture: Fumigation certificate, phytosanitary cert, weight certificate
+- Mining: Assay report, mineral export permit, chain of custody cert
+- Manufacturing: Quality inspection report (AQL), factory audit
+- Shipping/Logistics: Bill of Lading, packing list, insurance certificate
+- Construction: Engineer's completion certificate, materials cert
+- Textiles: AQL inspection, fabric test report
+
+### D10 – Duplicate Detection Indicators
+Flag if:
+- Document looks templated (identical layout to previously seen fakes)
+- Serial/reference numbers appear sequential or fabricated
+- Multiple documents share identical formatting but different entity names
+
+### D11 – Metadata & Tampering Indicators
+Check for visual signs of:
+- Font inconsistencies (different typefaces in official fields)
+- Pixelation around stamps, signatures, or dates
+- Misaligned text or graphical elements
+- Color temperature differences between background and overlaid text
+- JPEG artifacts suggesting image manipulation
+- Date on document vs. apparent creation quality mismatch
+
+## RESPONSE FORMAT (STRICT JSON)
 {
-  "document_type": "string (e.g., business_registration, tax_certificate, trade_license)",
-  "country_detected": "string (e.g., Kenya, Nigeria)",
+  "document_type": "string",
+  "country_detected": "string or null",
   "industry_detected": "string or null",
   "verdict": "authentic|needs_verification|red_flags|likely_fraudulent",
   "confidence_score": number (0-100),
-  "findings": ["string array of observations"],
+  "dimensions": {
+    "d1_authenticity": { "pass": boolean, "notes": "string" },
+    "d2_registration_format": { "pass": boolean, "notes": "string" },
+    "d3_expiry_validity": { "pass": boolean, "notes": "string" },
+    "d4_name_consistency": { "pass": boolean, "notes": "string" },
+    "d5_cross_document": { "pass": boolean, "notes": "string" },
+    "d6_jurisdiction_compliance": { "pass": boolean, "notes": "string" },
+    "d7_sanctions_indicators": { "pass": boolean, "notes": "string" },
+    "d8_currency_anomalies": { "pass": boolean, "notes": "string" },
+    "d9_industry_gates": { "pass": boolean, "notes": "string" },
+    "d10_duplicate_indicators": { "pass": boolean, "notes": "string" },
+    "d11_metadata_tampering": { "pass": boolean, "notes": "string" }
+  },
+  "findings": ["string array of all observations"],
   "forgery_indicators": ["string array of red flags found, empty if none"],
+  "missing_companion_docs": ["string array of docs that should accompany this one"],
+  "extracted_entities": {
+    "entity_name": "string or null",
+    "registration_number": "string or null",
+    "tax_id": "string or null",
+    "expiry_date": "string or null",
+    "amount": "string or null",
+    "currency": "string or null"
+  },
   "verification_portal_url": "string URL for online verification or null",
-  "summary": "One-sentence summary"
+  "summary": "One-sentence summary with the most critical finding"
 }
 
 Return ONLY valid JSON. No markdown, no explanation.`;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Build transaction context string for cross-document checks */
+async function getTransactionContext(adminClient: any, transactionId: string): Promise<string> {
+  try {
+    const { data: tx } = await adminClient.from("transactions").select("*").eq("id", transactionId).single();
+    if (!tx) return "";
+
+    const { data: prevScans } = await adminClient
+      .from("document_scan_results")
+      .select("document_type, verdict, extracted_entities, findings")
+      .eq("transaction_id", transactionId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    let ctx = `\n## Transaction Context\n`;
+    ctx += `- Order: ${tx.tx_id || tx.id}\n- Amount: ${tx.amount} ${tx.currency || 'USD'}\n`;
+    ctx += `- Buyer: ${tx.buyer_name || 'unknown'}\n- Vendor: ${tx.vendor_name || 'unknown'}\n`;
+    ctx += `- Industry: ${tx.industry || 'unknown'}\n- Status: ${tx.status}\n`;
+
+    if (prevScans && prevScans.length > 0) {
+      ctx += `\n## Previously Scanned Documents in This Transaction\n`;
+      for (const s of prevScans) {
+        const entities = s.extracted_entities as any;
+        ctx += `- ${s.document_type}: verdict=${s.verdict}`;
+        if (entities?.entity_name) ctx += `, entity=${entities.entity_name}`;
+        if (entities?.amount) ctx += `, amount=${entities.amount} ${entities?.currency || ''}`;
+        ctx += `\n`;
+      }
+      ctx += `\nUse this to check D5 (cross-document consistency). Flag mismatches in names, amounts, currencies.\n`;
+    }
+    return ctx;
+  } catch {
+    return "";
+  }
+}
+
+/** Build user context for name consistency checks */
+async function getUserContext(adminClient: any, userId: string): Promise<string> {
+  try {
+    const { data: profile } = await adminClient.from("profiles").select("full_name, email, location").eq("id", userId).single();
+    if (!profile) return "";
+    return `\n## User Profile Context\n- Name: ${profile.full_name || 'unknown'}\n- Email: ${profile.email}\n- Location: ${profile.location || 'unknown'}\nUse this to verify D4 (name consistency). Flag if document entity doesn't match this user.\n`;
+  } catch {
+    return "";
+  }
+}
+
+/** Check for previously scanned duplicates */
+async function checkDuplicates(adminClient: any, docRef: string): Promise<string> {
+  try {
+    const { data: existing } = await adminClient
+      .from("document_scan_results")
+      .select("id, document_ref, extracted_entities, verdict, created_at")
+      .neq("document_ref", docRef)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!existing || existing.length === 0) return "";
+    return `\n## Existing Scans (for D10 duplicate detection)\nThere are ${existing.length} previously scanned documents in the system. Flag if this document appears to reuse serial numbers or identical layouts.\n`;
+  } catch {
+    return "";
+  }
+}
+
+/** Resolve file URL — handles both direct URLs and bucket/path combos */
+async function resolveFileUrl(
+  adminClient: any,
+  params: { file_url?: string; bucket?: string; file_path?: string }
+): Promise<{ signedUrl: string; source: string; ref: string }> {
+  // If direct file_url provided (from DB trigger), try to extract bucket/path or use directly
+  if (params.file_url && !params.bucket) {
+    // Try to extract bucket and path from Supabase storage URL
+    const storageMatch = params.file_url.match(/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(.+)/);
+    if (storageMatch) {
+      const bucket = storageMatch[1];
+      const filePath = decodeURIComponent(storageMatch[2].split("?")[0]);
+      const { data, error } = await adminClient.storage.from(bucket).createSignedUrl(filePath, 300);
+      if (error || !data?.signedUrl) throw new Error(`Signed URL failed: ${error?.message}`);
+      return { signedUrl: data.signedUrl, source: bucket, ref: filePath };
+    }
+    // If it's already a full URL (external), use as-is
+    if (params.file_url.startsWith("http")) {
+      return { signedUrl: params.file_url, source: "external", ref: params.file_url };
+    }
+    throw new Error("Cannot resolve file_url format");
+  }
+
+  // Traditional bucket + file_path
+  if (params.bucket && params.file_path) {
+    const { data, error } = await adminClient.storage.from(params.bucket).createSignedUrl(params.file_path, 300);
+    if (error || !data?.signedUrl) throw new Error(`Signed URL failed: ${error?.message}`);
+    return { signedUrl: data.signedUrl, source: params.bucket, ref: params.file_path };
+  }
+
+  throw new Error("Either file_url or bucket+file_path required");
+}
+
+// ── Main Handler ────────────────────────────────────────────────────────────
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -45,22 +238,22 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const adminClient = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { action, document_id, bucket, file_path, user_id, transaction_id } = await req.json();
+    const body = await req.json();
+    const { action, document_id, bucket, file_path, file_url, user_id, transaction_id, document_ref, document_source } = body;
 
+    // ── SCAN SINGLE ───────────────────────────────────────────────────────
     if (action === "scan_single") {
-      // Scan a specific document by generating a signed URL and sending to vision AI
-      if (!bucket || !file_path) throw new Error("bucket and file_path required");
+      const resolved = await resolveFileUrl(adminClient, { file_url, bucket, file_path });
 
-      // Generate signed URL for the document
-      const { data: signedData, error: signError } = await adminClient.storage
-        .from(bucket)
-        .createSignedUrl(file_path, 300); // 5 min expiry
+      // Build enriched context for cross-document and identity checks
+      let extraContext = "";
+      if (transaction_id) extraContext += await getTransactionContext(adminClient, transaction_id);
+      if (user_id) extraContext += await getUserContext(adminClient, user_id);
+      extraContext += await checkDuplicates(adminClient, document_ref || resolved.ref);
 
-      if (signError || !signedData?.signedUrl) {
-        throw new Error(`Failed to generate signed URL: ${signError?.message || 'unknown'}`);
-      }
+      const fullPrompt = SCAN_PROMPT + extraContext;
 
-      // Send to vision AI for analysis
+      // Send to vision AI for 11-dimension analysis
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -70,12 +263,12 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-pro",
           messages: [
-            { role: "system", content: SCAN_PROMPT },
+            { role: "system", content: fullPrompt },
             {
               role: "user",
               content: [
-                { type: "text", text: `Analyze this document. Source: ${bucket}/${file_path}` },
-                { type: "image_url", image_url: { url: signedData.signedUrl } },
+                { type: "text", text: `Analyze this document across all 11 verification dimensions. Source: ${document_source || resolved.source}/${document_ref || resolved.ref}` },
+                { type: "image_url", image_url: { url: resolved.signedUrl } },
               ],
             },
           ],
@@ -92,9 +285,8 @@ serve(async (req) => {
       const content = aiResult.choices?.[0]?.message?.content || "";
 
       // Parse the JSON response
-      let scanResult;
+      let scanResult: any;
       try {
-        // Strip markdown code fences if present
         const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
         scanResult = JSON.parse(cleaned);
       } catch {
@@ -105,17 +297,37 @@ serve(async (req) => {
           industry_detected: null,
           verdict: "needs_verification",
           confidence_score: 0,
+          dimensions: {},
           findings: ["AI returned unparseable response"],
           forgery_indicators: [],
+          missing_companion_docs: [],
+          extracted_entities: {},
           verification_portal_url: null,
           summary: "Document could not be automatically analyzed",
         };
       }
 
-      // Store result
+      // Count dimension failures for severity assessment
+      const dims = scanResult.dimensions || {};
+      const failedDims = Object.values(dims).filter((d: any) => d && !d.pass).length;
+      const criticalDims = ["d1_authenticity", "d7_sanctions_indicators", "d11_metadata_tampering"];
+      const hasCriticalFailure = criticalDims.some(k => dims[k] && !dims[k].pass);
+
+      // Override verdict if dimension analysis reveals more issues
+      if (hasCriticalFailure && scanResult.verdict === "needs_verification") {
+        scanResult.verdict = "red_flags";
+      }
+      if (failedDims >= 4 && scanResult.verdict !== "likely_fraudulent") {
+        scanResult.verdict = "red_flags";
+      }
+      if (failedDims >= 6) {
+        scanResult.verdict = "likely_fraudulent";
+      }
+
+      // Store result with enriched data
       const { data: stored, error: storeErr } = await adminClient.from("document_scan_results").insert({
-        document_source: bucket,
-        document_ref: file_path,
+        document_source: document_source || resolved.source,
+        document_ref: document_ref || resolved.ref,
         document_type: scanResult.document_type,
         country_detected: scanResult.country_detected,
         industry_detected: scanResult.industry_detected,
@@ -124,26 +336,60 @@ serve(async (req) => {
         findings: scanResult.findings,
         forgery_indicators: scanResult.forgery_indicators,
         verification_portal_url: scanResult.verification_portal_url,
-        scanned_by: "document-scanner",
+        scanned_by: "document-scanner-v2",
         user_id: user_id || null,
         transaction_id: transaction_id || null,
-        file_url: signedData.signedUrl,
+        file_url: resolved.signedUrl,
       }).select().single();
 
       if (storeErr) console.error("Failed to store scan result:", storeErr);
 
-      // Emit AI signal if red flags or likely fraudulent
-      if (scanResult.verdict === "red_flags" || scanResult.verdict === "likely_fraudulent") {
+      // Determine signal severity based on dimensions
+      const signalSeverity = scanResult.verdict === "likely_fraudulent" ? "critical"
+        : scanResult.verdict === "red_flags" ? "warning"
+        : hasCriticalFailure ? "warning"
+        : null;
+
+      // Emit AI signal if problems detected
+      if (signalSeverity) {
+        // Build detailed summary from failed dimensions
+        const failedList = Object.entries(dims)
+          .filter(([_, v]: [string, any]) => v && !v.pass)
+          .map(([k, v]: [string, any]) => `${k}: ${v.notes}`)
+          .join("; ");
+
         await adminClient.from("ai_signals").insert({
           signal_type: `document_${scanResult.verdict}`,
           source_assistant: "document-scanner",
           target_role: "admin",
           user_id: user_id || null,
           transaction_id: transaction_id || null,
-          severity: scanResult.verdict === "likely_fraudulent" ? "critical" : "warning",
-          summary: `${scanResult.document_type || 'Document'} from ${scanResult.country_detected || 'unknown country'}: ${scanResult.summary || scanResult.verdict}`,
-          context: { scan_id: stored?.id, forgery_indicators: scanResult.forgery_indicators },
+          severity: signalSeverity,
+          summary: `[${failedDims}/11 checks failed] ${scanResult.document_type || 'Document'} from ${scanResult.country_detected || 'unknown'}: ${scanResult.summary}`,
+          context: {
+            scan_id: stored?.id,
+            verdict: scanResult.verdict,
+            failed_dimensions: failedDims,
+            forgery_indicators: scanResult.forgery_indicators,
+            missing_companion_docs: scanResult.missing_companion_docs,
+            extracted_entities: scanResult.extracted_entities,
+            dimension_details: failedList,
+          },
         });
+
+        // Also notify if missing companion documents detected
+        if (scanResult.missing_companion_docs?.length > 0 && transaction_id) {
+          await adminClient.from("ai_signals").insert({
+            signal_type: "missing_companion_documents",
+            source_assistant: "document-scanner",
+            target_role: "admin",
+            transaction_id,
+            user_id: user_id || null,
+            severity: "info",
+            summary: `Missing required documents for ${scanResult.industry_detected || 'this'} transaction: ${scanResult.missing_companion_docs.join(", ")}`,
+            context: { scan_id: stored?.id, missing: scanResult.missing_companion_docs },
+          });
+        }
       }
 
       return new Response(JSON.stringify({ success: true, result: scanResult, scan_id: stored?.id }), {
@@ -151,8 +397,8 @@ serve(async (req) => {
       });
     }
 
+    // ── SCAN BATCH ──────────────────────────────────────────────────────────
     if (action === "scan_batch") {
-      // Scan all unscanned KYC documents
       const { data: kycDocs } = await adminClient
         .from("kyc_documents")
         .select("id,vendor_id,name,file_url,status")
@@ -168,7 +414,6 @@ serve(async (req) => {
 
       const results = [];
       for (const doc of kycDocs) {
-        // Check if already scanned
         const { data: existing } = await adminClient
           .from("document_scan_results")
           .select("id")
@@ -177,15 +422,11 @@ serve(async (req) => {
           .limit(1);
 
         if (existing && existing.length > 0) continue;
-
-        // Extract path from file_url
         if (!doc.file_url) continue;
         const pathMatch = doc.file_url.match(/kyc-documents\/(.+)/);
         if (!pathMatch) continue;
-        const filePath = pathMatch[1];
 
         try {
-          // Scan via recursive call
           const scanResp = await fetch(`${SUPABASE_URL}/functions/v1/document-scanner`, {
             method: "POST",
             headers: {
@@ -195,7 +436,7 @@ serve(async (req) => {
             body: JSON.stringify({
               action: "scan_single",
               bucket: "kyc-documents",
-              file_path: filePath,
+              file_path: pathMatch[1],
               user_id: doc.vendor_id,
               document_id: doc.id,
             }),
@@ -213,37 +454,29 @@ serve(async (req) => {
       });
     }
 
+    // ── SCAN TRANSACTION DOCS ───────────────────────────────────────────────
     if (action === "scan_transaction_docs") {
-      // Scan all documents related to a specific transaction
       if (!transaction_id) throw new Error("transaction_id required");
 
       const buckets = ["milestone-documents", "dispute-evidence", "acknowledgement-forms", "invoices"];
       const results = [];
 
-      for (const bucket of buckets) {
+      for (const b of buckets) {
         try {
-          // List files in the transaction folder
-          const { data: files } = await adminClient.storage
-            .from(bucket)
-            .list(transaction_id, { limit: 20 });
-
+          const { data: files } = await adminClient.storage.from(b).list(transaction_id, { limit: 20 });
           if (!files || files.length === 0) continue;
 
           for (const file of files) {
             if (!file.name || file.name.startsWith(".")) continue;
-
-            // Check if already scanned
             const filePath = `${transaction_id}/${file.name}`;
             const { data: existing } = await adminClient
               .from("document_scan_results")
               .select("id")
-              .eq("document_source", bucket)
+              .eq("document_source", b)
               .eq("document_ref", filePath)
               .limit(1);
 
             if (existing && existing.length > 0) continue;
-
-            // Only scan image/pdf files
             const ext = file.name.split(".").pop()?.toLowerCase();
             if (!["jpg", "jpeg", "png", "pdf", "webp"].includes(ext || "")) continue;
 
@@ -254,21 +487,16 @@ serve(async (req) => {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
                 },
-                body: JSON.stringify({
-                  action: "scan_single",
-                  bucket,
-                  file_path: filePath,
-                  transaction_id,
-                }),
+                body: JSON.stringify({ action: "scan_single", bucket: b, file_path: filePath, transaction_id }),
               });
               const scanData = await scanResp.json();
-              results.push({ bucket, file: file.name, ...scanData });
+              results.push({ bucket: b, file: file.name, ...scanData });
             } catch (e) {
-              console.error(`Scan error for ${bucket}/${filePath}:`, e);
+              console.error(`Scan error for ${b}/${filePath}:`, e);
             }
           }
         } catch (listErr) {
-          console.error(`Failed to list ${bucket}/${transaction_id}:`, listErr);
+          console.error(`Failed to list ${b}/${transaction_id}:`, listErr);
         }
       }
 
