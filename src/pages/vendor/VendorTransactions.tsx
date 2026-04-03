@@ -615,6 +615,23 @@ const VendorTransactions = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shipment Confirmation Modal */}
+      {shipDialog && (() => {
+        const tx = allTx.find((t) => t.id === shipDialog);
+        return (
+          <ShipmentConfirmModal
+            open={!!shipDialog}
+            onClose={() => setShipDialog(null)}
+            onConfirm={handleShipConfirmed}
+            txId={tx?.id || shipDialog}
+            orderNumber={tx?.order}
+            buyerName={tx?.buyer}
+            amount={tx?.amount}
+            industry={tx?.industry}
+          />
+        );
+      })()}
     </div>
   );
 };
