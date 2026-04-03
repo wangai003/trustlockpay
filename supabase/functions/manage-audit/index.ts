@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
             "disputes",
             "compliance_flags",
             "tax_ledger",
+            "blockchain_proofs",
           ],
           can_export: can_export || false,
           expires_at: expiresAt.toISOString(),

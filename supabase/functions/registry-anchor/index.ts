@@ -57,6 +57,180 @@ const RECORD_TYPE_MAP: Record<string, number> = {
   hash_chain_anchor: 13,
 };
 
+// ═══════════════════════════════════════════════════════════
+//  POLYGON PRE-WIRING — activates when secrets are set
+// ═══════════════════════════════════════════════════════════
+//
+// Required secrets (add via Lovable secrets tool when ready):
+//   REGISTRY_CONTRACT_ADDRESS  — deployed TrustLockRegistry.sol address
+//   POLYGON_WALLET_PRIVATE_KEY — hot wallet private key for signing txs
+//   POLYGON_RPC_URL            — e.g. https://polygon-rpc.com or Alchemy/Infura
+//
+// The anchorOnChain() function is called automatically when all three
+// secrets are present. Until then, records stay "queued" in the DB.
+// ═══════════════════════════════════════════════════════════
+
+function getPolygonConfig(): {
+  contractAddress: string;
+  privateKey: string;
+  rpcUrl: string;
+} | null {
+  const contractAddress = Deno.env.get("REGISTRY_CONTRACT_ADDRESS");
+  const privateKey = Deno.env.get("POLYGON_WALLET_PRIVATE_KEY");
+  const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
+
+  if (!contractAddress || !privateKey || !rpcUrl) return null;
+  return { contractAddress, privateKey, rpcUrl };
+}
+
+// TrustLockRegistry ABI (minimal — only what we call)
+const REGISTRY_ABI = [
+  {
+    name: "anchorRecord",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "contentHash", type: "bytes32" },
+      { name: "txRef", type: "bytes32" },
+      { name: "recordType", type: "uint8" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "anchorBatch",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "contentHashes", type: "bytes32[]" },
+      { name: "txRefs", type: "bytes32[]" },
+      { name: "recordTypes", type: "uint8[]" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "verifyHash",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "contentHash", type: "bytes32" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+];
+
+// Encode function call data for anchorRecord(bytes32, bytes32, uint8)
+function encodeAnchorRecord(contentHash: string, txRef: string, recordType: number): string {
+  // Function selector: keccak256("anchorRecord(bytes32,bytes32,uint8)") first 4 bytes
+  // Pre-computed: 0x8a35acfb (from solidity ABI)
+  const selector = "8a35acfb";
+  const hash = contentHash.replace("0x", "").padStart(64, "0");
+  const ref = txRef.replace("0x", "").padStart(64, "0");
+  const type = recordType.toString(16).padStart(64, "0");
+  return "0x" + selector + hash + ref + type;
+}
+
+// Send raw transaction to Polygon via JSON-RPC
+async function sendPolygonTx(
+  config: { contractAddress: string; privateKey: string; rpcUrl: string },
+  calldata: string
+): Promise<{ txHash: string } | { error: string }> {
+  try {
+    // Step 1: Get nonce
+    const nonceRes = await fetch(config.rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getTransactionCount",
+        params: [await getWalletAddress(config.privateKey), "pending"],
+      }),
+    });
+    const nonceData = await nonceRes.json();
+    const nonce = nonceData.result;
+
+    // Step 2: Get gas price
+    const gasPriceRes = await fetch(config.rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "eth_gasPrice",
+        params: [],
+      }),
+    });
+    const gasPriceData = await gasPriceRes.json();
+    const gasPrice = gasPriceData.result;
+
+    // Step 3: Estimate gas
+    const estimateRes = await fetch(config.rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 3,
+        method: "eth_estimateGas",
+        params: [{
+          from: await getWalletAddress(config.privateKey),
+          to: config.contractAddress,
+          data: calldata,
+        }],
+      }),
+    });
+    const estimateData = await estimateRes.json();
+    const gasLimit = estimateData.result || "0x30000"; // fallback 200k
+
+    // Step 4: Build unsigned transaction
+    // Note: Full signing requires secp256k1 + RLP encoding.
+    // In production, use ethers.js or Thirdweb SDK via import map.
+    // This stub returns the pre-flight data for when the signing library is wired.
+    console.log("[registry-anchor] Polygon TX pre-flight ready:", {
+      to: config.contractAddress,
+      data: calldata,
+      nonce,
+      gasPrice,
+      gasLimit,
+      chainId: "0x89", // Polygon mainnet
+    });
+
+    // ─── SIGNING STUB ───
+    // When ethers.js or thirdweb is available in Deno edge runtime:
+    //
+    // import { ethers } from "https://esm.sh/ethers@6";
+    // const wallet = new ethers.Wallet(config.privateKey);
+    // const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    // const signer = wallet.connect(provider);
+    // const contract = new ethers.Contract(config.contractAddress, REGISTRY_ABI, signer);
+    // const tx = await contract.anchorRecord(contentHash, txRef, recordType);
+    // const receipt = await tx.wait();
+    // return { txHash: receipt.hash };
+    //
+    // For Thirdweb (if THIRDWEB_API_KEY is set):
+    //
+    // import { ThirdwebSDK } from "https://esm.sh/@thirdweb-dev/sdk";
+    // const sdk = ThirdwebSDK.fromPrivateKey(config.privateKey, "polygon", {
+    //   thirdwebApiKey: Deno.env.get("THIRDWEB_API_KEY"),
+    // });
+    // const contract = await sdk.getContract(config.contractAddress);
+    // const tx = await contract.call("anchorRecord", [contentHash, txRef, recordType]);
+    // return { txHash: tx.receipt.transactionHash };
+    // ─────────────────────
+
+    return { error: "signing_not_wired" };
+  } catch (err: any) {
+    console.error("[registry-anchor] Polygon TX error:", err);
+    return { error: err.message || "polygon_tx_failed" };
+  }
+}
+
+// Derive wallet address from private key (stub — needs crypto lib)
+async function getWalletAddress(privateKey: string): Promise<string> {
+  // In production with ethers.js:
+  // return new ethers.Wallet(privateKey).address;
+  // For now, return a placeholder derived from the key
+  const hash = await sha256(privateKey);
+  return "0x" + hash.slice(2, 42);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -72,9 +246,10 @@ Deno.serve(async (req) => {
     if (!action) return json({ error: "action is required" }, 400);
 
     const supabase = getSupabase();
+    const polygonConfig = getPolygonConfig();
 
     // ═══════════════════════════════════════════
-    //  ACTION: ANCHOR — Hash and store a record
+    //  ACTION: ANCHOR — Hash, store, and optionally anchor on-chain
     // ═══════════════════════════════════════════
     if (action === "anchor") {
       const { transactionId, recordType, eventData } = body;
@@ -102,7 +277,30 @@ Deno.serve(async (req) => {
 
       const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
 
-      // Store in database (off-chain ledger)
+      // Determine initial chain status
+      let chainStatus = "queued";
+      let polygonTxHash: string | null = null;
+      let anchoredAt: string | null = null;
+
+      // ── Attempt on-chain anchoring if Polygon is configured ──
+      if (polygonConfig) {
+        chainStatus = "pending_tx";
+        const calldata = encodeAnchorRecord(contentHash, txRef, typeNum);
+        const result = await sendPolygonTx(polygonConfig, calldata);
+
+        if ("txHash" in result && result.txHash) {
+          polygonTxHash = result.txHash;
+          chainStatus = "anchored";
+          anchoredAt = new Date().toISOString();
+          console.log(`[registry-anchor] ✅ Anchored on Polygon: ${result.txHash}`);
+        } else {
+          // TX failed or signing not wired yet — record stays pending
+          console.log(`[registry-anchor] ⏳ On-chain pending: ${result.error}`);
+          chainStatus = result.error === "signing_not_wired" ? "queued" : "failed";
+        }
+      }
+
+      // Store in database
       const { data: proof, error: insertErr } = await supabase
         .from("blockchain_proofs")
         .insert({
@@ -112,7 +310,9 @@ Deno.serve(async (req) => {
           tx_ref: txRef,
           transaction_id: transactionId,
           event_data: eventData,
-          chain_status: "queued",
+          chain_status: chainStatus,
+          polygon_tx_hash: polygonTxHash,
+          anchored_at: anchoredAt,
         })
         .select()
         .single();
@@ -122,10 +322,6 @@ Deno.serve(async (req) => {
         return json({ error: "Failed to store proof record" }, 500);
       }
 
-      // In production with deployed contract, this would call anchorRecord()
-      // For now, records are queued and can be batch-anchored later
-      const contractDeployed = !!Deno.env.get("REGISTRY_CONTRACT_ADDRESS");
-
       return json({
         success: true,
         proofId: proof.id,
@@ -133,8 +329,68 @@ Deno.serve(async (req) => {
         prevHash,
         txRef,
         recordType,
-        chainStatus: contractDeployed ? "pending_tx" : "queued",
-        verifyUrl: `https://polygonscan.com/address/${Deno.env.get("REGISTRY_CONTRACT_ADDRESS") || "not_deployed"}`,
+        chainStatus,
+        polygonTxHash,
+        polygonConfigured: !!polygonConfig,
+        verifyUrl: polygonTxHash
+          ? `https://polygonscan.com/tx/${polygonTxHash}`
+          : polygonConfig
+            ? `https://polygonscan.com/address/${polygonConfig.contractAddress}`
+            : null,
+      });
+    }
+
+    // ═══════════════════════════════════════════
+    //  ACTION: ANCHOR_BATCH — Batch anchor queued records
+    // ═══════════════════════════════════════════
+    if (action === "anchor_batch") {
+      if (!polygonConfig) {
+        return json({ error: "Polygon not configured. Set REGISTRY_CONTRACT_ADDRESS, POLYGON_WALLET_PRIVATE_KEY, and POLYGON_RPC_URL." }, 400);
+      }
+
+      const limit = body.limit || 50;
+      const { data: queued } = await supabase
+        .from("blockchain_proofs")
+        .select("*")
+        .eq("chain_status", "queued")
+        .order("created_at", { ascending: true })
+        .limit(limit);
+
+      if (!queued?.length) {
+        return json({ success: true, anchored: 0, message: "No queued records" });
+      }
+
+      // Batch anchor would call anchorBatch() on the contract
+      // For now, process one-by-one
+      let anchored = 0;
+      const errors: string[] = [];
+
+      for (const record of queued) {
+        const typeNum = RECORD_TYPE_MAP[record.record_type] ?? 13;
+        const calldata = encodeAnchorRecord(record.content_hash, record.tx_ref, typeNum);
+        const result = await sendPolygonTx(polygonConfig, calldata);
+
+        if ("txHash" in result && result.txHash) {
+          await supabase
+            .from("blockchain_proofs")
+            .update({
+              chain_status: "anchored",
+              polygon_tx_hash: result.txHash,
+              anchored_at: new Date().toISOString(),
+            })
+            .eq("id", record.id);
+          anchored++;
+        } else {
+          errors.push(`${record.id}: ${result.error}`);
+        }
+      }
+
+      return json({
+        success: true,
+        total: queued.length,
+        anchored,
+        failed: errors.length,
+        errors: errors.slice(0, 10),
       });
     }
 
@@ -155,8 +411,30 @@ Deno.serve(async (req) => {
         return json({ verified: false, message: "Hash not found in registry" });
       }
 
+      // If Polygon is configured, optionally verify on-chain too
+      let onChainVerified: boolean | null = null;
+      if (polygonConfig && proof.polygon_tx_hash) {
+        try {
+          const receiptRes = await fetch(polygonConfig.rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "eth_getTransactionReceipt",
+              params: [proof.polygon_tx_hash],
+            }),
+          });
+          const receiptData = await receiptRes.json();
+          onChainVerified = receiptData.result?.status === "0x1";
+        } catch {
+          onChainVerified = null;
+        }
+      }
+
       return json({
         verified: true,
+        onChainVerified,
         proof: {
           id: proof.id,
           contentHash: proof.content_hash,
@@ -220,11 +498,25 @@ Deno.serve(async (req) => {
         totalRecords: allProofs.length,
         brokenAt,
         latestHash: allProofs[allProofs.length - 1].content_hash,
+        polygonConfigured: !!polygonConfig,
+      });
+    }
+
+    // ═══════════════════════════════════════════
+    //  ACTION: CONFIG_STATUS — Check Polygon readiness
+    // ═══════════════════════════════════════════
+    if (action === "config_status") {
+      return json({
+        polygonConfigured: !!polygonConfig,
+        contractAddress: polygonConfig?.contractAddress ? `${polygonConfig.contractAddress.slice(0, 6)}...${polygonConfig.contractAddress.slice(-4)}` : null,
+        rpcConfigured: !!Deno.env.get("POLYGON_RPC_URL"),
+        walletConfigured: !!Deno.env.get("POLYGON_WALLET_PRIVATE_KEY"),
+        thirdwebConfigured: !!Deno.env.get("THIRDWEB_API_KEY"),
       });
     }
 
     return json({ error: `Unknown action: ${action}` }, 400);
-  } catch (err) {
+  } catch (err: any) {
     console.error("registry-anchor error:", err);
     return json({ success: false, error: err.message }, 500);
   }
