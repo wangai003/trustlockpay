@@ -220,6 +220,14 @@ const AuditPortal = () => {
             <Badge variant="secondary" className="gap-1">
               <Clock className="w-3 h-3" /> {daysLeft}d remaining
             </Badge>
+            <BlockchainExplorerPanel
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span className="text-xs">Blockchain Explorer</span>
+                </Button>
+              }
+            />
           </div>
         </div>
       </header>
