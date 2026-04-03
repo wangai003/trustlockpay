@@ -594,6 +594,31 @@ serve(async (req) => {
       }
     }
 
+    // --- AI Signal Coordination: Read ALL active signals for Emmanuel ---
+    let signalContext = "";
+    try {
+      const svcClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: signals } = await svcClient
+        .from("ai_signals")
+        .select("*")
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (signals && signals.length > 0) {
+        signalContext = "\n\n## ⚡ LIVE INTELLIGENCE SIGNALS FROM AMANI & ZAWADI\nThese are real-time signals from your sibling AIs working with vendors and buyers. Use them to proactively brief the admin.\n";
+        for (const s of signals) {
+          signalContext += `- [${s.severity.toUpperCase()}] (${s.source_assistant} → ${s.target_role}) ${s.signal_type}: ${s.summary} | Signal ID: ${s.id}\n`;
+        }
+        signalContext += "\nYou can resolve signals using the resolve_signal tool after the admin has addressed the issue.\n";
+      }
+    } catch (sigErr) {
+      console.error("Signal read error (non-fatal):", sigErr);
+    }
+
     const hasImages = JSON.stringify(finalMessages).includes("image_url");
     const model = hasImages ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
 
@@ -699,10 +724,63 @@ serve(async (req) => {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "resolve_signal",
+          description: "Mark an AI coordination signal as resolved after the admin has addressed the issue.",
+          parameters: {
+            type: "object",
+            properties: {
+              signal_id: { type: "string", description: "UUID of the signal to resolve" },
+            },
+            required: ["signal_id"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "emit_signal",
+          description: "Create a new AI coordination signal to alert Amani (vendor assistant) or Zawadi (buyer assistant) about something important.",
+          parameters: {
+            type: "object",
+            properties: {
+              signal_type: { type: "string", description: "Type of signal (e.g., admin_warning, fraud_alert, compliance_hold)" },
+              target_role: { type: "string", enum: ["vendor", "buyer", "all"], description: "Which assistant should receive this signal" },
+              severity: { type: "string", enum: ["info", "warning", "critical"], description: "Severity level" },
+              summary: { type: "string", description: "Brief summary of the signal" },
+              user_id: { type: "string", description: "Optional: target user UUID" },
+              transaction_id: { type: "string", description: "Optional: related transaction UUID" },
+            },
+            required: ["signal_type", "target_role", "severity", "summary"],
+          },
+        },
+      },
     ];
 
-    // Helper to call emmanuel-analytics
+    // Helper to call emmanuel-analytics or handle signal tools locally
     async function callAnalytics(action: string, params: Record<string, any> = {}) {
+      // Handle signal tools locally
+      if (action === "resolve_signal") {
+        const svcClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const { error } = await svcClient.from("ai_signals").update({ is_resolved: true, resolved_at: new Date().toISOString() }).eq("id", params.signal_id);
+        return error ? { error: error.message } : { success: true, message: `Signal ${params.signal_id} resolved` };
+      }
+      if (action === "emit_signal") {
+        const svcClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const { error } = await svcClient.from("ai_signals").insert({
+          signal_type: params.signal_type,
+          source_assistant: "emmanuel",
+          target_role: params.target_role,
+          severity: params.severity,
+          summary: params.summary,
+          user_id: params.user_id || null,
+          transaction_id: params.transaction_id || null,
+        });
+        return error ? { error: error.message } : { success: true, message: `Signal emitted to ${params.target_role}` };
+      }
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {
         method: "POST",
         headers: {
@@ -715,7 +793,7 @@ serve(async (req) => {
     }
 
     // First call — may trigger tool calls
-    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...finalMessages];
+    let aiMessages = [{ role: "system", content: SYSTEM_PROMPT + signalContext }, ...finalMessages];
     let response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {

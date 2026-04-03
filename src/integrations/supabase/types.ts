@@ -125,6 +125,59 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_signals: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          is_resolved: boolean
+          resolved_at: string | null
+          severity: string
+          signal_type: string
+          source_assistant: string
+          summary: string
+          target_role: string
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          signal_type: string
+          source_assistant: string
+          summary: string
+          target_role?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          signal_type?: string
+          source_assistant?: string
+          summary?: string
+          target_role?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_signals_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage: {
         Row: {
           assistant_name: string | null
