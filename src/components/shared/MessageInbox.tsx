@@ -68,9 +68,12 @@ interface Contact {
 
 interface MessageInboxProps {
   role: "vendor" | "buyer" | "admin";
+  /** Pre-attach a transaction context (e.g. opened from an order page) */
+  transactionId?: string;
+  transactionLabel?: string;
 }
 
-const MessageInbox = ({ role }: MessageInboxProps) => {
+const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxProps) => {
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -229,6 +232,17 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   useEffect(() => { if (threads.length > 0) resolveNames(threads); }, [threads, resolveNames]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // Auto-open compose when a transactionId context is provided and no existing thread matches
+  useEffect(() => {
+    if (transactionId && threads.length >= 0 && !loading) {
+      const existingThread = threads.find((t) => t.transaction_id === transactionId);
+      if (existingThread) {
+        setSelectedThread(existingThread);
+        loadMessages(existingThread.id);
+      }
+    }
+  }, [transactionId, threads, loading, loadMessages]);
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
@@ -287,14 +301,16 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
     // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
+    const linkedTxId = contact?.transaction_id || transactionId || null;
+
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
       .insert({
         participant_1: myParticipantId,
         participant_2: composeRecipient,
-        subject: composeSubject || CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message",
+        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message"),
         category: composeCategory,
-        transaction_id: contact?.transaction_id || null,
+        transaction_id: linkedTxId,
       })
       .select()
       .single();
@@ -337,6 +353,13 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
               <DialogTitle>New Message</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 mt-2">
+              {transactionId && transactionLabel && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs">
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-muted-foreground">Order context:</span>
+                  <Badge variant="outline" className="text-[10px]">{transactionLabel}</Badge>
+                </div>
+              )}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">To</label>
                 <Select value={composeRecipient} onValueChange={setComposeRecipient}>
@@ -454,9 +477,16 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
           </Button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{getOtherParticipant(selectedThread)}</p>
-            <p className="text-[10px] text-muted-foreground truncate">
-              {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] text-muted-foreground truncate">
+                {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
+              </p>
+              {selectedThread.transaction_id && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">
+                  Order linked
+                </Badge>
+              )}
+            </div>
           </div>
           {isLocked && <Badge variant="destructive" className="text-[9px]">Locked</Badge>}
         </div>
