@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 
 interface VendorInfo {
   name: string;
@@ -175,6 +176,9 @@ const WidgetCheckout = () => {
                   <span className="text-[10px] text-muted-foreground">Escrow-protected payment</span>
                 </div>
               </div>
+
+              {/* Industry Blueprint — shows buyer what security protocols apply */}
+              <IndustryBlueprintCard industry={vendor.industry} />
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1.5">

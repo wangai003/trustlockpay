@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2, Download } from "lucide-react";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
@@ -306,6 +307,9 @@ const PublicCheckout = () => {
               <h1 className="text-lg font-bold">{linkTitle}</h1>
               <p className="text-xs text-muted-foreground">From: {vendorName} · Ref: {refId}</p>
             </div>
+
+            {/* Industry Blueprint — shows buyer what security protocols apply */}
+            <IndustryBlueprintCard industry={linkData?.industry} />
 
             {linkData ? (
               /* Read-only invoice display for saved links */

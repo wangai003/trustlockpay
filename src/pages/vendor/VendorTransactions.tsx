@@ -24,6 +24,7 @@ import { useVendor } from "@/contexts/VendorContext";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
@@ -474,6 +475,7 @@ const VendorTransactions = () => {
                                   <p className="font-medium">{tx.date}</p>
                                 </div>
                               </div>
+                              <IndustryBlueprintCard industry={tx.industry} />
                               <MilestoneTimeline industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                               <details className="text-xs">
                                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
