@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2, Download } from "lucide-react";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
