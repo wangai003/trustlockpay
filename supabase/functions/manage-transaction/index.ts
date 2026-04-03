@@ -103,26 +103,16 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
-        break;
-      }
 
-      case "release_funds": {
-        const { data, error } = await supabase
-          .from("transactions")
-          .update({
-            status: "released",
-            released_date: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("tx_id", txId)
-          .select()
-          .single();
-        if (error) throw error;
-        result = data;
+        // Anchor: delivery milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "delivery_confirmed",
+          tx_id: txId,
+          status: "delivered",
+          delivered_date: data.delivered_date,
+          order_number: data.order_number,
+        });
         break;
-      }
-
-      case "mark_delivered": {
         const { data, error } = await supabase
           .from("transactions")
           .update({
