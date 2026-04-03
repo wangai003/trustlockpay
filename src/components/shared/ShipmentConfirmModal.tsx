@@ -103,11 +103,11 @@ export default function ShipmentConfirmModal({
 
           {/* Document Gate Warning */}
           {hasRequiredDocs && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-2">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-accent mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-600">Document Gate — Shipping Stage</p>
+                  <p className="text-sm font-semibold text-accent-foreground">Document Gate — Shipping Stage</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Your industry requires the following documents to be uploaded to the shipping milestone before shipment:
                   </p>
