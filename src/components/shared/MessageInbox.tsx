@@ -265,9 +265,11 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   // Send message
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedThread || !userId) return;
+    // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
+    const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
     const { error } = await supabase.from("messages").insert({
       thread_id: selectedThread.id,
-      sender_id: userId,
+      sender_id: senderId,
       body: newMessage.trim(),
     });
     if (error) {
@@ -282,11 +284,13 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
   const handleCompose = async () => {
     if (!composeRecipient || !composeBody.trim() || !userId) return;
     const contact = contacts.find((c) => c.id === composeRecipient);
+    // Admin uses sentinel ID as their participant identity
+    const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
       .insert({
-        participant_1: userId,
+        participant_1: myParticipantId,
         participant_2: composeRecipient,
         subject: composeSubject || CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message",
         category: composeCategory,
@@ -302,7 +306,7 @@ const MessageInbox = ({ role }: MessageInboxProps) => {
 
     await supabase.from("messages").insert({
       thread_id: thread.id,
-      sender_id: userId,
+      sender_id: myParticipantId,
       body: composeBody.trim(),
     });
 
