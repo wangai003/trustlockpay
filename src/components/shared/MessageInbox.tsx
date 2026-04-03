@@ -159,6 +159,10 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [composeCategory, setComposeCategory] = useState("general");
   const [composeBody, setComposeBody] = useState("");
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [adminContactSearch, setAdminContactSearch] = useState("");
+  const [adminSearchResults, setAdminSearchResults] = useState<Contact[]>([]);
+  const [adminSearching, setAdminSearching] = useState(false);
+  const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load threads
