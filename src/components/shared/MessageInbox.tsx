@@ -301,14 +301,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
+    const linkedTxId = contact?.transaction_id || transactionId || null;
+
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
       .insert({
         participant_1: myParticipantId,
         participant_2: composeRecipient,
-        subject: composeSubject || CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message",
+        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message"),
         category: composeCategory,
-        transaction_id: contact?.transaction_id || null,
+        transaction_id: linkedTxId,
       })
       .select()
       .single();
