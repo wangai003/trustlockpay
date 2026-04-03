@@ -68,9 +68,12 @@ interface Contact {
 
 interface MessageInboxProps {
   role: "vendor" | "buyer" | "admin";
+  /** Pre-attach a transaction context (e.g. opened from an order page) */
+  transactionId?: string;
+  transactionLabel?: string;
 }
 
-const MessageInbox = ({ role }: MessageInboxProps) => {
+const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxProps) => {
   const { user } = useAuth();
   const userId = user?.id;
 
