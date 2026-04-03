@@ -591,34 +591,69 @@ const MilestoneWorkOrderPanel = ({
                   </div>
                 </TLId>
 
-                {/* Required Documents Checklist */}
+                {/* Document Gate Checklist — 3-tier: required / optional / none */}
                 {(() => {
                   const requiredDocs: string[] = ms.required_documents || [];
+                  const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
                   const uploadedDocs: any[] = ms.uploaded_documents || [];
-                  if (requiredDocs.length === 0) return null;
-                  const uploadedTypes = new Set(uploadedDocs.map((d: any) => d.document_type).filter(Boolean));
-                  const allSatisfied = requiredDocs.every((d: string) => uploadedTypes.has(d));
+                  if (requiredDocs.length === 0 && optionalDocs.length === 0) return null;
+
+                  const uploadedKeys = getUploadedKeys(ms);
+                  const checkDoc = (doc: string) => {
+                    const docLower = doc.toLowerCase();
+                    for (const key of uploadedKeys) {
+                      if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
+                    }
+                    return false;
+                  };
+
                   return (
-                    <div className="rounded-md border border-border p-2 space-y-1">
-                      <p className="text-[10px] font-semibold flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3" /> Required Documents
-                        {allSatisfied ? (
-                          <Badge variant="outline" className="text-[8px] ml-1 border-primary/30 text-primary">All uploaded</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[8px] ml-1 border-destructive/30 text-destructive">Incomplete</Badge>
-                        )}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {requiredDocs.map((doc: string) => {
-                          const isMet = uploadedTypes.has(doc);
-                          return (
-                            <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"}`}>
-                              {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
-                              {doc}
+                    <div className="rounded-md border border-border p-2 space-y-2">
+                      {/* Required docs — hard gate */}
+                      {requiredDocs.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-semibold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Required Documents
+                            <Badge variant="outline" className={`text-[8px] ml-1 ${gateStatus.missingRequired.length === 0 ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}`}>
+                              {gateStatus.missingRequired.length === 0 ? "All uploaded" : `${gateStatus.missingRequired.length} missing — blocks fulfillment`}
                             </Badge>
-                          );
-                        })}
-                      </div>
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {requiredDocs.map((doc: string) => {
+                              const isMet = checkDoc(doc);
+                              return (
+                                <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"}`}>
+                                  {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                                  {doc}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Optional docs — soft warning */}
+                      {optionalDocs.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-semibold flex items-center gap-1 text-muted-foreground">
+                            <FileWarning className="w-3 h-3" /> Recommended Documents
+                            <Badge variant="outline" className="text-[8px] ml-1 border-muted-foreground/30 text-muted-foreground">
+                              {gateStatus.missingOptional.length === 0 ? "All uploaded" : `${gateStatus.missingOptional.length} pending — won't block`}
+                            </Badge>
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {optionalDocs.map((doc: string) => {
+                              const isMet = checkDoc(doc);
+                              return (
+                                <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/30 text-muted-foreground"}`}>
+                                  {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <FileWarning className="w-2.5 h-2.5 mr-0.5" />}
+                                  {doc}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
