@@ -48,6 +48,10 @@ const BuyerHeader = ({ title }: { title: string }) => {
             <NotificationCenter role="buyer" />
           </TLId>
 
+          <TLId code="TL-B-HDR-BTN-LANGUAGE" inline>
+            <LanguageSelector compact />
+          </TLId>
+
           <TLId code="TL-B-HDR-BTN-AVATAR" inline>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] sm:text-xs font-bold text-primary">{buyer.name.substring(0, 2).toUpperCase()}</span>

@@ -50,6 +50,10 @@ const VendorHeader = ({ title }: { title: string }) => {
             <NotificationCenter role="vendor" />
           </TLId>
 
+          <TLId code="TL-V-HDR-BTN-LANGUAGE" inline>
+            <LanguageSelector compact />
+          </TLId>
+
           <TLId code="TL-V-HDR-BTN-AVATAR" inline>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] sm:text-xs font-bold text-primary">{vendor.name.substring(0, 2).toUpperCase()}</span>
