@@ -24,7 +24,7 @@ interface ShipmentConfirmModalProps {
 /** Industries whose playbook has a "shipping" milestone with required documents */
 function getShippingDocRequirements(industry: string | null | undefined): { docs: string[]; mode: string } {
   if (!industry) return { docs: [], mode: "none" };
-  const templates = milestoneTemplates[industry as keyof typeof milestoneTemplates];
+  const templates = INDUSTRY_MILESTONE_MAP[industry as keyof typeof INDUSTRY_MILESTONE_MAP];
   if (!templates) return { docs: [], mode: "none" };
 
   // Find the milestone that relates to shipping/dispatch/transit
