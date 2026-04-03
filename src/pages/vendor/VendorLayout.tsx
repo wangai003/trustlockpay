@@ -13,21 +13,23 @@ const VendorLayout = () => {
   useSessionTimeout("/trustlock/vendor/login");
 
   return (
-    <VendorProvider>
-      <div className="flex min-h-screen bg-background">
-        <VendorSidebar />
-        <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
-          <TrialBanner />
-          <TestnetGuide role="vendor" />
-          <Outlet />
-        </main>
-        <CommandPalette role="vendor" />
-        <MobileBottomNav role="vendor" />
-        <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
-          <BlockchainExplorerPanel />
+    <LanguageProvider>
+      <VendorProvider>
+        <div className="flex min-h-screen bg-background">
+          <VendorSidebar />
+          <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+            <TrialBanner />
+            <TestnetGuide role="vendor" />
+            <Outlet />
+          </main>
+          <CommandPalette role="vendor" />
+          <MobileBottomNav role="vendor" />
+          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+            <BlockchainExplorerPanel />
+          </div>
         </div>
-      </div>
-    </VendorProvider>
+      </VendorProvider>
+    </LanguageProvider>
   );
 };
 

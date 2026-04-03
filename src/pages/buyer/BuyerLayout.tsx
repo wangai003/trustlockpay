@@ -12,20 +12,22 @@ const BuyerLayoutInner = () => {
   useSessionTimeout("/trustlock/buyer/login");
 
   return (
-    <BuyerProvider>
-      <div className="flex min-h-screen bg-background">
-        <BuyerSidebar />
-        <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
-          <TestnetGuide role="buyer" />
-          <Outlet />
-        </main>
-        <CommandPalette role="buyer" />
-        <MobileBottomNav role="buyer" />
-        <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
-          <BlockchainExplorerPanel />
+    <LanguageProvider>
+      <BuyerProvider>
+        <div className="flex min-h-screen bg-background">
+          <BuyerSidebar />
+          <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+            <TestnetGuide role="buyer" />
+            <Outlet />
+          </main>
+          <CommandPalette role="buyer" />
+          <MobileBottomNav role="buyer" />
+          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+            <BlockchainExplorerPanel />
+          </div>
         </div>
-      </div>
-    </BuyerProvider>
+      </BuyerProvider>
+    </LanguageProvider>
   );
 };
 
