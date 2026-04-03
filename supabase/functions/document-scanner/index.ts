@@ -168,9 +168,24 @@ async function getTransactionContext(adminClient: any, transactionId: string): P
 /** Build user context for name consistency checks */
 async function getUserContext(adminClient: any, userId: string): Promise<string> {
   try {
-    const { data: profile } = await adminClient.from("profiles").select("full_name, email, location").eq("id", userId).single();
+    const { data: profile } = await adminClient.from("profiles").select("full_name, email, location, company_name, entity_type").eq("id", userId).single();
     if (!profile) return "";
-    return `\n## User Profile Context\n- Name: ${profile.full_name || 'unknown'}\n- Email: ${profile.email}\n- Location: ${profile.location || 'unknown'}\nUse this to verify D4 (name consistency). Flag if document entity doesn't match this user.\n`;
+    let ctx = `\n## User Profile Context\n`;
+    ctx += `- Entity Type: ${profile.entity_type || 'individual'}\n`;
+    ctx += `- Full Name: ${profile.full_name || 'unknown'}\n`;
+    ctx += `- Email: ${profile.email}\n`;
+    ctx += `- Location: ${profile.location || 'unknown'}\n`;
+    if (profile.company_name) ctx += `- Company Name: ${profile.company_name}\n`;
+    ctx += `\n### D4 Matching Rules:\n`;
+    if (profile.entity_type === 'company') {
+      ctx += `- This user is a REGISTERED COMPANY. Match document entity name against "${profile.company_name || 'NO COMPANY NAME SET'}". If company_name is missing, flag as soft mismatch.\n`;
+      ctx += `- Personal name "${profile.full_name}" may appear as signatory — that's acceptable.\n`;
+    } else if (profile.entity_type === 'sole_proprietor') {
+      ctx += `- This user is a SOLE PROPRIETOR. Accept either "${profile.full_name}" or "${profile.company_name || 'no trading name'}" on documents.\n`;
+    } else {
+      ctx += `- This user is an INDIVIDUAL. Match document entity against "${profile.full_name}". Minor variations (middle name, initials) are acceptable.\n`;
+    }
+    return ctx;
   } catch {
     return "";
   }
