@@ -257,6 +257,36 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     setContacts(contactList);
   }, [userId, role]);
 
+  // Admin: search profiles by name, email, or user ID
+  const handleAdminSearch = useCallback((query: string) => {
+    setAdminContactSearch(query);
+    setComposeRecipient("");
+    if (adminSearchTimeout.current) clearTimeout(adminSearchTimeout.current);
+
+    if (!query.trim() || query.trim().length < 2) {
+      setAdminSearchResults([]);
+      return;
+    }
+
+    adminSearchTimeout.current = setTimeout(async () => {
+      setAdminSearching(true);
+      const term = `%${query.trim()}%`;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .limit(15);
+
+      const results: Contact[] = (data || []).map((p) => ({
+        id: p.id,
+        label: `${p.full_name || "No name"} — ${p.email}`,
+        type: "counterparty" as const,
+      }));
+      setAdminSearchResults(results);
+      setAdminSearching(false);
+    }, 300);
+  }, []);
+
   // Load messages for a thread
   const loadMessages = useCallback(async (threadId: string) => {
     const { data } = await supabase
