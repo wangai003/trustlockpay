@@ -721,10 +721,23 @@ const MilestoneWorkOrderPanel = ({
                 <div className="flex gap-2 flex-wrap">
                   {canVendorFulfill ? (
                     <TLId code={woTLId(role, row, "BTN-FULFILL")} inline>
-                      <Button size="sm" onClick={() => handleMarkFulfilled(ms.id)}>
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
-                      </Button>
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkFulfilled(ms.id)}
+                          disabled={!docGatePassed && (ms.required_documents || []).length > 0}
+                          variant={!docGatePassed && (ms.required_documents || []).length > 0 ? "outline" : "default"}
+                        >
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
+                        </Button>
+                        {!docGatePassed && (ms.required_documents || []).length > 0 && (
+                          <p className="text-[9px] text-destructive flex items-center gap-0.5">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            Upload required documents to unlock
+                          </p>
+                        )}
+                      </div>
                     </TLId>
                   ) : null}
 
