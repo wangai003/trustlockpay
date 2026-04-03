@@ -629,6 +629,7 @@ const VendorTransactions = () => {
             buyerName={tx?.buyer}
             amount={tx?.amount}
             industry={tx?.industry}
+            transactionId={tx?.dbId}
           />
         );
       })()}
