@@ -52,7 +52,7 @@ const vendorItems: CommandEntry[] = [
   { label: "Vendor Overview", to: "/trustlock/vendor", icon: LayoutDashboard, keywords: "dashboard home earnings", group: "Vendor" },
   { label: "Bill Payments", to: "/trustlock/vendor/bill-payments", icon: Receipt, keywords: "subscription charges fees", group: "Vendor" },
   { label: "Transactions", to: "/trustlock/vendor/transactions", icon: ArrowLeftRight, keywords: "escrow orders sales", group: "Vendor" },
-  { label: "Payouts", to: "/trustlock/vendor/payouts", icon: DollarSign, keywords: "withdraw earnings released", group: "Vendor" },
+  
   { label: "My Sites", to: "/trustlock/vendor/sites", icon: Globe, keywords: "websites widget install integration", group: "Vendor" },
   { label: "KYC & Verification", to: "/trustlock/vendor/kyc", icon: ShieldCheck, keywords: "identity documents verify", group: "Vendor" },
   { label: "TrustLock Assist", to: "/trustlock/vendor/assistant", icon: Bot, keywords: "ai chat support help", group: "Vendor" },
