@@ -40,7 +40,7 @@ async function callFn(fnName: string, body: Record<string, unknown>) {
   return data;
 }
 
-// ─── Profile Sync (name, email, location, phone) ────────────
+// ─── Profile Sync (name, email, location, phone, company, entity_type) ────────────
 export function useSaveProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -50,6 +50,8 @@ export function useSaveProfile() {
       location?: string;
       phone?: string;
       phoneCountryCode?: string;
+      companyName?: string;
+      entityType?: string;
     }) => {
       const session = (await supabase.auth.getSession()).data.session;
       if (!session?.user?.id) throw new Error("Not authenticated");
@@ -58,6 +60,8 @@ export function useSaveProfile() {
       if (params.location !== undefined) updates.location = params.location;
       if (params.phone !== undefined) updates.phone = params.phone;
       if (params.phoneCountryCode !== undefined) updates.phone_country_code = params.phoneCountryCode;
+      if (params.companyName !== undefined) updates.company_name = params.companyName;
+      if (params.entityType !== undefined) updates.entity_type = params.entityType;
       const { error } = await supabase.from("profiles").update(updates).eq("id", session.user.id);
       if (error) throw error;
       return { success: true };

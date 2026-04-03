@@ -112,22 +112,78 @@ const VendorSettings = () => {
           <CardContent className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Business Name</Label>
-                <Input defaultValue={vendor.name} />
+                <Label>Full Name</Label>
+                <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Your legal name" />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input defaultValue={vendor.email} />
+                <Input defaultValue={vendor.email} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Entity Type</Label>
+                <Select value={entityType} onValueChange={setEntityType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select entity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">Individual / Sole Trader</SelectItem>
+                    <SelectItem value="sole_proprietor">Sole Proprietor (Registered)</SelectItem>
+                    <SelectItem value="company">Registered Company</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Company Name
+                  {entityType === "individual" && <span className="text-muted-foreground text-[10px] ml-1">(optional)</span>}
+                  {entityType === "company" && <span className="text-destructive text-[10px] ml-1">*</span>}
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder={entityType === "individual" ? "Optional — leave blank if trading personally" : "Registered company name"}
+                    className="pl-9"
+                  />
+                </div>
+                {entityType === "company" && !companyName.trim() && (
+                  <p className="text-[10px] text-destructive">Company name is required for registered companies.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Location</Label>
-                <Input defaultValue={vendor.location} />
+                <Input value={profileLocation} onChange={(e) => setProfileLocation(e.target.value)} placeholder="City, Country" />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone (optional)</Label>
+                <Input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="+234 xxx xxx xxxx" />
               </div>
               <div className="space-y-2">
                 <Label>Vendor Type</Label>
                 <Input defaultValue={vendor.type || ""} readOnly className="bg-muted/50 capitalize" />
               </div>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (entityType === "company" && !companyName.trim()) {
+                  toast.error("Company name is required for registered companies.");
+                  return;
+                }
+                saveProfile.mutateAsync({
+                  fullName: profileName,
+                  location: profileLocation,
+                  phone: profilePhone,
+                  companyName: companyName || undefined,
+                  entityType,
+                });
+              }}
+              disabled={saveProfile.isPending}
+            >
+              <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
+            </Button>
           </CardContent>
         </Card>
 
