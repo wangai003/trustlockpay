@@ -820,16 +820,22 @@ const MilestoneWorkOrderPanel = ({
                         <Button
                           size="sm"
                           onClick={() => handleMarkFulfilled(ms.id)}
-                          disabled={!docGatePassed && (ms.required_documents || []).length > 0}
-                          variant={!docGatePassed && (ms.required_documents || []).length > 0 ? "outline" : "default"}
+                          disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                          variant={gateStatus.mode === "required" && !gateStatus.satisfied ? "outline" : "default"}
                         >
                           <CheckCircle2 className="w-3 h-3 mr-1" />
                           {layoutMode === "offline" ? "Confirm Offline Step Complete" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
                         </Button>
-                        {!docGatePassed && (ms.required_documents || []).length > 0 && (
+                        {gateStatus.mode === "required" && !gateStatus.satisfied && (
                           <p className="text-[9px] text-destructive flex items-center gap-0.5">
                             <AlertTriangle className="w-2.5 h-2.5" />
-                            Upload required documents to unlock
+                            Upload {gateStatus.missingRequired.length} required document(s) to unlock
+                          </p>
+                        )}
+                        {gateStatus.mode === "optional" && gateStatus.missingOptional.length > 0 && gateStatus.satisfied && (
+                          <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                            <FileWarning className="w-2.5 h-2.5" />
+                            {gateStatus.missingOptional.length} recommended doc(s) pending — you can still proceed
                           </p>
                         )}
                       </div>
