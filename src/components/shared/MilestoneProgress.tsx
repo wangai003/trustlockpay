@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Lock, Unlock, FileText, Eye, Upload, CheckCircle, Circle, Clock } from "lucide-react";
+import { useTransactionMilestones } from "@/hooks/useSupabaseData";
 
 type DocumentMode = "none" | "optional" | "required";
 
@@ -85,8 +86,7 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-// Simulated: which milestone index is "current" based on order status
-function getActiveIndex(status: string, totalStages: number): number {
+function getActiveIndexFromStatus(status: string, totalStages: number): number {
   switch (status) {
     case "locked": return 0;
     case "shipped": return Math.min(Math.floor(totalStages * 0.4), totalStages - 1);
@@ -97,14 +97,29 @@ function getActiveIndex(status: string, totalStages: number): number {
   }
 }
 
+function getActiveIndexFromMilestones(
+  milestoneData: Array<{ status: string | null; position: number }>,
+  totalTemplateStages: number
+): number {
+  if (!milestoneData.length) return -1;
+  const completedCount = milestoneData.filter(
+    (m) => m.status === "fulfilled" || m.status === "released" || m.status === "completed"
+  ).length;
+  if (completedCount >= milestoneData.length) return totalTemplateStages;
+  const ratio = totalTemplateStages / milestoneData.length;
+  return Math.round(completedCount * ratio);
+}
+
 interface MilestoneProgressProps {
   industry?: string | null;
   status: string;
+  transactionId?: string | null;
 }
 
-const MilestoneProgress = ({ industry, status }: MilestoneProgressProps) => {
+const MilestoneProgress = ({ industry, status, transactionId }: MilestoneProgressProps) => {
+  const { data: dbMilestones } = useTransactionMilestones(transactionId || undefined);
+
   const key = industry?.toLowerCase().replace(/[^a-z]/g, "") || "";
-  // Try to match
   const milestones = INDUSTRY_MILESTONES[key]
     || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => key.includes(k)) || ""]
     || null;
@@ -117,16 +132,19 @@ const MilestoneProgress = ({ industry, status }: MilestoneProgressProps) => {
     );
   }
 
-  const activeIdx = getActiveIndex(status, milestones.length);
+  const activeIdx = dbMilestones && dbMilestones.length > 0
+    ? getActiveIndexFromMilestones(dbMilestones, milestones.length)
+    : getActiveIndexFromStatus(status, milestones.length);
+
   const overallProgress = status === "released" ? 100 : status === "disputed" ? 0 : Math.round(((activeIdx + 1) / milestones.length) * 100);
 
   return (
     <div className="space-y-3 py-3">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-foreground">Milestone Progress — {industry || "Unknown"}</p>
-        <Badge variant="outline" className="text-[10px]">{overallProgress}% Complete</Badge>
+        <Badge variant="outline" className="text-[10px]">{Math.min(overallProgress, 100)}% Complete</Badge>
       </div>
-      <Progress value={overallProgress} className="h-1.5" />
+      <Progress value={Math.min(overallProgress, 100)} className="h-1.5" />
       <div className="space-y-1.5">
         {milestones.map((ms, i) => {
           const isComplete = i < activeIdx;

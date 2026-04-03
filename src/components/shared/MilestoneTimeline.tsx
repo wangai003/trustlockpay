@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Lock, Unlock, Eye, CheckCircle, Circle, Clock, FileText } from "lucide-react";
+import { useTransactionMilestones } from "@/hooks/useSupabaseData";
 
 type DocumentMode = "none" | "optional" | "required";
 
@@ -84,7 +85,8 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-function getActiveIndex(status: string, totalStages: number): number {
+/** Fallback: derive active index from transaction status when no milestone data exists */
+function getActiveIndexFromStatus(status: string, totalStages: number): number {
   switch (status) {
     case "locked": return 0;
     case "shipped": return Math.min(Math.floor(totalStages * 0.4), totalStages - 1);
@@ -95,12 +97,36 @@ function getActiveIndex(status: string, totalStages: number): number {
   }
 }
 
+/** Derive active index from actual milestone completion data */
+function getActiveIndexFromMilestones(
+  milestoneData: Array<{ status: string | null; position: number }>,
+  totalTemplateStages: number
+): number {
+  if (!milestoneData.length) return -1;
+
+  // Count completed milestones
+  const completedCount = milestoneData.filter(
+    (m) => m.status === "fulfilled" || m.status === "released" || m.status === "completed"
+  ).length;
+
+  // If all milestones completed, return total (marks everything as complete)
+  if (completedCount >= milestoneData.length) return totalTemplateStages;
+
+  // Find the first non-completed milestone position as the "current" index
+  // Map DB milestone positions to template indices proportionally
+  const ratio = totalTemplateStages / milestoneData.length;
+  return Math.round(completedCount * ratio);
+}
+
 interface MilestoneTimelineProps {
   industry?: string | null;
   status: string;
+  transactionId?: string | null;
 }
 
-const MilestoneTimeline = ({ industry, status }: MilestoneTimelineProps) => {
+const MilestoneTimeline = ({ industry, status, transactionId }: MilestoneTimelineProps) => {
+  const { data: dbMilestones } = useTransactionMilestones(transactionId || undefined);
+  
   const key = industry?.toLowerCase().replace(/[^a-z]/g, "") || "";
   const milestones = INDUSTRY_MILESTONES[key]
     || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => key.includes(k)) || ""]
@@ -114,7 +140,11 @@ const MilestoneTimeline = ({ industry, status }: MilestoneTimelineProps) => {
     );
   }
 
-  const activeIdx = getActiveIndex(status, milestones.length);
+  // Use real milestone data when available, fall back to status-based heuristic
+  const activeIdx = dbMilestones && dbMilestones.length > 0
+    ? getActiveIndexFromMilestones(dbMilestones, milestones.length)
+    : getActiveIndexFromStatus(status, milestones.length);
+
   const overallProgress = status === "released" ? 100 : status === "disputed" ? 0 : Math.round(((activeIdx + 1) / milestones.length) * 100);
 
   // Cumulative percentage for Gantt-style bar widths
@@ -131,7 +161,7 @@ const MilestoneTimeline = ({ industry, status }: MilestoneTimelineProps) => {
         <p className="text-xs font-semibold text-foreground">
           Gantt Timeline — {industry || "Unknown"}
         </p>
-        <Badge variant="outline" className="text-[10px]">{overallProgress}% Complete</Badge>
+        <Badge variant="outline" className="text-[10px]">{Math.min(overallProgress, 100)}% Complete</Badge>
       </div>
 
       {/* Gantt-style bar */}
