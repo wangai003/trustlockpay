@@ -80,10 +80,17 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
-        break;
-      }
 
-      case "confirm_delivery": {
+        // Anchor: shipping milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "shipping_confirmed",
+          tx_id: txId,
+          tracking_number: tracking,
+          status: "shipped",
+          shipped_date: data.shipped_date,
+          order_number: data.order_number,
+        });
+        break;
         const { data, error } = await supabase
           .from("transactions")
           .update({
