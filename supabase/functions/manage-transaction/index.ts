@@ -5,6 +5,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Blockchain Anchor Helper ─────────────────────────────
+async function anchorProof(
+  supabase: ReturnType<typeof createClient>,
+  transactionId: string,
+  recordType: string,
+  eventData: Record<string, unknown>
+) {
+  try {
+    // SHA-256 hash
+    const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(canonical));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    // txRef from transactionId
+    const txData = encoder.encode(transactionId);
+    let txRef = "0x";
+    for (let i = 0; i < 32; i++) {
+      const byte = txData[i % txData.length] ^ (i * 37);
+      txRef += (byte & 0xff).toString(16).padStart(2, "0");
+    }
+
+    // Get prev hash
+    const { data: lastRecord } = await supabase
+      .from("blockchain_proofs")
+      .select("content_hash")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+
+    await supabase.from("blockchain_proofs").insert({
+      content_hash: contentHash,
+      prev_hash: prevHash,
+      record_type: recordType,
+      tx_ref: txRef,
+      transaction_id: transactionId,
+      event_data: eventData,
+      chain_status: "queued",
+    });
+
+    console.log(`[anchor] ${recordType} for tx ${transactionId.slice(0, 8)}... → ${contentHash.slice(0, 16)}...`);
+  } catch (err) {
+    // Non-blocking — anchoring failure must never break the transaction flow
+    console.error("[anchor] Failed to anchor proof:", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,10 +80,17 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
-        break;
-      }
 
-      case "confirm_delivery": {
+        // Anchor: shipping milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "shipping_confirmed",
+          tx_id: txId,
+          tracking_number: tracking,
+          status: "shipped",
+          shipped_date: data.shipped_date,
+          order_number: data.order_number,
+        });
+        break;
         const { data, error } = await supabase
           .from("transactions")
           .update({
@@ -47,22 +103,15 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
-        break;
-      }
 
-      case "release_funds": {
-        const { data, error } = await supabase
-          .from("transactions")
-          .update({
-            status: "released",
-            released_date: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("tx_id", txId)
-          .select()
-          .single();
-        if (error) throw error;
-        result = data;
+        // Anchor: delivery milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "delivery_confirmed",
+          tx_id: txId,
+          status: "delivered",
+          delivered_date: data.delivered_date,
+          order_number: data.order_number,
+        });
         break;
       }
 
@@ -79,6 +128,15 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
+
+        // Anchor: delivery milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "mark_delivered",
+          tx_id: txId,
+          status: "delivered",
+          delivered_date: data.delivered_date,
+          order_number: data.order_number,
+        });
         break;
       }
 
@@ -176,6 +234,18 @@ Deno.serve(async (req) => {
             refund_status: "initiated",
           });
 
+          // Anchor: rejection record
+          await anchorProof(supabase, tx.id, "rejection", {
+            event: "vendor_rejection",
+            tx_id: tx.tx_id,
+            order_number: tx.order_number,
+            original_amount: tx.amount,
+            gas_deducted: gasDeduction,
+            refund_amount: refundAmount,
+            rejection_reason: reason || "Vendor declined order",
+            rejected_at: new Date().toISOString(),
+          });
+
           refundResults.push({
             tx_id: tx.tx_id,
             original_amount: tx.amount,
@@ -227,6 +297,18 @@ Deno.serve(async (req) => {
         await supabase.from("transactions").update({ status: "disputed", updated_at: new Date().toISOString() }).eq("tx_id", txId);
 
         result = data;
+
+        // Anchor: dispute filed
+        await anchorProof(supabase, txData.data.id, "dispute_ruling", {
+          event: "dispute_opened",
+          dispute_id: disputeId,
+          tx_id: txId,
+          reason: reason || "Dispute filed by buyer",
+          amount: txData.data.amount,
+          buyer_name: txData.data.buyer_name,
+          vendor_name: txData.data.vendor_name,
+          filed_at: new Date().toISOString(),
+        });
         break;
       }
 
