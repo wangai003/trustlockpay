@@ -497,11 +497,12 @@ function ProofTimeline({ proofs, onSelect, truncate, loading }: {
 }
 
 /* ─── Detail View ────────────────────────────────── */
-function ProofDetail({ proof, onBack, copyHash, truncate }: {
+function ProofDetail({ proof, onBack, copyHash, truncate, onNavigateToSource }: {
   proof: ProofRecord;
   onBack: () => void;
   copyHash: (h: string) => void;
   truncate: (h: string) => string;
+  onNavigateToSource: (transactionId: string) => void;
 }) {
   const typeInfo = RECORD_TYPE_LABELS[proof.record_type] || { label: proof.record_type, color: "bg-muted text-muted-foreground" };
 
