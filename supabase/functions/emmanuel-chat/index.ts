@@ -798,6 +798,20 @@ serve(async (req) => {
         });
         return error ? { error: error.message } : { success: true, message: `Signal emitted to ${params.target_role}` };
       }
+      if (action === "scan_document") {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/document-scanner`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({
+            action: params.scan_action,
+            bucket: params.bucket,
+            file_path: params.file_path,
+            user_id: params.user_id,
+            transaction_id: params.transaction_id,
+          }),
+        });
+        return await resp.json();
+      }
 
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/emmanuel-analytics`, {
         method: "POST",
