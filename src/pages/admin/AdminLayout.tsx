@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { AdminProvider } from "@/contexts/AdminContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
