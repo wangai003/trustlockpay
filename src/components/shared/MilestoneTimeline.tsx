@@ -167,7 +167,7 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
 
       const isComplete = i < activeIdx;
       const isCurrent = i === activeIdx && status !== "released" && status !== "disputed";
-      const actualEnd = isComplete && dbMs?.fulfilled_at ? new Date(dbMs.fulfilled_at) : null;
+      const actualEnd = isComplete && dbMs?.completed_at ? new Date(dbMs.completed_at) : null;
       const isOverdue = isCurrent && isAfter(now, projectedEnd);
 
       return {
