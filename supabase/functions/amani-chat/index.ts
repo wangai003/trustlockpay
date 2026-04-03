@@ -127,6 +127,42 @@ serve(async (req) => {
       }
     }
 
+    // --- AI Signal Coordination: Read active signals for this vendor ---
+    let signalContext = "";
+    if (authHeader) {
+      try {
+        const adminClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        const supabaseUser = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await supabaseUser.auth.getUser();
+        if (user) {
+          // Read signals targeting this vendor or their transactions
+          const { data: signals } = await adminClient
+            .from("ai_signals")
+            .select("*")
+            .eq("is_resolved", false)
+            .or(`user_id.eq.${user.id},target_role.eq.vendor,target_role.eq.all`)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          if (signals && signals.length > 0) {
+            signalContext = "\n\n## ⚡ ACTIVE SIGNALS FROM OTHER ASSISTANTS\nThese are live intelligence signals from your sibling AIs. Use them to proactively inform the vendor.\n";
+            for (const s of signals) {
+              signalContext += `- [${s.severity.toUpperCase()}] (from ${s.source_assistant}) ${s.signal_type}: ${s.summary}\n`;
+            }
+          }
+        }
+      } catch (sigErr) {
+        console.error("Signal read error (non-fatal):", sigErr);
+      }
+    }
+
     // Build multimodal messages — convert attachments to inline image_url parts
     const processedMessages = messages.map((msg: any) => {
       if (msg.role === "user" && msg.attachments && msg.attachments.length > 0) {
