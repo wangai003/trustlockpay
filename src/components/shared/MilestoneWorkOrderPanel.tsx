@@ -728,10 +728,12 @@ const MilestoneWorkOrderPanel = ({
                   </TLId>
                 </div>
 
-                {/* Document Type Selector (for required document gates) */}
+                {/* Document Type Selector (for required + optional document gates) */}
                 {(() => {
                   const requiredDocs: string[] = ms.required_documents || [];
-                  if (requiredDocs.length === 0) return null;
+                  const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+                  const allDocs = [...requiredDocs, ...optionalDocs];
+                  if (allDocs.length === 0) return null;
                   return (
                     <div className="space-y-1">
                       <label className="text-[10px] font-medium">Tag upload as document type:</label>
@@ -745,7 +747,10 @@ const MilestoneWorkOrderPanel = ({
                         <SelectContent>
                           <SelectItem value="general">General Evidence</SelectItem>
                           {requiredDocs.map((doc: string) => (
-                            <SelectItem key={doc} value={doc}>{doc}</SelectItem>
+                            <SelectItem key={doc} value={doc}>🔒 {doc}</SelectItem>
+                          ))}
+                          {optionalDocs.map((doc: string) => (
+                            <SelectItem key={doc} value={doc}>📎 {doc} (recommended)</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
