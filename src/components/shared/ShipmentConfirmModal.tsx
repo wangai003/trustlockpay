@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, FileText, Send, ShieldCheck, Truck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Send, ShieldAlert, ShieldCheck, Truck, XCircle } from "lucide-react";
 import { INDUSTRY_MILESTONE_MAP } from "@/components/shared/industryPlaybookData";
+import { useTransactionMilestones } from "@/hooks/useSupabaseData";
 
 interface ShipmentConfirmModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ShipmentConfirmModalProps {
   amount?: number;
   industry?: string | null;
   isLoading?: boolean;
+  transactionId?: string | null;
 }
 
 /** Industries whose playbook has a "shipping" milestone with required documents */
@@ -27,7 +29,6 @@ function getShippingDocRequirements(industry: string | null | undefined): { docs
   const templates = INDUSTRY_MILESTONE_MAP[industry as keyof typeof INDUSTRY_MILESTONE_MAP];
   if (!templates) return { docs: [], mode: "none" };
 
-  // Find the milestone that relates to shipping/dispatch/transit
   const shippingStage = templates.find(
     (m) =>
       m.name.toLowerCase().includes("ship") ||
@@ -44,14 +45,46 @@ function getShippingDocRequirements(industry: string | null | undefined): { docs
 const CONFIRM_PHRASE = "CONFIRM SHIPMENT";
 
 export default function ShipmentConfirmModal({
-  open, onClose, onConfirm, txId, orderNumber, buyerName, amount, industry, isLoading,
+  open, onClose, onConfirm, txId, orderNumber, buyerName, amount, industry, isLoading, transactionId,
 }: ShipmentConfirmModalProps) {
   const [tracking, setTracking] = useState("");
   const [typed, setTyped] = useState("");
 
+  const { data: dbMilestones } = useTransactionMilestones(transactionId || undefined);
+
   const { docs, mode } = useMemo(() => getShippingDocRequirements(industry), [industry]);
   const hasRequiredDocs = mode === "required" && docs.length > 0;
   const isConfirmed = typed.trim().toUpperCase() === CONFIRM_PHRASE;
+
+  // Check which required docs have actually been uploaded to milestone documents
+  const uploadedDocNames = useMemo(() => {
+    if (!dbMilestones) return new Set<string>();
+    const names = new Set<string>();
+    for (const ms of dbMilestones) {
+      if (ms.uploaded_documents && Array.isArray(ms.uploaded_documents)) {
+        for (const doc of ms.uploaded_documents as Array<{ name?: string }>) {
+          if (doc?.name) names.add(doc.name.toLowerCase());
+        }
+      }
+    }
+    return names;
+  }, [dbMilestones]);
+
+  const missingDocs = useMemo(() => {
+    if (!hasRequiredDocs) return [];
+    return docs.filter((doc) => {
+      const docLower = doc.toLowerCase();
+      // Check if any uploaded doc name contains the required doc keyword
+      for (const uploaded of uploadedDocNames) {
+        if (uploaded.includes(docLower) || docLower.includes(uploaded.replace(/\.[^.]+$/, ""))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [docs, uploadedDocNames, hasRequiredDocs]);
+
+  const isDocGateBlocked = hasRequiredDocs && missingDocs.length > 0;
 
   const handleClose = () => {
     setTracking("");
@@ -60,7 +93,7 @@ export default function ShipmentConfirmModal({
   };
 
   const handleSubmit = () => {
-    if (!isConfirmed) return;
+    if (!isConfirmed || isDocGateBlocked) return;
     onConfirm(tracking.trim() || `MANUAL-${Date.now()}`);
     handleClose();
   };
@@ -101,29 +134,53 @@ export default function ShipmentConfirmModal({
             )}
           </div>
 
-          {/* Document Gate Warning */}
+          {/* Document Gate — HARD BLOCK */}
           {hasRequiredDocs && (
-            <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-2">
+            <div className={`rounded-lg border p-3 space-y-2 ${
+              isDocGateBlocked
+                ? "border-destructive/40 bg-destructive/5"
+                : "border-primary/30 bg-primary/5"
+            }`}>
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                {isDocGateBlocked ? (
+                  <ShieldAlert className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                )}
                 <div>
-                  <p className="text-sm font-semibold text-accent-foreground">Document Gate — Shipping Stage</p>
+                  <p className={`text-sm font-semibold ${isDocGateBlocked ? "text-destructive" : "text-primary"}`}>
+                    {isDocGateBlocked ? "⛔ Document Gate — BLOCKED" : "✅ Document Gate — Passed"}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Your industry requires the following documents to be uploaded to the shipping milestone before shipment:
+                    {isDocGateBlocked
+                      ? "You cannot confirm shipment until the following required documents are uploaded to the milestone work order panel:"
+                      : "All required shipping documents have been uploaded."
+                    }
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 pl-6">
-                {docs.map((doc) => (
-                  <Badge key={doc} variant="secondary" className="text-[10px] gap-1">
-                    <FileText className="w-3 h-3" />
-                    {doc}
-                  </Badge>
-                ))}
-              </div>
-              <p className="text-[10px] text-muted-foreground pl-6">
-                Ensure these are uploaded in the Work Order Panel before confirming.
-              </p>
+              {isDocGateBlocked && (
+                <div className="space-y-1 pl-6">
+                  {docs.map((doc) => {
+                    const isMissing = missingDocs.includes(doc);
+                    return (
+                      <div key={doc} className="flex items-center gap-1.5 text-xs">
+                        {isMissing ? (
+                          <XCircle className="w-3 h-3 text-destructive shrink-0" />
+                        ) : (
+                          <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                        )}
+                        <span className={isMissing ? "text-destructive font-medium" : "text-muted-foreground line-through"}>
+                          {doc}
+                        </span>
+                        {isMissing && (
+                          <Badge variant="destructive" className="text-[8px] h-3.5 px-1">Missing</Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -138,6 +195,7 @@ export default function ShipmentConfirmModal({
               placeholder="e.g. DHL-1234567890"
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
+              disabled={isDocGateBlocked}
             />
           </div>
 
@@ -161,7 +219,8 @@ export default function ShipmentConfirmModal({
                 placeholder={CONFIRM_PHRASE}
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
-                className={isConfirmed ? "border-primary/50 bg-primary/5" : ""}
+                className={isConfirmed && !isDocGateBlocked ? "border-primary/50 bg-primary/5" : ""}
+                disabled={isDocGateBlocked}
               />
             </div>
           </div>
@@ -171,11 +230,20 @@ export default function ShipmentConfirmModal({
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
           <Button
             onClick={handleSubmit}
-            disabled={!isConfirmed || isLoading}
+            disabled={!isConfirmed || isLoading || isDocGateBlocked}
             className="gap-2"
           >
-            {isConfirmed && <CheckCircle2 className="w-4 h-4" />}
-            {isLoading ? "Processing…" : "Confirm & Ship"}
+            {isDocGateBlocked ? (
+              <>
+                <ShieldAlert className="w-4 h-4" />
+                Documents Required
+              </>
+            ) : (
+              <>
+                {isConfirmed && <CheckCircle2 className="w-4 h-4" />}
+                {isLoading ? "Processing…" : "Confirm & Ship"}
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

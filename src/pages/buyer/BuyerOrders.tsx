@@ -11,6 +11,7 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import TrustLockOSPayout from "@/components/shared/TrustLockOSPayout";
@@ -365,6 +366,7 @@ const BuyerOrders = () => {
                   </div>
                   {expandedOrder === order.id && (
                     <div className="mt-3 border-t border-border pt-3 space-y-3">
+                      <IndustryBlueprintCard industry={order.industry} />
                       <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
