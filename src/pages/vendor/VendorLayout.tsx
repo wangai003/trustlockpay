@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import TrialBanner from "@/components/vendor/TrialBanner";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
