@@ -390,21 +390,31 @@ const MilestoneWorkOrderPanel = ({
     if (isTestnet) {
       // Even in testnet, enforce doc gate
       const milestone = (testnetMilestones || []).find((m) => m.id === milestoneId) as any;
-      if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
-        const requiredDocs: string[] = milestone.required_documents || [];
-        toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
-        return;
+      if (milestone) {
+        const gate = getDocGateStatus(milestone);
+        if (gate.mode === "required" && !gate.satisfied) {
+          toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
+          return;
+        }
+        if (gate.mode === "optional" && gate.missingOptional.length > 0) {
+          toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
+        }
       }
       onTestnetUpdateStatus?.(milestoneId, "completed");
       return;
     }
 
-    // Document gate enforcement
+    // 3-tier document gate enforcement
     const milestone = milestones.find((m: any) => m.id === milestoneId) as any;
-    if (milestone && !isMilestoneDocGateSatisfied(milestone)) {
-      const requiredDocs: string[] = milestone.required_documents || [];
-      toast.error(`Cannot fulfill — upload required documents first: ${requiredDocs.join(", ")}`);
-      return;
+    if (milestone) {
+      const gate = getDocGateStatus(milestone);
+      if (gate.mode === "required" && !gate.satisfied) {
+        toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
+        return;
+      }
+      if (gate.mode === "optional" && gate.missingOptional.length > 0) {
+        toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
+      }
     }
 
     const userId = await getUserId();
