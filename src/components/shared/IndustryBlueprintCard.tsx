@@ -138,7 +138,7 @@ const IndustryBlueprintCard = ({ industry }: IndustryBlueprintCardProps) => {
             <p className="text-[10px] text-muted-foreground">Observer Gates</p>
           </div>
           <div className="rounded-lg border border-border bg-muted/30 p-2 text-center">
-            <Lock className="w-4 h-4 mx-auto text-amber-600 mb-1" />
+            <Lock className="w-4 h-4 mx-auto text-accent mb-1" />
             <p className="text-lg font-bold text-foreground">{stats.docGatedStages.length}</p>
             <p className="text-[10px] text-muted-foreground">Doc-Gated Stages</p>
           </div>
