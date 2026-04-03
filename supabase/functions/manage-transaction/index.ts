@@ -113,6 +113,9 @@ Deno.serve(async (req) => {
           order_number: data.order_number,
         });
         break;
+      }
+
+      case "mark_delivered": {
         const { data, error } = await supabase
           .from("transactions")
           .update({
@@ -125,6 +128,15 @@ Deno.serve(async (req) => {
           .single();
         if (error) throw error;
         result = data;
+
+        // Anchor: delivery milestone
+        await anchorProof(supabase, data.id, "milestone", {
+          event: "mark_delivered",
+          tx_id: txId,
+          status: "delivered",
+          delivered_date: data.delivered_date,
+          order_number: data.order_number,
+        });
         break;
       }
 
