@@ -176,6 +176,15 @@ const TrustLockOSPayout = ({
   const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [complianceBlock, setComplianceBlock] = useState<{
+    flags: { type: string; severity: string; detail: string }[];
+    severity: "critical" | "high" | "clear";
+    allowTransaction: boolean;
+    blockedReason?: string;
+    preKycCap?: number;
+    rollingVolume?: number;
+    todayCount?: number;
+  } | null>(null);
   const [validationAttempted, setValidationAttempted] = useState(false);
 
   // Order number (required for all roles)
