@@ -1262,6 +1262,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          admin_account_id: string | null
           attachment_name: string | null
           attachment_url: string | null
           body: string
@@ -1272,6 +1273,7 @@ export type Database = {
           thread_id: string
         }
         Insert: {
+          admin_account_id?: string | null
           attachment_name?: string | null
           attachment_url?: string | null
           body: string
@@ -1282,6 +1284,7 @@ export type Database = {
           thread_id: string
         }
         Update: {
+          admin_account_id?: string | null
           attachment_name?: string | null
           attachment_url?: string | null
           body?: string
@@ -1292,6 +1295,13 @@ export type Database = {
           thread_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_admin_account_id_fkey"
+            columns: ["admin_account_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_thread_id_fkey"
             columns: ["thread_id"]

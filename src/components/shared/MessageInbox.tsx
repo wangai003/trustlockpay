@@ -58,6 +58,7 @@ interface Message {
   body: string;
   is_read: boolean;
   created_at: string;
+  admin_account_id?: string | null;
 }
 
 interface Contact {
@@ -74,7 +75,10 @@ interface MessageInboxProps {
   transactionLabel?: string;
 }
 
-const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
+const MessageBubble = ({ msg, isMine, role: viewerRole, adminAliasMap, adminNameMap, isChief }: {
+  msg: Message; isMine: boolean; role?: string;
+  adminAliasMap?: Record<string, string>; adminNameMap?: Record<string, string>; isChief?: boolean;
+}) => {
   const [translated, setTranslated] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   let langCtx: ReturnType<typeof useLanguage> | null = null;
@@ -96,12 +100,26 @@ const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
 
   const { sanitized, hadLinks } = sanitizeLinks(translated || msg.body);
 
+  // Show which admin sent this message (visible only in admin view)
+  const adminLabel = (() => {
+    if (viewerRole !== "admin" || !msg.admin_account_id) return null;
+    const alias = adminAliasMap?.[msg.admin_account_id];
+    const realName = adminNameMap?.[msg.admin_account_id];
+    if (isChief && realName) return `${alias || "Admin"} (${realName})`;
+    return alias || "Admin";
+  })();
+
   return (
     <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
       <div className={cn(
         "max-w-[80%] rounded-lg px-3 py-2 text-sm",
         isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
       )}>
+        {adminLabel && (
+          <p className={cn("text-[9px] font-medium mb-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+            {adminLabel}
+          </p>
+        )}
         <p className="whitespace-pre-wrap break-words">{sanitized}</p>
         {hadLinks && (
           <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
@@ -162,8 +180,35 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [adminContactSearch, setAdminContactSearch] = useState("");
   const [adminSearchResults, setAdminSearchResults] = useState<Contact[]>([]);
   const [adminSearching, setAdminSearching] = useState(false);
+  const [adminAliasMap, setAdminAliasMap] = useState<Record<string, string>>({});
+  const [adminNameMap, setAdminNameMap] = useState<Record<string, string>>({});
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isChiefAdmin = (() => {
+    if (role !== "admin") return false;
+    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").isChief === true; } catch { return false; }
+  })();
+
+  // Load admin aliases and names for message attribution (admin view only)
+  useEffect(() => {
+    if (role !== "admin") return;
+    supabase.from("admin_aliases").select("*").then(({ data }) => {
+      if (data) setAdminAliasMap(Object.fromEntries(data.map((a: any) => [a.admin_id, a.alias])));
+    });
+    if (isChiefAdmin) {
+      const chiefId = (() => { try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id; } catch { return null; } })();
+      if (chiefId) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ action: "list", chiefAdminId: chiefId }),
+        }).then(r => r.json()).then(json => {
+          if (json.staff) setAdminNameMap(Object.fromEntries(json.staff.map((s: any) => [s.id, s.name])));
+        }).catch(() => {});
+      }
+    }
+  }, [role, isChiefAdmin]);
 
   // Load threads
   const loadThreads = useCallback(async () => {
@@ -297,15 +342,17 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     if (data) setMessages(data as Message[]);
 
     // Mark unread messages as read
-    if (userId) {
+    // For admin: messages NOT sent by sentinel are from users → mark read
+    // For users: messages NOT sent by themselves are from admin/counterparty → mark read
+    if (effectiveUserId) {
       await supabase
         .from("messages")
         .update({ is_read: true })
         .eq("thread_id", threadId)
-        .neq("sender_id", userId)
+        .neq("sender_id", effectiveUserId)
         .eq("is_read", false);
     }
-  }, [userId]);
+  }, [effectiveUserId]);
 
   // Resolve participant names
   const resolveNames = useCallback(async (threadList: Thread[]) => {
@@ -372,20 +419,51 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     return participantNames[otherId] || otherId.slice(0, 8);
   };
 
-  const getUnreadCount = (threadId: string) => {
-    // We'd need a separate query for this; skip for now
-    return 0;
-  };
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Load unread counts for all threads
+  const loadUnreadCounts = useCallback(async () => {
+    if (!effectiveUserId || threads.length === 0) return;
+    // For each thread, count messages not sent by me that are unread
+    const threadIds = threads.map(t => t.id);
+    const { data } = await supabase
+      .from("messages")
+      .select("thread_id")
+      .in("thread_id", threadIds)
+      .neq("sender_id", effectiveUserId)
+      .eq("is_read", false);
+
+    const counts: Record<string, number> = {};
+    data?.forEach(m => {
+      counts[m.thread_id] = (counts[m.thread_id] || 0) + 1;
+    });
+    setUnreadCounts(counts);
+  }, [effectiveUserId, threads]);
+
+  useEffect(() => { loadUnreadCounts(); }, [loadUnreadCounts]);
+
+  const getUnreadCount = (threadId: string) => unreadCounts[threadId] || 0;
 
   // Send message
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedThread || !userId) return;
     // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
     const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
+
+    // Get admin_account_id from localStorage for admin senders
+    let adminAccountId: string | null = null;
+    if (role === "admin") {
+      try {
+        const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+        adminAccountId = auth.id || null;
+      } catch { /* ignore */ }
+    }
+
     const { error } = await supabase.from("messages").insert({
       thread_id: selectedThread.id,
       sender_id: senderId,
       body: newMessage.trim(),
+      admin_account_id: adminAccountId,
     });
     if (error) {
       toast.error("Failed to send message");
@@ -421,10 +499,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       return;
     }
 
+    let adminAccountId: string | null = null;
+    if (role === "admin") {
+      try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
+    }
+
     await supabase.from("messages").insert({
       thread_id: thread.id,
       sender_id: myParticipantId,
       body: composeBody.trim(),
+      admin_account_id: adminAccountId,
     });
 
     setComposeOpen(false);
@@ -580,9 +664,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                       {isAdmin && <Shield className="w-3 h-3 text-primary shrink-0" />}
                       {other}
                     </span>
-                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                      {format(new Date(thread.last_message_at), "MMM d")}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      {getUnreadCount(thread.id) > 0 && (
+                        <Badge className="text-[9px] px-1.5 py-0 min-w-[18px] justify-center">
+                          {getUnreadCount(thread.id)}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(thread.last_message_at), "MMM d")}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
@@ -635,7 +726,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             {messages.map((msg) => {
               const isMine = msg.sender_id === effectiveUserId;
               return (
-                <MessageBubble key={msg.id} msg={msg} isMine={isMine} />
+                <MessageBubble key={msg.id} msg={msg} isMine={isMine} role={role} adminAliasMap={adminAliasMap} adminNameMap={adminNameMap} isChief={isChiefAdmin} />
               );
             })}
             <div ref={messagesEndRef} />
