@@ -19,7 +19,8 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
-import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
