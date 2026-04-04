@@ -178,7 +178,7 @@ const TrustLockOSPayout = ({
 }: TrustLockOSPayoutProps) => {
    // ─── Admin can select payout action type ──────────────
   const [adminAction, setAdminAction] = useState<"release" | "refund" | "split">(
-    role === "admin" ? (initialPayoutType === "release" ? "refund" : initialPayoutType) : initialPayoutType
+    role === "admin" ? (initialPayoutType || "release") : initialPayoutType
   );
   const payoutType = role === "admin" ? adminAction : initialPayoutType;
 
@@ -439,9 +439,10 @@ const TrustLockOSPayout = ({
   // ─── Role-specific labels ───────────────────────────────
   const getRoleLabel = () => {
     if (isAdmin) {
-      if (payoutType === "refund") return "Admin — Process Refund";
-      if (payoutType === "split") return "Admin — Process Split Pay";
-      return "Admin — Process Refund";
+      if (payoutType === "release") return "Admin — Release Funds to Vendor";
+      if (payoutType === "refund") return "Admin — Process Refund to Buyer";
+      if (payoutType === "split") return "Admin — Process Split Pay (Compromise)";
+      return "Admin — Process Payout";
     }
     if (role === "vendor") return "Vendor — Receive Released Funds";
     if (role === "buyer" && initialPayoutType === "release") return "Buyer — Release & Transfer Funds to Vendor";
@@ -450,9 +451,10 @@ const TrustLockOSPayout = ({
 
   const getActionBadge = () => {
     if (isAdmin) {
+      if (payoutType === "release") return "Release Authorization";
       if (payoutType === "refund") return "Refund Authorization";
       if (payoutType === "split") return "Split Pay Authorization";
-      return "Refund Authorization";
+      return "Payout Authorization";
     }
     if (role === "vendor") return "Fund Release";
     if (role === "buyer" && initialPayoutType === "release") return "Release Authorization";
@@ -1001,7 +1003,7 @@ const TrustLockOSPayout = ({
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Payout Action *</Label>
               <div className="flex gap-2 mt-1 flex-wrap">
-                {(["refund", "split"] as const).map((action) => (
+                {(["release", "refund", "split"] as const).map((action) => (
                   <button
                     key={action}
                     onClick={() => setAdminAction(action)}
@@ -1012,7 +1014,7 @@ const TrustLockOSPayout = ({
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {action === "refund" ? "Refund" : "Split Pay"}
+                    {action === "release" ? "Release to Vendor" : action === "refund" ? "Refund to Buyer" : "Split Pay (Compromise)"}
                   </button>
                 ))}
               </div>
