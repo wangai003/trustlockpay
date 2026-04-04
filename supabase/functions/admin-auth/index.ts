@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         });
 
         if (tempMatch) {
-          return json({ success: true, needsSetup: true, username: account.username, name: account.name });
+          return json({ success: true, needsSetup: true, username: account.username, name: account.name, adminId: account.id });
         }
       }
 
