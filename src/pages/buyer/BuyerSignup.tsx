@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 import { supabase } from "@/integrations/supabase/client";
+import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityTypeSelector";
 const BuyerSignup = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -21,6 +22,8 @@ const BuyerSignup = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
+  const [entityType, setEntityType] = useState<EntityType>("individual");
+  const [companyName, setCompanyName] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +39,18 @@ const BuyerSignup = () => {
       return;
     }
 
+    if ((entityType === "company" || entityType === "sole_proprietor") && !companyName.trim()) {
+      setError("Please enter your business name");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
+    const { error } = await signUp(email, password, {
+      full_name: fullName,
+      role: "buyer",
+      entity_type: entityType,
+      company_name: entityType !== "individual" ? companyName.trim() : undefined,
+    });
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -99,6 +112,13 @@ const BuyerSignup = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="buyer@example.com" required />
               </div>
+              <EntityTypeSelector
+                entityType={entityType}
+                onEntityTypeChange={setEntityType}
+                companyName={companyName}
+                onCompanyNameChange={setCompanyName}
+                role="buyer"
+              />
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

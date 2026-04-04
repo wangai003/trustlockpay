@@ -9,6 +9,7 @@ import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
+import EntityClassificationPrompt from "@/components/shared/EntityClassificationPrompt";
 
 const BuyerLayoutInner = () => {
   useSessionTimeout("/trustlock/buyer/login");
@@ -30,6 +31,7 @@ const BuyerLayoutInner = () => {
           <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
             <BlockchainExplorerPanel />
           </div>
+          <EntityClassificationPrompt />
         </div>
       </BuyerProvider>
     </LanguageProvider>
