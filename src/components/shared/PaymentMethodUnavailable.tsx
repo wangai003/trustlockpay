@@ -75,19 +75,6 @@ export function detectUnavailableMethod(
     });
   }
 
-  // SWIFT fallback for bank_transfer
-  if (method === "bank_transfer" && !isTier1) {
-    alternatives.push({
-      id: "swift_wire",
-      label: "SWIFT International Wire",
-      description: "Any bank globally can send a SWIFT wire. Higher fees and slower, but universally available.",
-      fee: "$25–50 wire fee + 1.5% platform",
-      speed: "2–5 business days",
-      icon: Building2,
-      action: "switch_to_swift",
-    });
-  }
-
   // Transak global as fallback for cards
   if (method === "card") {
     alternatives.push({
