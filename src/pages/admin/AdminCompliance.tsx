@@ -425,7 +425,34 @@ const AdminCompliance = () => {
                                 <cfg.icon className="w-3 h-3" /> {cfg.label}
                               </span>
                             </td>
-                            <td className="p-4 text-center"><Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button></td>
+                            <td className="p-4 text-center">
+                              {kyc.status === "pending" ? (
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    disabled={reviewingId === kyc.queueId}
+                                    onClick={() => handleKycDecision(kyc.queueId, "approved")}
+                                  >
+                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    disabled={reviewingId === kyc.queueId}
+                                    onClick={() => handleKycDecision(kyc.queueId, "rejected")}
+                                  >
+                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
+                                    Reject
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">{kyc.status}</Badge>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
