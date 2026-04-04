@@ -264,6 +264,7 @@ const VendorLogin = () => {
           </CardContent>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-6">Secured by TrustLock Escrow</p>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );
