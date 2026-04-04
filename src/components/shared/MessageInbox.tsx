@@ -726,7 +726,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             {messages.map((msg) => {
               const isMine = msg.sender_id === effectiveUserId;
               return (
-                <MessageBubble key={msg.id} msg={msg} isMine={isMine} />
+                <MessageBubble key={msg.id} msg={msg} isMine={isMine} role={role} adminAliasMap={adminAliasMap} adminNameMap={adminNameMap} isChief={isChiefAdmin} />
               );
             })}
             <div ref={messagesEndRef} />
