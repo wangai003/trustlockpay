@@ -308,6 +308,22 @@ Deno.serve(async (req) => {
       await triageNotify("sanctions_flag", String(user_id), `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Provider: ${screeningSource}. Flag: ${flagId}`, transaction_id ? String(transaction_id) : undefined, "high", { full_name, country, flagId, riskScore, provider: screeningSource });
     }
 
+    // Anchor: AML screening result to blockchain
+    if (transaction_id) {
+      await anchorProof(supabase, String(transaction_id), "aml_screening", {
+        event: "sanctions_screening",
+        user_id: String(user_id),
+        full_name: String(full_name),
+        country: String(country),
+        result,
+        risk_score: riskScore,
+        matched_count: matchedEntries.length,
+        screening_source: screeningSource,
+        screening_provider: provider,
+        screened_at: new Date().toISOString(),
+      });
+    }
+
     return new Response(JSON.stringify({
       success: true,
       result,

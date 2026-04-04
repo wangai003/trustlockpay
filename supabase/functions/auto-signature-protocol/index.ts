@@ -154,6 +154,28 @@ Deno.serve(async (req) => {
 
       if (insertErr) throw insertErr;
 
+      // Anchor: contract auto-signed (digital signature)
+      await anchorProof(supabase, transaction_id as string, "contract", {
+        event: "contract_auto_signed",
+        contract_id: contract.id,
+        vendor_id: vendor_id as string,
+        buyer_id: txData?.buyer_id || null,
+        plan: planId,
+        industry: industry || null,
+        order_amount: order_amount || 0,
+        signed_method: "AUTO-SIGNED by TrustLock Protocol",
+        signed_at: new Date().toISOString(),
+      });
+      await anchorProof(supabase, transaction_id as string, "signature", {
+        event: "vendor_auto_signature",
+        contract_id: contract.id,
+        signer: "vendor",
+        signer_id: vendor_id as string,
+        signed_name: "AUTO-SIGNED by TrustLock Protocol",
+        method: "auto_signature_protocol",
+        signed_at: new Date().toISOString(),
+      });
+
       return new Response(
         JSON.stringify({
           auto_signed: true,
