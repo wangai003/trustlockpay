@@ -206,6 +206,45 @@ const WidgetCheckout = () => {
                   />
                 </div>
 
+                {/* Entity Type Selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">I'm purchasing as</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { key: "individual" as const, label: "Individual", icon: User },
+                      { key: "company" as const, label: "Company", icon: Building2 },
+                      { key: "sole_proprietor" as const, label: "Sole Prop.", icon: User },
+                    ]).map(opt => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, buyerEntityType: opt.key }))}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-colors ${
+                          form.buyerEntityType === opt.key
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        <opt.icon className="w-3.5 h-3.5" />
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {form.buyerEntityType !== "individual" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Company / Business Name</Label>
+                    <Input
+                      placeholder="e.g. Kente Craft Ltd"
+                      value={form.buyerCompanyName}
+                      onChange={(e) => setForm(p => ({ ...p, buyerCompanyName: e.target.value }))}
+                      required
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label className="text-xs">Item / Service</Label>
                   <Input
