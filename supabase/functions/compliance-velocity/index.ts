@@ -25,6 +25,13 @@ const STRUCTURING_MIN_TXS = 3;
 const STRUCTURING_BAND_LOW = 7500; // Suspicious if multiple txs in $7,500–$9,999 range
 const VELOCITY_SPIKE_MULTIPLIER = 3; // 3x above 30-day daily average
 
+// ─── PRE-KYC HARD CAP ────────────────────────────────────
+// Temporary safeguard until third-party KYC provider is integrated.
+// Transactions above this threshold require manual admin approval.
+// Remove or raise this cap once Sumsub/Smile ID is live.
+const PRE_KYC_HARD_CAP = 5000;
+const PRE_KYC_ENABLED = true; // Flip to false once third-party KYC is integrated
+
 function getSupabaseAdmin() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
