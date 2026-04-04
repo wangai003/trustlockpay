@@ -86,44 +86,64 @@ export type Database = {
       admin_accounts: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           email: string | null
           failed_attempts: number
           id: string
+          is_deleted: boolean
           is_setup: boolean
           locked_at: string | null
           name: string
           password_hash: string | null
+          reinstated_at: string | null
           temp_password_hash: string
           updated_at: string
           username: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           failed_attempts?: number
           id?: string
+          is_deleted?: boolean
           is_setup?: boolean
           locked_at?: string | null
           name: string
           password_hash?: string | null
+          reinstated_at?: string | null
           temp_password_hash: string
           updated_at?: string
           username: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           failed_attempts?: number
           id?: string
+          is_deleted?: boolean
           is_setup?: boolean
           locked_at?: string | null
           name?: string
           password_hash?: string | null
+          reinstated_at?: string | null
           temp_password_hash?: string
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_accounts_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_action_log: {
         Row: {
@@ -3659,7 +3679,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_admin_account: {
+        Args: { _name: string; _username: string }
+        Returns: Json
+      }
       generate_admin_alias: { Args: never; Returns: string }
+      generate_temp_password: { Args: never; Returns: string }
       get_contract_audit_trail: {
         Args: { _transaction_id: string }
         Returns: Json
