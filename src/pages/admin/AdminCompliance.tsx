@@ -5,11 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
-  Shield, Search, Globe, Ban, FileWarning, Activity,
+  Shield, Search, Globe, Ban, FileWarning, Activity, ThumbsUp, ThumbsDown, Loader2,
 } from "lucide-react";
 import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const severityColors: Record<string, string> = {
   medium: "bg-accent/15 text-accent-foreground",
@@ -124,9 +127,28 @@ const AdminCompliance = () => {
   const { data: rawFlags = [] } = useComplianceFlags();
   const { data: rawScreenings = [] } = useSanctionsScreeningLogs();
   const [screeningFilter, setScreeningFilter] = useState<string>("all");
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
+    setReviewingId(queueId);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-kyc", {
+        body: { action: "review_document", queue_id: queueId, decision },
+      });
+      if (error) throw error;
+      toast.success(`KYC ${decision === "approved" ? "approved ✅" : "rejected ❌"} — user and held transactions updated.`);
+      queryClient.invalidateQueries({ queryKey: ["kyc-queue"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update KYC status");
+    } finally {
+      setReviewingId(null);
+    }
+  };
 
   const kycQueue = rawKyc.map(k => ({
     id: k.kyc_id,
+    queueId: k.id,
     vendor: k.vendor_name || "Unknown",
     tier: k.tier_change || "—",
     docs: k.documents || "—",
@@ -403,7 +425,34 @@ const AdminCompliance = () => {
                                 <cfg.icon className="w-3 h-3" /> {cfg.label}
                               </span>
                             </td>
-                            <td className="p-4 text-center"><Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button></td>
+                            <td className="p-4 text-center">
+                              {kyc.status === "pending" ? (
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    disabled={reviewingId === kyc.queueId}
+                                    onClick={() => handleKycDecision(kyc.queueId, "approved")}
+                                  >
+                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    disabled={reviewingId === kyc.queueId}
+                                    onClick={() => handleKycDecision(kyc.queueId, "rejected")}
+                                  >
+                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
+                                    Reject
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">{kyc.status}</Badge>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
