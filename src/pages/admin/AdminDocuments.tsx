@@ -482,8 +482,25 @@ const AdminDocuments = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {(doc as any).generation_status === "generated" && (doc as any).file_url ? (
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => window.open((doc as any).file_url, "_blank")}>
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          disabled={generating}
+                          onClick={async () => {
+                            await generateAndDownload(doc.id);
+                            queryClient.invalidateQueries({ queryKey: ["protection-documents"] });
+                          }}
+                        >
+                          {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
                     </div>
                   </div>
                 );
