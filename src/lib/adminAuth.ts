@@ -22,6 +22,7 @@ export interface AdminLoginResult {
   username?: string;
   adminId?: string;
   isChief?: boolean;
+  chiefRank?: number | null;
   locked?: boolean;
   remaining?: number;
   error?: string;
