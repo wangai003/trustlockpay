@@ -25,6 +25,13 @@ const STRUCTURING_MIN_TXS = 3;
 const STRUCTURING_BAND_LOW = 7500; // Suspicious if multiple txs in $7,500–$9,999 range
 const VELOCITY_SPIKE_MULTIPLIER = 3; // 3x above 30-day daily average
 
+// ─── PRE-KYC HARD CAP ────────────────────────────────────
+// Temporary safeguard until third-party KYC provider is integrated.
+// Transactions above this threshold require manual admin approval.
+// Remove or raise this cap once Sumsub/Smile ID is live.
+const PRE_KYC_HARD_CAP = 5000;
+const PRE_KYC_ENABLED = true; // Flip to false once third-party KYC is integrated
+
 function getSupabaseAdmin() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -117,6 +124,58 @@ Deno.serve(async (req) => {
 
       const parsedAmount = parseFloat(amount);
       const flags: { type: string; severity: string; detail: string }[] = [];
+
+      // ── Pre-KYC Hard Cap Check ──
+      // Block transactions above $5,000 until third-party KYC is integrated
+      if (PRE_KYC_ENABLED && parsedAmount >= PRE_KYC_HARD_CAP) {
+        // Check if user has completed verified KYC (approved status in kyc_queue)
+        const { data: kycRecord } = await supabase
+          .from("kyc_queue")
+          .select("status")
+          .eq("vendor_id", user_id)
+          .eq("status", "approved")
+          .limit(1);
+
+        const hasVerifiedKyc = kycRecord && kycRecord.length > 0;
+
+        if (!hasVerifiedKyc) {
+          // Create compliance flag for admin review
+          const flagId = `CAP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          await supabase.from("compliance_flags").insert({
+            flag_id: flagId,
+            type: "pre_kyc_hard_cap",
+            description: `Transaction of $${parsedAmount.toLocaleString()} exceeds the $${PRE_KYC_HARD_CAP.toLocaleString()} pre-KYC hard cap. Manual admin approval required until third-party KYC provider is integrated.`,
+            severity: "high",
+            status: "open",
+            related_buyer_id: user_id,
+          });
+
+          await triageNotify(
+            "pre_kyc_hard_cap",
+            user_id,
+            `Transaction of $${parsedAmount.toLocaleString()} blocked — exceeds $${PRE_KYC_HARD_CAP.toLocaleString()} pre-KYC cap. Requires manual admin approval.`,
+            transaction_id || undefined,
+            "high",
+            { flagId, amount: parsedAmount, cap: PRE_KYC_HARD_CAP }
+          );
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              flags: [{
+                type: "pre_kyc_hard_cap",
+                severity: "high",
+                detail: `This transaction ($${parsedAmount.toLocaleString()}) exceeds the $${PRE_KYC_HARD_CAP.toLocaleString()} limit for accounts without verified KYC. An admin has been notified and must approve this transaction manually. Contact support if urgent.`,
+              }],
+              severity: "high",
+              allow_transaction: false,
+              blocked_reason: "pre_kyc_hard_cap",
+              pre_kyc_cap: PRE_KYC_HARD_CAP,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
 
       // 1) Anti-structuring: recent transactions in the $7,500–$9,999 band
       const windowStart = new Date(Date.now() - STRUCTURING_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
