@@ -319,7 +319,7 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
               </div>
 
               {/* Date range */}
-              <div className="hidden sm:block w-28 shrink-0 text-[8px] text-muted-foreground font-mono pl-1">
+              <div className="hidden sm:block w-28 shrink-0 text-[8px] text-muted-foreground font-mono pl-1" title={`${formatLocalDateWithTZ(bar.projectedStart)} → ${formatLocalDateWithTZ(bar.projectedEnd)}`}>
                 {format(bar.projectedStart, "dd MMM")} → {format(bar.projectedEnd, "dd MMM")}
               </div>
             </div>
