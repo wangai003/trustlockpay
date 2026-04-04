@@ -159,6 +159,13 @@ const VendorSignup = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vendor@example.com" required />
               </div>
+              <EntityTypeSelector
+                entityType={entityType}
+                onEntityTypeChange={setEntityType}
+                companyName={companyName}
+                onCompanyNameChange={setCompanyName}
+                role="vendor"
+              />
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
