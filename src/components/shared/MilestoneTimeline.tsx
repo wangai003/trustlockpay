@@ -244,9 +244,9 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
 
       {/* Date axis header */}
       <div className="flex items-center justify-between text-[9px] text-muted-foreground font-mono">
-        <span>{format(startDate, "dd MMM yyyy")}</span>
+        <span title={formatLocalDateWithTZ(startDate)}>{format(startDate, "dd MMM yyyy")}</span>
         <span className="text-foreground font-semibold">{totalDays} days projected</span>
-        <span>{format(projectedCompletion, "dd MMM yyyy")}</span>
+        <span title={formatLocalDateWithTZ(projectedCompletion)}>{format(projectedCompletion, "dd MMM yyyy")}</span>
       </div>
 
       {/* Gantt bars */}
