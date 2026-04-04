@@ -423,6 +423,8 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
     marketplaceMetadata: (params.marketplace_metadata as Record<string, unknown>) || null,
+    buyerEntityType: params.buyerEntityType ? String(params.buyerEntityType) : "individual",
+    buyerCompanyName: params.buyerCompanyName ? String(params.buyerCompanyName) : undefined,
   };
 
   sessions.set(sessionId, session);
