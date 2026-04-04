@@ -1,4 +1,4 @@
-import { AlertTriangle, Wallet, CreditCard, Building2, Globe, ArrowRight, ExternalLink } from "lucide-react";
+import { AlertTriangle, Wallet, CreditCard, Globe, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

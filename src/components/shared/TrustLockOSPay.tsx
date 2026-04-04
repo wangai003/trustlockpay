@@ -834,7 +834,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                     if (action === "switch_to_crypto") setMethod("azix");
                     else if (action === "switch_to_card") setMethod("card");
                     else if (action === "switch_to_transak") setMethod("transak");
-                    else if (action === "switch_to_swift") setMethod("bank_transfer");
                   }}
                 />
               );
