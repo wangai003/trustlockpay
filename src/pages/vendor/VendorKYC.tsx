@@ -169,7 +169,7 @@ const VendorKYC = () => {
         const { data: biz } = await supabase
           .from("business_kyc_profiles")
           .select("*")
-          .eq("vendor_id", session.user.id)
+          .eq("user_id", session.user.id)
           .maybeSingle();
         if (biz) {
           setBusinessProfileId(biz.id);
