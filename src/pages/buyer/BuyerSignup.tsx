@@ -39,8 +39,18 @@ const BuyerSignup = () => {
       return;
     }
 
+    if ((entityType === "company" || entityType === "sole_proprietor") && !companyName.trim()) {
+      setError("Please enter your business name");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signUp(email, password, { full_name: fullName, role: "buyer" });
+    const { error } = await signUp(email, password, {
+      full_name: fullName,
+      role: "buyer",
+      entity_type: entityType,
+      company_name: entityType !== "individual" ? companyName.trim() : undefined,
+    });
     if (error) {
       setError(error.message);
       setLoading(false);
