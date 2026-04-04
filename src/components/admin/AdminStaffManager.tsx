@@ -178,10 +178,6 @@ export default function AdminStaffManager() {
                       <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setPromoteTarget(a)}>
                         <Crown className="w-3 h-3" /> Promote
                       </Button>
-                    ) : a.chief_rank !== 1 ? (
-                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setDemoteTarget(a)}>
-                        <ShieldAlert className="w-3 h-3" /> Demote
-                      </Button>
                     ) : null}
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
                       <Trash2 className="w-3 h-3" /> Delete
