@@ -20,6 +20,8 @@ import FundMovementTracker from "./FundMovementTracker";
 import TransactionFailureState from "./TransactionFailureState";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
+import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMethodUnavailable";
+import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
@@ -813,6 +815,32 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               </button>
             ))}
           </div>
+
+          {/* ─── UNAVAILABLE METHOD GUIDANCE ─── */}
+          {method && selectedCountry && (() => {
+            const feeMethod: FeeEnginePaymentMethod =
+              method === "applepay" ? "card" :
+              method === "coinbase" ? "crypto" :
+              method === "transak" ? "crypto" :
+              method === "azix" ? "crypto" :
+              method as FeeEnginePaymentMethod;
+            const check = detectUnavailableMethod(selectedCountry, feeMethod);
+            if (check.isUnavailable) {
+              return (
+                <PaymentMethodUnavailable
+                  country={selectedCountry}
+                  method={feeMethod}
+                  onSwitchMethod={(action) => {
+                    if (action === "switch_to_crypto") setMethod("azix");
+                    else if (action === "switch_to_card") setMethod("card");
+                    else if (action === "switch_to_transak") setMethod("transak");
+                    else if (action === "switch_to_swift") setMethod("bank_transfer");
+                  }}
+                />
+              );
+            }
+            return null;
+          })()}
 
           {/* ─── METHOD-SPECIFIC FIELDS ─── */}
           {method === "card" && (
