@@ -563,6 +563,7 @@ Deno.serve(async (req) => {
 
         result = data;
         break;
+      }
 
       case "accept_ruling": {
         const { party } = body; // "buyer" or "vendor"
