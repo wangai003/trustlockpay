@@ -619,6 +619,16 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "vendor_release", null, disputeId);
+
+          // Anchor: dispute resolved - vendor wins
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "vendor_release",
+            resolution: "Admin ruling: Full release to vendor",
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         // Notify both parties
