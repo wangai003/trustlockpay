@@ -92,12 +92,12 @@ Deno.serve(async (req) => {
           // Check chief status
           const { data: chiefRecord } = await supabase
             .from("chief_admin_config")
-            .select("id")
+            .select("id, rank")
             .eq("admin_id", account.id)
             .eq("is_active", true)
             .maybeSingle();
 
-          return json({ success: true, needsSetup: false, name: account.name, adminId: account.id, isChief: !!chiefRecord });
+          return json({ success: true, needsSetup: false, name: account.name, adminId: account.id, isChief: !!chiefRecord, chiefRank: chiefRecord?.rank || null });
         }
       }
 
