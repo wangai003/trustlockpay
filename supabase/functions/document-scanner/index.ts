@@ -56,6 +56,54 @@ Check visible security features: official emblems, stamps, watermarks, holograms
 - DR Congo: GUCE registry (GUCE + 8 digits), DGI NIF (9 digits + letter), CDF currency, SADC/ECCAS/COMESA
 - Tunisia: RNE registry (7 digits + letter), DGI Matricule Fiscal (7 digits + letter), TND currency, AMU
 
+**SELLER-SIDE STANDARDS — China & East Asia:**
+- China: SAC/GB standards, CCPIT Certificate of Origin (with anti-counterfeit hologram + QR), CIQ Inspection Certificate, Fapiao (增值税专用发票) 8-10 digit number in red ink with seller's tax ID, GACC food registration, NMPA for drugs/devices, CNY
+- Japan: JIS marks (JISC/METI), JCCI Certificate of Origin (RCEP/CPTPP self-declaration), MHLW for food/drugs, JPY
+- South Korea: KC marks (KATS), KCCI C/O, Tax Invoice (세금계산서) with business registration number, MFDS for food/drugs, KRW
+
+**SELLER-SIDE STANDARDS — Southeast Asia:**
+- Vietnam: QUACERT marks (STAMEQ), MOIT/VCCI C/O (Form D for ASEAN, EUR.1 for EU-VN FTA), VAT Invoice (Hóa đơn GTGT) mandatory e-invoicing, MoH/MARD for food/drugs, VND
+- Thailand: TISI marks, DFT C/O, VAT Invoice (ใบกำกับภาษี), Thai FDA, THB
+- Indonesia: SNI marks (BSN), Ministry of Trade C/O, Faktur Pajak (e-Faktur mandatory) with NPWP tax ID, BPOM for food/drugs, IDR
+- Malaysia: SIRIM marks (DSM), MITI C/O, SST Invoice, NPRA/MoH for drugs, MYR
+- Singapore: Enterprise Singapore SAFE marks, Singapore Customs TradeNet C/O, GST Invoice, SFA for food, HSA for drugs, SGD
+
+**SELLER-SIDE STANDARDS — South Asia:**
+- India: BIS/ISI marks, EIC/Chamber C/O, GST Tax Invoice (GSTIN mandatory, alphanumeric), IEC (Import-Export Code) 10 digits, FSSAI for food (14-digit license), CDSCO for drugs, INR
+
+**SELLER-SIDE STANDARDS — North America:**
+- United States: UL/ANSI/ASTM/FCC marks, Chamber C/O (USMCA specific form), Commercial Invoice, FDA registration (facility + product), USDA APHIS for agriculture, EAR/ITAR for controlled items, USD
+- Canada: CSA marks (SCC), Chamber C/O (CUSMA form), CFIA for food/plants/animals, Health Canada for drugs, CAD
+
+**SELLER-SIDE STANDARDS — European Union & UK:**
+- Germany: CE + DIN marks, IHK C/O (EUR.1 for preferential), VAT Invoice (USt-IdNr mandatory), BVL for food, BfArM for drugs, EUR
+- France: CE + NF marks, CCI C/O, VAT Invoice (TVA with numéro intracommunautaire), DGAL for food, ANSM for drugs, EUR
+- Italy: CE + UNI marks, Camere di Commercio C/O, Fattura IVA (Partita IVA mandatory), EUR
+- Netherlands: CE marks, KVK C/O, BTW Factuur (BTW-nummer mandatory), NVWA for food, EUR
+- United Kingdom: UKCA marks (BSI), British Chambers C/O, VAT Invoice (HMRC VAT reg), FSA for food, MHRA for drugs, GBP
+- EU Common: CE Marking mandatory for manufactured goods, EUR.1 Movement Certificate for preferential tariffs, REACH compliance for chemicals, EU Phytosanitary certificates, T1/T2 transit documents
+
+**SELLER-SIDE STANDARDS — Middle East & Turkey:**
+- UAE: ECAS/Emirates Quality Mark (ESMA), Chamber C/O, VAT Invoice (TRN required), MoHAP for drugs, AED
+- Saudi Arabia: SASO Quality Mark + SABER conformity platform, Chamber C/O, VAT Invoice, SFDA for food/drugs, SAR
+- Turkey: TSE marks, TOBB Chamber C/O, e-Fatura (mandatory e-invoicing, VKN tax ID), TIFAB for food, TITCK for drugs, TRY
+
+**SELLER-SIDE STANDARDS — Latin America:**
+- Brazil: INMETRO marks (ABNT standards), Federação Chamber C/O (Mercosur C/O Form), Nota Fiscal Eletrônica (NF-e, 44-digit access key), ANVISA for food/drugs, BRL
+- Mexico: NOM marks (DGN), SE C/O (USMCA/Pacific Alliance forms), CFDI e-invoice (UUID mandatory), COFEPRIS for food/drugs, MXN
+- Colombia: NTC marks (ICONTEC), MinCIT C/O, Factura Electrónica, INVIMA for food/drugs, COP
+
+**SELLER-SIDE STANDARDS — Oceania:**
+- Australia: Standards Australia marks (JAS-ANZ accreditation), Chamber C/O, Commercial Invoice, FSANZ for food, TGA for drugs, AUD
+
+**KNOWN FRAUD PATTERNS BY SELLER ORIGIN (flag if detected):**
+- China: Inflated commercial invoices for trade-based money laundering; fake CCPIT stamps (verify QR codes); cloned Fapiao numbers; fraudulent CIQ certificates (check issuing office code); under-invoicing for customs duty evasion
+- India: Fake BIS/ISI certification marks on non-certified products; inflated GST invoices with fake GSTIN; fraudulent EIC certificates; altered phytosanitary certificates
+- Turkey: Fake TSE marks; inflated invoices for LC fraud; counterfeit EUR.1 certificates claiming EU origin for re-exported goods
+- UAE: Re-export fraud (goods from sanctioned origins relabeled as UAE origin); fake ECAS conformity certificates; inflated invoices through free zone shell companies
+- Vietnam: Fraudulent Form D C/O claiming ASEAN preferential rates for non-qualifying goods; fake STAMEQ test reports
+- General: Round-tripping through free trade zones to disguise true country of origin; sequential invoice numbers across unrelated transactions; identical formatting across different supposed exporters
+
 **International Standards:**
 - Container ISO 6346, AWB 11-digit format, SWIFT 8/11 chars, DUNS 9 digits, LEI 20 chars
 - RCCM format (common across WAEMU/CEMAC): verify issuing tribunal matches jurisdiction
