@@ -147,6 +147,36 @@ export default function AdminStaffManager() {
     return "";
   };
 
+  if (missingChiefSession) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin session needs refresh</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Your chief admin session is missing its identity. Sign out and sign back in to access staff management.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load staff management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            The chief-only staff service rejected this session. Refresh your login and try again.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

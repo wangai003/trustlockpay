@@ -102,6 +102,7 @@ const AdminLogin = () => {
         localStorage.setItem("tl_admin_auth", JSON.stringify({
           authenticated: true,
           adminId: result.adminId || "",
+          id: result.adminId || "",
           name: result.name || "Admin",
           isChief: result.isChief || false,
           chiefRank: result.chiefRank || null,
