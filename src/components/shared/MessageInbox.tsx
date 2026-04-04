@@ -375,10 +375,30 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     return participantNames[otherId] || otherId.slice(0, 8);
   };
 
-  const getUnreadCount = (threadId: string) => {
-    // We'd need a separate query for this; skip for now
-    return 0;
-  };
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Load unread counts for all threads
+  const loadUnreadCounts = useCallback(async () => {
+    if (!effectiveUserId || threads.length === 0) return;
+    // For each thread, count messages not sent by me that are unread
+    const threadIds = threads.map(t => t.id);
+    const { data } = await supabase
+      .from("messages")
+      .select("thread_id")
+      .in("thread_id", threadIds)
+      .neq("sender_id", effectiveUserId)
+      .eq("is_read", false);
+
+    const counts: Record<string, number> = {};
+    data?.forEach(m => {
+      counts[m.thread_id] = (counts[m.thread_id] || 0) + 1;
+    });
+    setUnreadCounts(counts);
+  }, [effectiveUserId, threads]);
+
+  useEffect(() => { loadUnreadCounts(); }, [loadUnreadCounts]);
+
+  const getUnreadCount = (threadId: string) => unreadCounts[threadId] || 0;
 
   // Send message
   const handleSend = async () => {
