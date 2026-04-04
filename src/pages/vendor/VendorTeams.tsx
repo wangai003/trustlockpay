@@ -47,7 +47,7 @@ const LANGUAGES = [
   { code: "es", label: "Español" },
 ];
 
-type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null; owner_id: string };
+type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null; owner_id: string; invite_code?: string | null };
 type Member = { id: string; user_id: string; display_name: string | null; role: string; can_finalize: boolean; removed_at: string | null; preferred_language?: string };
 type RolePreset = { id: string; industry: string; role_name: string; role_key: string };
 
