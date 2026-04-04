@@ -117,6 +117,8 @@ const WidgetCheckout = () => {
           paymentMethod: "card",
           industry: vendor.industry,
           orderType: "simple",
+          buyerEntityType: form.buyerEntityType,
+          buyerCompanyName: form.buyerEntityType !== "individual" ? form.buyerCompanyName : null,
         },
       });
 
