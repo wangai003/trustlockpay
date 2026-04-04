@@ -165,6 +165,45 @@ const VendorKYC = () => {
         setIsMainnet(true);
         setUserId(session.user.id);
         await fetchDocs(session.user.id);
+        // Fetch business KYC profile
+        const { data: biz } = await supabase
+          .from("business_kyc_profiles")
+          .select("*")
+          .eq("vendor_id", session.user.id)
+          .maybeSingle();
+        if (biz) {
+          setBusinessProfileId(biz.id);
+          setBusinessProfile({
+            company_legal_name: biz.company_legal_name || "",
+            trading_name: biz.trading_name || "",
+            registration_number: biz.registration_number || "",
+            tax_id: biz.tax_id || "",
+            incorporation_date: biz.incorporation_date || "",
+            jurisdiction: biz.jurisdiction || "",
+            business_type: biz.business_type || "limited_company",
+            registered_address: biz.registered_address || "",
+            business_activity_description: biz.business_activity_description || "",
+            signatory_name: biz.signatory_name || "",
+            signatory_title: biz.signatory_title || "",
+          });
+          setBusinessSaved(true);
+          // Fetch UBOs
+          const { data: uboData } = await supabase
+            .from("ubo_declarations")
+            .select("*")
+            .eq("business_kyc_id", biz.id)
+            .order("created_at");
+          if (uboData) {
+            setUbos(uboData.map(u => ({
+              id: u.id,
+              full_name: u.full_name,
+              nationality: u.nationality || "",
+              date_of_birth: u.date_of_birth || "",
+              ownership_percentage: Number(u.ownership_percentage) || 0,
+              address: u.address || "",
+            })));
+          }
+        }
       } else {
         setDocuments(MOCK_DOCS);
       }
