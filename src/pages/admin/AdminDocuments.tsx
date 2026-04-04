@@ -472,6 +472,12 @@ const AdminDocuments = () => {
                           <Clock className="w-2.5 h-2.5 mr-0.5" />
                           {retention.label}
                         </Badge>
+                        {(doc as any).generation_status === "generated" && (
+                          <Badge className="text-[9px] bg-primary/15 text-primary">PDF Ready</Badge>
+                        )}
+                        {(doc as any).generation_status === "pending" && (
+                          <Badge variant="secondary" className="text-[9px]">No PDF</Badge>
+                        )}
                         {isExpired && <Badge variant="destructive" className="text-[9px]">Review Required</Badge>}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
