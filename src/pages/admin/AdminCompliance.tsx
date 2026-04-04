@@ -127,8 +127,10 @@ const AdminCompliance = () => {
   const { data: rawKyc = [] } = useKycQueue();
   const { data: rawFlags = [] } = useComplianceFlags();
   const { data: rawScreenings = [] } = useSanctionsScreeningLogs();
+  const { data: allKycDocs = [] } = useKycDocuments();
   const [screeningFilter, setScreeningFilter] = useState<string>("all");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
