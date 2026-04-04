@@ -456,6 +456,7 @@ const VendorTransactions = () => {
                         <tr>
                           <td colSpan={11} className="px-4 pb-4 bg-muted/10">
                             <div className="space-y-3 pt-2">
+                              <OrderStepGuide status={tx.status} role="vendor" industry={tx.industry} />
                               {/* Order details summary */}
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                                 <div>

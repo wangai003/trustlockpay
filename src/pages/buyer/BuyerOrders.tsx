@@ -366,7 +366,7 @@ const BuyerOrders = () => {
                   </div>
                   {expandedOrder === order.id && (
                     <div className="mt-3 border-t border-border pt-3 space-y-3">
-                      <IndustryBlueprintCard industry={order.industry} />
+                      <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
                       <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
