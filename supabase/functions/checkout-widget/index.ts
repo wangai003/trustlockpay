@@ -503,6 +503,10 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         route: contractResult.route || null,
       } : null,
       cryptoVerification,
+      buyerEntity: {
+        type: session.buyerEntityType || "individual",
+        companyName: session.buyerCompanyName || null,
+      },
       disclosure: {
         escrowPrincipalPreserved: true,
         vendorReceives: `Escrow principal minus 1% escrow service fee ($${numAmount.toFixed(2)})`,
