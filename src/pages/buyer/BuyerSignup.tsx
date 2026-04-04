@@ -11,6 +11,7 @@ import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/Pas
 import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 import { supabase } from "@/integrations/supabase/client";
 import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityTypeSelector";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 const BuyerSignup = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -140,6 +141,7 @@ const BuyerSignup = () => {
             </form>
           </CardContent>
         </Card>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );

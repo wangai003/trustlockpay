@@ -15,6 +15,7 @@ import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 interface LinkData {
   link_id: string;
@@ -504,6 +505,7 @@ const PublicCheckout = () => {
           <p className="text-[10px] text-muted-foreground">
             Your payment is held in escrow until delivery is confirmed. You can dispute within 14 days.
           </p>
+          <InlineLegalLinks />
         </div>
       </div>
     </div>

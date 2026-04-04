@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -264,6 +265,7 @@ const VendorLogin = () => {
           </CardContent>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-6">Secured by TrustLock Escrow</p>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );

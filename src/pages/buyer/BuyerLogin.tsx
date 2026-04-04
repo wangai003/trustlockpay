@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ShoppingBag, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
@@ -226,6 +227,7 @@ const BuyerLogin = () => {
           </CardContent>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-6">Your funds are protected by escrow</p>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );
