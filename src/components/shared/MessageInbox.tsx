@@ -298,15 +298,17 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     if (data) setMessages(data as Message[]);
 
     // Mark unread messages as read
-    if (userId) {
+    // For admin: messages NOT sent by sentinel are from users → mark read
+    // For users: messages NOT sent by themselves are from admin/counterparty → mark read
+    if (effectiveUserId) {
       await supabase
         .from("messages")
         .update({ is_read: true })
         .eq("thread_id", threadId)
-        .neq("sender_id", userId)
+        .neq("sender_id", effectiveUserId)
         .eq("is_read", false);
     }
-  }, [userId]);
+  }, [effectiveUserId]);
 
   // Resolve participant names
   const resolveNames = useCallback(async (threadList: Thread[]) => {
