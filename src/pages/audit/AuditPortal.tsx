@@ -387,6 +387,7 @@ const AuditPortal = () => {
         <div className="text-center text-[10px] text-muted-foreground py-4 border-t">
           Audit session: {session.id.slice(0, 8)}... · Auditor: {session.auditor_name} · 
           All access is logged and monitored · TrustLock Pay™
+          <InlineLegalLinks />
         </div>
       </div>
     </div>

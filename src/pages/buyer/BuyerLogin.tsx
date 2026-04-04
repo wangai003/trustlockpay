@@ -227,6 +227,7 @@ const BuyerLogin = () => {
           </CardContent>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-6">Your funds are protected by escrow</p>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );

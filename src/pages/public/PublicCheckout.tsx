@@ -505,6 +505,7 @@ const PublicCheckout = () => {
           <p className="text-[10px] text-muted-foreground">
             Your payment is held in escrow until delivery is confirmed. You can dispute within 14 days.
           </p>
+          <InlineLegalLinks />
         </div>
       </div>
     </div>

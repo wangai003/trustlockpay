@@ -141,6 +141,7 @@ const BuyerSignup = () => {
             </form>
           </CardContent>
         </Card>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );

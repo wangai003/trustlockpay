@@ -188,6 +188,7 @@ const VendorSignup = () => {
             </form>
           </CardContent>
         </Card>
+        <InlineLegalLinks />
       </motion.div>
     </div>
   );
