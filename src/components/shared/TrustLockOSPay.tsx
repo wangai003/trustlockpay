@@ -816,6 +816,32 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             ))}
           </div>
 
+          {/* ─── UNAVAILABLE METHOD GUIDANCE ─── */}
+          {method && selectedCountry && (() => {
+            const feeMethod: FeeEnginePaymentMethod =
+              method === "applepay" ? "card" :
+              method === "coinbase" ? "crypto" :
+              method === "transak" ? "crypto" :
+              method === "azix" ? "crypto" :
+              method as FeeEnginePaymentMethod;
+            const check = detectUnavailableMethod(selectedCountry, feeMethod);
+            if (check.isUnavailable) {
+              return (
+                <PaymentMethodUnavailable
+                  country={selectedCountry}
+                  method={feeMethod}
+                  onSwitchMethod={(action) => {
+                    if (action === "switch_to_crypto") setMethod("azix");
+                    else if (action === "switch_to_card") setMethod("card");
+                    else if (action === "switch_to_transak") setMethod("transak");
+                    else if (action === "switch_to_swift") setMethod("bank_transfer");
+                  }}
+                />
+              );
+            }
+            return null;
+          })()}
+
           {/* ─── METHOD-SPECIFIC FIELDS ─── */}
           {method === "card" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
