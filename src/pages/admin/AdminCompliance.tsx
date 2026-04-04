@@ -147,7 +147,7 @@ const AdminCompliance = () => {
   // Fetch business KYC profiles when a vendor row is expanded
   const fetchBusinessKyc = async (vendorId: string) => {
     if (businessProfiles[vendorId]) return;
-    const { data: biz } = await supabase.from("business_kyc_profiles").select("*").eq("vendor_id", vendorId).maybeSingle();
+    const { data: biz } = await supabase.from("business_kyc_profiles").select("*").eq("user_id", vendorId).maybeSingle();
     if (biz) {
       setBusinessProfiles(p => ({ ...p, [vendorId]: biz }));
       const { data: uboData } = await supabase.from("ubo_declarations").select("*").eq("business_kyc_id", biz.id);

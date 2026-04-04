@@ -43,6 +43,8 @@ interface CheckoutSession {
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
   marketplaceMetadata?: Record<string, unknown> | null;
+  buyerEntityType?: string;
+  buyerCompanyName?: string;
 }
 
 interface ProcessorResult {
@@ -421,6 +423,8 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     industry: params.industry ? String(params.industry) : undefined,
     feeBreakdownJson,
     marketplaceMetadata: (params.marketplace_metadata as Record<string, unknown>) || null,
+    buyerEntityType: params.buyerEntityType ? String(params.buyerEntityType) : "individual",
+    buyerCompanyName: params.buyerCompanyName ? String(params.buyerCompanyName) : undefined,
   };
 
   sessions.set(sessionId, session);
@@ -499,6 +503,10 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
         route: contractResult.route || null,
       } : null,
       cryptoVerification,
+      buyerEntity: {
+        type: session.buyerEntityType || "individual",
+        companyName: session.buyerCompanyName || null,
+      },
       disclosure: {
         escrowPrincipalPreserved: true,
         vendorReceives: `Escrow principal minus 1% escrow service fee ($${numAmount.toFixed(2)})`,
@@ -554,6 +562,8 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     const updatePayload: Record<string, unknown> = {
       fee: session.fee,
       order_type: session.orderType,
+      buyer_entity_type: session.buyerEntityType || "individual",
+      buyer_company_name: session.buyerCompanyName || null,
     };
     // Persist marketplace metadata on the transaction for downstream callbacks
     if (session.marketplaceMetadata) {

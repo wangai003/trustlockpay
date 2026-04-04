@@ -401,7 +401,7 @@ export type Database = {
           tax_id: string | null
           trading_name: string | null
           updated_at: string
-          vendor_id: string
+          user_id: string
           verification_status: string
         }
         Insert: {
@@ -421,7 +421,7 @@ export type Database = {
           tax_id?: string | null
           trading_name?: string | null
           updated_at?: string
-          vendor_id: string
+          user_id: string
           verification_status?: string
         }
         Update: {
@@ -441,7 +441,7 @@ export type Database = {
           tax_id?: string | null
           trading_name?: string | null
           updated_at?: string
-          vendor_id?: string
+          user_id?: string
           verification_status?: string
         }
         Relationships: []
@@ -2957,6 +2957,8 @@ export type Database = {
         Row: {
           amount: number
           auto_release_date: string | null
+          buyer_company_name: string | null
+          buyer_entity_type: string | null
           buyer_id: string | null
           buyer_location: string | null
           buyer_name: string | null
@@ -2986,6 +2988,7 @@ export type Database = {
           tx_id: string
           type: string | null
           updated_at: string
+          vendor_entity_type: string | null
           vendor_id: string | null
           vendor_location: string | null
           vendor_name: string | null
@@ -2993,6 +2996,8 @@ export type Database = {
         Insert: {
           amount?: number
           auto_release_date?: string | null
+          buyer_company_name?: string | null
+          buyer_entity_type?: string | null
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
@@ -3022,6 +3027,7 @@ export type Database = {
           tx_id: string
           type?: string | null
           updated_at?: string
+          vendor_entity_type?: string | null
           vendor_id?: string | null
           vendor_location?: string | null
           vendor_name?: string | null
@@ -3029,6 +3035,8 @@ export type Database = {
         Update: {
           amount?: number
           auto_release_date?: string | null
+          buyer_company_name?: string | null
+          buyer_entity_type?: string | null
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
@@ -3058,6 +3066,7 @@ export type Database = {
           tx_id?: string
           type?: string | null
           updated_at?: string
+          vendor_entity_type?: string | null
           vendor_id?: string | null
           vendor_location?: string | null
           vendor_name?: string | null
