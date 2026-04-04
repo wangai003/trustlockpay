@@ -257,8 +257,23 @@ Deno.serve(async (req) => {
         }
 
         result = data;
+
+        // Anchor: dispute filed
+        if (txId) {
+          const { data: txForAnchor } = await supabase.from("transactions").select("id").eq("tx_id", txId).single();
+          if (txForAnchor) {
+            await anchorProof(supabase, txForAnchor.id, "dispute_ruling", {
+              event: "dispute_filed",
+              dispute_id: newDisputeId,
+              tx_id: txId,
+              reason: reason || "Dispute filed",
+              amount,
+              priority: amount >= 10000 ? "critical" : "medium",
+              filed_at: new Date().toISOString(),
+            });
+          }
+        }
         break;
-      }
 
       case "review_dispute": {
         const { data, error } = await supabase
