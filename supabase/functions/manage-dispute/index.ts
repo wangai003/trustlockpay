@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
           }
         }
         break;
+      }
 
       case "review_dispute": {
         const { data, error } = await supabase
