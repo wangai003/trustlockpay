@@ -1,8 +1,24 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Unlock, Eye, CheckCircle, Circle, Clock, FileText, AlertTriangle, CalendarDays } from "lucide-react";
+import { Lock, Unlock, Eye, CheckCircle, Circle, Clock, FileText, AlertTriangle, CalendarDays, Globe } from "lucide-react";
 import { useTransactionMilestones } from "@/hooks/useSupabaseData";
 import { format, addDays, differenceInDays, isAfter } from "date-fns";
+
+/* ── Timezone-localized date formatting ── */
+const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function formatLocalDate(date: Date, pattern: string): string {
+  // Use date-fns format but append timezone abbreviation for full dates
+  return format(date, pattern);
+}
+
+function formatLocalDateWithTZ(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
 
 type DocumentMode = "none" | "optional" | "required";
 
