@@ -1,3 +1,16 @@
+/**
+ * TrustLock OS Pay — User-facing internal payment system
+ *
+ * PURPOSE: Handles off-chain platform payments (document purchases, acknowledgement
+ * form downloads, subscription fees, refunds, splits).
+ *
+ * BLOCKCHAIN: OFF-CHAIN — These transactions are NOT anchored to the blockchain.
+ * They are recorded in the `os_payments` table as internal ledger entries only.
+ *
+ * DISTINCTION: This is different from "Admin OS Pay" (TrustLockOSPayout with role="admin"),
+ * which handles admin-initiated fund movements (dispute payouts, escrow releases, refunds).
+ * Admin OS Pay WILL be anchored to the blockchain when Polygon integration goes live.
+ */
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PLANS, type PlanId, type BillingCycle } from "@/hooks/useVendorPlan";
