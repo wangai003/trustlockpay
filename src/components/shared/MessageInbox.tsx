@@ -185,6 +185,31 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const isChiefAdmin = (() => {
+    if (role !== "admin") return false;
+    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").isChief === true; } catch { return false; }
+  })();
+
+  // Load admin aliases and names for message attribution (admin view only)
+  useEffect(() => {
+    if (role !== "admin") return;
+    supabase.from("admin_aliases").select("*").then(({ data }) => {
+      if (data) setAdminAliasMap(Object.fromEntries(data.map((a: any) => [a.admin_id, a.alias])));
+    });
+    if (isChiefAdmin) {
+      const chiefId = (() => { try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id; } catch { return null; } })();
+      if (chiefId) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ action: "list", chiefAdminId: chiefId }),
+        }).then(r => r.json()).then(json => {
+          if (json.staff) setAdminNameMap(Object.fromEntries(json.staff.map((s: any) => [s.id, s.name])));
+        }).catch(() => {});
+      }
+    }
+  }, [role, isChiefAdmin]);
+
   // Load threads
   const loadThreads = useCallback(async () => {
     if (!userId) return;
