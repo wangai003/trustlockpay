@@ -526,7 +526,7 @@ const AdminCompliance = () => {
                                   variant="ghost"
                                   size="sm"
                                   className="gap-1.5 text-xs text-muted-foreground"
-                                  onClick={() => setExpandedVendor(isExpanded ? null : kyc.queueId)}
+                                  onClick={() => { const next = isExpanded ? null : kyc.queueId; setExpandedVendor(next); if (next && kyc.vendorId) fetchBusinessKyc(kyc.vendorId); }}
                                 >
                                   <FileText className="w-3.5 h-3.5" />
                                   {vendorDocs.length} file{vendorDocs.length !== 1 ? "s" : ""}
