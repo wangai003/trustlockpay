@@ -2,6 +2,19 @@
 // Covers diaspora and local African payment methods with dynamic cost-optimized routing
 
 import { type ProcessorId, getEligibleProcessors, type PaymentMethod } from "./feeEngine";
+import {
+  COUNTRY_BANKS,
+  MOBILE_MONEY_OPERATORS,
+  COUNTRY_BANK_FIELDS,
+  COUNTRY_PROCESSOR_MAP,
+  getBankFieldsForCountry,
+  getPaymentSuggestions,
+  getMobileMoneyForCountry,
+  getBanksForCountry,
+  type CountryProcessorInfo,
+  type ProcessorTier,
+  type PaymentSuggestion,
+} from "./countryPaymentData";
 
 export type PaymentCategory = "card" | "bank_account" | "mobile_money" | "crypto_wallet" | "digital_wallet";
 
@@ -18,12 +31,17 @@ export interface PaymentProvider {
   id: string;
   name: string;
   category: PaymentCategory;
-  mode: "diaspora" | "local" | "both"; // "diaspora" = International, "local" = Africa
+  mode: "diaspora" | "local" | "both";
   countries?: string[];
   processor: ProcessorId;
   fields: ProviderField[];
   icon?: string;
+  fallbackNote?: string; // shown for Tier 3 countries
 }
+
+// Re-export from countryPaymentData for consumers
+export { getPaymentSuggestions, getMobileMoneyForCountry, getBanksForCountry, COUNTRY_PROCESSOR_MAP };
+export type { CountryProcessorInfo, ProcessorTier, PaymentSuggestion };
 
 // Re-export the V2 engine for new code
 export { calculateFeesV2, getFeeRangeForType, AZIX_WALLETS, DUAL_WALLET_DISCLOSURE, FEE_CATEGORIES, ALL_IN_RANGES, FEE_DISCLOSURE_SHORT, FEE_DISCLOSURE_FULL } from "./feeEngine";
@@ -54,10 +72,20 @@ export function getFeeRange(): string {
 }
 
 // ─── Dynamic Processor Selection Helper ───────────────────
-// Picks the cheapest processor for a given country and payment method
 function cheapestProcessor(country: string, method: PaymentMethod): ProcessorId {
   const eligible = getEligibleProcessors(country, method, "checkout_fiat");
   return eligible.length > 0 ? eligible[0].id : "stripe";
+}
+
+// Determines processor for a country — uses aligned processors for Tier 3
+function resolveProcessor(country: string, method: PaymentMethod): ProcessorId {
+  const info = COUNTRY_PROCESSOR_MAP[country];
+  if (!info || info.tier === "tier3") {
+    // Tier 3: crypto goes direct, everything else uses transak global fallback
+    if (method === "crypto") return "direct";
+    return "transak"; // Transak has "global" in its regions
+  }
+  return cheapestProcessor(country, method);
 }
 
 // ─── DIASPORA PROVIDERS ────────────────────────────────────
@@ -130,98 +158,37 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "account_number", label: "Account Number", placeholder: "1234567890", type: "text", required: true },
     ],
   },
-  // Transak removed as user-facing option — used only as behind-the-scenes off-ramp processor
 ];
 
-// ─── LOCAL AFRICAN PROVIDERS ───────────────────────────────
-const NIGERIAN_BANKS = ["Access Bank", "First Bank", "GTBank", "Zenith Bank", "UBA", "Fidelity Bank", "Sterling Bank", "Wema Bank", "Polaris Bank", "Stanbic IBTC", "Union Bank", "Ecobank Nigeria", "FCMB", "Keystone Bank", "Heritage Bank"];
-const KENYAN_BANKS = ["KCB Bank", "Equity Bank", "Co-operative Bank", "NCBA Bank", "Absa Kenya", "Standard Chartered Kenya", "I&M Bank", "DTB Kenya", "Family Bank", "Stanbic Kenya"];
-const GHANAIAN_BANKS = ["GCB Bank", "Ecobank Ghana", "Fidelity Bank Ghana", "Stanbic Ghana", "Absa Ghana", "CalBank", "Zenith Ghana", "Access Bank Ghana", "Republic Bank", "ADB Ghana"];
-const SA_BANKS = ["Standard Bank", "FNB", "Absa", "Nedbank", "Capitec", "Investec", "TymeBank", "Discovery Bank", "African Bank"];
-const CAMEROON_BANKS = ["Afriland First Bank", "Ecobank Cameroon", "Société Générale Cameroon", "UBA Cameroon", "BICEC"];
-const EGYPT_BANKS = ["National Bank of Egypt", "Banque Misr", "CIB Egypt", "QNB Alahli", "Faisal Islamic Bank"];
+// ─── BUILD LOCAL PROVIDERS FROM COUNTRY DATA ───────────────
 
-const MOBILE_MONEY_OPERATORS = [
-  { id: "mtn_momo", name: "MTN Mobile Money", countries: ["Nigeria", "Ghana", "Cameroon", "Uganda", "Rwanda", "Benin", "Cote d'Ivoire", "Congo"] },
-  { id: "mpesa", name: "M-Pesa", countries: ["Kenya", "Tanzania", "Mozambique", "DR Congo", "Egypt"] },
-  { id: "airtel_money", name: "Airtel Money", countries: ["Kenya", "Uganda", "Tanzania", "Malawi", "Nigeria", "Rwanda", "Niger", "Chad"] },
-  { id: "orange_money", name: "Orange Money", countries: ["Senegal", "Mali", "Cote d'Ivoire", "Cameroon", "Guinea", "Burkina Faso", "Madagascar"] },
-  { id: "wave", name: "Wave", countries: ["Senegal", "Cote d'Ivoire", "Mali", "Burkina Faso", "Gambia"] },
-  { id: "free_money", name: "Free Money", countries: ["Senegal"] },
-  { id: "myzaka", name: "MyZaka", countries: ["Botswana"] },
-  { id: "tigopesa", name: "TigoPesa", countries: ["Tanzania"] },
-  { id: "halopesa", name: "HaloPesa", countries: ["Tanzania"] },
-  { id: "tmoney", name: "Tmoney TG", countries: ["Togo"] },
-  { id: "togocell", name: "Togocell Money", countries: ["Togo"] },
-  { id: "zamtel", name: "Zamtel Money", countries: ["Zambia"] },
-  { id: "vodacom_mpesa", name: "Vodacom M-Pesa", countries: ["South Africa", "Tanzania", "Mozambique", "DR Congo"] },
-];
-
-// Country-specific required fields for banks
-const COUNTRY_BANK_FIELDS: Record<string, ProviderField[]> = {
-  Nigeria: [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number (NUBAN)", placeholder: "10-digit NUBAN", type: "text", required: true },
-    { key: "bvn", label: "BVN (Bank Verification Number)", placeholder: "11-digit BVN", type: "text", required: true },
-    { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text", required: false },
-  ],
-  Kenya: [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
-    { key: "branch_code", label: "Branch Code", placeholder: "e.g. 001", type: "text", required: true },
-    { key: "id_number", label: "National ID Number", placeholder: "ID number", type: "text", required: false },
-  ],
-  Ghana: [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
-    { key: "branch_code", label: "Branch / Sort Code", placeholder: "Branch code", type: "text", required: true },
-  ],
-  "South Africa": [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
-    { key: "branch_code", label: "Branch Code (Universal)", placeholder: "6-digit branch code", type: "text", required: true },
-    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "e.g. SBZAZAJJ", type: "text", required: false },
-  ],
-  Cameroon: [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number / RIB", placeholder: "IBAN or RIB", type: "text", required: true },
-    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
-  ],
-  Egypt: [
-    { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-    { key: "account_number", label: "Account Number / IBAN", placeholder: "EG + 27 digits", type: "text", required: true },
-    { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
-    { key: "national_id", label: "National ID Number", placeholder: "14-digit NID", type: "text", required: false },
-  ],
-};
-
-const DEFAULT_BANK_FIELDS: ProviderField[] = [
-  { key: "account_holder", label: "Account Holder Name", placeholder: "Full legal name", type: "text", required: true },
-  { key: "account_number", label: "Account Number", placeholder: "Enter account number", type: "text", required: true },
-  { key: "swift_bic", label: "SWIFT/BIC Code", placeholder: "SWIFT code", type: "text", required: true },
-  { key: "bank_branch", label: "Branch (optional)", placeholder: "Branch name or code", type: "text", required: false },
-];
-
-// Dynamically assigns cheapest bank_transfer processor per country
-function buildBankProviders(country: string, banks: string[]): PaymentProvider[] {
-  const processor = cheapestProcessor(country, "bank_transfer");
-  const fields = COUNTRY_BANK_FIELDS[country] || DEFAULT_BANK_FIELDS;
-  return banks.map((bank) => ({
-    id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
-    name: bank,
-    category: "bank_account" as PaymentCategory,
-    mode: "local" as const,
-    countries: [country],
-    processor,
-    fields,
-  }));
+function buildAllBankProviders(): PaymentProvider[] {
+  const providers: PaymentProvider[] = [];
+  for (const [country, banks] of Object.entries(COUNTRY_BANKS)) {
+    const processor = resolveProcessor(country, "bank_transfer");
+    const fields = getBankFieldsForCountry(country);
+    const info = COUNTRY_PROCESSOR_MAP[country];
+    for (const bank of banks) {
+      providers.push({
+        id: `bank_${country.toLowerCase().replace(/\s/g, "_")}_${bank.toLowerCase().replace(/\s/g, "_")}`,
+        name: bank,
+        category: "bank_account",
+        mode: "local",
+        countries: [country],
+        processor,
+        fields,
+        fallbackNote: info?.fallbackNote,
+      });
+    }
+  }
+  return providers;
 }
 
-// Dynamically assigns cheapest mobile_money processor per operator's primary country
-function buildMobileMoneyProviders(): PaymentProvider[] {
+function buildAllMobileMoneyProviders(): PaymentProvider[] {
   return MOBILE_MONEY_OPERATORS.map((op) => {
     const primaryCountry = op.countries[0] || "Nigeria";
-    const processor = cheapestProcessor(primaryCountry, "mobile_money");
+    const processor = resolveProcessor(primaryCountry, "mobile_money");
+    const info = COUNTRY_PROCESSOR_MAP[primaryCountry];
     return {
       id: op.id,
       name: op.name,
@@ -233,11 +200,12 @@ function buildMobileMoneyProviders(): PaymentProvider[] {
         { key: "phone_number", label: "Mobile Number", placeholder: "+234 800 000 0000", type: "text" as const, required: true },
         { key: "account_name", label: "Registered Name", placeholder: "Name on mobile money account", type: "text" as const, required: true },
       ],
+      fallbackNote: info?.fallbackNote,
     };
   });
 }
 
-// Local card options — Visa/Mastercard via cheapest processor per Africa
+// Local card options
 const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
   {
     id: "card_africa_visa",
@@ -251,10 +219,9 @@ const LOCAL_CARD_PROVIDERS: PaymentProvider[] = [
       { key: "card_cvc", label: "CVC", placeholder: "123", type: "text", required: true },
     ],
   },
-  // Transak card removed — behind-the-scenes processor only
 ];
 
-// Local crypto options — Direct + cheapest off-ramp processors
+// Local crypto options
 const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
   {
     id: "crypto_wallet_local",
@@ -271,35 +238,36 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     name: "Coinbase Off-Ramp",
     category: "crypto_wallet",
     mode: "local",
-    countries: ["Nigeria", "Kenya", "Ghana", "South Africa"],
+    countries: ["Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt", "Uganda", "Tanzania", "Rwanda"],
     processor: "coinbase",
     fields: [
       { key: "email", label: "Coinbase Email", placeholder: "your@coinbase.com", type: "text", required: true },
     ],
   },
-  // Transak off-ramp removed from user-facing list — used internally for non-Polygon payouts
 ];
 
 // ─── FULL REGISTRY ─────────────────────────────────────────
-const LOCAL_BANK_PROVIDERS: PaymentProvider[] = [
-  ...buildBankProviders("Nigeria", NIGERIAN_BANKS),
-  ...buildBankProviders("Kenya", KENYAN_BANKS),
-  ...buildBankProviders("Ghana", GHANAIAN_BANKS),
-  ...buildBankProviders("South Africa", SA_BANKS),
-  ...buildBankProviders("Cameroon", CAMEROON_BANKS),
-  ...buildBankProviders("Egypt", EGYPT_BANKS),
-];
+const LOCAL_BANK_PROVIDERS = buildAllBankProviders();
 
 export const ALL_PROVIDERS: PaymentProvider[] = [
   ...DIASPORA_PROVIDERS,
   ...LOCAL_BANK_PROVIDERS,
   ...LOCAL_CARD_PROVIDERS,
-  ...buildMobileMoneyProviders(),
+  ...buildAllMobileMoneyProviders(),
   ...LOCAL_CRYPTO_PROVIDERS,
 ];
 
 export function getProvidersByMode(mode: "diaspora" | "local"): PaymentProvider[] {
   return ALL_PROVIDERS.filter((p) => p.mode === mode || p.mode === "both");
+}
+
+// Get providers filtered by country — respects processor alignment
+export function getProvidersByCountry(country: string): PaymentProvider[] {
+  const all = getProvidersByMode("local");
+  const countryProviders = all.filter(
+    (p) => !p.countries || p.countries.includes(country)
+  );
+  return countryProviders;
 }
 
 export function getProviderCategories(mode: "diaspora" | "local"): PaymentCategory[] {
@@ -337,10 +305,11 @@ export const CATEGORY_ICONS: Record<PaymentCategory, string> = {
 
 export const SUPPORTED_COUNTRIES = [
   "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
+  "Uganda", "Tanzania", "Rwanda",
   "Senegal", "Mali", "Cote d'Ivoire", "Burkina Faso", "Benin", "Togo",
-  "DR Congo", "Uganda", "Tanzania", "Rwanda", "Mozambique", "Malawi",
-  "Niger", "Chad", "Guinea", "Madagascar", "Botswana", "Gambia", "Zambia",
-  "Angola", "Cape Verde", "Djibouti", "Gabon", "Mauritius", "Namibia", "Tunisia",
+  "DR Congo", "Mozambique", "Malawi", "Niger", "Chad", "Guinea", "Madagascar",
+  "Botswana", "Gambia", "Zambia", "Angola", "Cape Verde", "Djibouti",
+  "Gabon", "Mauritius", "Namibia", "Tunisia",
 ];
 
 export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
