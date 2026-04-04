@@ -418,46 +418,103 @@ const AdminCompliance = () => {
                     <tbody>
                       {kycQueue.map((kyc) => {
                         const cfg = statusConfig[kyc.status] || statusConfig.pending;
+                        const vendorDocs = allKycDocs.filter(d => d.vendor_id === kyc.vendorId);
+                        const isExpanded = expandedVendor === kyc.queueId;
                         return (
-                          <tr key={kyc.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                            <td className="p-4 font-mono text-xs">{kyc.id}</td>
-                            <td className="p-4 font-medium">{kyc.vendor}</td>
-                            <td className="p-4 hidden md:table-cell text-muted-foreground text-xs">{kyc.tier}</td>
-                            <td className="p-4 hidden lg:table-cell text-muted-foreground text-xs">{kyc.docs}</td>
-                            <td className="p-4 text-center">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                                <cfg.icon className="w-3 h-3" /> {cfg.label}
-                              </span>
-                            </td>
-                            <td className="p-4 text-center">
-                              {kyc.status === "pending" ? (
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    className="gap-1 text-xs"
-                                    disabled={reviewingId === kyc.queueId}
-                                    onClick={() => handleKycDecision(kyc.queueId, "approved")}
-                                  >
-                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="gap-1 text-xs"
-                                    disabled={reviewingId === kyc.queueId}
-                                    onClick={() => handleKycDecision(kyc.queueId, "rejected")}
-                                  >
-                                    {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
-                                    Reject
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Badge variant="outline" className="text-[10px]">{kyc.status}</Badge>
-                              )}
-                            </td>
-                          </tr>
+                          <>
+                            <tr key={kyc.id} className="border-b border-border last:border-0 hover:bg-muted/20">
+                              <td className="p-4 font-mono text-xs">{kyc.id}</td>
+                              <td className="p-4 font-medium">{kyc.vendor}</td>
+                              <td className="p-4 hidden md:table-cell text-muted-foreground text-xs">{kyc.tier}</td>
+                              <td className="p-4 hidden lg:table-cell">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="gap-1.5 text-xs text-muted-foreground"
+                                  onClick={() => setExpandedVendor(isExpanded ? null : kyc.queueId)}
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  {vendorDocs.length} file{vendorDocs.length !== 1 ? "s" : ""}
+                                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </Button>
+                              </td>
+                              <td className="p-4 text-center">
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                                  <cfg.icon className="w-3 h-3" /> {cfg.label}
+                                </span>
+                              </td>
+                              <td className="p-4 text-center">
+                                {kyc.status === "pending" ? (
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="gap-1 text-xs"
+                                      disabled={reviewingId === kyc.queueId}
+                                      onClick={() => handleKycDecision(kyc.queueId, "approved")}
+                                    >
+                                      {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      className="gap-1 text-xs"
+                                      disabled={reviewingId === kyc.queueId}
+                                      onClick={() => handleKycDecision(kyc.queueId, "rejected")}
+                                    >
+                                      {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
+                                      Reject
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px]">{kyc.status}</Badge>
+                                )}
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr key={`${kyc.id}-docs`} className="bg-muted/10">
+                                <td colSpan={6} className="p-4">
+                                  {vendorDocs.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center">No documents uploaded yet.</p>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents</p>
+                                      <div className="grid gap-2 sm:grid-cols-2">
+                                        {vendorDocs.map(doc => (
+                                          <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-background">
+                                            <FileText className="w-4 h-4 text-primary shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-medium truncate">{doc.name}</p>
+                                              <p className="text-[10px] text-muted-foreground">
+                                                {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                                {" · "}
+                                                <Badge variant="outline" className="text-[9px] ml-1">
+                                                  {doc.status || "pending"}
+                                                </Badge>
+                                              </p>
+                                            </div>
+                                            {doc.file_url && (
+                                              <a
+                                                href={doc.file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="shrink-0"
+                                              >
+                                                <Button variant="outline" size="sm" className="gap-1 text-xs">
+                                                  <ExternalLink className="w-3 h-3" /> View
+                                                </Button>
+                                              </a>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         );
                       })}
                     </tbody>
