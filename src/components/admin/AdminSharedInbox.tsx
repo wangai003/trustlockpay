@@ -100,7 +100,23 @@ const AdminSharedInbox = () => {
     setParticipantNames(names);
   }, []);
 
-  useEffect(() => { loadThreads(); }, [loadThreads]);
+  // Load admin real names for chief visibility
+  const resolveAdminNames = useCallback(async () => {
+    if (!isChief) return;
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ action: "list", chiefAdminId: currentAdminId }),
+    });
+    const json = await res.json();
+    if (json.staff) {
+      const map: Record<string, string> = {};
+      json.staff.forEach((s: any) => { map[s.id] = s.name; });
+      setAdminNames(map);
+    }
+  }, [isChief, currentAdminId]);
+
+  useEffect(() => { loadThreads(); resolveAdminNames(); }, [loadThreads, resolveAdminNames]);
   useEffect(() => { if (threads.length > 0) resolveNames(threads); }, [threads, resolveNames]);
 
   // Realtime
