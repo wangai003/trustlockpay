@@ -15,6 +15,7 @@ import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 interface LinkData {
   link_id: string;
