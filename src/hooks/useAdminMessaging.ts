@@ -75,7 +75,7 @@ export function useLogAdminAction() {
           is_deviation: params.isDeviation || false,
           deviation_details: params.deviationDetails,
           requires_chief_review: params.requiresChiefReview || false,
-          metadata: params.metadata || {},
+          metadata: (params.metadata || {}) as any,
         }])
         .select()
         .single();
