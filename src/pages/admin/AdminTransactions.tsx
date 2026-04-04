@@ -19,7 +19,8 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
-import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -280,15 +281,15 @@ const AdminTransactions = () => {
                                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
                                   <MilestoneProgress industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                                 </details>
-                                {isMilestoneIndustry(tx.industry) && (
-                                  <MilestoneWorkOrderPanel
-                                    role="buyer"
-                                    txId={tx.id}
-                                    transactionId={tx.dbId}
-                                    industry={tx.industry}
-                                    transactionStatus={tx.status}
-                                  />
-                                )}
+                                <OrderStepGuide status={tx.status} role="admin" industry={tx.industry} />
+                                <IndustryBlueprintCard industry={tx.industry} />
+                                <MilestoneWorkOrderPanel
+                                  role="buyer"
+                                  txId={tx.id}
+                                  transactionId={tx.dbId}
+                                  industry={tx.industry}
+                                  transactionStatus={tx.status}
+                                />
                                 <div className="pt-2 border-t border-border">
                                   <TransactionDocuments
                                     tx={{
