@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, Store, ShoppingBag, Code } from "lucide-react";
+import { ArrowLeft, Shield, Store, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import TrustLockHero from "@/components/trustlock/TrustLockHero";
 import TrustLockFeatures from "@/components/trustlock/TrustLockFeatures";
