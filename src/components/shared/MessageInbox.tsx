@@ -455,10 +455,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       return;
     }
 
+    let adminAccountId: string | null = null;
+    if (role === "admin") {
+      try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
+    }
+
     await supabase.from("messages").insert({
       thread_id: thread.id,
       sender_id: myParticipantId,
       body: composeBody.trim(),
+      admin_account_id: adminAccountId,
     });
 
     setComposeOpen(false);
