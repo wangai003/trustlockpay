@@ -114,6 +114,7 @@ const BuyerSidebar = () => {
           ))}
         </nav>
 
+        <SidebarLegalLinks />
         <div className="p-3 border-t border-sidebar-border space-y-1">
           <TLId code="TL-B-SB-BTN-SWITCH-VENDOR" inline>
             <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>

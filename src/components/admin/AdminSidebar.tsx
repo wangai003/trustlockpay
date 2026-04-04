@@ -117,6 +117,7 @@ const AdminSidebar = () => {
           ))}
         </nav>
 
+        <SidebarLegalLinks />
         <div className="p-3 border-t border-sidebar-border">
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
