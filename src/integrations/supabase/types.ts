@@ -1771,6 +1771,8 @@ export type Database = {
           archived_at: string | null
           created_at: string
           document_type: string
+          file_url: string | null
+          generation_status: string
           id: string
           industry: string | null
           is_archived: boolean | null
@@ -1787,6 +1789,8 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           document_type: string
+          file_url?: string | null
+          generation_status?: string
           id?: string
           industry?: string | null
           is_archived?: boolean | null
@@ -1803,6 +1807,8 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           document_type?: string
+          file_url?: string | null
+          generation_status?: string
           id?: string
           industry?: string | null
           is_archived?: boolean | null

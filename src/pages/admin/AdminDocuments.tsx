@@ -3,14 +3,15 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle, CheckCircle, XCircle, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePdfGeneration } from "@/hooks/usePdfGeneration";
 
 const pinnedDocs = [
   {
@@ -82,7 +83,8 @@ const AdminDocuments = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [contractSearch, setContractSearch] = useState("");
   const [debouncedContractSearch, setDebouncedContractSearch] = useState("");
-
+  const { generateAndDownload, generateBatch, generating } = usePdfGeneration();
+  const queryClient = useQueryClient();
   const handleContractSearchChange = (val: string) => {
     setContractSearch(val);
     clearTimeout((window as any).__contractSearchTimer);
@@ -407,6 +409,19 @@ const AdminDocuments = () => {
               </div>
               <Badge variant="secondary" className="text-[10px]">Testnet + Mainnet</Badge>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              disabled={generating}
+              onClick={async () => {
+                await generateBatch();
+                queryClient.invalidateQueries({ queryKey: ["protection-documents"] });
+              }}
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+              Generate All PDFs
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="relative">
@@ -457,6 +472,12 @@ const AdminDocuments = () => {
                           <Clock className="w-2.5 h-2.5 mr-0.5" />
                           {retention.label}
                         </Badge>
+                        {(doc as any).generation_status === "generated" && (
+                          <Badge className="text-[9px] bg-primary/15 text-primary">PDF Ready</Badge>
+                        )}
+                        {(doc as any).generation_status === "pending" && (
+                          <Badge variant="secondary" className="text-[9px]">No PDF</Badge>
+                        )}
                         {isExpired && <Badge variant="destructive" className="text-[9px]">Review Required</Badge>}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -467,8 +488,25 @@ const AdminDocuments = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {(doc as any).generation_status === "generated" && (doc as any).file_url ? (
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => window.open((doc as any).file_url, "_blank")}>
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          disabled={generating}
+                          onClick={async () => {
+                            await generateAndDownload(doc.id);
+                            queryClient.invalidateQueries({ queryKey: ["protection-documents"] });
+                          }}
+                        >
+                          {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3 h-3" /></Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Download className="w-3 h-3" /></Button>
                     </div>
                   </div>
                 );
