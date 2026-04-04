@@ -13,8 +13,12 @@ const ProtectedRoute = ({ children, loginPath, allowTestnet, testnetKey }: Prote
   const { user, loading } = useAuth();
 
   // Allow testnet access via localStorage
-  if (allowTestnet && testnetKey && localStorage.getItem(testnetKey) === "true") {
-    return <>{children}</>;
+  if (allowTestnet && testnetKey) {
+    const raw = localStorage.getItem(testnetKey);
+    if (raw === "true") return <>{children}</>;
+    try {
+      if (raw && JSON.parse(raw).authenticated === true) return <>{children}</>;
+    } catch { /* ignore */ }
   }
 
   if (loading) {
