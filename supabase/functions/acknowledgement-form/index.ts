@@ -421,10 +421,36 @@ async function signForm(body: Record<string, unknown>) {
     );
   }
 
+  // Anchor: signature event
+  await anchorProof(supabase, String(form.transaction_id), "signature", {
+    event: "acknowledgement_form_signed",
+    form_id: String(form_id),
+    form_type: form.form_type,
+    form_title: form.title,
+    signer: signerRole,
+    signer_id: String(user_id),
+    signer_name: String(signerName ?? signerRole),
+    ip_address: ip,
+    signed_at: new Date().toISOString(),
+  });
+
   // If both parties have now signed → trigger next workflow step
   const bothSigned = updated.signed_by_buyer && updated.signed_by_vendor;
 
   if (bothSigned) {
+    // Anchor: acknowledgement form fully executed
+    await anchorProof(supabase, String(form.transaction_id), "acknowledgement", {
+      event: "acknowledgement_form_executed",
+      form_id: String(form_id),
+      form_type: form.form_type,
+      form_title: form.title,
+      buyer_signed_at: updated.buyer_signature_at,
+      vendor_signed_at: updated.vendor_signature_at,
+      buyer_ip: updated.buyer_ip,
+      vendor_ip: updated.vendor_ip,
+      executed_at: new Date().toISOString(),
+    });
+
     // If this is tied to a payment milestone, trigger release
     if (form.milestone_id) {
       try {
