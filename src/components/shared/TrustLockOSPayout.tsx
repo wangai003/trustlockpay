@@ -439,9 +439,10 @@ const TrustLockOSPayout = ({
   // ─── Role-specific labels ───────────────────────────────
   const getRoleLabel = () => {
     if (isAdmin) {
-      if (payoutType === "refund") return "Admin — Process Refund";
-      if (payoutType === "split") return "Admin — Process Split Pay";
-      return "Admin — Process Refund";
+      if (payoutType === "release") return "Admin — Release Funds to Vendor";
+      if (payoutType === "refund") return "Admin — Process Refund to Buyer";
+      if (payoutType === "split") return "Admin — Process Split Pay (Compromise)";
+      return "Admin — Process Payout";
     }
     if (role === "vendor") return "Vendor — Receive Released Funds";
     if (role === "buyer" && initialPayoutType === "release") return "Buyer — Release & Transfer Funds to Vendor";
