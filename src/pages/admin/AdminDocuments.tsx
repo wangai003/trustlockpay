@@ -83,7 +83,8 @@ const AdminDocuments = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [contractSearch, setContractSearch] = useState("");
   const [debouncedContractSearch, setDebouncedContractSearch] = useState("");
-
+  const { generateAndDownload, generateBatch, generating } = usePdfGeneration();
+  const queryClient = useQueryClient();
   const handleContractSearchChange = (val: string) => {
     setContractSearch(val);
     clearTimeout((window as any).__contractSearchTimer);
