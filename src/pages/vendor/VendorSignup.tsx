@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import { supabase } from "@/integrations/supabase/client";
 import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
+import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityTypeSelector";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
