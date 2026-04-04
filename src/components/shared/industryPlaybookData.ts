@@ -287,11 +287,11 @@ export const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
   ],
   "textiles": [
     { name: "PO & Design Approval", percentage: 5, documents: ["Purchase Order", "Design Spec Sheet", "Fabric Swatch Approval"], documentMode: "required", description: "Design specifications confirmed and fabric approved", requiresObserver: false },
-    { name: "Raw Material Sourcing", percentage: 10, documents: ["GOTS Certificate", "Fair Trade Certificate", "Fabric Test Report"], documentMode: "required", description: "Raw materials sourced with sustainability certification", requiresObserver: true },
-    { name: "Sampling & QC", percentage: 15, documents: ["Pre-Production Sample", "AQL Inspection Report"], documentMode: "required", description: "Sample approved, production quality benchmarked", requiresObserver: true },
+    { name: "Raw Material Sourcing", percentage: 10, documents: ["GOTS Certificate", "Fair Trade Certificate", "Fabric Test Report", "Seller's BIS/GB/OEKO-TEX Certificate"], documentMode: "required", description: "Raw materials sourced with sustainability and origin-country certification", requiresObserver: true },
+    { name: "Sampling & QC", percentage: 15, documents: ["Pre-Production Sample", "AQL Inspection Report", "Third-Party Lab Test (SGS/Bureau Veritas)"], documentMode: "required", description: "Sample approved with independent quality verification", requiresObserver: true },
     { name: "Bulk Production", percentage: 25, documents: ["Mid-Line Inspection Report", "Production Progress Photos"], documentMode: "required", description: "Bulk production with quality checks", requiresObserver: true },
-    { name: "Final Inspection & Packaging", percentage: 15, documents: ["Final Random Inspection", "Packaging Compliance", "Labeling Check"], documentMode: "required", description: "Finished goods inspected and packed", requiresObserver: true },
-    { name: "Shipping & Customs", percentage: 20, documents: ["Bill of Lading", "Certificate of Origin", "Customs Declaration"], documentMode: "required", description: "Goods exported with trade documentation", requiresObserver: true },
+    { name: "Final Inspection & Packaging", percentage: 15, documents: ["Final Random Inspection", "Packaging Compliance", "Labeling Check (AGOA compliance if applicable)"], documentMode: "required", description: "Finished goods inspected and packed", requiresObserver: true },
+    { name: "Shipping & Customs", percentage: 20, documents: ["Bill of Lading", "Certificate of Origin (CCPIT/EIC/Chamber)", "Customs Declaration", "Seller's Tax Invoice (Fapiao/GST)"], documentMode: "required", description: "Goods exported with seller's origin-country trade docs and verified C/O", requiresObserver: true },
     { name: "Delivery & Payment Release", percentage: 10, documents: ["Delivery Receipt", "Quality Acceptance Note"], documentMode: "optional", description: "Goods received, escrow released", requiresObserver: false },
   ],
   "marine-fisheries": [
