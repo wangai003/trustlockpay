@@ -1,3 +1,20 @@
+/**
+ * TrustLock OS Payout — Fund withdrawal & disbursement system
+ *
+ * ROLES:
+ *   - vendor/buyer: Off-chain payout requests (withdraw earnings, release funds)
+ *   - admin: Admin OS Pay — executes dispute resolutions (refunds, splits, releases)
+ *
+ * BLOCKCHAIN ANCHORING:
+ *   - vendor/buyer payouts: Off-chain (recorded in `payout_requests` table only)
+ *   - admin role (Admin OS Pay): WILL BE ANCHORED to blockchain proof chain when
+ *     Polygon integration is live. Each admin-initiated fund movement will generate
+ *     a `payout` record_type block in `blockchain_proofs`, ensuring forensic
+ *     traceability for dispute resolutions and fund disbursements.
+ *
+ * DISPUTE FLOW: Admin selects outcome (Buyer Wins / Vendor Wins / Compromise) in
+ * the Disputes panel → executes fund movement here → proof block is anchored.
+ */
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
