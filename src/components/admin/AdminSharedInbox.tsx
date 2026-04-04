@@ -212,6 +212,10 @@ const AdminSharedInbox = () => {
                           <span className="flex items-center gap-1 font-medium text-primary">
                             <UserCheck className="w-2.5 h-2.5" />
                             {claimedByMe(thread) ? "You" : aliasMap[thread.claimed_by] || "Agent"} handling
+                            {/* Chief sees real name in parentheses */}
+                            {isChief && !claimedByMe(thread) && adminNames[thread.claimed_by] && (
+                              <span className="text-muted-foreground font-normal ml-0.5">({adminNames[thread.claimed_by]})</span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -233,23 +237,36 @@ const AdminSharedInbox = () => {
                         </Button>
                       )}
                       {claimedByOther(thread) && (
-                        <Badge variant="outline" className="text-[10px] border-primary/30">
-                          <UserCheck className="w-2.5 h-2.5 mr-0.5" /> {aliasMap[thread.claimed_by!] || "Agent"} active
-                        </Badge>
+                        <>
+                          <Badge variant="outline" className="text-[10px] border-primary/30">
+                            <UserCheck className="w-2.5 h-2.5 mr-0.5" /> {aliasMap[thread.claimed_by!] || "Agent"} active
+                          </Badge>
+                          {/* Chief can forcibly release another admin's claim */}
+                          {isChief && (
+                            <Button size="sm" variant="ghost" className="gap-1 text-[10px] h-6" onClick={() => unclaimThread.mutate(thread.id)}>
+                              Force Release
+                            </Button>
+                          )}
+                        </>
                       )}
 
-                      <Select
-                        value={thread.case_status}
-                        onValueChange={(v) => updateCaseStatus.mutate({ threadId: thread.id, caseStatus: v })}
-                      >
-                        <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="open">Open</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="resolved">Resolved</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {/* Only the claiming admin, unclaimed threads, or chief can change status */}
+                      {(claimedByMe(thread) || !thread.claimed_by || isChief) ? (
+                        <Select
+                          value={thread.case_status}
+                          onValueChange={(v) => updateCaseStatus.mutate({ threadId: thread.id, caseStatus: v })}
+                        >
+                          <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px]">{cfg.label}</Badge>
+                      )}
                     </div>
                   </div>
                 </CardContent>
