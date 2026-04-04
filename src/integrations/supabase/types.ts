@@ -2928,6 +2928,47 @@ export type Database = {
           },
         ]
       }
+      team_workspace_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_url: string | null
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_id: string
+          workspace_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id: string
+          workspace_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_workspace_messages_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "team_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_workspaces: {
         Row: {
           archived_at: string | null

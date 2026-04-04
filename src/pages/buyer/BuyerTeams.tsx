@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import TeamTemplateManager from "@/components/shared/TeamTemplateManager";
+import WorkspaceChat from "@/components/shared/WorkspaceChat";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
@@ -307,6 +308,9 @@ const BuyerTeams = () => {
         </Card>
 
         <TeamTemplateManager workspaceId={selectedWs.id} members={members.map((m) => ({ id: m.id, display_name: m.display_name, user_id: m.user_id }))} disabled={selectedWs.status !== "active"} />
+
+        {/* Workspace Team Chat */}
+        <WorkspaceChat workspaceId={selectedWs.id} members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name }))} />
 
         <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
           <DialogContent>
