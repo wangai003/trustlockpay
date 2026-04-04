@@ -180,6 +180,8 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [adminContactSearch, setAdminContactSearch] = useState("");
   const [adminSearchResults, setAdminSearchResults] = useState<Contact[]>([]);
   const [adminSearching, setAdminSearching] = useState(false);
+  const [adminAliasMap, setAdminAliasMap] = useState<Record<string, string>>({});
+  const [adminNameMap, setAdminNameMap] = useState<Record<string, string>>({});
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
