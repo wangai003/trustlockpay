@@ -6,7 +6,7 @@ import TrialBanner from "@/components/vendor/TrialBanner";
 import TestnetGuide from "@/components/shared/TestnetGuide";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
-import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
+
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,9 +30,6 @@ const VendorLayout = () => {
           </main>
           <CommandPalette role="vendor" />
           <MobileBottomNav role="vendor" />
-          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
-            <BlockchainExplorerPanel />
-          </div>
           <EntityClassificationPrompt />
         </div>
       </VendorProvider>

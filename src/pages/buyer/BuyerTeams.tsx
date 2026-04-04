@@ -20,7 +20,7 @@ import WorkspaceChat from "@/components/shared/WorkspaceChat";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
-import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff } from "lucide-react";
+import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, MessageSquare, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [
@@ -242,75 +242,105 @@ const BuyerTeams = () => {
           )}
         </div>
 
-        {isOwner && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-              <CardTitle className="text-lg">Procurement Team</CardTitle>
-              {selectedWs.status === "active" && (
-                <div className="flex gap-2 flex-wrap">
-                  <TeamBulkImport workspaceId={selectedWs.id} onImported={() => fetchMembers(selectedWs.id)} disabled={selectedWs.status !== "active"} />
-                  <Button size="sm" onClick={() => { setShowAddMember(true); fetchRolePresets(selectedWs.industry); }}><UserPlus className="w-4 h-4 mr-1" /> Add</Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet.</p> : (
-                <div className="space-y-2">
-                  {members.map((m) => (
-                    <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
-                      <div>
-                        <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
-                      </div>
-                      <div className="flex items-center gap-3 self-end sm:self-center">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs">Finalizer</Label>
-                          <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
-                        </div>
-                        {selectedWs.status === "active" && (
-                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">{isOwner ? "Task Assignments" : "My Tasks"}</CardTitle>
-            {isOwner && selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign</Button>}
-          </CardHeader>
-          <CardContent>
-            {visibleTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{isOwner ? "No tasks assigned yet." : "No tasks assigned to you."}</p>
-            ) : (
-              <div className="space-y-2">
-                {visibleTasks.map((t, i) => {
-                  const member = members.find((m) => m.id === t.member_id);
-                  const isMyTask = !!(myMembership && t.member_id === myMembership.id);
-                  const allPriorDone = tasks.filter((pt) => pt.sort_order < t.sort_order).every((pt) => pt.status === "completed");
-                  const canComplete = isMyTask && t.status === "pending" && allPriorDone && selectedWs.status === "active";
-                  return (
-                    <TeamTaskCard key={t.id} task={t} index={i} isOwner={isOwner} isMyTask={isMyTask}
-                      canComplete={canComplete} allPriorDone={allPriorDone} member={member}
-                      workspaceId={selectedWs.id} onRefresh={() => fetchTasks(selectedWs.id)} />
-                  );
-                })}
-              </div>
+        <Tabs defaultValue="tasks" className="space-y-4">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="tasks" className="flex-1 sm:flex-none gap-1.5 text-xs">
+              <ClipboardList className="w-3.5 h-3.5" /> Tasks
+            </TabsTrigger>
+            {isOwner && (
+              <TabsTrigger value="team" className="flex-1 sm:flex-none gap-1.5 text-xs">
+                <Users className="w-3.5 h-3.5" /> Team ({members.length})
+              </TabsTrigger>
             )}
-          </CardContent>
-        </Card>
+            <TabsTrigger value="chat" className="flex-1 sm:flex-none gap-1.5 text-xs">
+              <MessageSquare className="w-3.5 h-3.5" /> Chat
+            </TabsTrigger>
+            {isOwner && (
+              <TabsTrigger value="templates" className="flex-1 sm:flex-none gap-1.5 text-xs">
+                <Settings2 className="w-3.5 h-3.5" /> Templates
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-        <TeamTemplateManager workspaceId={selectedWs.id} members={members.map((m) => ({ id: m.id, display_name: m.display_name, user_id: m.user_id }))} disabled={selectedWs.status !== "active"} />
+          <TabsContent value="tasks">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">{isOwner ? "Task Assignments" : "My Tasks"}</CardTitle>
+                {isOwner && selectedWs.status === "active" && <Button size="sm" onClick={() => setShowAssignTask(true)}><ClipboardList className="w-4 h-4 mr-1" /> Assign</Button>}
+              </CardHeader>
+              <CardContent>
+                {visibleTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{isOwner ? "No tasks assigned yet." : "No tasks assigned to you."}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {visibleTasks.map((t, i) => {
+                      const member = members.find((m) => m.id === t.member_id);
+                      const isMyTask = !!(myMembership && t.member_id === myMembership.id);
+                      const allPriorDone = tasks.filter((pt) => pt.sort_order < t.sort_order).every((pt) => pt.status === "completed");
+                      const canComplete = isMyTask && t.status === "pending" && allPriorDone && selectedWs.status === "active";
+                      return (
+                        <TeamTaskCard key={t.id} task={t} index={i} isOwner={isOwner} isMyTask={isMyTask}
+                          canComplete={canComplete} allPriorDone={allPriorDone} member={member}
+                          workspaceId={selectedWs.id} onRefresh={() => fetchTasks(selectedWs.id)} />
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Workspace Team Chat */}
-        <WorkspaceChat workspaceId={selectedWs.id} members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name }))} />
+          {isOwner && (
+            <TabsContent value="team">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-lg">Procurement Team</CardTitle>
+                  {selectedWs.status === "active" && (
+                    <div className="flex gap-2 flex-wrap">
+                      <TeamBulkImport workspaceId={selectedWs.id} onImported={() => fetchMembers(selectedWs.id)} disabled={selectedWs.status !== "active"} />
+                      <Button size="sm" onClick={() => { setShowAddMember(true); fetchRolePresets(selectedWs.industry); }}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Use "Add Member" or "Bulk Import" to get started.</p> : (
+                    <div className="space-y-2">
+                      {members.map((m) => (
+                        <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
+                          <div>
+                            <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
+                          </div>
+                          <div className="flex items-center gap-3 self-end sm:self-center">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Finalizer</Label>
+                              <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
+                            </div>
+                            {selectedWs.status === "active" && (
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          <TabsContent value="chat">
+            <WorkspaceChat workspaceId={selectedWs.id} members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name }))} />
+          </TabsContent>
+
+          {isOwner && (
+            <TabsContent value="templates">
+              <TeamTemplateManager workspaceId={selectedWs.id} members={members.map((m) => ({ id: m.id, display_name: m.display_name, user_id: m.user_id }))} disabled={selectedWs.status !== "active"} />
+            </TabsContent>
+          )}
+        </Tabs>
 
         <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
           <DialogContent>
