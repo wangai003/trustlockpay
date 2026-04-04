@@ -44,6 +44,11 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Invalid credentials." });
       }
 
+      // Block deleted accounts
+      if (account.is_deleted) {
+        return json({ success: false, error: "This account has been deactivated." });
+      }
+
       // Check lockout (5 failed attempts, locked for 30 min)
       if (account.failed_attempts >= 5) {
         const lockedAt = account.locked_at ? new Date(account.locked_at) : null;
