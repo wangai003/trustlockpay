@@ -670,6 +670,31 @@ const TrustLockOSPayout = ({
     }
   };
 
+  // ─── Compliance Block Screen ────────────────────────────
+  if (complianceBlock) {
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <AntiStructuringAlert
+          flags={complianceBlock.flags}
+          severity={complianceBlock.severity}
+          allowTransaction={complianceBlock.allowTransaction}
+          blockedReason={complianceBlock.blockedReason}
+          preKycCap={complianceBlock.preKycCap}
+          rollingVolume={complianceBlock.rollingVolume}
+          todayCount={complianceBlock.todayCount}
+          role={role}
+          onProceed={() => { setComplianceBlock(null); setReviewStep(false); }}
+          onBlock={() => { setComplianceBlock(null); setReviewStep(false); }}
+          onReduceAmount={() => {
+            setComplianceBlock(null);
+            setReviewStep(false);
+            toast.info("Reduce your amount below the threshold and try again");
+          }}
+        />
+      </div>
+    );
+  }
+
   // ─── Failure Screen ──────────────────────────────────────
   if (failureState) {
     return (
