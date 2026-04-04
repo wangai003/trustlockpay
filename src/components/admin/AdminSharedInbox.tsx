@@ -39,6 +39,7 @@ const AdminSharedInbox = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [adminNames, setAdminNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const { data: aliases = [] } = useAdminAliases();
@@ -52,6 +53,20 @@ const AdminSharedInbox = () => {
     try {
       const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
       return auth.id;
+    } catch { return null; }
+  })();
+
+  const isChief = (() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+      return auth.isChief === true;
+    } catch { return false; }
+  })();
+
+  const chiefRank = (() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+      return auth.chiefRank || null;
     } catch { return null; }
   })();
 
