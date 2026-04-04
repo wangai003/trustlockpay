@@ -210,6 +210,32 @@ Deno.serve(async (req) => {
           is_action_required: !isApproved,
           action_url: isApproved ? null : "/trustlock/vendor/kyc",
         });
+
+        // Anchor: KYC decision to blockchain (anchored per held transaction)
+        if (isApproved && heldTxs && heldTxs.length > 0) {
+          for (const tx of heldTxs) {
+            await anchorProofKyc(tx.id, "aml_screening", {
+              event: "kyc_approved",
+              user_id: vendorId,
+              decision: "approved",
+              kyc_queue_id: queue_id || null,
+              document_id: document_id || null,
+              transaction_released: tx.tx_id,
+              approved_at: new Date().toISOString(),
+            });
+          }
+        } else if (!isApproved && vendorId) {
+          // For rejection, anchor without a specific transaction
+          const syntheticId = vendorId; // use user ID as fallback
+          await anchorProofKyc(syntheticId, "aml_screening", {
+            event: "kyc_rejected",
+            user_id: vendorId,
+            decision: "rejected",
+            kyc_queue_id: queue_id || null,
+            document_id: document_id || null,
+            rejected_at: new Date().toISOString(),
+          });
+        }
       }
 
       return json({ success: true, decision });
