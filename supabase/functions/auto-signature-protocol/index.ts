@@ -210,6 +210,18 @@ Deno.serve(async (req) => {
 
     if (insertErr) throw insertErr;
 
+    // Anchor: contract created (pending manual signature)
+    await anchorProof(supabase, transaction_id as string, "contract", {
+      event: "contract_created_pending",
+      contract_id: contract.id,
+      vendor_id: vendor_id as string,
+      buyer_id: txData?.buyer_id || null,
+      industry: industry || null,
+      order_amount: order_amount || 0,
+      route: "manual_work_log",
+      created_at: new Date().toISOString(),
+    });
+
     // Notify vendor
     await supabase.from("notifications").insert({
       user_id: vendor_id,
