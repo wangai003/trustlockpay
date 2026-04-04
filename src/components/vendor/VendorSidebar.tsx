@@ -16,7 +16,7 @@ const navItems = [
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY" },
   { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow transactions and order statuses", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
   { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites with TrustLock widget installed", tlId: "TL-V-SB-NAV-SITES" },
-  { label: "KYC & Verification", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity documents and verify your account", tlId: "TL-V-SB-NAV-KYC" },
+  { label: "KYC / KYB", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity or business documents and verify your account", tlId: "TL-V-SB-NAV-KYC" },
   { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries", tlId: "TL-V-SB-NAV-ASSISTANT" },
   { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports", tlId: "TL-V-SB-NAV-ANALYTICS" },
   { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files", tlId: "TL-V-SB-NAV-DOCUMENTS" },
