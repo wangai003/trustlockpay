@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown } from "lucide-react";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -56,7 +56,7 @@ export default function AdminStaffManager() {
   const [confirmDeleteStep, setConfirmDeleteStep] = useState(0);
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
-  
+  const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-staff-list"],
@@ -115,6 +115,15 @@ export default function AdminStaffManager() {
     },
   });
 
+  const demoteMutation = useMutation({
+    mutationFn: (adminId: string) => callStaffApi({ action: "demote", chiefAdminId, adminId }),
+    onSuccess: (res) => {
+      if (res.error) { toast.error(res.error); return; }
+      setDemoteTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success("Demoted to regular staff");
+    },
+  });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -177,6 +186,10 @@ export default function AdminStaffManager() {
                     {!a.is_chief ? (
                       <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setPromoteTarget(a)}>
                         <Crown className="w-3 h-3" /> Promote
+                      </Button>
+                    ) : a.chief_rank !== 1 ? (
+                      <Button size="sm" variant="secondary" className="gap-1 text-xs" onClick={() => setDemoteTarget(a)}>
+                        <ArrowDown className="w-3 h-3" /> Demote
                       </Button>
                     ) : null}
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
@@ -327,6 +340,23 @@ export default function AdminStaffManager() {
             <Button variant="ghost" onClick={() => setPromoteTarget(null)}>Cancel</Button>
             <Button onClick={() => promoteTarget && promoteMutation.mutate(promoteTarget.id)} disabled={promoteMutation.isPending}>
               {promoteMutation.isPending ? "Promoting…" : "Promote"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Demote Confirmation */}
+      <Dialog open={!!demoteTarget} onOpenChange={() => setDemoteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Demote to Regular Staff</DialogTitle>
+            <DialogDescription>
+              Demote <strong>{demoteTarget?.name}</strong> back to regular admin staff? They will lose access to sensitive data (KYC, finance, disputes, compliance) and only retain messaging and informational access.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDemoteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)} disabled={demoteMutation.isPending}>
+              {demoteMutation.isPending ? "Demoting…" : "Demote"}
             </Button>
           </DialogFooter>
         </DialogContent>
