@@ -396,11 +396,23 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      // Anchor: Admin OS Pay split to blockchain
+      if (transactionId) {
+        await anchorProof(supabase, transactionId, "payout", {
+          event: "admin_os_pay_split",
+          payment_id: payment.id,
+          amount: parseFloat(String(amount)),
+          split_recipient: splitRecipient || null,
+          split_percentage: splitPercentage || null,
+          fee: effectiveFee,
+          admin_user_id: userId,
+          processed_at: new Date().toISOString(),
+        });
+      }
+
       return new Response(
         JSON.stringify({
-          success: true,
-          payment,
-          confirmationCode,
+          success: true, payment, confirmationCode,
           note: "Split payout recorded. 1.0% escrow fee deducted from vendor share only.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
