@@ -127,9 +127,28 @@ const AdminCompliance = () => {
   const { data: rawFlags = [] } = useComplianceFlags();
   const { data: rawScreenings = [] } = useSanctionsScreeningLogs();
   const [screeningFilter, setScreeningFilter] = useState<string>("all");
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
+    setReviewingId(queueId);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-kyc", {
+        body: { action: "review_document", queue_id: queueId, decision },
+      });
+      if (error) throw error;
+      toast.success(`KYC ${decision === "approved" ? "approved ✅" : "rejected ❌"} — user and held transactions updated.`);
+      queryClient.invalidateQueries({ queryKey: ["kyc-queue"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update KYC status");
+    } finally {
+      setReviewingId(null);
+    }
+  };
 
   const kycQueue = rawKyc.map(k => ({
     id: k.kyc_id,
+    queueId: k.id,
     vendor: k.vendor_name || "Unknown",
     tier: k.tier_change || "—",
     docs: k.documents || "—",
