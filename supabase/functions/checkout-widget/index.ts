@@ -562,6 +562,8 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     const updatePayload: Record<string, unknown> = {
       fee: session.fee,
       order_type: session.orderType,
+      buyer_entity_type: session.buyerEntityType || "individual",
+      buyer_company_name: session.buyerCompanyName || null,
     };
     // Persist marketplace metadata on the transaction for downstream callbacks
     if (session.marketplaceMetadata) {
