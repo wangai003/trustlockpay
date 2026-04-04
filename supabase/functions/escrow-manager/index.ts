@@ -763,6 +763,22 @@ async function splitPayout(body: Record<string, unknown>) {
     buyerPercent: bPct,
   });
 
+  // Anchor: split payout event
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_split_payout",
+    tx_id: tx.tx_id,
+    original_amount: tx.amount,
+    vendor_percent: vPct,
+    buyer_percent: bPct,
+    vendor_amount: vendorAmount,
+    buyer_amount: buyerAmount,
+    vendor_net: vendorNet,
+    escrow_fee: fees.escrowFee,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    split_at: new Date().toISOString(),
+  });
+
   return jsonResponse({
     success: true,
     vendorPayout,
