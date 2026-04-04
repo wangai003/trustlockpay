@@ -1,8 +1,24 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Unlock, Eye, CheckCircle, Circle, Clock, FileText, AlertTriangle, CalendarDays } from "lucide-react";
+import { Lock, Unlock, Eye, CheckCircle, Circle, Clock, FileText, AlertTriangle, CalendarDays, Globe } from "lucide-react";
 import { useTransactionMilestones } from "@/hooks/useSupabaseData";
 import { format, addDays, differenceInDays, isAfter } from "date-fns";
+
+/* ── Timezone-localized date formatting ── */
+const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function formatLocalDate(date: Date, pattern: string): string {
+  // Use date-fns format but append timezone abbreviation for full dates
+  return format(date, pattern);
+}
+
+function formatLocalDateWithTZ(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
 
 type DocumentMode = "none" | "optional" | "required";
 
@@ -228,9 +244,9 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
 
       {/* Date axis header */}
       <div className="flex items-center justify-between text-[9px] text-muted-foreground font-mono">
-        <span>{format(startDate, "dd MMM yyyy")}</span>
+        <span title={formatLocalDateWithTZ(startDate)}>{format(startDate, "dd MMM yyyy")}</span>
         <span className="text-foreground font-semibold">{totalDays} days projected</span>
-        <span>{format(projectedCompletion, "dd MMM yyyy")}</span>
+        <span title={formatLocalDateWithTZ(projectedCompletion)}>{format(projectedCompletion, "dd MMM yyyy")}</span>
       </div>
 
       {/* Gantt bars */}
@@ -303,7 +319,7 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
               </div>
 
               {/* Date range */}
-              <div className="hidden sm:block w-28 shrink-0 text-[8px] text-muted-foreground font-mono pl-1">
+              <div className="hidden sm:block w-28 shrink-0 text-[8px] text-muted-foreground font-mono pl-1" title={`${formatLocalDateWithTZ(bar.projectedStart)} → ${formatLocalDateWithTZ(bar.projectedEnd)}`}>
                 {format(bar.projectedStart, "dd MMM")} → {format(bar.projectedEnd, "dd MMM")}
               </div>
             </div>
@@ -330,6 +346,10 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
         </div>
         <div className="flex items-center gap-1">
           <Eye className="w-2.5 h-2.5" /> Observer
+        </div>
+        <div className="flex items-center gap-1 ml-auto">
+          <Globe className="w-2.5 h-2.5" />
+          <span className="text-[8px]">{userTimeZone}</span>
         </div>
       </div>
 
@@ -367,7 +387,7 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
                 <span className="text-muted-foreground font-mono">{bar.percentage}% · {bar.durationDays}d</span>
               </div>
               <p className="text-muted-foreground text-[10px]">{bar.description}</p>
-              <p className="text-[9px] text-muted-foreground font-mono mt-0.5">
+              <p className="text-[9px] text-muted-foreground font-mono mt-0.5" title={`${formatLocalDateWithTZ(bar.projectedStart)} → ${formatLocalDateWithTZ(bar.projectedEnd)}`}>
                 {format(bar.projectedStart, "dd MMM")} → {format(bar.projectedEnd, "dd MMM yyyy")}
                 {bar.isOverdue && (
                   <span className="text-destructive font-semibold ml-1">

@@ -619,6 +619,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
               readOnly={isAmountLocked}
               className={cn("mt-1 text-lg font-bold", isAmountLocked && "bg-muted cursor-not-allowed")}
             />
+            {/* Dual-currency display: show local equivalent when country selected */}
+            {payMode === "local" && selectedCountry && parsedAmount > 0 && AFRICAN_CURRENCIES[selectedCountry] && !rateLockActive && (
+              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                ≈ {AFRICAN_CURRENCIES[selectedCountry].symbol}
+                {(parsedAmount * AFRICAN_CURRENCIES[selectedCountry].rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {" "}{AFRICAN_CURRENCIES[selectedCountry].code}
+                <span className="text-muted-foreground/60 ml-1">(indicative)</span>
+              </p>
+            )}
             {isAmountLocked && service && (
               <p className="text-[10px] text-muted-foreground mt-1">
                 Amount auto-calculated based on selected service
