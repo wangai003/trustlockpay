@@ -71,7 +71,7 @@ const AdminLogin = () => {
 
     if (isTestnet) {
       if (password === "0321") {
-        localStorage.setItem("tl_admin_auth", JSON.stringify({ authenticated: true, adminId: "", name: "Testnet Admin", isChief: true }));
+        localStorage.setItem("tl_admin_auth", JSON.stringify({ authenticated: true, adminId: "a0ac136f-de82-45bd-8219-0fc5ab25d098", name: "Testnet Admin", isChief: true, chiefRank: 1 }));
         localStorage.setItem("tl_network", "testnet");
         navigate("/trustlock/admin");
       } else {
