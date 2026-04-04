@@ -115,15 +115,6 @@ export default function AdminStaffManager() {
     },
   });
 
-  const demoteMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "demote", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
-      setDemoteTarget(null);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
-      toast.success("Demoted from Chief Admin");
-    },
-  });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
