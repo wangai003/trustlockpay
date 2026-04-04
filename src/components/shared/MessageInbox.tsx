@@ -75,7 +75,10 @@ interface MessageInboxProps {
   transactionLabel?: string;
 }
 
-const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
+const MessageBubble = ({ msg, isMine, role: viewerRole, adminAliasMap, adminNameMap, isChief }: {
+  msg: Message; isMine: boolean; role?: string;
+  adminAliasMap?: Record<string, string>; adminNameMap?: Record<string, string>; isChief?: boolean;
+}) => {
   const [translated, setTranslated] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   let langCtx: ReturnType<typeof useLanguage> | null = null;
@@ -96,6 +99,15 @@ const MessageBubble = ({ msg, isMine }: { msg: Message; isMine: boolean }) => {
   };
 
   const { sanitized, hadLinks } = sanitizeLinks(translated || msg.body);
+
+  // Show which admin sent this message (visible only in admin view)
+  const adminLabel = (() => {
+    if (viewerRole !== "admin" || !msg.admin_account_id) return null;
+    const alias = adminAliasMap?.[msg.admin_account_id];
+    const realName = adminNameMap?.[msg.admin_account_id];
+    if (isChief && realName) return `${alias || "Admin"} (${realName})`;
+    return alias || "Admin";
+  })();
 
   return (
     <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
