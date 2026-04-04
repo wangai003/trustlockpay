@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ShieldCheck, Upload, CheckCircle, Clock, AlertTriangle, Loader2,
-  Camera, CreditCard, User, Video, HelpCircle, FileText
+  Camera, CreditCard, User, Video, HelpCircle, FileText, Building2, Users, Plus, Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
