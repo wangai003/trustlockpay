@@ -178,7 +178,7 @@ const TrustLockOSPayout = ({
 }: TrustLockOSPayoutProps) => {
    // ─── Admin can select payout action type ──────────────
   const [adminAction, setAdminAction] = useState<"release" | "refund" | "split">(
-    role === "admin" ? (initialPayoutType === "release" ? "refund" : initialPayoutType) : initialPayoutType
+    role === "admin" ? (initialPayoutType || "release") : initialPayoutType
   );
   const payoutType = role === "admin" ? adminAction : initialPayoutType;
 
