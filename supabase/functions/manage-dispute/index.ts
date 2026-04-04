@@ -659,6 +659,16 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "full_refund", null, disputeId);
+
+          // Anchor: dispute resolved - buyer wins
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "full_refund",
+            resolution: "Admin ruling: Full refund to buyer",
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved in buyer's favor. A full refund will be initiated for ${dispute.buyer_name || "the buyer"}.`);
