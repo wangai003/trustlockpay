@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ThreadInternalNotes from "@/components/admin/ThreadInternalNotes";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -732,6 +733,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
+
+        {/* Internal notes panel — admin only */}
+        {role === "admin" && (
+          <ThreadInternalNotes
+            threadId={selectedThread.id}
+            adminAliasMap={adminAliasMap}
+            adminNameMap={adminNameMap}
+            isChief={isChiefAdmin}
+          />
+        )}
 
         {isLocked ? (
           <div className="p-3 border-t border-border text-center">
