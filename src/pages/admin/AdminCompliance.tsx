@@ -8,6 +8,7 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity, ThumbsUp, ThumbsDown, Loader2,
   FileText, ExternalLink, ChevronDown, ChevronUp, Camera, Video, HelpCircle, User,
+  Building2, Users,
 } from "lucide-react";
 import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs, useKycDocuments } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
