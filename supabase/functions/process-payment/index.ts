@@ -352,12 +352,22 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      // Anchor: Admin OS Pay refund to blockchain
+      if (transactionId) {
+        await anchorProof(supabase, transactionId, "payout", {
+          event: "admin_os_pay_refund",
+          payment_id: payment.id,
+          amount: parseFloat(String(amount)),
+          refund_email: refundEmail || null,
+          refund_reason: refundReason || null,
+          admin_user_id: userId,
+          processed_at: new Date().toISOString(),
+        });
+      }
+
       return new Response(
         JSON.stringify({
-          success: true,
-          payment,
-          confirmationCode,
-          feeWaived: true,
+          success: true, payment, confirmationCode, feeWaived: true,
           note: "Refund processed. All platform/escrow fees waived. Gas only ($0.02–$0.05).",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
