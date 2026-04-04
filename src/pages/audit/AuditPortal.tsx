@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Eye, Download, Clock, Lock, AlertTriangle, RefreshCw, Search, X, Layers } from "lucide-react";
 import { toast } from "sonner";
 import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-audit`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
