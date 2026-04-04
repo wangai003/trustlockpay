@@ -11,6 +11,7 @@ import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/Pas
 import { supabase } from "@/integrations/supabase/client";
 import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityTypeSelector";
+import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
