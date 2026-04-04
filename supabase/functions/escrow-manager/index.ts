@@ -1269,6 +1269,19 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     allPaymentsDone,
   });
 
+  // Anchor: milestone payment release
+  await anchorProof(supabase, String(txData.id), "milestone", {
+    event: "milestone_payment_released",
+    tx_id: txData.tx_id,
+    milestone_id: String(milestone_id),
+    milestone_title: milestone.title,
+    payment_amount: paymentAmount,
+    net_amount: fees.netAmount,
+    escrow_fee: fees.escrowFee,
+    all_milestones_released: allPaymentsDone,
+    released_at: now,
+  });
+
   return jsonResponse({
     success: true,
     payout,
