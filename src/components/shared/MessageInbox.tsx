@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ThreadInternalNotes from "@/components/admin/ThreadInternalNotes";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
