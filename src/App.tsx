@@ -39,6 +39,7 @@ const AdminBlockchainProofs = lazy(() => import("./pages/admin/AdminBlockchainPr
 const AdminGasTreasury = lazy(() => import("./pages/admin/AdminGasTreasury"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability"));
+const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -144,6 +145,7 @@ const App = () => (
                 <Route path="gas-treasury" element={<AdminGasTreasury />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="accountability" element={<AdminAccountability />} />
+                <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

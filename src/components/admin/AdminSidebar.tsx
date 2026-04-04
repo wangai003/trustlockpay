@@ -9,34 +9,44 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 
-const navItems = [
-  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts" },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow transactions" },
-  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations" },
-  { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders" },
-  { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support" },
-  { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors", tip: "Manage vendor accounts, KYC, and tiers" },
-  { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers", tip: "View buyer accounts and order history" },
-  { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance", tip: "AML/KYC flags and regulatory compliance" },
-  { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts" },
-  { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports" },
-  { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence" },
+const allNavItems = [
+  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts", chiefOnly: false },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow transactions", chiefOnly: false },
+  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations", chiefOnly: true },
+  { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders", chiefOnly: true },
+  { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support", chiefOnly: false },
+  { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors", tip: "Manage vendor accounts, KYC, and tiers", chiefOnly: true },
+  { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers", tip: "View buyer accounts and order history", chiefOnly: true },
+  { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance", tip: "AML/KYC flags and regulatory compliance", chiefOnly: true },
+  { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts", chiefOnly: false },
+  { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports", chiefOnly: false },
+  { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", chiefOnly: false },
   
-  { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements" },
-  { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators" },
-  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview" },
-  { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support" },
-  { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance" },
-  { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon" },
-  { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs" },
-  { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages", tip: "View and respond to all vendor and buyer messages" },
-  { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls" },
-  { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences" },
+  { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", chiefOnly: true },
+  { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators", chiefOnly: true },
+  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview", chiefOnly: false },
+  { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support", chiefOnly: false },
+  { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance", chiefOnly: true },
+  { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon", chiefOnly: true },
+  { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs", chiefOnly: true },
+  { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages", tip: "View and respond to all vendor and buyer messages", chiefOnly: false },
+  { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", chiefOnly: false },
+  { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", chiefOnly: false },
+  { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", chiefOnly: true },
 ];
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  const isChief = (() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+      return auth.isChief === true;
+    } catch { return false; }
+  })();
+
+  const navItems = allNavItems.filter((item) => !item.chiefOnly || isChief);
 
   useEffect(() => {
     const handler = () => setOpen(true);
