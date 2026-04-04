@@ -66,7 +66,7 @@ export function useLogAdminAction() {
     }) => {
       const { data, error } = await supabase
         .from("admin_action_log")
-        .insert({
+        .insert([{
           admin_id: params.adminId,
           action_type: params.actionType,
           case_id: params.caseId,
@@ -76,7 +76,7 @@ export function useLogAdminAction() {
           deviation_details: params.deviationDetails,
           requires_chief_review: params.requiresChiefReview || false,
           metadata: params.metadata || {},
-        })
+        }])
         .select()
         .single();
       if (error) throw error;
