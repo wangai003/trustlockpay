@@ -64,6 +64,8 @@ const TrustLockTestWidget = forwardRef<HTMLDivElement>((_, ref) => {
       </div>
     </section>
   );
-};
+});
+
+TrustLockTestWidget.displayName = "TrustLockTestWidget";
 
 export default TrustLockTestWidget;

@@ -83,6 +83,8 @@ const TrustLockPromoCard = forwardRef<HTMLDivElement>((_, ref) => {
       </div>
     </section>
   );
-};
+});
+
+TrustLockPromoCard.displayName = "TrustLockPromoCard";
 
 export default TrustLockPromoCard;
