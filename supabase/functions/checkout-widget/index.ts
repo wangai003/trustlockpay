@@ -43,6 +43,8 @@ interface CheckoutSession {
   industry?: string;
   feeBreakdownJson: Record<string, unknown>;
   marketplaceMetadata?: Record<string, unknown> | null;
+  buyerEntityType?: string;
+  buyerCompanyName?: string;
 }
 
 interface ProcessorResult {
