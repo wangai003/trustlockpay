@@ -85,6 +85,27 @@ const VendorKYC = () => {
   });
   const [verificationSubmitted, setVerificationSubmitted] = useState(false);
 
+  // Business KYC state
+  const [businessProfile, setBusinessProfile] = useState({
+    company_legal_name: "",
+    trading_name: "",
+    registration_number: "",
+    tax_id: "",
+    incorporation_date: "",
+    jurisdiction: "",
+    business_type: "limited_company",
+    registered_address: "",
+    business_activity_description: "",
+    signatory_name: "",
+    signatory_title: "",
+  });
+  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
+  const [businessSaved, setBusinessSaved] = useState(false);
+  const [businessSaving, setBusinessSaving] = useState(false);
+  const [ubos, setUbos] = useState<{ id?: string; full_name: string; nationality: string; date_of_birth: string; ownership_percentage: number; address: string }[]>([]);
+  const [uboSaving, setUboSaving] = useState(false);
+  const sigFileRef = useRef<HTMLInputElement>(null);
+
   const fetchDocs = useCallback(async (uid: string) => {
     try {
       const session = (await supabase.auth.getSession()).data.session;
