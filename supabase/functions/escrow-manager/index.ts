@@ -478,6 +478,34 @@ async function lockFunds(body: Record<string, unknown>) {
     amount: numAmount,
   });
 
+  // Anchor: invoice + price lock snapshot
+  await anchorProof(supabase, transaction.id, "invoice", {
+    event: "escrow_locked",
+    tx_id: txId,
+    amount: numAmount,
+    fee: fees.totalFees,
+    buyer_id: String(buyer_id),
+    vendor_id: String(vendor_id),
+    buyer_name: buyer_name ?? null,
+    vendor_name: vendor_name ?? null,
+    industry: industry ?? null,
+    processor: String(processor),
+    locked_at: new Date().toISOString(),
+  });
+
+  // Anchor: price lock snapshot (if commodity pricing)
+  if (locked_price || price_currency) {
+    await anchorProof(supabase, transaction.id, "price_lock", {
+      event: "price_lock_snapshot",
+      tx_id: txId,
+      locked_price: locked_price ? Number(locked_price) : numAmount,
+      price_currency: price_currency ? String(price_currency) : "USD",
+      commodity_unit: commodity_unit ? String(commodity_unit) : null,
+      commodity_quantity: commodity_quantity ? Number(commodity_quantity) : null,
+      snapshot_at: new Date().toISOString(),
+    });
+  }
+
   return jsonResponse({
     success: true,
     transaction,
