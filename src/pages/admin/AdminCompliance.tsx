@@ -140,7 +140,22 @@ const AdminCompliance = () => {
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [selfieDecisions, setSelfieDecisions] = useState<Record<string, string>>({});
   const [videoCallNotes, setVideoCallNotes] = useState<Record<string, string>>({});
+  const [businessProfiles, setBusinessProfiles] = useState<Record<string, any>>({});
+  const [ubosByBiz, setUbosByBiz] = useState<Record<string, any[]>>({});
   const queryClient = useQueryClient();
+
+  // Fetch business KYC profiles when a vendor row is expanded
+  const fetchBusinessKyc = async (vendorId: string) => {
+    if (businessProfiles[vendorId]) return;
+    const { data: biz } = await supabase.from("business_kyc_profiles").select("*").eq("vendor_id", vendorId).maybeSingle();
+    if (biz) {
+      setBusinessProfiles(p => ({ ...p, [vendorId]: biz }));
+      const { data: uboData } = await supabase.from("ubo_declarations").select("*").eq("business_kyc_id", biz.id);
+      if (uboData) setUbosByBiz(p => ({ ...p, [vendorId]: uboData }));
+    } else {
+      setBusinessProfiles(p => ({ ...p, [vendorId]: null }));
+    }
+  };
 
   const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
     setReviewingId(queueId);
