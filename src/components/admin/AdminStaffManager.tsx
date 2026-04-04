@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, ShieldAlert, Copy, Check } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check } from "lucide-react";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -56,7 +56,7 @@ export default function AdminStaffManager() {
   const [confirmDeleteStep, setConfirmDeleteStep] = useState(0);
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
-  const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-staff-list"],
@@ -115,15 +115,6 @@ export default function AdminStaffManager() {
     },
   });
 
-  const demoteMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "demote", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
-      setDemoteTarget(null);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
-      toast.success("Demoted from Chief Admin");
-    },
-  });
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -145,8 +136,8 @@ export default function AdminStaffManager() {
           <h2 className="text-lg font-bold text-foreground">Admin Staff Management</h2>
           <p className="text-sm text-muted-foreground">
             {isOriginalChief
-              ? "Full control: add, remove, reinstate, promote, and demote admin staff"
-              : "You can add new staff. Delete, reinstate, promote, and demote require the original Chief Admin."}
+              ? "Full control: add, remove, reinstate, and promote admin staff"
+              : "You can add new staff. Delete, reinstate, and promote require the original Chief Admin."}
           </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2">
@@ -186,10 +177,6 @@ export default function AdminStaffManager() {
                     {!a.is_chief ? (
                       <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setPromoteTarget(a)}>
                         <Crown className="w-3 h-3" /> Promote
-                      </Button>
-                    ) : a.chief_rank !== 1 ? (
-                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setDemoteTarget(a)}>
-                        <ShieldAlert className="w-3 h-3" /> Demote
                       </Button>
                     ) : null}
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
@@ -345,23 +332,6 @@ export default function AdminStaffManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Demote Confirmation */}
-      <Dialog open={!!demoteTarget} onOpenChange={() => setDemoteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Demote Chief Admin</DialogTitle>
-            <DialogDescription>
-              Remove Chief Admin privileges from <strong>{demoteTarget?.name}</strong>? They will return to standard admin staff.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDemoteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)} disabled={demoteMutation.isPending}>
-              {demoteMutation.isPending ? "Demoting…" : "Demote"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

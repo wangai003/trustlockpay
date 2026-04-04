@@ -157,29 +157,8 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    // ── DEMOTE FROM CHIEF — original chief only ────────────
-    if (action === "demote") {
-      if (!isOriginalChief) {
-        return json({ error: "Only the original Chief Admin can demote staff." }, 403);
-      }
-
-      const { adminId } = params;
-      if (!adminId) return json({ error: "Admin ID required." }, 400);
-      if (adminId === chiefAdminId) return json({ error: "Cannot demote yourself." }, 400);
-
-      // Prevent demoting another rank-1 (shouldn't happen, but safety)
-      const targetRank = await getChiefRank(supabase, adminId);
-      if (targetRank === 1) return json({ error: "Cannot demote the original chief." }, 400);
-
-      const { error } = await supabase
-        .from("chief_admin_config")
-        .update({ is_active: false })
-        .eq("admin_id", adminId)
-        .eq("is_active", true);
-
-      if (error) return json({ error: error.message }, 500);
-      return json({ success: true });
-    }
+    // Demotion is not supported — once promoted, a chief can only lose rank
+    // through the automatic succession protocol when the original chief is removed.
 
     // ── DELETE SELF (original chief removing themselves — triggers succession) ──
     if (action === "deleteSelf") {
