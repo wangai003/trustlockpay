@@ -332,23 +332,6 @@ export default function AdminStaffManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Demote Confirmation */}
-      <Dialog open={!!demoteTarget} onOpenChange={() => setDemoteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Demote Chief Admin</DialogTitle>
-            <DialogDescription>
-              Remove Chief Admin privileges from <strong>{demoteTarget?.name}</strong>? They will return to standard admin staff.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDemoteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)} disabled={demoteMutation.isPending}>
-              {demoteMutation.isPending ? "Demoting…" : "Demote"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
