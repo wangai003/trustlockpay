@@ -397,7 +397,7 @@ serve(async (req) => {
       if (storeErr) console.error("Failed to store scan result:", storeErr);
 
       // ── ENFORCEMENT LAYER ─────────────────────────────────────────────
-      const dims = scanResult.dimensions || {};
+      // dims already declared above
       const d4Failed = dims.d4_name_consistency && !dims.d4_name_consistency.pass;
       const d5Failed = dims.d5_cross_document && !dims.d5_cross_document.pass;
       const d7Failed = dims.d7_sanctions_indicators && !dims.d7_sanctions_indicators.pass;
