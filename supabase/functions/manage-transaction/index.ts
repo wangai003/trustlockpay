@@ -391,6 +391,17 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Anchor: compliance hold lifted
+        await anchorProof(supabase, frozenTx.id, "milestone", {
+          event: "compliance_hold_lifted",
+          tx_id: txId,
+          previous_status: frozenTx.status,
+          restored_status: restoreStatus,
+          resolution_note: resolutionNote,
+          order_number: frozenTx.order_number,
+          unfrozen_at: new Date().toISOString(),
+        });
+
         result = unfrozen;
         break;
       }
