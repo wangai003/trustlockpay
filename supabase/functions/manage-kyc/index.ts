@@ -46,6 +46,35 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ─── Blockchain Anchor Helper ─────────────────────────────
+    async function anchorProofKyc(
+      transactionId: string,
+      recordType: string,
+      eventData: Record<string, unknown>
+    ) {
+      try {
+        const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+        const enc = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(canonical));
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        const txData = enc.encode(transactionId);
+        let txRef = "0x";
+        for (let i = 0; i < 32; i++) {
+          const byte = txData[i % txData.length] ^ (i * 37);
+          txRef += (byte & 0xff).toString(16).padStart(2, "0");
+        }
+        const { data: lastRecord } = await supabaseAdmin
+          .from("blockchain_proofs").select("content_hash").order("created_at", { ascending: false }).limit(1).single();
+        const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+        await supabaseAdmin.from("blockchain_proofs").insert({
+          content_hash: contentHash, prev_hash: prevHash, record_type: recordType,
+          tx_ref: txRef, transaction_id: transactionId, event_data: eventData, chain_status: "queued",
+        });
+        console.log(`[anchor] ${recordType} for ${transactionId.slice(0, 8)}...`);
+      } catch (err) { console.error("[anchor] Failed:", err); }
+    }
+
     const { action, ...params } = await req.json();
 
     const json = (data: unknown, status = 200) =>
