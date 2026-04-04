@@ -188,7 +188,8 @@ const AdminLogin = () => {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Enter testnet password"
+                        autoComplete="off"
                       />
                       <button
                         type="button"
