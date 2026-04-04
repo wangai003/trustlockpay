@@ -357,6 +357,123 @@ const VendorKYC = () => {
     toast.success("Verification answers submitted. Admin will cross-check against your documents.");
   };
 
+  // --- Business KYC handlers ---
+  const handleSaveBusinessProfile = async () => {
+    if (!businessProfile.company_legal_name.trim()) {
+      toast.error("Company legal name is required.");
+      return;
+    }
+    setBusinessSaving(true);
+    try {
+      if (!isMainnet || !userId) {
+        setBusinessSaved(true);
+        setBusinessProfileId("mock-biz");
+        toast.success("Business profile saved (testnet)");
+        return;
+      }
+      if (businessProfileId) {
+        const { error } = await supabase
+          .from("business_kyc_profiles")
+          .update(businessProfile as any)
+          .eq("id", businessProfileId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("business_kyc_profiles")
+          .insert({ ...businessProfile, vendor_id: userId } as any)
+          .select()
+          .single();
+        if (error) throw error;
+        setBusinessProfileId(data.id);
+      }
+      setBusinessSaved(true);
+      toast.success("Business profile saved ✅");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save business profile");
+    } finally {
+      setBusinessSaving(false);
+    }
+  };
+
+  const handleAddUbo = () => {
+    setUbos(p => [...p, { full_name: "", nationality: "", date_of_birth: "", ownership_percentage: 0, address: "" }]);
+  };
+
+  const handleRemoveUbo = async (index: number) => {
+    const ubo = ubos[index];
+    if (ubo.id && isMainnet) {
+      await supabase.from("ubo_declarations").delete().eq("id", ubo.id);
+    }
+    setUbos(p => p.filter((_, i) => i !== index));
+  };
+
+  const handleSaveUbos = async () => {
+    if (!businessProfileId) {
+      toast.error("Save the business profile first.");
+      return;
+    }
+    const totalOwnership = ubos.reduce((s, u) => s + Number(u.ownership_percentage || 0), 0);
+    if (totalOwnership > 100) {
+      toast.error("Total ownership cannot exceed 100%.");
+      return;
+    }
+    setUboSaving(true);
+    try {
+      if (!isMainnet) {
+        toast.success("UBO declarations saved (testnet)");
+        return;
+      }
+      for (const ubo of ubos) {
+        if (!ubo.full_name.trim()) continue;
+        if (ubo.id) {
+          await supabase.from("ubo_declarations").update({
+            full_name: ubo.full_name,
+            nationality: ubo.nationality,
+            date_of_birth: ubo.date_of_birth || null,
+            ownership_percentage: ubo.ownership_percentage,
+            address: ubo.address,
+          } as any).eq("id", ubo.id);
+        } else {
+          const { data } = await supabase.from("ubo_declarations").insert({
+            business_kyc_id: businessProfileId,
+            full_name: ubo.full_name,
+            nationality: ubo.nationality,
+            date_of_birth: ubo.date_of_birth || null,
+            ownership_percentage: ubo.ownership_percentage,
+            address: ubo.address,
+          } as any).select().single();
+          if (data) ubo.id = data.id;
+        }
+      }
+      toast.success("UBO declarations saved ✅");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save UBOs");
+    } finally {
+      setUboSaving(false);
+    }
+  };
+
+  const handleSignatoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isMainnet || !userId || !businessProfileId) {
+      toast.success("Authorization document uploaded (testnet)");
+      e.target.value = "";
+      return;
+    }
+    try {
+      const filePath = `${userId}/signatory-auth-${Date.now()}-${file.name}`;
+      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(filePath, file);
+      if (upErr) throw upErr;
+      const { data: urlData } = await supabase.storage.from("kyc-documents").createSignedUrl(filePath, 60 * 60 * 24 * 365);
+      await supabase.from("business_kyc_profiles").update({ authorization_doc_url: urlData?.signedUrl || filePath } as any).eq("id", businessProfileId);
+      toast.success("Signatory authorization document uploaded ✅");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    }
+    e.target.value = "";
+  };
+
   const hasGovId = documents.some(d => d.document_category === "government_id");
   const hasSelfie = documents.some(d => d.document_category === "selfie_with_id");
   const missingRequired = !hasGovId || !hasSelfie;
