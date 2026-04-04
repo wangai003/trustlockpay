@@ -20,6 +20,8 @@ import FundMovementTracker from "./FundMovementTracker";
 import TransactionFailureState from "./TransactionFailureState";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
+import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMethodUnavailable";
+import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
