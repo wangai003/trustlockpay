@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity, ThumbsUp, ThumbsDown, Loader2,
+  FileText, ExternalLink, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs } from "@/hooks/useSupabaseData";
+import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs, useKycDocuments } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
