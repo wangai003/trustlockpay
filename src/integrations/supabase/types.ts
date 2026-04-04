@@ -383,6 +383,69 @@ export type Database = {
           },
         ]
       }
+      business_kyc_profiles: {
+        Row: {
+          admin_notes: string | null
+          authorization_doc_url: string | null
+          business_activity_description: string | null
+          business_type: string | null
+          company_legal_name: string
+          created_at: string
+          id: string
+          incorporation_date: string | null
+          jurisdiction: string | null
+          registered_address: string | null
+          registration_number: string | null
+          signatory_name: string | null
+          signatory_title: string | null
+          tax_id: string | null
+          trading_name: string | null
+          updated_at: string
+          vendor_id: string
+          verification_status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          authorization_doc_url?: string | null
+          business_activity_description?: string | null
+          business_type?: string | null
+          company_legal_name: string
+          created_at?: string
+          id?: string
+          incorporation_date?: string | null
+          jurisdiction?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          signatory_name?: string | null
+          signatory_title?: string | null
+          tax_id?: string | null
+          trading_name?: string | null
+          updated_at?: string
+          vendor_id: string
+          verification_status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          authorization_doc_url?: string | null
+          business_activity_description?: string | null
+          business_type?: string | null
+          company_legal_name?: string
+          created_at?: string
+          id?: string
+          incorporation_date?: string | null
+          jurisdiction?: string | null
+          registered_address?: string | null
+          registration_number?: string | null
+          signatory_name?: string | null
+          signatory_title?: string | null
+          tax_id?: string | null
+          trading_name?: string | null
+          updated_at?: string
+          vendor_id?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
       compliance_flags: {
         Row: {
           created_at: string
@@ -3000,6 +3063,56 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: []
+      }
+      ubo_declarations: {
+        Row: {
+          address: string | null
+          business_kyc_id: string
+          created_at: string
+          date_of_birth: string | null
+          full_name: string
+          id: string
+          id_document_url: string | null
+          nationality: string | null
+          ownership_percentage: number
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          address?: string | null
+          business_kyc_id: string
+          created_at?: string
+          date_of_birth?: string | null
+          full_name: string
+          id?: string
+          id_document_url?: string | null
+          nationality?: string | null
+          ownership_percentage?: number
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          address?: string | null
+          business_kyc_id?: string
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string
+          id?: string
+          id_document_url?: string | null
+          nationality?: string | null
+          ownership_percentage?: number
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ubo_declarations_business_kyc_id_fkey"
+            columns: ["business_kyc_id"]
+            isOneToOne: false
+            referencedRelation: "business_kyc_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_onboarding_tasks: {
         Row: {
