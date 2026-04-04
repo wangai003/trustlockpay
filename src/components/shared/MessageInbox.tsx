@@ -734,6 +734,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
           </div>
         </ScrollArea>
 
+        {/* Internal notes panel — admin only */}
+        {role === "admin" && (
+          <ThreadInternalNotes
+            threadId={selectedThread.id}
+            adminAliasMap={adminAliasMap}
+            adminNameMap={adminNameMap}
+            isChief={isChiefAdmin}
+          />
+        )}
+
         {isLocked ? (
           <div className="p-3 border-t border-border text-center">
             <p className="text-xs text-muted-foreground">This conversation has been locked.</p>
