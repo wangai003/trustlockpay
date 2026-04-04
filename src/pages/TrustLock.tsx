@@ -35,11 +35,6 @@ const TrustLock = () => {
             <Link to="/test-widget" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Test Widget</Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Link to="/test-widget">
-              <Button variant="default" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
-                <Code className="w-3.5 h-3.5 shrink-0" /> Test Widget
-              </Button>
-            </Link>
             <Link to="/trustlock/admin/login">
               <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
                 <Shield className="w-3.5 h-3.5 shrink-0" /> Admin
