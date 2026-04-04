@@ -344,6 +344,23 @@ export default function AdminStaffManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Demote Confirmation */}
+      <Dialog open={!!demoteTarget} onOpenChange={() => setDemoteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Demote to Regular Staff</DialogTitle>
+            <DialogDescription>
+              Demote <strong>{demoteTarget?.name}</strong> back to regular admin staff? They will lose access to sensitive data (KYC, finance, disputes, compliance) and only retain messaging and informational access.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDemoteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)} disabled={demoteMutation.isPending}>
+              {demoteMutation.isPending ? "Demoting…" : "Demote"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
