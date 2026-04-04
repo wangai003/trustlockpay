@@ -566,6 +566,31 @@ const TrustLockOSPayout = ({
         return;
       }
 
+      // ═══ MAINNET — compliance velocity check before processing ═══
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId && !isAdmin && amountNum > 0) {
+        try {
+          const { data: velocityResult } = await supabase.functions.invoke("compliance-velocity", {
+            body: { action: "check", user_id: userId, amount: amountNum },
+          });
+          if (velocityResult && !velocityResult.allow_transaction) {
+            setComplianceBlock({
+              flags: velocityResult.flags || [],
+              severity: velocityResult.severity || "high",
+              allowTransaction: false,
+              blockedReason: velocityResult.blocked_reason,
+              preKycCap: velocityResult.pre_kyc_cap,
+              rollingVolume: velocityResult.rolling_24h_volume,
+              todayCount: velocityResult.today_tx_count,
+            });
+            setProcessing(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Compliance velocity check (non-blocking):", err);
+        }
+      }
+
       // ═══ MAINNET — real edge function call ═══
       const providerDetails: Record<string, unknown> = {
         ...(providerFields as Record<string, unknown>),
