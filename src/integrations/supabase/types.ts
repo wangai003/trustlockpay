@@ -125,6 +125,94 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_action_log: {
+        Row: {
+          action_type: string
+          admin_id: string
+          case_id: string | null
+          case_type: string | null
+          chief_decision: string | null
+          chief_notes: string | null
+          chief_reviewed_at: string | null
+          created_at: string
+          deviation_details: string | null
+          id: string
+          is_deviation: boolean
+          justification: string | null
+          metadata: Json | null
+          requires_chief_review: boolean
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          case_id?: string | null
+          case_type?: string | null
+          chief_decision?: string | null
+          chief_notes?: string | null
+          chief_reviewed_at?: string | null
+          created_at?: string
+          deviation_details?: string | null
+          id?: string
+          is_deviation?: boolean
+          justification?: string | null
+          metadata?: Json | null
+          requires_chief_review?: boolean
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          case_id?: string | null
+          case_type?: string | null
+          chief_decision?: string | null
+          chief_notes?: string | null
+          chief_reviewed_at?: string | null
+          created_at?: string
+          deviation_details?: string | null
+          id?: string
+          is_deviation?: boolean
+          justification?: string | null
+          metadata?: Json | null
+          requires_chief_review?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_action_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_aliases: {
+        Row: {
+          admin_id: string
+          alias: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          admin_id: string
+          alias: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          admin_id?: string
+          alias?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_aliases_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: true
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_signals: {
         Row: {
           context: Json | null
@@ -446,6 +534,41 @@ export type Database = {
         }
         Relationships: []
       }
+      chief_admin_config: {
+        Row: {
+          admin_id: string
+          designated_at: string
+          designated_by: string
+          id: string
+          is_active: boolean
+          override_window_hours: number
+        }
+        Insert: {
+          admin_id: string
+          designated_at?: string
+          designated_by?: string
+          id?: string
+          is_active?: boolean
+          override_window_hours?: number
+        }
+        Update: {
+          admin_id?: string
+          designated_at?: string
+          designated_by?: string
+          id?: string
+          is_active?: boolean
+          override_window_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chief_admin_config_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_flags: {
         Row: {
           created_at: string
@@ -588,6 +711,11 @@ export type Database = {
           description: string | null
           dispute_id: string
           id: string
+          original_resolution: string | null
+          overridden_at: string | null
+          overridden_by: string | null
+          override_deadline: string | null
+          override_reason: string | null
           priority: string | null
           reason: string | null
           resolution: string | null
@@ -613,6 +741,11 @@ export type Database = {
           description?: string | null
           dispute_id: string
           id?: string
+          original_resolution?: string | null
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_deadline?: string | null
+          override_reason?: string | null
           priority?: string | null
           reason?: string | null
           resolution?: string | null
@@ -638,6 +771,11 @@ export type Database = {
           description?: string | null
           dispute_id?: string
           id?: string
+          original_resolution?: string | null
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_deadline?: string | null
+          override_reason?: string | null
           priority?: string | null
           reason?: string | null
           resolution?: string | null
@@ -651,6 +789,13 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "disputes_overridden_by_fkey"
+            columns: ["overridden_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "disputes_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -1031,7 +1176,10 @@ export type Database = {
       }
       message_threads: {
         Row: {
+          case_status: string
           category: string
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           id: string
           last_message_at: string | null
@@ -1043,7 +1191,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          case_status?: string
           category?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -1055,7 +1206,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          case_status?: string
           category?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -1067,6 +1221,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "message_threads_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "message_threads_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -3498,6 +3659,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_admin_alias: { Args: never; Returns: string }
       get_contract_audit_trail: {
         Args: { _transaction_id: string }
         Returns: Json
