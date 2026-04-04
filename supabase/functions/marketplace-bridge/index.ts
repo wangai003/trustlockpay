@@ -581,8 +581,131 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ══════════════════════════════════════════════════
+    //  ACTION: FAST_TRACK_CONNECT — API-key-based onboarding for verified platforms
+    // ══════════════════════════════════════════════════
+    if (action === "fast_track_connect") {
+      const { platform, seller_id, api_key, store_url, seller_email, seller_name } = body;
+      if (!platform || !seller_id) {
+        return json({ error: "platform and seller_id are required" }, 400);
+      }
+
+      const allowedPlatforms = ["shopify", "amazon"];
+      if (!allowedPlatforms.includes(platform)) {
+        return json({
+          error: `Fast-track only available for: ${allowedPlatforms.join(", ")}. Use generate_vendor_invite for other platforms.`,
+        }, 400);
+      }
+
+      const supabase = getSupabase();
+      const platformConfig = MARKETPLACE_PLATFORMS[platform];
+
+      // Check if seller already connected via email
+      let existingVendorId: string | null = null;
+      if (seller_email) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", seller_email)
+          .single();
+        existingVendorId = profile?.id || null;
+      }
+
+      // If vendor exists, register the marketplace integration directly
+      if (existingVendorId) {
+        const integrationId = `mkt_ft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        const { data: existing } = await supabase
+          .from("vendor_settings")
+          .select("id, marketplace_integrations")
+          .eq("vendor_id", existingVendorId)
+          .single();
+
+        const integrations = (existing?.marketplace_integrations as Record<string, unknown>[]) || [];
+        integrations.push({
+          integration_id: integrationId,
+          platform,
+          platform_name: platformConfig.name,
+          store_url: store_url || null,
+          seller_id,
+          api_key_hash: api_key ? `ft_${api_key.slice(0, 6)}...` : null,
+          identity_bridge: "api_key",
+          fee_layering: platformConfig.feeLayering,
+          default_order_type: platformConfig.defaultOrderType,
+          industry: platformConfig.industry,
+          fast_track: true,
+          status: "active",
+          created_at: new Date().toISOString(),
+        });
+
+        if (existing) {
+          await supabase
+            .from("vendor_settings")
+            .update({ marketplace_integrations: integrations })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("vendor_settings").insert({
+            vendor_id: existingVendorId,
+            marketplace_integrations: integrations,
+          });
+        }
+
+        await supabase.from("notifications").insert({
+          user_id: existingVendorId,
+          type: "success",
+          title: `${platformConfig.name} Store Connected`,
+          message: `Your ${platformConfig.name} store has been linked via fast-track. Marketplace orders will appear in your dashboard.`,
+          is_action_required: false,
+          action_url: "/trustlock/vendor/marketplace-orders",
+        });
+
+        return json({
+          success: true,
+          fast_track: true,
+          already_registered: true,
+          vendor_id: existingVendorId,
+          integration_id: integrationId,
+          platform: platformConfig.name,
+          message: "Store connected via fast-track. No claim token needed.",
+        });
+      }
+
+      // Vendor doesn't exist yet — create a fast-track claim token with 90-day expiry
+      const { data: token, error: tokenErr } = await supabase
+        .from("vendor_claim_tokens")
+        .insert({
+          vendor_email: seller_email || null,
+          vendor_name: seller_name || null,
+          platform,
+          marketplace_vendor_id: seller_id,
+          metadata: { fast_track: true, store_url, api_key_prefix: api_key?.slice(0, 6) },
+        })
+        .select("token")
+        .single();
+
+      if (tokenErr) {
+        return json({ error: "Failed to create fast-track token", details: tokenErr.message }, 500);
+      }
+
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+      const claimUrl = `${baseUrl}/vendor/claim?token=${token.token}&fast_track=true`;
+
+      return json({
+        success: true,
+        fast_track: true,
+        already_registered: false,
+        claim_url: claimUrl,
+        token: token.token,
+        platform: platformConfig.name,
+        message: "Seller not yet registered. Fast-track claim link generated (90-day expiry vs standard 30-day).",
+        instructions: seller_email
+          ? `Send this link to ${seller_email} — they can sign up and instantly connect their ${platformConfig.name} store.`
+          : `Share this fast-track link with the seller to connect their ${platformConfig.name} store.`,
+      });
+    }
+
     return json({
-      error: `Unknown action: ${action}. Supported: register, ingest_order, settlement_callback, list_platforms, list_integrations, generate_vendor_invite, claim_vendor, lookup_token`,
+      error: `Unknown action: ${action}. Supported: register, ingest_order, settlement_callback, list_platforms, list_integrations, generate_vendor_invite, claim_vendor, lookup_token, fast_track_connect`,
     }, 400);
   } catch (err) {
     console.error("marketplace-bridge error:", err);
