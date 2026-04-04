@@ -1,0 +1,2 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_direct_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.thread_internal_notes;
