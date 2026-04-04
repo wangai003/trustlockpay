@@ -56,7 +56,7 @@ export default function AdminStaffManager() {
   const [confirmDeleteStep, setConfirmDeleteStep] = useState(0);
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
-  const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-staff-list"],
