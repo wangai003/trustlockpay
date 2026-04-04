@@ -28,9 +28,6 @@ const BuyerLayoutInner = () => {
           </main>
           <CommandPalette role="buyer" />
           <MobileBottomNav role="buyer" />
-          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
-            <BlockchainExplorerPanel />
-          </div>
           <EntityClassificationPrompt />
         </div>
       </BuyerProvider>
