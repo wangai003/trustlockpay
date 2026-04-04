@@ -12,6 +12,7 @@ import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown } from "luci
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const TESTNET_CHIEF_ADMIN_ID = "a0ac136f-de82-45bd-8219-0fc5ab25d098";
 
 function callStaffApi(body: Record<string, unknown>) {
   return fetch(FUNCTION_URL, {
@@ -24,8 +25,15 @@ function callStaffApi(body: Record<string, unknown>) {
 function getChiefAdminId(): string {
   try {
     const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
-    return auth.adminId || "";
-  } catch { return ""; }
+    if (auth.adminId) return auth.adminId;
+    if (auth.id) return auth.id;
+    if (auth.isChief === true && localStorage.getItem("tl_network") === "testnet") {
+      return TESTNET_CHIEF_ADMIN_ID;
+    }
+    return "";
+  } catch {
+    return "";
+  }
 }
 
 interface AdminAccount {
@@ -45,6 +53,7 @@ interface AdminAccount {
 export default function AdminStaffManager() {
   const qc = useQueryClient();
   const chiefAdminId = getChiefAdminId();
+  const missingChiefSession = !chiefAdminId;
 
   const [newUsername, setNewUsername] = useState("");
   const [newName, setNewName] = useState("");
@@ -58,9 +67,10 @@ export default function AdminStaffManager() {
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-staff-list"],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin-staff-list", chiefAdminId],
     queryFn: () => callStaffApi({ action: "list", chiefAdminId }),
+    enabled: !missingChiefSession,
   });
 
   const accounts: AdminAccount[] = data?.accounts || [];
@@ -136,6 +146,36 @@ export default function AdminStaffManager() {
     if (rank === 2) return "Chief";
     return "";
   };
+
+  if (missingChiefSession) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin session needs refresh</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Your chief admin session is missing its identity. Sign out and sign back in to access staff management.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load staff management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            The chief-only staff service rejected this session. Refresh your login and try again.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
