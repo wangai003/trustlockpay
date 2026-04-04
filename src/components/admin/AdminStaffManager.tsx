@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown } from "lucide-react";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
