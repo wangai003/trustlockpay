@@ -136,8 +136,8 @@ export default function AdminStaffManager() {
           <h2 className="text-lg font-bold text-foreground">Admin Staff Management</h2>
           <p className="text-sm text-muted-foreground">
             {isOriginalChief
-              ? "Full control: add, remove, reinstate, promote, and demote admin staff"
-              : "You can add new staff. Delete, reinstate, promote, and demote require the original Chief Admin."}
+              ? "Full control: add, remove, reinstate, and promote admin staff"
+              : "You can add new staff. Delete, reinstate, and promote require the original Chief Admin."}
           </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2">
