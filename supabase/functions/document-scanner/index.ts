@@ -13,6 +13,8 @@ const SCAN_PROMPT = `You are TrustLock's automated document intelligence system 
 
 ### D1 – Document Authenticity
 Check visible security features: official emblems, stamps, watermarks, holograms, QR codes to official domains, anti-counterfeit elements. Compare against known standards:
+
+**TIER 1 & 2 — Direct Processor Countries:**
 - Kenya: BRS coat of arms, KRA PIN format A0XXXXXXXXA, KEBS Diamond Mark, eTIMS compliance
 - Nigeria: CAC RC-XXXXXXX format, holographic sticker (post-2020), FIRS TIN 10 digits, NAFDAC numbers
 - South Africa: CIPC YYYY/XXXXXX/XX format, digital TCS PINs (post-2019), SARS Tax Reference
@@ -21,8 +23,43 @@ Check visible security features: official emblems, stamps, watermarks, holograms
 - Tanzania: BRELA, TRA TIN 9 digits
 - Uganda: URSB, URA TIN format
 - Egypt: Commercial Registry CR, Tax Authority TIN
-- Ethiopia: Ministry of Trade license format
-- International: Container ISO 6346, AWB 11-digit format, SWIFT 8/11 chars, DUNS 9 digits, LEI 20 chars
+- Cameroon: CFCE registration, DGI TIN, XAF (CEMAC)
+
+**WAEMU Zone (XOF currency):**
+- Senegal: ANSD registry (SNRS+9 digits), DGID TIN (9 digits + G suffix), NINEA tax ID
+- Mali: API-Mali/CFE registry (ML/RM + 9 digits), DGI TIN (9 digits + letter)
+- Cote d'Ivoire: CEPICI registry (CI + 9 digits + letter), DGI TIN, Compte Contribuable
+- Burkina Faso: CEFORE registry (BF + 10 digits), DGI TIN (8 digits + letter), IFU tax ID
+- Benin: APIEx/GUFE registry (BJ + 10 digits), DGI TIN (9 digits + B suffix)
+- Togo: CFE Togo registry (TG + 9 digits), OTR TIN (9 digits + letter)
+- Niger: CFE registry (NE + 9 digits), DGI TIN (8 digits + letter)
+- Guinea: AGUIPIA registry (GN + 9 digits), DNI TIN (9 digits + letter), GNF currency
+
+**CEMAC Zone (XAF currency):**
+- Chad: GUCECCI registry (TCD + 7 digits + letter), DGI TIN (9 digits + letter)
+- Gabon: ANPI-Gabon/RCCM registry (RG + 4-5 digits + 2 letters + 2 digits), DGI TIN (9 digits + letter)
+
+**SADC Zone:**
+- Mozambique: CREL registry (9 digits + letter), AT TIN (NUIT — 10 digits + letter), MZN currency
+- Malawi: Registrar General (2 letters + 7 digits), MRA TIN (8-9 digits), MWK currency
+- Botswana: CIPA registry (CO/BS + 5-6 digits), BURS TIN (3 letters + 7 digits + letter), BWP currency
+- Zambia: PACRA registry (10 digits or 2 letters + 7 digits), ZRA TPIN (9-10 digits), ZMW currency
+- Angola: GU registry (10 digits + 2 letters), AGT NIF (9 digits + 2 letters), AOA currency
+- Namibia: BIPA registry (CC/BR/CR + digits), NRA TIN (6-8 digits), NAD currency
+- Madagascar: EDBM registry (10 digits), DGI NIF (10 digits), MGA currency, SADC/COMESA/IOC
+- Mauritius: CBRD RoC (C + 6-8 digits), MRA TAN (letter + 7 digits + letter), MUR currency, SADC/COMESA/IOC
+
+**Other African Markets:**
+- Gambia: GIEPA registry (CRN + 6-7 digits), GRA TIN (8-10 digits), GMD currency, ECOWAS
+- Cape Verde: Casa do Cidadão (9 digits), DGCI NIF (9 digits), CVE currency, ECOWAS
+- Djibouti: ONDT/RCS registry (DJ + 6-8 digits), DGI TIN (9 digits + letter), DJF currency, IGAD/COMESA
+- DR Congo: GUCE registry (GUCE + 8 digits), DGI NIF (9 digits + letter), CDF currency, SADC/ECCAS/COMESA
+- Tunisia: RNE registry (7 digits + letter), DGI Matricule Fiscal (7 digits + letter), TND currency, AMU
+
+**International Standards:**
+- Container ISO 6346, AWB 11-digit format, SWIFT 8/11 chars, DUNS 9 digits, LEI 20 chars
+- RCCM format (common across WAEMU/CEMAC): verify issuing tribunal matches jurisdiction
+- OHADA Uniform Acts compliance for all WAEMU/CEMAC member states
 
 ### D2 – Registration Number Format Validation
 Validate that all registration/tax/license numbers follow the exact regex pattern for their jurisdiction. Flag any deviation.
