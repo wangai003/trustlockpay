@@ -20,7 +20,7 @@ import WorkspaceChat from "@/components/shared/WorkspaceChat";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
-import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff } from "lucide-react";
+import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, MessageSquare, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [

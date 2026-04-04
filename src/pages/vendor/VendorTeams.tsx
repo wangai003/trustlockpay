@@ -19,7 +19,7 @@ import WorkspaceChat from "@/components/shared/WorkspaceChat";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
-import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi, RotateCcw } from "lucide-react";
+import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi, RotateCcw, MessageSquare, Settings2 } from "lucide-react";
 import TestnetTeamsView from "@/components/shared/TestnetTeamsView";
 import { cn } from "@/lib/utils";
 import TLId from "@/components/shared/TLId";
