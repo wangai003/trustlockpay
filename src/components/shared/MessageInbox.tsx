@@ -405,10 +405,21 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     if (!newMessage.trim() || !selectedThread || !userId) return;
     // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
     const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
+
+    // Get admin_account_id from localStorage for admin senders
+    let adminAccountId: string | null = null;
+    if (role === "admin") {
+      try {
+        const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+        adminAccountId = auth.id || null;
+      } catch { /* ignore */ }
+    }
+
     const { error } = await supabase.from("messages").insert({
       thread_id: selectedThread.id,
       sender_id: senderId,
       body: newMessage.trim(),
+      admin_account_id: adminAccountId,
     });
     if (error) {
       toast.error("Failed to send message");
