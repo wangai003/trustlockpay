@@ -451,9 +451,10 @@ const TrustLockOSPayout = ({
 
   const getActionBadge = () => {
     if (isAdmin) {
+      if (payoutType === "release") return "Release Authorization";
       if (payoutType === "refund") return "Refund Authorization";
       if (payoutType === "split") return "Split Pay Authorization";
-      return "Refund Authorization";
+      return "Payout Authorization";
     }
     if (role === "vendor") return "Fund Release";
     if (role === "buyer" && initialPayoutType === "release") return "Release Authorization";
