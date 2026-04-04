@@ -347,6 +347,10 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
         <div className="flex items-center gap-1">
           <Eye className="w-2.5 h-2.5" /> Observer
         </div>
+        <div className="flex items-center gap-1 ml-auto">
+          <Globe className="w-2.5 h-2.5" />
+          <span className="text-[8px]">{userTimeZone}</span>
+        </div>
       </div>
 
       {/* Detail cards */}
