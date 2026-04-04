@@ -614,9 +614,16 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                       {isAdmin && <Shield className="w-3 h-3 text-primary shrink-0" />}
                       {other}
                     </span>
-                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                      {format(new Date(thread.last_message_at), "MMM d")}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      {getUnreadCount(thread.id) > 0 && (
+                        <Badge className="text-[9px] px-1.5 py-0 min-w-[18px] justify-center">
+                          {getUnreadCount(thread.id)}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(thread.last_message_at), "MMM d")}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
