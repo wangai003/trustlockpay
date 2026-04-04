@@ -18,6 +18,7 @@ import { useProcessPayment, useGetOrCreateSeedToken } from "@/hooks/useSupabaseD
 import TaxBreakdown, { type TaxLineItem } from "./TaxBreakdown";
 import FundMovementTracker from "./FundMovementTracker";
 import TransactionFailureState from "./TransactionFailureState";
+import AntiStructuringAlert from "./AntiStructuringAlert";
 import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMethodUnavailable";
@@ -339,6 +340,15 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
   const [osPayFailure, setOsPayFailure] = useState<{ message: string } | null>(null);
+  const [complianceBlock, setComplianceBlock] = useState<{
+    flags: { type: string; severity: string; detail: string }[];
+    severity: "critical" | "high" | "clear";
+    allowTransaction: boolean;
+    blockedReason?: string;
+    preKycCap?: number;
+    rollingVolume?: number;
+    todayCount?: number;
+  } | null>(null);
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
@@ -360,7 +370,31 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         return;
       }
 
-      // ═══ MAINNET — real processor calls ═══
+      // ═══ MAINNET — compliance velocity check before processing ═══
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId && !isAdmin) {
+        try {
+          const { data: velocityResult } = await supabase.functions.invoke("compliance-velocity", {
+            body: { action: "check", user_id: userId, amount: parseFloat(amount) },
+          });
+          if (velocityResult && !velocityResult.allow_transaction) {
+            setComplianceBlock({
+              flags: velocityResult.flags || [],
+              severity: velocityResult.severity || "high",
+              allowTransaction: false,
+              blockedReason: velocityResult.blocked_reason,
+              preKycCap: velocityResult.pre_kyc_cap,
+              rollingVolume: velocityResult.rolling_24h_volume,
+              todayCount: velocityResult.today_tx_count,
+            });
+            setProcessing(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Compliance velocity check (non-blocking):", err);
+        }
+      }
+
       const processorId = getProcessorForMethod(method);
       const isCryptoPayment = method === "azix";
 
@@ -419,7 +453,31 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   };
 
-  // ─── OS Pay Failure Screen ──────────────────────────────
+  // ─── Compliance Block Screen ────────────────────────────
+  if (complianceBlock) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <AntiStructuringAlert
+          flags={complianceBlock.flags}
+          severity={complianceBlock.severity}
+          allowTransaction={complianceBlock.allowTransaction}
+          blockedReason={complianceBlock.blockedReason}
+          preKycCap={complianceBlock.preKycCap}
+          rollingVolume={complianceBlock.rollingVolume}
+          todayCount={complianceBlock.todayCount}
+          role={role}
+          onProceed={() => setComplianceBlock(null)}
+          onBlock={() => setComplianceBlock(null)}
+          onReduceAmount={() => {
+            setComplianceBlock(null);
+            // Focus amount input by clearing — user can re-enter
+            toast.info("Reduce your amount below the threshold and try again");
+          }}
+        />
+      </div>
+    );
+  }
+
   if (osPayFailure) {
     return (
       <TransactionFailureState

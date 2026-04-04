@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import ProviderSearch from "@/components/shared/ProviderSearch";
+import AntiStructuringAlert from "@/components/shared/AntiStructuringAlert";
 import FundMovementTracker, { type FundFlowType } from "@/components/shared/FundMovementTracker";
 import TransactionFailureState from "@/components/shared/TransactionFailureState";
 import {
@@ -175,6 +176,15 @@ const TrustLockOSPayout = ({
   const [failureState, setFailureState] = useState<{ message: string } | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  const [complianceBlock, setComplianceBlock] = useState<{
+    flags: { type: string; severity: string; detail: string }[];
+    severity: "critical" | "high" | "clear";
+    allowTransaction: boolean;
+    blockedReason?: string;
+    preKycCap?: number;
+    rollingVolume?: number;
+    todayCount?: number;
+  } | null>(null);
   const [validationAttempted, setValidationAttempted] = useState(false);
 
   // Order number (required for all roles)
@@ -556,6 +566,31 @@ const TrustLockOSPayout = ({
         return;
       }
 
+      // ═══ MAINNET — compliance velocity check before processing ═══
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId && !isAdmin && amountNum > 0) {
+        try {
+          const { data: velocityResult } = await supabase.functions.invoke("compliance-velocity", {
+            body: { action: "check", user_id: userId, amount: amountNum },
+          });
+          if (velocityResult && !velocityResult.allow_transaction) {
+            setComplianceBlock({
+              flags: velocityResult.flags || [],
+              severity: velocityResult.severity || "high",
+              allowTransaction: false,
+              blockedReason: velocityResult.blocked_reason,
+              preKycCap: velocityResult.pre_kyc_cap,
+              rollingVolume: velocityResult.rolling_24h_volume,
+              todayCount: velocityResult.today_tx_count,
+            });
+            setProcessing(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Compliance velocity check (non-blocking):", err);
+        }
+      }
+
       // ═══ MAINNET — real edge function call ═══
       const providerDetails: Record<string, unknown> = {
         ...(providerFields as Record<string, unknown>),
@@ -634,6 +669,31 @@ const TrustLockOSPayout = ({
       setProcessing(false);
     }
   };
+
+  // ─── Compliance Block Screen ────────────────────────────
+  if (complianceBlock) {
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <AntiStructuringAlert
+          flags={complianceBlock.flags}
+          severity={complianceBlock.severity}
+          allowTransaction={complianceBlock.allowTransaction}
+          blockedReason={complianceBlock.blockedReason}
+          preKycCap={complianceBlock.preKycCap}
+          rollingVolume={complianceBlock.rollingVolume}
+          todayCount={complianceBlock.todayCount}
+          role={role}
+          onProceed={() => { setComplianceBlock(null); setReviewStep(false); }}
+          onBlock={() => { setComplianceBlock(null); setReviewStep(false); }}
+          onReduceAmount={() => {
+            setComplianceBlock(null);
+            setReviewStep(false);
+            toast.info("Reduce your amount below the threshold and try again");
+          }}
+        />
+      </div>
+    );
+  }
 
   // ─── Failure Screen ──────────────────────────────────────
   if (failureState) {
