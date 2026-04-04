@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import TermsOfServiceGate, { CURRENT_TOS_VERSION } from "@/components/shared/TermsOfServiceGate";
 import { supabase } from "@/integrations/supabase/client";
+import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityTypeSelector";
 const BuyerSignup = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
