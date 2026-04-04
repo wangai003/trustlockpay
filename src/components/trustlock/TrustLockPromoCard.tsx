@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ const bullets = [
   "Remove Anytime — Zero Commitment",
 ];
 
-const TrustLockPromoCard = () => {
+const TrustLockPromoCard = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <section className="py-16 lg:py-24 bg-[hsl(220,20%,10%)]">
       <div className="container mx-auto px-4 lg:px-8">
@@ -82,6 +83,8 @@ const TrustLockPromoCard = () => {
       </div>
     </section>
   );
-};
+});
+
+TrustLockPromoCard.displayName = "TrustLockPromoCard";
 
 export default TrustLockPromoCard;

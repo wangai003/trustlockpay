@@ -152,37 +152,59 @@ const MilestoneProgress = ({ industry, status, transactionId }: MilestoneProgres
           const isPending = i > activeIdx || status === "disputed";
 
           return (
-            <div
-              key={i}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors ${
-                isComplete ? "bg-primary/5" : isCurrent ? "bg-accent/10 border border-accent/20" : "bg-muted/20"
-              }`}
-            >
-              {isComplete ? (
-                <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />
-              ) : isCurrent ? (
-                <Clock className="w-3.5 h-3.5 text-accent shrink-0 animate-pulse" />
-              ) : (
-                <Circle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
-              )}
-              <span className={`font-medium flex-1 ${isPending ? "text-muted-foreground" : ""}`}>
-                {ms.name}
-              </span>
-              <span className="text-muted-foreground font-mono">{ms.percentage}%</span>
-              {ms.documentMode === "required" && (
-                <Badge variant="destructive" className="text-[8px] h-4 px-1 gap-0.5">
-                  <Lock className="w-2.5 h-2.5" /> Docs
-                </Badge>
-              )}
-              {ms.documentMode === "optional" && (
-                <Badge variant="secondary" className="text-[8px] h-4 px-1 gap-0.5">
-                  <Unlock className="w-2.5 h-2.5" /> Opt
-                </Badge>
-              )}
-              {ms.requiresObserver && (
-                <Badge variant="outline" className="text-[8px] h-4 px-1 gap-0.5">
-                  <Eye className="w-2.5 h-2.5" /> Obs
-                </Badge>
+            <div key={i} className="space-y-0">
+              <div
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs transition-colors ${
+                  isComplete ? "bg-primary/5" : isCurrent ? "bg-accent/10 border border-accent/20" : "bg-muted/20"
+                }`}
+              >
+                {isComplete ? (
+                  <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" />
+                ) : isCurrent ? (
+                  <Clock className="w-3.5 h-3.5 text-accent shrink-0 animate-pulse" />
+                ) : (
+                  <Circle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                )}
+                <span className={`font-medium flex-1 ${isPending ? "text-muted-foreground" : ""}`}>
+                  {ms.name}
+                </span>
+                <span className="text-muted-foreground font-mono">{ms.percentage}%</span>
+                {ms.documentMode === "required" && (
+                  <Badge variant="destructive" className="text-[8px] h-4 px-1 gap-0.5">
+                    <Lock className="w-2.5 h-2.5" /> Docs
+                  </Badge>
+                )}
+                {ms.documentMode === "optional" && (
+                  <Badge variant="secondary" className="text-[8px] h-4 px-1 gap-0.5">
+                    <Unlock className="w-2.5 h-2.5" /> Opt
+                  </Badge>
+                )}
+                {ms.requiresObserver && (
+                  <Badge variant="outline" className="text-[8px] h-4 px-1 gap-0.5">
+                    <Eye className="w-2.5 h-2.5" /> Obs
+                  </Badge>
+                )}
+              </div>
+
+              {/* Inline document checklist */}
+              {isCurrent && ms.documents.length > 0 && (
+                <div className={`ml-6 px-3 py-2 rounded-b-md text-[11px] space-y-1 ${
+                  ms.documentMode === "required" ? "bg-destructive/5 border border-t-0 border-destructive/15" : "bg-muted/10 border border-t-0 border-border"
+                }`}>
+                  <p className="font-semibold flex items-center gap-1">
+                    <FileText className="w-3 h-3" />
+                    {ms.documentMode === "required" ? "Required documents:" : "Recommended documents:"}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {ms.documents.map((doc, di) => (
+                      <li key={di} className="flex items-center gap-1.5">
+                        <Upload className="w-2.5 h-2.5 text-muted-foreground" />
+                        <span>{doc}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground italic">{ms.description}</p>
+                </div>
               )}
             </div>
           );

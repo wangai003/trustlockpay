@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import OrderStepGuide from "@/components/shared/OrderStepGuide";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -366,6 +367,7 @@ const BuyerOrders = () => {
                   </div>
                   {expandedOrder === order.id && (
                     <div className="mt-3 border-t border-border pt-3 space-y-3">
+                      <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
                       <IndustryBlueprintCard industry={order.industry} />
                       <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
                       <details className="text-xs">

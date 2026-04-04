@@ -2977,6 +2977,7 @@ export type Database = {
           description: string | null
           id: string
           industry: string
+          invite_code: string | null
           owner_id: string
           role: string
           status: string
@@ -2991,6 +2992,7 @@ export type Database = {
           description?: string | null
           id?: string
           industry?: string
+          invite_code?: string | null
           owner_id: string
           role?: string
           status?: string
@@ -3005,6 +3007,7 @@ export type Database = {
           description?: string | null
           id?: string
           industry?: string
+          invite_code?: string | null
           owner_id?: string
           role?: string
           status?: string

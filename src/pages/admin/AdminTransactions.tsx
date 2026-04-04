@@ -145,7 +145,7 @@ const AdminTransactions = () => {
 
   return (
     <div>
-      <AdminHeader title="Transactions" />
+      <AdminHeader title="Work Orders" />
       <div className="p-6 space-y-6">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row gap-3">

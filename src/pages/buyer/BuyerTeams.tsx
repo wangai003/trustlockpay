@@ -45,7 +45,7 @@ const LANGUAGES = [
   { code: "es", label: "Español" },
 ];
 
-type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null; owner_id: string };
+type Workspace = { id: string; title: string; description: string | null; industry: string; status: string; created_at: string; transaction_id: string | null; owner_id: string; invite_code?: string | null };
 type Member = { id: string; user_id: string; display_name: string | null; role: string; can_finalize: boolean; removed_at: string | null; preferred_language?: string };
 type RolePreset = { id: string; industry: string; role_name: string; role_key: string };
 
@@ -302,8 +302,19 @@ const BuyerTeams = () => {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent>
-                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Use "Add Member" or "Bulk Import" to get started.</p> : (
+                <CardContent className="space-y-4">
+                  {/* Invite code section */}
+                  {selectedWs.invite_code && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold">Team Invite Code</p>
+                        <p className="text-[11px] text-muted-foreground">Share this code with team members. They sign up as buyer/vendor, then join using this code.</p>
+                        <code className="text-sm font-mono font-bold text-primary mt-1 block">{selectedWs.invite_code}</code>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(selectedWs.invite_code || ""); toast.success("Invite code copied!"); }}>Copy</Button>
+                    </div>
+                  )}
+                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Share the invite code above, use "Add Member", or "Bulk Import" to get started.</p> : (
                     <div className="space-y-2">
                       {members.map((m) => (
                         <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
