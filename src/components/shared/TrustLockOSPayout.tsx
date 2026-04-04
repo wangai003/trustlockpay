@@ -108,16 +108,43 @@ By proceeding, you acknowledge and agree to the following:
 This acknowledgement is timestamped and archived as a legal record. By clicking "I Accept & Confirm," you waive any claims against TrustLock for losses arising from incorrect payout details.`;
 
 const PAYOUT_COUNTRIES = [
+  // Africa — Tier 1/2
   { code: "NG", name: "Nigeria" },
   { code: "KE", name: "Kenya" },
   { code: "GH", name: "Ghana" },
   { code: "ZA", name: "South Africa" },
+  { code: "CM", name: "Cameroon" },
+  { code: "EG", name: "Egypt" },
+  { code: "UG", name: "Uganda" },
+  { code: "TZ", name: "Tanzania" },
+  { code: "RW", name: "Rwanda" },
+  { code: "SN", name: "Senegal" },
+  { code: "CI", name: "Côte d'Ivoire" },
+  // International — via Stripe / Transak bank transfer
   { code: "US", name: "United States" },
   { code: "GB", name: "United Kingdom" },
   { code: "EU", name: "European Union" },
   { code: "AE", name: "UAE" },
+  { code: "CN", name: "China" },
+  { code: "IN", name: "India" },
+  { code: "TR", name: "Turkey" },
+  { code: "BR", name: "Brazil" },
+  { code: "MX", name: "Mexico" },
+  { code: "JP", name: "Japan" },
+  { code: "KR", name: "South Korea" },
+  { code: "VN", name: "Vietnam" },
+  { code: "TH", name: "Thailand" },
+  { code: "PH", name: "Philippines" },
+  { code: "ID", name: "Indonesia" },
+  // Crypto — universal
   { code: "GLOBAL", name: "Crypto (Any Country)" },
 ];
+
+// Countries where Transak handles local bank off-ramp (no Stripe Connect)
+const TRANSAK_OFFRAMP_COUNTRIES = new Set([
+  "CN", "IN", "TR", "BR", "MX", "VN", "TH", "PH", "ID",
+  "CM", "EG", "UG", "TZ", "RW", "SN", "CI",
+]);
 
 // Admin escrow custodian wallet (locked)
 const ADMIN_ESCROW_WALLET = (typeof AZIX_WALLETS?.escrow === "object" ? AZIX_WALLETS.escrow.publicKey : AZIX_WALLETS?.escrow) || "0x4E1c...A83b";
