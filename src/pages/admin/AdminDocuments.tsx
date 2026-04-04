@@ -3,14 +3,15 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Shield, Scale, Lock, BookOpen, Download, ExternalLink, Clock, Eye, ChevronDown, PenLine, Handshake, FolderArchive, Search, Loader2, AlertTriangle, CheckCircle, XCircle, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePdfGeneration } from "@/hooks/usePdfGeneration";
 
 const pinnedDocs = [
   {
