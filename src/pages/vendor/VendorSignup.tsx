@@ -45,8 +45,18 @@ const VendorSignup = () => {
       return;
     }
 
+    if ((entityType === "company" || entityType === "sole_proprietor") && !companyName.trim()) {
+      setError("Please enter your business name");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signUp(email, password, { full_name: fullName, role: "vendor" });
+    const { error } = await signUp(email, password, {
+      full_name: fullName,
+      role: "vendor",
+      entity_type: entityType,
+      company_name: entityType !== "individual" ? companyName.trim() : undefined,
+    });
     setLoading(false);
 
     if (error) {
