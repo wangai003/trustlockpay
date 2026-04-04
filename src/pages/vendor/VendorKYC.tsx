@@ -380,7 +380,7 @@ const VendorKYC = () => {
       } else {
         const { data, error } = await supabase
           .from("business_kyc_profiles")
-          .insert({ ...businessProfile, vendor_id: userId } as any)
+          .insert({ ...businessProfile, user_id: userId } as any)
           .select()
           .single();
         if (error) throw error;
