@@ -340,6 +340,15 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
   const [osPayResult, setOsPayResult] = useState<{ confirmationCode: string } | null>(null);
   const [osPayFailure, setOsPayFailure] = useState<{ message: string } | null>(null);
+  const [complianceBlock, setComplianceBlock] = useState<{
+    flags: { type: string; severity: string; detail: string }[];
+    severity: "critical" | "high" | "clear";
+    allowTransaction: boolean;
+    blockedReason?: string;
+    preKycCap?: number;
+    rollingVolume?: number;
+    todayCount?: number;
+  } | null>(null);
 
   const handleSubmit = async () => {
     if (!method) { toast.error("Select a payment method"); return; }
