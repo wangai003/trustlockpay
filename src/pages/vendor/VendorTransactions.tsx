@@ -31,6 +31,7 @@ import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import OrderStepGuide from "@/components/shared/OrderStepGuide";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
