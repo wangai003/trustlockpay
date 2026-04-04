@@ -125,10 +125,9 @@ Deno.serve(async (req) => {
       const parsedAmount = parseFloat(amount);
       const flags: { type: string; severity: string; detail: string }[] = [];
 
-      // ── Pre-KYC Hard Cap Check ──
-      // Block transactions above $5,000 until third-party KYC is integrated
+      // ── Pre-KYC Logging (post-escrow enforcement handles blocking via DB trigger) ──
+      // Log high-value transactions for audit trail; no checkout blocking.
       if (PRE_KYC_ENABLED && parsedAmount >= PRE_KYC_HARD_CAP) {
-        // Check if user has completed verified KYC (approved status in kyc_queue)
         const { data: kycRecord } = await supabase
           .from("kyc_queue")
           .select("status")
@@ -139,41 +138,16 @@ Deno.serve(async (req) => {
         const hasVerifiedKyc = kycRecord && kycRecord.length > 0;
 
         if (!hasVerifiedKyc) {
-          // Create compliance flag for admin review
           const flagId = `CAP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
           await supabase.from("compliance_flags").insert({
             flag_id: flagId,
-            type: "pre_kyc_hard_cap",
-            description: `Transaction of $${parsedAmount.toLocaleString()} exceeds the $${PRE_KYC_HARD_CAP.toLocaleString()} pre-KYC hard cap. Manual admin approval required until third-party KYC provider is integrated.`,
-            severity: "high",
+            type: "pre_kyc_high_value",
+            description: `Transaction of $${parsedAmount.toLocaleString()} exceeds $${PRE_KYC_HARD_CAP.toLocaleString()} without verified KYC. Post-escrow hold will be enforced by database trigger.`,
+            severity: "medium",
             status: "open",
             related_buyer_id: user_id,
           });
-
-          await triageNotify(
-            "pre_kyc_hard_cap",
-            user_id,
-            `Transaction of $${parsedAmount.toLocaleString()} blocked — exceeds $${PRE_KYC_HARD_CAP.toLocaleString()} pre-KYC cap. Requires manual admin approval.`,
-            transaction_id || undefined,
-            "high",
-            { flagId, amount: parsedAmount, cap: PRE_KYC_HARD_CAP }
-          );
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              flags: [{
-                type: "pre_kyc_hard_cap",
-                severity: "high",
-                detail: `This transaction ($${parsedAmount.toLocaleString()}) exceeds the $${PRE_KYC_HARD_CAP.toLocaleString()} limit for accounts without verified KYC. An admin has been notified and must approve this transaction manually. Contact support if urgent.`,
-              }],
-              severity: "high",
-              allow_transaction: false,
-              blocked_reason: "pre_kyc_hard_cap",
-              pre_kyc_cap: PRE_KYC_HARD_CAP,
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          // Don't block — the DB trigger enforce_post_escrow_kyc handles the hold
         }
       }
 
