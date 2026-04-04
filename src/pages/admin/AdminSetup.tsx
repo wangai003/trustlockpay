@@ -41,7 +41,7 @@ const AdminSetup = () => {
       if (result.success) {
         setSuccess(true);
         setTimeout(() => {
-          localStorage.setItem("tl_admin_auth", "true");
+          localStorage.setItem("tl_admin_auth", JSON.stringify({ authenticated: true, adminId: "", name: username, isChief: false }));
           localStorage.setItem("tl_network", "mainnet");
           navigate("/trustlock/admin");
         }, 2000);

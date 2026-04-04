@@ -37,7 +37,8 @@ const AdminLayoutInner = () => {
 };
 
 const AdminLayout = () => {
-  const isAuth = localStorage.getItem("tl_admin_auth") === "true";
+  const authRaw = localStorage.getItem("tl_admin_auth");
+  const isAuth = authRaw === "true" || (() => { try { return JSON.parse(authRaw || "{}").authenticated === true; } catch { return false; } })();
   if (!isAuth) return <Navigate to="/trustlock/admin/login" replace />;
   return <AdminLayoutInner />;
 };

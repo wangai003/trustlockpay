@@ -44,6 +44,11 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Invalid credentials." });
       }
 
+      // Block deleted accounts
+      if (account.is_deleted) {
+        return json({ success: false, error: "This account has been deactivated." });
+      }
+
       // Check lockout (5 failed attempts, locked for 30 min)
       if (account.failed_attempts >= 5) {
         const lockedAt = account.locked_at ? new Date(account.locked_at) : null;
@@ -67,7 +72,7 @@ Deno.serve(async (req) => {
         });
 
         if (tempMatch) {
-          return json({ success: true, needsSetup: true, username: account.username, name: account.name });
+          return json({ success: true, needsSetup: true, username: account.username, name: account.name, adminId: account.id });
         }
       }
 
@@ -83,7 +88,16 @@ Deno.serve(async (req) => {
             .from("admin_accounts")
             .update({ failed_attempts: 0, locked_at: null })
             .eq("id", account.id);
-          return json({ success: true, needsSetup: false, name: account.name });
+
+          // Check chief status
+          const { data: chiefRecord } = await supabase
+            .from("chief_admin_config")
+            .select("id")
+            .eq("admin_id", account.id)
+            .eq("is_active", true)
+            .maybeSingle();
+
+          return json({ success: true, needsSetup: false, name: account.name, adminId: account.id, isChief: !!chiefRecord });
         }
       }
 

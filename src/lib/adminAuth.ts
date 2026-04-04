@@ -20,6 +20,8 @@ export interface AdminLoginResult {
   needsSetup?: boolean;
   name?: string;
   username?: string;
+  adminId?: string;
+  isChief?: boolean;
   locked?: boolean;
   remaining?: number;
   error?: string;
