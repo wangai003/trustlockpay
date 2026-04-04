@@ -119,12 +119,39 @@ Deno.serve(async (req) => {
         if (error) throw error;
       }
 
+      let vendorId: string | null = null;
+
       if (queue_id) {
+        // Fetch vendor_id before updating so we can notify them
+        const { data: queueRecord } = await supabaseAdmin
+          .from("kyc_queue")
+          .select("vendor_id")
+          .eq("id", queue_id)
+          .single();
+        vendorId = queueRecord?.vendor_id || null;
+
         const { error } = await supabaseAdmin
           .from("kyc_queue")
           .update({ status: decision })
           .eq("id", queue_id);
         if (error) throw error;
+      }
+
+      // Notify the user about the KYC decision
+      if (vendorId) {
+        const isApproved = decision === "approved";
+        await supabaseAdmin.from("notifications").insert({
+          user_id: vendorId,
+          title: isApproved
+            ? "✅ Identity Verification Approved"
+            : "❌ Identity Verification Rejected",
+          message: isApproved
+            ? "Your KYC has been approved. You can now process transactions above $5,000. If you had a blocked transaction, you may retry it now."
+            : "Your KYC submission was rejected. Please review your documents and resubmit. Transactions above $5,000 remain blocked until verification is complete.",
+          type: isApproved ? "success" : "warning",
+          is_action_required: !isApproved,
+          action_url: isApproved ? null : "/trustlock/vendor/kyc",
+        });
       }
 
       return json({ success: true, decision });
