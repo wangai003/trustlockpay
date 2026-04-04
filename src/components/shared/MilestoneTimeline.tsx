@@ -383,7 +383,7 @@ const MilestoneTimeline = ({ industry, status, transactionId, createdAt }: Miles
                 <span className="text-muted-foreground font-mono">{bar.percentage}% · {bar.durationDays}d</span>
               </div>
               <p className="text-muted-foreground text-[10px]">{bar.description}</p>
-              <p className="text-[9px] text-muted-foreground font-mono mt-0.5">
+              <p className="text-[9px] text-muted-foreground font-mono mt-0.5" title={`${formatLocalDateWithTZ(bar.projectedStart)} → ${formatLocalDateWithTZ(bar.projectedEnd)}`}>
                 {format(bar.projectedStart, "dd MMM")} → {format(bar.projectedEnd, "dd MMM yyyy")}
                 {bar.isOverdue && (
                   <span className="text-destructive font-semibold ml-1">
