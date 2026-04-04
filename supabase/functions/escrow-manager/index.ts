@@ -583,6 +583,19 @@ async function releaseFunds(body: Record<string, unknown>) {
     amount: fees.netAmount,
   });
 
+  // Anchor: payout event (full release)
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_released",
+    tx_id: tx.tx_id,
+    payout_id: payoutId,
+    gross_amount: tx.amount,
+    net_amount: fees.netAmount,
+    escrow_fee: fees.escrowFee,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    released_at: new Date().toISOString(),
+  });
+
   return jsonResponse({
     success: true,
     payout,
