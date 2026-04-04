@@ -1117,6 +1117,17 @@ const TrustLockOSPayout = ({
                   Please select a payment method to continue
                 </p>
               )}
+              {/* Transak bank transfer hint for international vendors */}
+              {mode === "diaspora" && (
+                <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground">
+                  <p className="font-semibold text-foreground mb-1">🌍 International Bank Transfer Available</p>
+                  <p className="leading-relaxed">
+                    Vendors in <strong className="text-foreground">China, India, Brazil, Turkey, Mexico, Japan, South Korea, Vietnam, Thailand, Philippines, Indonesia</strong> and 
+                    140+ other countries can receive payouts directly to their local bank account via our payment processor. 
+                    Select <strong className="text-foreground">Bank Account (ACH/Wire)</strong> or <strong className="text-foreground">Crypto Wallet</strong> above.
+                  </p>
+                </div>
+              )}
               {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
                 <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
                   <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
