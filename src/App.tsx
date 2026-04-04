@@ -145,6 +145,7 @@ const App = () => (
                 <Route path="gas-treasury" element={<AdminGasTreasury />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="accountability" element={<AdminAccountability />} />
+                <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
