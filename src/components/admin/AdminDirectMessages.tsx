@@ -98,6 +98,28 @@ const AdminDirectMessages = () => {
   }, [currentAdminId, loadUnreadCounts]);
 
   useEffect(() => { loadStaff(); loadUnreadCounts(); }, [loadStaff, loadUnreadCounts]);
+
+  // Realtime subscription for incoming DMs
+  useEffect(() => {
+    if (!currentAdminId) return;
+    const channel = supabase
+      .channel("admin-dm-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_direct_messages" }, (payload) => {
+        const msg = payload.new as DM;
+        if (msg.recipient_id === currentAdminId || msg.sender_id === currentAdminId) {
+          if (selectedPeer && (msg.sender_id === selectedPeer.id || msg.recipient_id === selectedPeer.id)) {
+            setMessages((prev) => [...prev, msg]);
+            if (msg.sender_id !== currentAdminId) {
+              supabase.from("admin_direct_messages").update({ is_read: true }).eq("id", msg.id).then(() => {});
+            }
+          }
+          loadUnreadCounts();
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentAdminId, selectedPeer, loadUnreadCounts]);
+
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const handleSend = async () => {

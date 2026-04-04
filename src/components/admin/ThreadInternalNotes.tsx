@@ -43,6 +43,22 @@ const ThreadInternalNotes = ({ threadId, adminAliasMap, adminNameMap, isChief }:
 
   useEffect(() => { loadNotes(); }, [loadNotes]);
 
+  // Realtime subscription for new notes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`internal-notes-${threadId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "thread_internal_notes",
+        filter: `thread_id=eq.${threadId}`,
+      }, (payload) => {
+        setNotes((prev) => [...prev, payload.new as Note]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [threadId]);
+
   const handleSubmit = async () => {
     if (!newNote.trim() || !currentAdminId) return;
     setLoading(true);
