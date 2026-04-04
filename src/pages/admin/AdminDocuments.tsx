@@ -409,6 +409,19 @@ const AdminDocuments = () => {
               </div>
               <Badge variant="secondary" className="text-[10px]">Testnet + Mainnet</Badge>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              disabled={generating}
+              onClick={async () => {
+                await generateBatch();
+                queryClient.invalidateQueries({ queryKey: ["protection-documents"] });
+              }}
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+              Generate All PDFs
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="relative">
