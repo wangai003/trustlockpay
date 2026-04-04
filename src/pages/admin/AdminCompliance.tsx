@@ -8,6 +8,7 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity, ThumbsUp, ThumbsDown, Loader2,
   FileText, ExternalLink, ChevronDown, ChevronUp, Camera, Video, HelpCircle, User,
+  Building2, Users,
 } from "lucide-react";
 import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs, useKycDocuments } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -139,7 +140,22 @@ const AdminCompliance = () => {
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [selfieDecisions, setSelfieDecisions] = useState<Record<string, string>>({});
   const [videoCallNotes, setVideoCallNotes] = useState<Record<string, string>>({});
+  const [businessProfiles, setBusinessProfiles] = useState<Record<string, any>>({});
+  const [ubosByBiz, setUbosByBiz] = useState<Record<string, any[]>>({});
   const queryClient = useQueryClient();
+
+  // Fetch business KYC profiles when a vendor row is expanded
+  const fetchBusinessKyc = async (vendorId: string) => {
+    if (businessProfiles[vendorId]) return;
+    const { data: biz } = await supabase.from("business_kyc_profiles").select("*").eq("vendor_id", vendorId).maybeSingle();
+    if (biz) {
+      setBusinessProfiles(p => ({ ...p, [vendorId]: biz }));
+      const { data: uboData } = await supabase.from("ubo_declarations").select("*").eq("business_kyc_id", biz.id);
+      if (uboData) setUbosByBiz(p => ({ ...p, [vendorId]: uboData }));
+    } else {
+      setBusinessProfiles(p => ({ ...p, [vendorId]: null }));
+    }
+  };
 
   const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
     setReviewingId(queueId);
@@ -510,7 +526,7 @@ const AdminCompliance = () => {
                                   variant="ghost"
                                   size="sm"
                                   className="gap-1.5 text-xs text-muted-foreground"
-                                  onClick={() => setExpandedVendor(isExpanded ? null : kyc.queueId)}
+                                  onClick={() => { const next = isExpanded ? null : kyc.queueId; setExpandedVendor(next); if (next && kyc.vendorId) fetchBusinessKyc(kyc.vendorId); }}
                                 >
                                   <FileText className="w-3.5 h-3.5" />
                                   {vendorDocs.length} file{vendorDocs.length !== 1 ? "s" : ""}
@@ -680,6 +696,75 @@ const AdminCompliance = () => {
                                             </div>
                                           )}
                                         </div>
+                                      )}
+
+                                      {/* Business KYC Profile */}
+                                      {kyc.vendorId && businessProfiles[kyc.vendorId] && (
+                                        <div className="p-3 rounded-lg border border-primary/20 bg-muted/30 space-y-3">
+                                          <p className="text-[10px] font-semibold text-primary flex items-center gap-1">
+                                            <Building2 className="w-3 h-3" /> Business KYC Profile
+                                          </p>
+                                          {(() => {
+                                            const biz = businessProfiles[kyc.vendorId!];
+                                            const vendorUbos = ubosByBiz[kyc.vendorId!] || [];
+                                            return (
+                                              <div className="space-y-3">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                                                  <div><span className="text-muted-foreground">Legal Name:</span> <strong>{biz.company_legal_name}</strong></div>
+                                                  {biz.trading_name && <div><span className="text-muted-foreground">Trading As:</span> <strong>{biz.trading_name}</strong></div>}
+                                                  {biz.registration_number && <div><span className="text-muted-foreground">Reg #:</span> <strong>{biz.registration_number}</strong></div>}
+                                                  {biz.tax_id && <div><span className="text-muted-foreground">Tax ID:</span> <strong>{biz.tax_id}</strong></div>}
+                                                  {biz.jurisdiction && <div><span className="text-muted-foreground">Jurisdiction:</span> <strong>{biz.jurisdiction}</strong></div>}
+                                                  {biz.business_type && <div><span className="text-muted-foreground">Type:</span> <strong>{biz.business_type.replace(/_/g, " ")}</strong></div>}
+                                                  {biz.incorporation_date && <div><span className="text-muted-foreground">Incorporated:</span> <strong>{biz.incorporation_date}</strong></div>}
+                                                </div>
+                                                {biz.registered_address && (
+                                                  <p className="text-xs"><span className="text-muted-foreground">Address:</span> {biz.registered_address}</p>
+                                                )}
+                                                {biz.signatory_name && (
+                                                  <div className="flex items-center gap-2 text-xs flex-wrap">
+                                                    <User className="w-3 h-3 text-muted-foreground" />
+                                                    <span className="text-muted-foreground">Signatory:</span>
+                                                    <strong>{biz.signatory_name}</strong>
+                                                    {biz.signatory_title && <span className="text-muted-foreground">({biz.signatory_title})</span>}
+                                                    {biz.authorization_doc_url && (
+                                                      <a href={biz.authorization_doc_url} target="_blank" rel="noopener noreferrer">
+                                                        <Button variant="outline" size="sm" className="h-5 text-[9px] gap-1 px-1.5"><ExternalLink className="w-2.5 h-2.5" /> Auth Doc</Button>
+                                                      </a>
+                                                    )}
+                                                  </div>
+                                                )}
+                                                {vendorUbos.length > 0 && (
+                                                  <div className="space-y-2">
+                                                    <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                                                      <Users className="w-3 h-3" /> Beneficial Owners ({vendorUbos.length})
+                                                    </p>
+                                                    {vendorUbos.map((ubo: any) => (
+                                                      <div key={ubo.id} className="flex items-center gap-3 text-xs p-2 rounded bg-background border border-border flex-wrap">
+                                                        <span className="font-medium">{ubo.full_name}</span>
+                                                        <Badge variant="outline" className="text-[9px]">{ubo.ownership_percentage}%</Badge>
+                                                        {ubo.nationality && <span className="text-muted-foreground">{ubo.nationality}</span>}
+                                                        {ubo.date_of_birth && <span className="text-muted-foreground">DOB: {ubo.date_of_birth}</span>}
+                                                      </div>
+                                                    ))}
+                                                    <p className="text-[9px] text-muted-foreground">
+                                                      Total: {vendorUbos.reduce((s: number, u: any) => s + Number(u.ownership_percentage || 0), 0)}%
+                                                      {vendorUbos.reduce((s: number, u: any) => s + Number(u.ownership_percentage || 0), 0) < 75 && (
+                                                        <span className="text-destructive ml-1">⚠ &lt;75% declared</span>
+                                                      )}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                                <Badge className={`text-[10px] ${biz.verification_status === "verified" ? "bg-primary/15 text-primary" : biz.verification_status === "rejected" ? "bg-destructive/15 text-destructive" : "bg-accent/15 text-accent-foreground"}`}>
+                                                  Business: {biz.verification_status}
+                                                </Badge>
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      )}
+                                      {kyc.vendorId && businessProfiles[kyc.vendorId] === null && (
+                                        <p className="text-[10px] text-muted-foreground italic">No business KYC profile submitted.</p>
                                       )}
                                     </div>
                                   )}
