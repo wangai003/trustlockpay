@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
+import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
@@ -122,6 +123,7 @@ const VendorSidebar = () => {
           ))}
         </nav>
 
+        <SidebarLegalLinks />
         <div className="p-3 border-t border-sidebar-border space-y-1">
           <TLId code="TL-V-SB-BTN-SWITCH-BUYER" inline>
             <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>

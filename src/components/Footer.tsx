@@ -1,5 +1,13 @@
 import { forwardRef } from "react";
+import { Link } from "react-router-dom";
 import azixLogo from "@/assets/azix-logo.png";
+
+const legalLinks = [
+  { label: "Privacy Policy", to: "/privacy-policy" },
+  { label: "Cookie Policy", to: "/cookie-policy" },
+  { label: "Data Rights", to: "/data-rights" },
+  { label: "Dispute Policy", to: "/dispute-policy" },
+];
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
@@ -8,6 +16,17 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src={azixLogo} alt="Azix logo" className="w-8 h-8 rounded-md object-contain" />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {legalLinks.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className="text-xs text-background/50 hover:text-background/80 transition-colors"
+              >
+                {l.label}
+              </Link>
+            ))}
           </div>
           <p className="text-sm text-background/50">
             © {new Date().getFullYear()} Azix. All rights reserved.
