@@ -152,6 +152,7 @@ const AdminCompliance = () => {
   const kycQueue = rawKyc.map(k => ({
     id: k.kyc_id,
     queueId: k.id,
+    vendorId: k.vendor_id,
     vendor: k.vendor_name || "Unknown",
     tier: k.tier_change || "—",
     docs: k.documents || "—",
