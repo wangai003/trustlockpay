@@ -453,7 +453,31 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
     }
   };
 
-  // ─── OS Pay Failure Screen ──────────────────────────────
+  // ─── Compliance Block Screen ────────────────────────────
+  if (complianceBlock) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <AntiStructuringAlert
+          flags={complianceBlock.flags}
+          severity={complianceBlock.severity}
+          allowTransaction={complianceBlock.allowTransaction}
+          blockedReason={complianceBlock.blockedReason}
+          preKycCap={complianceBlock.preKycCap}
+          rollingVolume={complianceBlock.rollingVolume}
+          todayCount={complianceBlock.todayCount}
+          role={role}
+          onProceed={() => setComplianceBlock(null)}
+          onBlock={() => setComplianceBlock(null)}
+          onReduceAmount={() => {
+            setComplianceBlock(null);
+            // Focus amount input by clearing — user can re-enter
+            toast.info("Reduce your amount below the threshold and try again");
+          }}
+        />
+      </div>
+    );
+  }
+
   if (osPayFailure) {
     return (
       <TransactionFailureState
