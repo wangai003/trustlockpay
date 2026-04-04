@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import TLId from "@/components/shared/TLId";
+import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/buyer", tip: "Dashboard summary with order status and alerts", tlId: "TL-B-SB-NAV-OVERVIEW" },
