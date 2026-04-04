@@ -706,6 +706,17 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "partial_refund", resText, disputeId, splitPercentage);
+
+          // Anchor: dispute resolved - compromise
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "partial_refund",
+            resolution: resText,
+            split_percentage: splitPercentage,
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved via compromise: ${splitPercentage}% refunded to buyer, ${vendorPct}% released to vendor.`);
