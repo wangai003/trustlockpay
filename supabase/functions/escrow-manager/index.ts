@@ -656,6 +656,19 @@ async function refundBuyer(body: Record<string, unknown>) {
     refundReason,
   });
 
+  // Anchor: refund event
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_refunded",
+    tx_id: tx.tx_id,
+    payout_id: payoutId,
+    refund_amount: fees.netAmount,
+    original_amount: tx.amount,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    refund_reason: refundReason ?? "Buyer refund",
+    refunded_at: new Date().toISOString(),
+  });
+
   return jsonResponse({
     success: true,
     refundPayout,
