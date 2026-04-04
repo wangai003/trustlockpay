@@ -1,9 +1,10 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Code, Shield, CheckCircle, Zap, ArrowRight } from "lucide-react";
 
-const TrustLockTestWidget = () => {
+const TrustLockTestWidget = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <section className="py-16 lg:py-20 bg-gradient-to-b from-background to-primary/5">
       <div className="container mx-auto px-4 lg:px-8">
