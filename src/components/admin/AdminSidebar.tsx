@@ -11,7 +11,7 @@ import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 
 const allNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts", chiefOnly: false },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow transactions", chiefOnly: true },
+  { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow work orders", chiefOnly: true },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations", chiefOnly: true },
   { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders", chiefOnly: true },
   { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support", chiefOnly: false },
