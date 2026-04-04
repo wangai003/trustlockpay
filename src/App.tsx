@@ -90,6 +90,9 @@ const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
 const TesterLanding = lazy(() => import("./pages/public/TesterLanding"));
 const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
+const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
+const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
+const DataRights = lazy(() => import("./pages/public/DataRights"));
 
 const queryClient = new QueryClient();
 
