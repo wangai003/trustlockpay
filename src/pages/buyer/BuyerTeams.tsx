@@ -302,8 +302,19 @@ const BuyerTeams = () => {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent>
-                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Use "Add Member" or "Bulk Import" to get started.</p> : (
+                <CardContent className="space-y-4">
+                  {/* Invite code section */}
+                  {selectedWs.invite_code && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold">Team Invite Code</p>
+                        <p className="text-[11px] text-muted-foreground">Share this code with team members. They sign up as buyer/vendor, then join using this code.</p>
+                        <code className="text-sm font-mono font-bold text-primary mt-1 block">{selectedWs.invite_code}</code>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(selectedWs.invite_code || ""); toast.success("Invite code copied!"); }}>Copy</Button>
+                    </div>
+                  )}
+                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Share the invite code above, use "Add Member", or "Bulk Import" to get started.</p> : (
                     <div className="space-y-2">
                       {members.map((m) => (
                         <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
