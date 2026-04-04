@@ -876,35 +876,51 @@ export type Database = {
       kyc_documents: {
         Row: {
           created_at: string
+          cross_field_flags: Json | null
+          document_category: string | null
           file_url: string | null
           id: string
+          metadata: Json | null
           name: string
           reviewed_at: string | null
+          selfie_match_status: string | null
           status: string | null
           vendor_id: string | null
+          verification_answers: Json | null
         }
         Insert: {
           created_at?: string
+          cross_field_flags?: Json | null
+          document_category?: string | null
           file_url?: string | null
           id?: string
+          metadata?: Json | null
           name: string
           reviewed_at?: string | null
+          selfie_match_status?: string | null
           status?: string | null
           vendor_id?: string | null
+          verification_answers?: Json | null
         }
         Update: {
           created_at?: string
+          cross_field_flags?: Json | null
+          document_category?: string | null
           file_url?: string | null
           id?: string
+          metadata?: Json | null
           name?: string
           reviewed_at?: string | null
+          selfie_match_status?: string | null
           status?: string | null
           vendor_id?: string | null
+          verification_answers?: Json | null
         }
         Relationships: []
       }
       kyc_queue: {
         Row: {
+          cross_field_report: Json | null
           documents: string | null
           id: string
           kyc_id: string
@@ -913,8 +929,13 @@ export type Database = {
           tier_change: string | null
           vendor_id: string | null
           vendor_name: string | null
+          verification_method: string | null
+          video_call_completed_at: string | null
+          video_call_notes: string | null
+          video_call_requested: boolean | null
         }
         Insert: {
+          cross_field_report?: Json | null
           documents?: string | null
           id?: string
           kyc_id: string
@@ -923,8 +944,13 @@ export type Database = {
           tier_change?: string | null
           vendor_id?: string | null
           vendor_name?: string | null
+          verification_method?: string | null
+          video_call_completed_at?: string | null
+          video_call_notes?: string | null
+          video_call_requested?: boolean | null
         }
         Update: {
+          cross_field_report?: Json | null
           documents?: string | null
           id?: string
           kyc_id?: string
@@ -933,6 +959,10 @@ export type Database = {
           tier_change?: string | null
           vendor_id?: string | null
           vendor_name?: string | null
+          verification_method?: string | null
+          video_call_completed_at?: string | null
+          video_call_notes?: string | null
+          video_call_requested?: boolean | null
         }
         Relationships: []
       }

@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ShieldCheck, AlertTriangle, CheckCircle, Clock, Eye, UserCheck, XCircle,
   Shield, Search, Globe, Ban, FileWarning, Activity, ThumbsUp, ThumbsDown, Loader2,
-  FileText, ExternalLink, ChevronDown, ChevronUp,
+  FileText, ExternalLink, ChevronDown, ChevronUp, Camera, Video, HelpCircle, User,
 } from "lucide-react";
 import { useKycQueue, useComplianceFlags, useSanctionsScreeningLogs, useKycDocuments } from "@/hooks/useSupabaseData";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -34,7 +35,12 @@ const screeningResultColors: Record<string, string> = {
   flagged: "bg-destructive/15 text-destructive",
 };
 
-// ─── Testnet example AML screening logs ─────────────────────
+const selfieMatchColors: Record<string, string> = {
+  match: "bg-primary/15 text-primary",
+  mismatch: "bg-destructive/15 text-destructive",
+  pending: "bg-accent/15 text-accent-foreground",
+};
+
 const TESTNET_SCREENING_LOGS = [
   {
     id: "SCR-7K2M9X",
@@ -131,6 +137,8 @@ const AdminCompliance = () => {
   const [screeningFilter, setScreeningFilter] = useState<string>("all");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
+  const [selfieDecisions, setSelfieDecisions] = useState<Record<string, string>>({});
+  const [videoCallNotes, setVideoCallNotes] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
   const handleKycDecision = async (queueId: string, decision: "approved" | "rejected") => {
@@ -149,6 +157,55 @@ const AdminCompliance = () => {
     }
   };
 
+  const handleSelfieDecision = async (docId: string, status: "match" | "mismatch") => {
+    setSelfieDecisions(p => ({ ...p, [docId]: "loading" }));
+    try {
+      const { error } = await supabase
+        .from("kyc_documents")
+        .update({ selfie_match_status: status } as any)
+        .eq("id", docId);
+      if (error) throw error;
+      setSelfieDecisions(p => ({ ...p, [docId]: status }));
+      toast.success(status === "match" ? "Selfie confirmed as matching ✅" : "Selfie flagged as mismatch ❌");
+      queryClient.invalidateQueries({ queryKey: ["kyc-documents"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update selfie status");
+      setSelfieDecisions(p => ({ ...p, [docId]: "" }));
+    }
+  };
+
+  const handleRequestVideoCall = async (queueId: string, vendorName: string) => {
+    try {
+      const { error } = await supabase
+        .from("kyc_queue")
+        .update({ video_call_requested: true } as any)
+        .eq("id", queueId);
+      if (error) throw error;
+      toast.success(`Video call requested for ${vendorName}. User will be notified.`);
+      queryClient.invalidateQueries({ queryKey: ["kyc-queue"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to request video call");
+    }
+  };
+
+  const handleCompleteVideoCall = async (queueId: string) => {
+    const notes = videoCallNotes[queueId] || "";
+    try {
+      const { error } = await supabase
+        .from("kyc_queue")
+        .update({
+          video_call_completed_at: new Date().toISOString(),
+          video_call_notes: notes,
+        } as any)
+        .eq("id", queueId);
+      if (error) throw error;
+      toast.success("Video call marked as completed ✅");
+      queryClient.invalidateQueries({ queryKey: ["kyc-queue"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update video call status");
+    }
+  };
+
   const kycQueue = rawKyc.map(k => ({
     id: k.kyc_id,
     queueId: k.id,
@@ -158,6 +215,10 @@ const AdminCompliance = () => {
     docs: k.documents || "—",
     submitted: new Date(k.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     status: (k.status || "pending") as "pending" | "approved" | "rejected",
+    videoCallRequested: (k as any).video_call_requested || false,
+    videoCallCompletedAt: (k as any).video_call_completed_at || null,
+    videoCallNotes: (k as any).video_call_notes || "",
+    verificationMethod: (k as any).verification_method || "standard",
   }));
 
   const flaggedActivity = rawFlags.map(f => ({
@@ -168,7 +229,6 @@ const AdminCompliance = () => {
     date: new Date(f.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   }));
 
-  // Use real screening logs in mainnet, testnet mock data as fallback
   const screeningLogs = (!isTestnet && rawScreenings.length > 0)
     ? rawScreenings.map(s => ({
         id: s.id.slice(0, 10).toUpperCase(),
@@ -255,7 +315,6 @@ const AdminCompliance = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Screening stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { label: "Total Screenings", value: TESTNET_SCREENING_LOGS.length, icon: Activity, color: "text-primary" },
@@ -273,7 +332,6 @@ const AdminCompliance = () => {
                   ))}
                 </div>
 
-                {/* Filter buttons */}
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { key: "all", label: "All" },
@@ -294,7 +352,6 @@ const AdminCompliance = () => {
                   ))}
                 </div>
 
-                {/* Screening log entries */}
                 <div className="space-y-3">
                   {filteredScreenings.map(s => (
                     <div
@@ -309,7 +366,6 @@ const AdminCompliance = () => {
                           : "border-border hover:bg-muted/20"
                       }`}
                     >
-                      {/* Header row */}
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-semibold">{s.id}</span>
@@ -328,7 +384,6 @@ const AdminCompliance = () => {
                         </span>
                       </div>
 
-                      {/* Parties */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <div className="flex items-center gap-2">
                           <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
@@ -347,7 +402,6 @@ const AdminCompliance = () => {
                         </div>
                       </div>
 
-                      {/* Amount + lists */}
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <span className="text-sm font-bold">${s.amount.toLocaleString()}</span>
                         <div className="flex gap-1.5">
@@ -359,7 +413,6 @@ const AdminCompliance = () => {
                         </div>
                       </div>
 
-                      {/* EDD indicator */}
                       {s.eddTriggered && (
                         <div className="flex items-center gap-1.5 text-[10px] text-accent-foreground">
                           <FileWarning className="w-3 h-3" />
@@ -367,7 +420,6 @@ const AdminCompliance = () => {
                         </div>
                       )}
 
-                      {/* Notes */}
                       <div className="p-2 rounded bg-muted/40 border border-border">
                         <p className="text-[10px] text-muted-foreground">
                           <span className="font-semibold">System Log: </span>{s.notes}
@@ -377,7 +429,6 @@ const AdminCompliance = () => {
                   ))}
                 </div>
 
-                {/* Offline action note */}
                 <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-1.5">
                   <p className="text-xs font-semibold flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-primary" /> TrustLock Offline Protocol
@@ -420,11 +471,39 @@ const AdminCompliance = () => {
                         const cfg = statusConfig[kyc.status] || statusConfig.pending;
                         const vendorDocs = allKycDocs.filter(d => d.vendor_id === kyc.vendorId);
                         const isExpanded = expandedVendor === kyc.queueId;
+                        const selfieDocs = vendorDocs.filter(d => (d as any).document_category === "selfie_with_id");
+                        const govIdDocs = vendorDocs.filter(d => (d as any).document_category === "government_id");
+                        const hasSelfie = selfieDocs.length > 0;
+                        const hasGovId = govIdDocs.length > 0;
+
                         return (
                           <>
                             <tr key={kyc.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                               <td className="p-4 font-mono text-xs">{kyc.id}</td>
-                              <td className="p-4 font-medium">{kyc.vendor}</td>
+                              <td className="p-4">
+                                <div>
+                                  <span className="font-medium">{kyc.vendor}</span>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    {hasGovId && (
+                                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                        <FileText className="w-2.5 h-2.5" /> ID
+                                      </span>
+                                    )}
+                                    {hasSelfie && (
+                                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent-foreground">
+                                        <Camera className="w-2.5 h-2.5" /> Selfie
+                                      </span>
+                                    )}
+                                    {kyc.videoCallRequested && (
+                                      <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded ${
+                                        kyc.videoCallCompletedAt ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent-foreground"
+                                      }`}>
+                                        <Video className="w-2.5 h-2.5" /> {kyc.videoCallCompletedAt ? "Call Done" : "Call Pending"}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
                               <td className="p-4 hidden md:table-cell text-muted-foreground text-xs">{kyc.tier}</td>
                               <td className="p-4 hidden lg:table-cell">
                                 <Button
@@ -445,7 +524,7 @@ const AdminCompliance = () => {
                               </td>
                               <td className="p-4 text-center">
                                 {kyc.status === "pending" ? (
-                                  <div className="flex items-center justify-center gap-1.5">
+                                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                     <Button
                                       variant="default"
                                       size="sm"
@@ -466,6 +545,16 @@ const AdminCompliance = () => {
                                       {reviewingId === kyc.queueId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsDown className="w-3 h-3" />}
                                       Reject
                                     </Button>
+                                    {!kyc.videoCallRequested && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1 text-xs"
+                                        onClick={() => handleRequestVideoCall(kyc.queueId, kyc.vendor)}
+                                      >
+                                        <Video className="w-3 h-3" /> Video Call
+                                      </Button>
+                                    )}
                                   </div>
                                 ) : (
                                   <Badge variant="outline" className="text-[10px]">{kyc.status}</Badge>
@@ -478,37 +567,120 @@ const AdminCompliance = () => {
                                   {vendorDocs.length === 0 ? (
                                     <p className="text-xs text-muted-foreground text-center">No documents uploaded yet.</p>
                                   ) : (
-                                    <div className="space-y-2">
-                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents</p>
+                                    <div className="space-y-4">
+                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Documents & Verification</p>
+                                      
+                                      {/* Document grid */}
                                       <div className="grid gap-2 sm:grid-cols-2">
-                                        {vendorDocs.map(doc => (
-                                          <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-background">
-                                            <FileText className="w-4 h-4 text-primary shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-xs font-medium truncate">{doc.name}</p>
-                                              <p className="text-[10px] text-muted-foreground">
-                                                {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                                {" · "}
-                                                <Badge variant="outline" className="text-[9px] ml-1">
-                                                  {doc.status || "pending"}
-                                                </Badge>
-                                              </p>
+                                        {vendorDocs.map(doc => {
+                                          const category = (doc as any).document_category || "other";
+                                          const isSelfie = category === "selfie_with_id";
+                                          const currentSelfieStatus = selfieDecisions[doc.id] || (doc as any).selfie_match_status || "pending";
+
+                                          return (
+                                            <div key={doc.id} className={`p-3 rounded-lg border bg-background space-y-2 ${
+                                              isSelfie ? "border-accent/30" : "border-border"
+                                            }`}>
+                                              <div className="flex items-center gap-3">
+                                                {isSelfie ? <Camera className="w-4 h-4 text-accent-foreground shrink-0" /> :
+                                                 category === "government_id" ? <FileText className="w-4 h-4 text-primary shrink-0" /> :
+                                                 <FileText className="w-4 h-4 text-muted-foreground shrink-0" />}
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="text-xs font-medium truncate">{doc.name}</p>
+                                                  <p className="text-[10px] text-muted-foreground">
+                                                    {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                                    {" · "}
+                                                    <Badge variant="outline" className="text-[9px] ml-1">
+                                                      {category.replace(/_/g, " ")}
+                                                    </Badge>
+                                                  </p>
+                                                </div>
+                                                {doc.file_url && (
+                                                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                                                    <Button variant="outline" size="sm" className="gap-1 text-xs">
+                                                      <ExternalLink className="w-3 h-3" /> View
+                                                    </Button>
+                                                  </a>
+                                                )}
+                                              </div>
+
+                                              {/* Selfie match controls */}
+                                              {isSelfie && (
+                                                <div className="pt-2 border-t border-border space-y-2">
+                                                  <p className="text-[10px] font-semibold text-muted-foreground">
+                                                    <Camera className="w-3 h-3 inline mr-1" />
+                                                    Does the selfie match the Government ID photo?
+                                                  </p>
+                                                  {currentSelfieStatus === "loading" ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                  ) : currentSelfieStatus === "match" || currentSelfieStatus === "mismatch" ? (
+                                                    <Badge className={`text-[10px] ${selfieMatchColors[currentSelfieStatus]}`}>
+                                                      {currentSelfieStatus === "match" ? "✓ Confirmed Match" : "✗ Mismatch Flagged"}
+                                                    </Badge>
+                                                  ) : (
+                                                    <div className="flex gap-2">
+                                                      <Button size="sm" variant="default" className="gap-1 text-xs" onClick={() => handleSelfieDecision(doc.id, "match")}>
+                                                        <CheckCircle className="w-3 h-3" /> Match
+                                                      </Button>
+                                                      <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => handleSelfieDecision(doc.id, "mismatch")}>
+                                                        <XCircle className="w-3 h-3" /> Mismatch
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
-                                            {doc.file_url && (
-                                              <a
-                                                href={doc.file_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="shrink-0"
-                                              >
-                                                <Button variant="outline" size="sm" className="gap-1 text-xs">
-                                                  <ExternalLink className="w-3 h-3" /> View
-                                                </Button>
-                                              </a>
-                                            )}
-                                          </div>
-                                        ))}
+                                          );
+                                        })}
                                       </div>
+
+                                      {/* Verification answers preview */}
+                                      {vendorDocs.some(d => (d as any).verification_answers && Object.keys((d as any).verification_answers).length > 0) && (
+                                        <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+                                          <p className="text-[10px] font-semibold text-primary flex items-center gap-1">
+                                            <HelpCircle className="w-3 h-3" /> Knowledge-Based Verification Answers
+                                          </p>
+                                          {vendorDocs.filter(d => (d as any).verification_answers && Object.keys((d as any).verification_answers).length > 0).map(d => {
+                                            const answers = (d as any).verification_answers || {};
+                                            return (
+                                              <div key={`ans-${d.id}`} className="text-xs space-y-1">
+                                                {answers.full_name_on_id && <p><span className="text-muted-foreground">Name on ID:</span> <strong>{answers.full_name_on_id}</strong></p>}
+                                                {answers.id_number && <p><span className="text-muted-foreground">ID Number:</span> <strong>{answers.id_number}</strong></p>}
+                                                {answers.date_of_birth && <p><span className="text-muted-foreground">DOB:</span> <strong>{answers.date_of_birth}</strong></p>}
+                                              </div>
+                                            );
+                                          })}
+                                          <p className="text-[9px] text-muted-foreground">Cross-check these against the uploaded ID document before approving.</p>
+                                        </div>
+                                      )}
+
+                                      {/* Video call section */}
+                                      {kyc.videoCallRequested && (
+                                        <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 space-y-2">
+                                          <p className="text-[10px] font-semibold text-accent-foreground flex items-center gap-1">
+                                            <Video className="w-3 h-3" /> Video Call Verification
+                                          </p>
+                                          {kyc.videoCallCompletedAt ? (
+                                            <div className="space-y-1">
+                                              <Badge className="text-[10px] bg-primary/15 text-primary">✓ Completed</Badge>
+                                              {kyc.videoCallNotes && <p className="text-xs text-muted-foreground">{kyc.videoCallNotes}</p>}
+                                            </div>
+                                          ) : (
+                                            <div className="space-y-2">
+                                              <p className="text-xs text-muted-foreground">Video call requested. After completing the call, add notes below:</p>
+                                              <Textarea
+                                                placeholder="Notes from video call (e.g., ID confirmed, face matches, concerns...)"
+                                                className="text-xs min-h-[60px]"
+                                                value={videoCallNotes[kyc.queueId] || ""}
+                                                onChange={e => setVideoCallNotes(p => ({ ...p, [kyc.queueId]: e.target.value }))}
+                                              />
+                                              <Button size="sm" className="gap-1 text-xs" onClick={() => handleCompleteVideoCall(kyc.queueId)}>
+                                                <CheckCircle className="w-3 h-3" /> Mark Call Complete
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </td>
