@@ -547,9 +547,21 @@ Deno.serve(async (req) => {
           }
         } catch (_) { /* best-effort */ }
 
+        // Anchor: dispute ruling issued
+        if (data.transaction_id) {
+          await anchorProof(supabase, data.transaction_id, "dispute_ruling", {
+            event: "arbitration_ruling_issued",
+            dispute_id: disputeId,
+            ruling,
+            resolution_text: resolutionText,
+            split_percentage: splitPercentage || null,
+            amount: data.amount,
+            ruled_at: new Date().toISOString(),
+          });
+        }
+
         result = data;
         break;
-      }
 
       case "accept_ruling": {
         const { party } = body; // "buyer" or "vendor"
