@@ -482,6 +482,19 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Anchor: compliance rejection + refund
+        await anchorProof(supabase, heldTx.id, "dispute_ruling", {
+          event: "compliance_reject_refund",
+          tx_id: txId,
+          rejection_note: rejectionNote,
+          original_amount: heldTx.amount,
+          refund_amount: heldTx.amount,
+          buyer_id: heldTx.buyer_id,
+          vendor_id: heldTx.vendor_id,
+          order_number: heldTx.order_number,
+          rejected_at: new Date().toISOString(),
+        });
+
         result = refundedTx;
         break;
       }
