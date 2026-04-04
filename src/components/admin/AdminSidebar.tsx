@@ -39,6 +39,15 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const isChief = (() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+      return auth.isChief === true;
+    } catch { return false; }
+  })();
+
+  const navItems = allNavItems.filter((item) => !item.chiefOnly || isChief);
+
   useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener("tl-open-sidebar", handler);
