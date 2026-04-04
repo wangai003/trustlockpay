@@ -1,4 +1,4 @@
-import { AlertTriangle, Wallet, CreditCard, Building2, Globe, ArrowRight, ExternalLink } from "lucide-react";
+import { AlertTriangle, Wallet, CreditCard, Globe, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,19 +72,6 @@ export function detectUnavailableMethod(
       speed: "Instant",
       icon: CreditCard,
       action: "switch_to_card",
-    });
-  }
-
-  // SWIFT fallback for bank_transfer
-  if (method === "bank_transfer" && !isTier1) {
-    alternatives.push({
-      id: "swift_wire",
-      label: "SWIFT International Wire",
-      description: "Any bank globally can send a SWIFT wire. Higher fees and slower, but universally available.",
-      fee: "$25–50 wire fee + 1.5% platform",
-      speed: "2–5 business days",
-      icon: Building2,
-      action: "switch_to_swift",
     });
   }
 
