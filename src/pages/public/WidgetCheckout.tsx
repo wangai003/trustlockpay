@@ -30,6 +30,8 @@ const WidgetCheckout = () => {
     buyerEmail: "",
     item: "Sample Product",
     amount: "25.00",
+    buyerEntityType: "individual" as "individual" | "company" | "sole_proprietor",
+    buyerCompanyName: "",
   });
   const [confirmationCode, setConfirmationCode] = useState("");
 
