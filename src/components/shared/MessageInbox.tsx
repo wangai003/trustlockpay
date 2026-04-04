@@ -115,6 +115,11 @@ const MessageBubble = ({ msg, isMine, role: viewerRole, adminAliasMap, adminName
         "max-w-[80%] rounded-lg px-3 py-2 text-sm",
         isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
       )}>
+        {adminLabel && (
+          <p className={cn("text-[9px] font-medium mb-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
+            {adminLabel}
+          </p>
+        )}
         <p className="whitespace-pre-wrap break-words">{sanitized}</p>
         {hadLinks && (
           <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
