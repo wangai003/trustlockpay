@@ -22,6 +22,8 @@ const BuyerSignup = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
+  const [entityType, setEntityType] = useState<EntityType>("individual");
+  const [companyName, setCompanyName] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
