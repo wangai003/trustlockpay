@@ -201,6 +201,36 @@ async function triageNotify(
 }
 
 // ─── Main ──────────────────────────────────────────────────
+// ─── Blockchain Anchor Helper ─────────────────────────────
+async function anchorProof(
+  supabase: ReturnType<typeof createClient>,
+  transactionId: string,
+  recordType: string,
+  eventData: Record<string, unknown>
+) {
+  try {
+    const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(canonical));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    const txData = encoder.encode(transactionId);
+    let txRef = "0x";
+    for (let i = 0; i < 32; i++) {
+      const byte = txData[i % txData.length] ^ (i * 37);
+      txRef += (byte & 0xff).toString(16).padStart(2, "0");
+    }
+    const { data: lastRecord } = await supabase
+      .from("blockchain_proofs").select("content_hash").order("created_at", { ascending: false }).limit(1).single();
+    const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+    await supabase.from("blockchain_proofs").insert({
+      content_hash: contentHash, prev_hash: prevHash, record_type: recordType,
+      tx_ref: txRef, transaction_id: transactionId, event_data: eventData, chain_status: "queued",
+    });
+    console.log(`[anchor] ${recordType} for tx ${transactionId.slice(0, 8)}...`);
+  } catch (err) { console.error("[anchor] Failed:", err); }
+}
+
 function getSupabaseAdmin() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
@@ -276,6 +306,22 @@ Deno.serve(async (req) => {
       });
 
       await triageNotify("sanctions_flag", String(user_id), `${full_name} (${country}) was FLAGGED during sanctions screening. Risk: ${riskScore}%. Provider: ${screeningSource}. Flag: ${flagId}`, transaction_id ? String(transaction_id) : undefined, "high", { full_name, country, flagId, riskScore, provider: screeningSource });
+    }
+
+    // Anchor: AML screening result to blockchain
+    if (transaction_id) {
+      await anchorProof(supabase, String(transaction_id), "aml_screening", {
+        event: "sanctions_screening",
+        user_id: String(user_id),
+        full_name: String(full_name),
+        country: String(country),
+        result,
+        risk_score: riskScore,
+        matched_count: matchedEntries.length,
+        screening_source: screeningSource,
+        screening_provider: provider,
+        screened_at: new Date().toISOString(),
+      });
     }
 
     return new Response(JSON.stringify({

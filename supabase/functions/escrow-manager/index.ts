@@ -144,6 +144,51 @@ function getSupabaseAdmin() {
   );
 }
 
+// ─── Blockchain Anchor Helper ─────────────────────────────
+async function anchorProof(
+  supabase: ReturnType<typeof createClient>,
+  transactionId: string,
+  recordType: string,
+  eventData: Record<string, unknown>
+) {
+  try {
+    const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(canonical));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    const txData = encoder.encode(transactionId);
+    let txRef = "0x";
+    for (let i = 0; i < 32; i++) {
+      const byte = txData[i % txData.length] ^ (i * 37);
+      txRef += (byte & 0xff).toString(16).padStart(2, "0");
+    }
+
+    const { data: lastRecord } = await supabase
+      .from("blockchain_proofs")
+      .select("content_hash")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+
+    await supabase.from("blockchain_proofs").insert({
+      content_hash: contentHash,
+      prev_hash: prevHash,
+      record_type: recordType,
+      tx_ref: txRef,
+      transaction_id: transactionId,
+      event_data: eventData,
+      chain_status: "queued",
+    });
+
+    console.log(`[anchor] ${recordType} for tx ${transactionId.slice(0, 8)}... → ${contentHash.slice(0, 16)}...`);
+  } catch (err) {
+    console.error("[anchor] Failed to anchor proof:", err);
+  }
+}
+
 // ─── Authorization Helpers ─────────────────────────────────
 async function getTransactionParty(
   supabase: ReturnType<typeof getSupabaseAdmin>,
@@ -433,6 +478,34 @@ async function lockFunds(body: Record<string, unknown>) {
     amount: numAmount,
   });
 
+  // Anchor: invoice + price lock snapshot
+  await anchorProof(supabase, transaction.id, "invoice", {
+    event: "escrow_locked",
+    tx_id: txId,
+    amount: numAmount,
+    fee: fees.totalFees,
+    buyer_id: String(buyer_id),
+    vendor_id: String(vendor_id),
+    buyer_name: buyer_name ?? null,
+    vendor_name: vendor_name ?? null,
+    industry: industry ?? null,
+    processor: String(processor),
+    locked_at: new Date().toISOString(),
+  });
+
+  // Anchor: price lock snapshot (if commodity pricing)
+  if (locked_price || price_currency) {
+    await anchorProof(supabase, transaction.id, "price_lock", {
+      event: "price_lock_snapshot",
+      tx_id: txId,
+      locked_price: locked_price ? Number(locked_price) : numAmount,
+      price_currency: price_currency ? String(price_currency) : "USD",
+      commodity_unit: commodity_unit ? String(commodity_unit) : null,
+      commodity_quantity: commodity_quantity ? Number(commodity_quantity) : null,
+      snapshot_at: new Date().toISOString(),
+    });
+  }
+
   return jsonResponse({
     success: true,
     transaction,
@@ -510,6 +583,19 @@ async function releaseFunds(body: Record<string, unknown>) {
     amount: fees.netAmount,
   });
 
+  // Anchor: payout event (full release)
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_released",
+    tx_id: tx.tx_id,
+    payout_id: payoutId,
+    gross_amount: tx.amount,
+    net_amount: fees.netAmount,
+    escrow_fee: fees.escrowFee,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    released_at: new Date().toISOString(),
+  });
+
   return jsonResponse({
     success: true,
     payout,
@@ -568,6 +654,19 @@ async function refundBuyer(body: Record<string, unknown>) {
     transaction_id: tx.id,
     tx_id: tx.tx_id,
     refundReason,
+  });
+
+  // Anchor: refund event
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_refunded",
+    tx_id: tx.tx_id,
+    payout_id: payoutId,
+    refund_amount: fees.netAmount,
+    original_amount: tx.amount,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    refund_reason: refundReason ?? "Buyer refund",
+    refunded_at: new Date().toISOString(),
   });
 
   return jsonResponse({
@@ -662,6 +761,22 @@ async function splitPayout(body: Record<string, unknown>) {
     tx_id: tx.tx_id,
     vendorPercent: vPct,
     buyerPercent: bPct,
+  });
+
+  // Anchor: split payout event
+  await anchorProof(supabase, tx.id, "payout", {
+    event: "escrow_split_payout",
+    tx_id: tx.tx_id,
+    original_amount: tx.amount,
+    vendor_percent: vPct,
+    buyer_percent: bPct,
+    vendor_amount: vendorAmount,
+    buyer_amount: buyerAmount,
+    vendor_net: vendorNet,
+    escrow_fee: fees.escrowFee,
+    buyer_id: tx.buyer_id,
+    vendor_id: tx.vendor_id,
+    split_at: new Date().toISOString(),
   });
 
   return jsonResponse({
@@ -1152,6 +1267,19 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     paymentAmount,
     netAmount: fees.netAmount,
     allPaymentsDone,
+  });
+
+  // Anchor: milestone payment release
+  await anchorProof(supabase, String(txData.id), "milestone", {
+    event: "milestone_payment_released",
+    tx_id: txData.tx_id,
+    milestone_id: String(milestone_id),
+    milestone_title: milestone.title,
+    payment_amount: paymentAmount,
+    net_amount: fees.netAmount,
+    escrow_fee: fees.escrowFee,
+    all_milestones_released: allPaymentsDone,
+    released_at: now,
   });
 
   return jsonResponse({

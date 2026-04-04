@@ -5,6 +5,51 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── Blockchain Anchor Helper ─────────────────────────────
+async function anchorProof(
+  supabase: ReturnType<typeof createClient>,
+  transactionId: string,
+  recordType: string,
+  eventData: Record<string, unknown>
+) {
+  try {
+    const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(canonical));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    const txData = encoder.encode(transactionId);
+    let txRef = "0x";
+    for (let i = 0; i < 32; i++) {
+      const byte = txData[i % txData.length] ^ (i * 37);
+      txRef += (byte & 0xff).toString(16).padStart(2, "0");
+    }
+
+    const { data: lastRecord } = await supabase
+      .from("blockchain_proofs")
+      .select("content_hash")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+
+    await supabase.from("blockchain_proofs").insert({
+      content_hash: contentHash,
+      prev_hash: prevHash,
+      record_type: recordType,
+      tx_ref: txRef,
+      transaction_id: transactionId,
+      event_data: eventData,
+      chain_status: "queued",
+    });
+
+    console.log(`[anchor] ${recordType} for tx ${transactionId.slice(0, 8)}... → ${contentHash.slice(0, 16)}...`);
+  } catch (err) {
+    console.error("[anchor] Failed to anchor proof:", err);
+  }
+}
+
 function generateToken(len = 48): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let out = "";
@@ -212,6 +257,22 @@ Deno.serve(async (req) => {
         }
 
         result = data;
+
+        // Anchor: dispute filed
+        if (txId) {
+          const { data: txForAnchor } = await supabase.from("transactions").select("id").eq("tx_id", txId).single();
+          if (txForAnchor) {
+            await anchorProof(supabase, txForAnchor.id, "dispute_ruling", {
+              event: "dispute_filed",
+              dispute_id: newDisputeId,
+              tx_id: txId,
+              reason: reason || "Dispute filed",
+              amount,
+              priority: amount >= 10000 ? "critical" : "medium",
+              filed_at: new Date().toISOString(),
+            });
+          }
+        }
         break;
       }
 
@@ -487,6 +548,19 @@ Deno.serve(async (req) => {
           }
         } catch (_) { /* best-effort */ }
 
+        // Anchor: dispute ruling issued
+        if (data.transaction_id) {
+          await anchorProof(supabase, data.transaction_id, "dispute_ruling", {
+            event: "arbitration_ruling_issued",
+            dispute_id: disputeId,
+            ruling,
+            resolution_text: resolutionText,
+            split_percentage: splitPercentage || null,
+            amount: data.amount,
+            ruled_at: new Date().toISOString(),
+          });
+        }
+
         result = data;
         break;
       }
@@ -547,6 +621,16 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "vendor_release", null, disputeId);
+
+          // Anchor: dispute resolved - vendor wins
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "vendor_release",
+            resolution: "Admin ruling: Full release to vendor",
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         // Notify both parties
@@ -577,6 +661,16 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "full_refund", null, disputeId);
+
+          // Anchor: dispute resolved - buyer wins
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "full_refund",
+            resolution: "Admin ruling: Full refund to buyer",
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved in buyer's favor. A full refund will be initiated for ${dispute.buyer_name || "the buyer"}.`);
@@ -614,6 +708,17 @@ Deno.serve(async (req) => {
 
         if (dispute.transaction_id) {
           await executeDisputeResolution(supabase, dispute.transaction_id, "partial_refund", resText, disputeId, splitPercentage);
+
+          // Anchor: dispute resolved - compromise
+          await anchorProof(supabase, dispute.transaction_id, "dispute_ruling", {
+            event: "dispute_resolved",
+            dispute_id: disputeId,
+            ruling: "partial_refund",
+            resolution: resText,
+            split_percentage: splitPercentage,
+            amount: dispute.amount,
+            resolved_at: new Date().toISOString(),
+          });
         }
 
         await notifyDisputeParties(supabase, dispute, `Dispute ${disputeId} resolved via compromise: ${splitPercentage}% refunded to buyer, ${vendorPct}% released to vendor.`);

@@ -91,28 +91,6 @@ Deno.serve(async (req) => {
           order_number: data.order_number,
         });
         break;
-        const { data, error } = await supabase
-          .from("transactions")
-          .update({
-            status: "delivered",
-            delivered_date: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("tx_id", txId)
-          .select()
-          .single();
-        if (error) throw error;
-        result = data;
-
-        // Anchor: delivery milestone
-        await anchorProof(supabase, data.id, "milestone", {
-          event: "delivery_confirmed",
-          tx_id: txId,
-          status: "delivered",
-          delivered_date: data.delivered_date,
-          order_number: data.order_number,
-        });
-        break;
       }
 
       case "mark_delivered": {
@@ -391,6 +369,17 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Anchor: compliance hold lifted
+        await anchorProof(supabase, frozenTx.id, "milestone", {
+          event: "compliance_hold_lifted",
+          tx_id: txId,
+          previous_status: frozenTx.status,
+          restored_status: restoreStatus,
+          resolution_note: resolutionNote,
+          order_number: frozenTx.order_number,
+          unfrozen_at: new Date().toISOString(),
+        });
+
         result = unfrozen;
         break;
       }
@@ -470,6 +459,19 @@ Deno.serve(async (req) => {
             related_entity_id: heldTx.id,
           });
         }
+
+        // Anchor: compliance rejection + refund
+        await anchorProof(supabase, heldTx.id, "dispute_ruling", {
+          event: "compliance_reject_refund",
+          tx_id: txId,
+          rejection_note: rejectionNote,
+          original_amount: heldTx.amount,
+          refund_amount: heldTx.amount,
+          buyer_id: heldTx.buyer_id,
+          vendor_id: heldTx.vendor_id,
+          order_number: heldTx.order_number,
+          rejected_at: new Date().toISOString(),
+        });
 
         result = refundedTx;
         break;

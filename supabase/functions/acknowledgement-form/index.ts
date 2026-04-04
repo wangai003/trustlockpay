@@ -14,6 +14,36 @@ function getSupabaseAdmin() {
   );
 }
 
+// ─── Blockchain Anchor Helper ─────────────────────────────
+async function anchorProof(
+  supabase: ReturnType<typeof createClient>,
+  transactionId: string,
+  recordType: string,
+  eventData: Record<string, unknown>
+) {
+  try {
+    const canonical = JSON.stringify(eventData, Object.keys(eventData).sort());
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(canonical));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const contentHash = "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    const txData = encoder.encode(transactionId);
+    let txRef = "0x";
+    for (let i = 0; i < 32; i++) {
+      const byte = txData[i % txData.length] ^ (i * 37);
+      txRef += (byte & 0xff).toString(16).padStart(2, "0");
+    }
+    const { data: lastRecord } = await supabase
+      .from("blockchain_proofs").select("content_hash").order("created_at", { ascending: false }).limit(1).single();
+    const prevHash = lastRecord?.content_hash || "0x" + "0".repeat(64);
+    await supabase.from("blockchain_proofs").insert({
+      content_hash: contentHash, prev_hash: prevHash, record_type: recordType,
+      tx_ref: txRef, transaction_id: transactionId, event_data: eventData, chain_status: "queued",
+    });
+    console.log(`[anchor] ${recordType} for tx ${transactionId.slice(0, 8)}...`);
+  } catch (err) { console.error("[anchor] Failed:", err); }
+}
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -391,10 +421,36 @@ async function signForm(body: Record<string, unknown>) {
     );
   }
 
+  // Anchor: signature event
+  await anchorProof(supabase, String(form.transaction_id), "signature", {
+    event: "acknowledgement_form_signed",
+    form_id: String(form_id),
+    form_type: form.form_type,
+    form_title: form.title,
+    signer: signerRole,
+    signer_id: String(user_id),
+    signer_name: String(signerName ?? signerRole),
+    ip_address: ip,
+    signed_at: new Date().toISOString(),
+  });
+
   // If both parties have now signed → trigger next workflow step
   const bothSigned = updated.signed_by_buyer && updated.signed_by_vendor;
 
   if (bothSigned) {
+    // Anchor: acknowledgement form fully executed
+    await anchorProof(supabase, String(form.transaction_id), "acknowledgement", {
+      event: "acknowledgement_form_executed",
+      form_id: String(form_id),
+      form_type: form.form_type,
+      form_title: form.title,
+      buyer_signed_at: updated.buyer_signature_at,
+      vendor_signed_at: updated.vendor_signature_at,
+      buyer_ip: updated.buyer_ip,
+      vendor_ip: updated.vendor_ip,
+      executed_at: new Date().toISOString(),
+    });
+
     // If this is tied to a payment milestone, trigger release
     if (form.milestone_id) {
       try {
