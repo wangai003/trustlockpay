@@ -370,26 +370,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         return;
       }
 
-      // ═══ MAINNET — compliance velocity check before processing ═══
+      // ═══ MAINNET — compliance velocity check (non-blocking, logged for post-escrow enforcement) ═══
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId && !isAdmin) {
         try {
-          const { data: velocityResult } = await supabase.functions.invoke("compliance-velocity", {
+          await supabase.functions.invoke("compliance-velocity", {
             body: { action: "check", user_id: userId, amount: parseFloat(amount) },
           });
-          if (velocityResult && !velocityResult.allow_transaction) {
-            setComplianceBlock({
-              flags: velocityResult.flags || [],
-              severity: velocityResult.severity || "high",
-              allowTransaction: false,
-              blockedReason: velocityResult.blocked_reason,
-              preKycCap: velocityResult.pre_kyc_cap,
-              rollingVolume: velocityResult.rolling_24h_volume,
-              todayCount: velocityResult.today_tx_count,
-            });
-            setProcessing(false);
-            return;
-          }
+          // Compliance flags are logged server-side; post-escrow KYC trigger handles enforcement
         } catch (err) {
           console.warn("Compliance velocity check (non-blocking):", err);
         }

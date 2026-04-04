@@ -140,14 +140,43 @@ Deno.serve(async (req) => {
       // Notify the user about the KYC decision
       if (vendorId) {
         const isApproved = decision === "approved";
+
+        // If approved, release any transactions stuck in kyc_hold
+        if (isApproved) {
+          const { data: heldTxs } = await supabaseAdmin
+            .from("transactions")
+            .select("id, tx_id")
+            .or(`buyer_id.eq.${vendorId},vendor_id.eq.${vendorId}`)
+            .eq("status", "kyc_hold");
+
+          if (heldTxs && heldTxs.length > 0) {
+            for (const tx of heldTxs) {
+              await supabaseAdmin
+                .from("transactions")
+                .update({ status: "locked", updated_at: new Date().toISOString() })
+                .eq("id", tx.id);
+
+              // Notify parties that the hold is lifted
+              await supabaseAdmin.from("notifications").insert({
+                user_id: vendorId,
+                title: "🔓 Escrow Hold Released",
+                message: `Order ${tx.tx_id || tx.id} has been released from KYC hold and is now active in escrow. Fulfillment can proceed.`,
+                type: "success",
+                related_entity_type: "transaction",
+                related_entity_id: tx.id,
+              });
+            }
+          }
+        }
+
         await supabaseAdmin.from("notifications").insert({
           user_id: vendorId,
           title: isApproved
             ? "✅ Identity Verification Approved"
             : "❌ Identity Verification Rejected",
           message: isApproved
-            ? "Your KYC has been approved. You can now process transactions above $5,000. If you had a blocked transaction, you may retry it now."
-            : "Your KYC submission was rejected. Please review your documents and resubmit. Transactions above $5,000 remain blocked until verification is complete.",
+            ? "Your KYC has been approved. Any escrow orders on hold have been released and can now proceed to fulfillment."
+            : "Your KYC submission was rejected. Please review your documents and resubmit. Escrow orders above $5,000 will remain on hold until verification is complete.",
           type: isApproved ? "success" : "warning",
           is_action_required: !isApproved,
           action_url: isApproved ? null : "/trustlock/vendor/kyc",
