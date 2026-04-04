@@ -562,6 +562,7 @@ export type Database = {
           id: string
           is_active: boolean
           override_window_hours: number
+          rank: number
         }
         Insert: {
           admin_id: string
@@ -570,6 +571,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           override_window_hours?: number
+          rank?: number
         }
         Update: {
           admin_id?: string
@@ -578,6 +580,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           override_window_hours?: number
+          rank?: number
         }
         Relationships: [
           {
