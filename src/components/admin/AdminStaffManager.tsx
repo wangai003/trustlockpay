@@ -36,6 +36,7 @@ interface AdminAccount {
   is_setup: boolean;
   is_deleted: boolean;
   is_chief: boolean;
+  chief_rank: number | null;
   deleted_at: string | null;
   reinstated_at: string | null;
   created_at: string;
@@ -51,9 +52,8 @@ export default function AdminStaffManager() {
   const [tempPwResult, setTempPwResult] = useState<{ username: string; temp_password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Confirmation dialogs
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null);
-  const [confirmDeleteStep, setConfirmDeleteStep] = useState(0); // 0=closed, 1=first, 2=reconfirm
+  const [confirmDeleteStep, setConfirmDeleteStep] = useState(0);
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
@@ -64,6 +64,9 @@ export default function AdminStaffManager() {
   });
 
   const accounts: AdminAccount[] = data?.accounts || [];
+  const callerRank: number | null = data?.callerRank ?? null;
+  const isOriginalChief = callerRank === 1;
+
   const activeAccounts = accounts.filter((a) => !a.is_deleted);
   const deletedAccounts = accounts.filter((a) => a.is_deleted);
 
@@ -128,13 +131,23 @@ export default function AdminStaffManager() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getRankLabel = (rank: number | null) => {
+    if (rank === 1) return "Original Chief";
+    if (rank === 2) return "Chief";
+    return "";
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-foreground">Admin Staff Management</h2>
-          <p className="text-sm text-muted-foreground">Add, remove, reinstate, and promote admin team members</p>
+          <p className="text-sm text-muted-foreground">
+            {isOriginalChief
+              ? "Full control: add, remove, reinstate, promote, and demote admin staff"
+              : "You can add new staff. Delete, reinstate, promote, and demote require the original Chief Admin."}
+          </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2">
           <UserPlus className="w-4 h-4" /> Add Staff
@@ -151,7 +164,11 @@ export default function AdminStaffManager() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{a.name}</span>
-                  {a.is_chief && <Badge variant="default" className="text-[10px] gap-1"><Crown className="w-3 h-3" /> Chief</Badge>}
+                  {a.is_chief && (
+                    <Badge variant="default" className="text-[10px] gap-1">
+                      <Crown className="w-3 h-3" /> {getRankLabel(a.chief_rank)}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{a.username}{a.email ? ` · ${a.email}` : ""}</p>
                 <div className="flex gap-1.5">
@@ -163,18 +180,18 @@ export default function AdminStaffManager() {
                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
                 </div>
               </div>
-              <div className="flex gap-1.5">
-                {a.id !== chiefAdminId && (
+              <div className="flex gap-1.5 flex-wrap justify-end">
+                {a.id !== chiefAdminId && isOriginalChief && (
                   <>
                     {!a.is_chief ? (
                       <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setPromoteTarget(a)}>
                         <Crown className="w-3 h-3" /> Promote
                       </Button>
-                    ) : (
+                    ) : a.chief_rank !== 1 ? (
                       <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setDemoteTarget(a)}>
                         <ShieldAlert className="w-3 h-3" /> Demote
                       </Button>
-                    )}
+                    ) : null}
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
                       <Trash2 className="w-3 h-3" /> Delete
                     </Button>
@@ -186,7 +203,7 @@ export default function AdminStaffManager() {
         </CardContent>
       </Card>
 
-      {/* Deleted / Inactive Staff */}
+      {/* Deleted / Inactive Staff — only original chief can reinstate */}
       {deletedAccounts.length > 0 && (
         <Card>
           <CardHeader><CardTitle className="text-sm text-muted-foreground">Deleted Staff ({deletedAccounts.length})</CardTitle></CardHeader>
@@ -198,9 +215,11 @@ export default function AdminStaffManager() {
                   <p className="text-xs text-muted-foreground">{a.username}</p>
                   {a.deleted_at && <p className="text-[10px] text-destructive">Deleted {new Date(a.deleted_at).toLocaleDateString()}</p>}
                 </div>
-                <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setReinstateTarget(a)}>
-                  <RotateCcw className="w-3 h-3" /> Reinstate
-                </Button>
+                {isOriginalChief && (
+                  <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setReinstateTarget(a)}>
+                    <RotateCcw className="w-3 h-3" /> Reinstate
+                  </Button>
+                )}
               </div>
             ))}
           </CardContent>
@@ -314,7 +333,7 @@ export default function AdminStaffManager() {
           <DialogHeader>
             <DialogTitle>Promote to Chief Admin</DialogTitle>
             <DialogDescription>
-              Promote <strong>{promoteTarget?.name}</strong> to Chief Admin? They will have the same authority as you, including override powers and staff management access.
+              Promote <strong>{promoteTarget?.name}</strong> to Chief Admin? They will gain override powers but cannot delete, reinstate, or demote other staff — only the original Chief Admin (you) can do that.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

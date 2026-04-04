@@ -12,6 +12,16 @@ function json(data: unknown, status = 200) {
   });
 }
 
+async function getChiefRank(supabase: any, adminId: string): Promise<number | null> {
+  const { data } = await supabase
+    .from("chief_admin_config")
+    .select("rank")
+    .eq("admin_id", adminId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return data?.rank ?? null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -24,21 +34,16 @@ Deno.serve(async (req) => {
     const { action, chiefAdminId, ...params } = await req.json();
 
     // Verify the caller is a chief admin
-    const { data: chiefCheck } = await supabase
-      .from("chief_admin_config")
-      .select("id")
-      .eq("admin_id", chiefAdminId)
-      .eq("is_active", true)
-      .maybeSingle();
+    const callerRank = await getChiefRank(supabase, chiefAdminId);
+    if (callerRank === null) return json({ error: "Unauthorized — chief admin only." }, 403);
 
-    if (!chiefCheck) return json({ error: "Unauthorized — chief admin only." }, 403);
+    const isOriginalChief = callerRank === 1;
 
-    // ── ADD NEW ADMIN ──────────────────────────────────────
+    // ── ADD NEW ADMIN (any chief can add) ──────────────────
     if (action === "add") {
       const { username, name } = params;
       if (!username || !name) return json({ error: "Username and name required." }, 400);
 
-      // Check if username exists (including deleted)
       const { data: existing } = await supabase
         .from("admin_accounts")
         .select("id, is_deleted")
@@ -48,8 +53,6 @@ Deno.serve(async (req) => {
       if (existing && !existing.is_deleted) {
         return json({ error: "Username already exists and is active." }, 409);
       }
-
-      // If previously deleted, reinstate instead
       if (existing && existing.is_deleted) {
         return json({ error: "This username belongs to a deleted account. Use reinstate instead." }, 409);
       }
@@ -63,23 +66,15 @@ Deno.serve(async (req) => {
       return json({ success: true, account: result });
     }
 
-    // ── DELETE (SOFT) ──────────────────────────────────────
+    // ── DELETE (SOFT) — original chief only ────────────────
     if (action === "delete") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can delete staff." }, 403);
+      }
+
       const { adminId } = params;
       if (!adminId) return json({ error: "Admin ID required." }, 400);
-
-      // Prevent deleting yourself
       if (adminId === chiefAdminId) return json({ error: "Cannot delete yourself." }, 400);
-
-      // Prevent deleting another chief
-      const { data: isChief } = await supabase
-        .from("chief_admin_config")
-        .select("id")
-        .eq("admin_id", adminId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (isChief) return json({ error: "Cannot delete another chief admin. Demote first." }, 400);
 
       const { error } = await supabase
         .from("admin_accounts")
@@ -96,14 +91,16 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    // ── REINSTATE ──────────────────────────────────────────
+    // ── REINSTATE — original chief only ────────────────────
     if (action === "reinstate") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can reinstate staff." }, 403);
+      }
+
       const { adminId } = params;
       if (!adminId) return json({ error: "Admin ID required." }, 400);
 
-      // Generate new temp password
       const { data: tempPw } = await supabase.rpc("generate_temp_password");
-
       const { data: hash } = await supabase.rpc("hash_password", { _password: tempPw });
 
       const { error } = await supabase
@@ -128,12 +125,15 @@ Deno.serve(async (req) => {
       return json({ success: true, temp_password: tempPw });
     }
 
-    // ── PROMOTE TO CHIEF ───────────────────────────────────
+    // ── PROMOTE TO CHIEF — original chief only ─────────────
     if (action === "promote") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can promote staff." }, 403);
+      }
+
       const { adminId } = params;
       if (!adminId) return json({ error: "Admin ID required." }, 400);
 
-      // Check not already chief
       const { data: alreadyChief } = await supabase
         .from("chief_admin_config")
         .select("id")
@@ -150,17 +150,26 @@ Deno.serve(async (req) => {
           designated_by: chiefAdminId,
           is_active: true,
           override_window_hours: 48,
+          rank: 2,
         });
 
       if (error) return json({ error: error.message }, 500);
       return json({ success: true });
     }
 
-    // ── DEMOTE FROM CHIEF ──────────────────────────────────
+    // ── DEMOTE FROM CHIEF — original chief only ────────────
     if (action === "demote") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can demote staff." }, 403);
+      }
+
       const { adminId } = params;
       if (!adminId) return json({ error: "Admin ID required." }, 400);
       if (adminId === chiefAdminId) return json({ error: "Cannot demote yourself." }, 400);
+
+      // Prevent demoting another rank-1 (shouldn't happen, but safety)
+      const targetRank = await getChiefRank(supabase, adminId);
+      if (targetRank === 1) return json({ error: "Cannot demote the original chief." }, 400);
 
       const { error } = await supabase
         .from("chief_admin_config")
@@ -172,6 +181,39 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── DELETE SELF (original chief removing themselves — triggers succession) ──
+    if (action === "deleteSelf") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can use this action." }, 403);
+      }
+
+      // Check there's at least one other active chief to succeed
+      const { data: otherChiefs } = await supabase
+        .from("chief_admin_config")
+        .select("admin_id")
+        .eq("is_active", true)
+        .neq("admin_id", chiefAdminId);
+
+      if (!otherChiefs || otherChiefs.length === 0) {
+        return json({ error: "Cannot delete yourself — no successor chief exists. Promote someone first." }, 400);
+      }
+
+      // Soft-delete self — trigger handles succession
+      const { error } = await supabase
+        .from("admin_accounts")
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: chiefAdminId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", chiefAdminId)
+        .eq("is_deleted", false);
+
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, succession: true });
+    }
+
     // ── LIST ALL ───────────────────────────────────────────
     if (action === "list") {
       const { data: accounts, error } = await supabase
@@ -181,20 +223,20 @@ Deno.serve(async (req) => {
 
       if (error) return json({ error: error.message }, 500);
 
-      // Get chief status
       const { data: chiefs } = await supabase
         .from("chief_admin_config")
-        .select("admin_id")
+        .select("admin_id, rank")
         .eq("is_active", true);
 
-      const chiefIds = new Set((chiefs || []).map((c: any) => c.admin_id));
+      const chiefMap = new Map((chiefs || []).map((c: any) => [c.admin_id, c.rank]));
 
       const enriched = (accounts || []).map((a: any) => ({
         ...a,
-        is_chief: chiefIds.has(a.id),
+        is_chief: chiefMap.has(a.id),
+        chief_rank: chiefMap.get(a.id) || null,
       }));
 
-      return json({ accounts: enriched });
+      return json({ accounts: enriched, callerRank });
     }
 
     return json({ error: "Unknown action" }, 400);

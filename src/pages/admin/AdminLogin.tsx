@@ -104,6 +104,7 @@ const AdminLogin = () => {
           adminId: result.adminId || "",
           name: result.name || "Admin",
           isChief: result.isChief || false,
+          chiefRank: result.chiefRank || null,
         }));
         localStorage.setItem("tl_network", "mainnet");
         localStorage.setItem("tl_admin_name", result.name || "Admin");
