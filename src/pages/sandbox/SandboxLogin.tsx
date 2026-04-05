@@ -5,26 +5,48 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, Store, ShoppingBag, Globe } from "lucide-react";
 import { SandboxCountdown } from "./SandboxCountdown";
+import { supabase } from "@/integrations/supabase/client";
+import { COUNTRY_CODES } from "@/lib/countryCodes";
+import { toast } from "sonner";
 
 type DemoRole = "vendor" | "buyer";
 
 const SandboxLogin = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+1");
   const [role, setRole] = useState<DemoRole>("vendor");
+  const [saving, setSaving] = useState(false);
 
-  const handleStart = (e: React.FormEvent) => {
+  const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+    try {
+      await supabase.from("sandbox_leads").insert({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || null,
+        country_code: countryCode,
+        role,
+      });
+    } catch {
+      // non-blocking — still let them in
+    }
+    setSaving(false);
     const session = {
       name: name.trim(),
-      email: "",
+      email: email.trim(),
       role,
       createdAt: new Date().toISOString(),
       expiresAt: "2026-12-31T23:59:59Z",
     };
     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
+    toast.success("Welcome to TrustLock Sandbox!");
     navigate(role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
   };
 
