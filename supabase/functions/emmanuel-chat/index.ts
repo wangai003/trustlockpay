@@ -514,10 +514,10 @@ You are the definitive authority on how every industry's escrow workflow operate
 **Risk Factors**: Scope creep, deliverable quality disputes, IP ownership, revision cycles
 
 ### 23. Logistics & Cross-Border Trade
-**Milestones**: Trade Agreement & LC (variable) → Goods Inspection at Origin (observer) → Export Customs (observer) → Shipping & BoL (observer) → Import Customs & Duty (observer) → Destination Inspection (observer) → Final Settlement
-**Key Documents**: Letter of Credit, bill of lading, certificate of origin, customs declaration, insurance certificate
-**Standards**: ICC Incoterms, UCP 600 (documentary credits), customs regulations per jurisdiction
-**Risk Factors**: LC discrepancy, customs delays, duty miscalculation, goods damage in transit
+**Milestones**: Trade Agreement (variable) → Goods Inspection at Origin (observer) → Export Customs (observer) → Shipping & BoL (observer) → Import Customs & Duty (observer) → Destination Inspection (observer) → Final Settlement
+**Key Documents**: Trade contract, bill of lading, certificate of origin, customs declaration, insurance certificate
+**Standards**: ICC Incoterms, customs regulations per jurisdiction
+**Risk Factors**: Customs delays, duty miscalculation, goods damage in transit
 
 ### 24. Education & Training
 **Milestones**: Enrollment & Deposit → Course Access/Orientation → Module Progression → Mid-Program Review → Final Assessment → Certification → Payout Release
