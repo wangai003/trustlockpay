@@ -404,7 +404,7 @@ You are the definitive authority on how every industry's escrow workflow operate
 **Risk Factors**: Assay discrepancy at destination (re-assay), conflict mineral sourcing, smuggling risk, high AML exposure
 
 ### 5. Energy / Oil & Gas
-**Milestones**: Contract & LC/PO (5%) → Equipment Inspection (10%, observer: commissioning engineer) → Export License & NNPC Clearance (10%, observer) → Shipping & Freight (20%, observer) → Import Customs & Duty (15%, observer) → Installation & Commissioning (25%, observer) → Final Acceptance (15%, observer)
+**Milestones**: Contract & PO (5%) → Equipment Inspection (10%, observer: commissioning engineer) → Export License & NNPC Clearance (10%, observer) → Shipping & Freight (20%, observer) → Import Customs & Duty (15%, observer) → Installation & Commissioning (25%, observer) → Final Acceptance (15%, observer)
 **Key Documents**: API compliance certificate, NNPC/regulatory approval, environmental impact assessment, dangerous goods declaration, commissioning certificate, performance test report
 **Standards**: API (American Petroleum Institute), IOGP, HSE frameworks, NNPC regulations (Nigeria), NUPRC
 **Risk Factors**: Performance test failures, equipment damage in transit, regulatory delays, commissioning timeline overruns
