@@ -240,24 +240,8 @@ const getDocGateStatus = (ms: any, escrowFunded = false) => {
     return false;
   };
 
-  // Auto-satisfy pre-payment docs when escrow is funded
-  const autoSatisfied: string[] = [];
-  const missingRequired = requiredDocs.filter((doc) => {
-    if (checkDoc(doc)) return false;
-    if (escrowFunded && isPrePaymentDoc(doc)) {
-      autoSatisfied.push(doc);
-      return false; // treated as satisfied
-    }
-    return true;
-  });
-  const missingOptional = optionalDocs.filter((doc) => {
-    if (checkDoc(doc)) return false;
-    if (escrowFunded && isPrePaymentDoc(doc)) {
-      autoSatisfied.push(doc);
-      return false;
-    }
-    return true;
-  });
+  const missingRequired = requiredDocs.filter((doc) => !checkDoc(doc));
+  const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
   const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
 
   return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied };
