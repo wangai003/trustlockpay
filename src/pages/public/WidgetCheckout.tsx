@@ -189,6 +189,59 @@ const WidgetCheckout = () => {
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
+              {/* Checkout mode toggle — RFQ-eligible industries only */}
+              {rfqEligible && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">How would you like to proceed?</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutMode("direct")}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-xs transition-colors ${
+                        checkoutMode === "direct"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span className="font-medium">Direct Pay</span>
+                      <span className="text-[10px] leading-tight">Pay now at listed price</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutMode("rfq")}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-xs transition-colors ${
+                        checkoutMode === "rfq"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="font-medium">{rfqTerms.rfqLabel}</span>
+                      <span className="text-[10px] leading-tight">Request custom pricing</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* If RFQ mode selected, show RFQ form instead of payment form */}
+              {checkoutMode === "rfq" && rfqEligible ? (
+                <div className="space-y-3">
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      Submit your requirements and the vendor will respond with a custom {rfqTerms.proformaLabel.toLowerCase()}.
+                      No payment is charged at this stage.
+                    </p>
+                  </div>
+                  <RFQForm
+                    vendorId={vendorId}
+                    vendorName={vendor.name}
+                    industry={vendor.industry}
+                    onSubmitted={() => setStep("rfq_done")}
+                  />
+                </div>
+              ) : (
+
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Your Name</Label>
