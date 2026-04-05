@@ -491,6 +491,22 @@ const BuyerTeams = () => {
           <DialogFooter><Button onClick={createWorkspace}>Create</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Join Team Dialog */}
+      <Dialog open={showJoin} onOpenChange={setShowJoin}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Join a Team</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Enter the invite code shared by your team lead to join their workspace.</p>
+          <div className="space-y-4 py-2">
+            <div><Label>Invite Code</Label><Input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="e.g. a1b2c3d4e5f6" /></div>
+            <div><Label>Your Display Name</Label><Input value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="e.g. Jane Doe" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowJoin(false)}>Cancel</Button>
+            <Button onClick={joinTeamByCode} disabled={!joinCode.trim() || joiningTeam}>{joiningTeam ? "Joining…" : "Join Team"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
