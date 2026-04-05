@@ -772,8 +772,8 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* Document Type Selector + Upload */}
-                    {(() => {
+                    {/* Document Type Selector + Upload (not for admin) */}
+                    {!isAdmin && (() => {
                       const allDocs = [...requiredDocs, ...optionalDocs];
                       if (allDocs.length > 0) {
                         return (
@@ -793,7 +793,7 @@ const MilestoneWorkOrderPanel = ({
                       return null;
                     })()}
 
-                    {isTestnet ? (
+                    {!isAdmin && (isTestnet ? (
                       <Button size="sm" variant="outline" className="text-xs" onClick={() => {
                         const name = `Evidence-${ms.title.replace(/\s/g, "_")}-${Date.now()}.pdf`;
                         onTestnetAddDocument?.(ms.id, { name, url: `testnet://mock/${name}` });
@@ -821,7 +821,7 @@ const MilestoneWorkOrderPanel = ({
                           })();
                         }}
                       />
-                    )}
+                    ))}
 
                     {/* Offline guidance */}
                     {layoutMode === "offline" && ms.status === "pending" && (
