@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,8 @@ import { toast } from "sonner";
 import {
   FileText, Search, Phone, Mail, Building2, MapPin,
   Clock, CheckCircle, XCircle, ArrowRight, AlertCircle,
-  Info, Link2, Calendar, Package, User,
+  Info, Link2, Calendar, Package, User, Percent, Handshake,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 
