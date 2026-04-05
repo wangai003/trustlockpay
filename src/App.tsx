@@ -97,6 +97,14 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
 
+// Sandbox
+const SandboxLogin = lazy(() => import("./pages/sandbox/SandboxLogin"));
+const SandboxLayout = lazy(() => import("./pages/sandbox/SandboxLayout"));
+const SandboxVendorOverview = lazy(() => import("./pages/sandbox/SandboxVendorOverview"));
+const SandboxBuyerOverview = lazy(() => import("./pages/sandbox/SandboxBuyerOverview"));
+const SandboxOrders = lazy(() => import("./pages/sandbox/SandboxOrders"));
+const SandboxMessages = lazy(() => import("./pages/sandbox/SandboxMessages"));
+
 const queryClient = new QueryClient();
 
 const Loading = () => (
