@@ -226,6 +226,20 @@ const App = () => (
               <Route path="/data-rights" element={<DataRights />} />
               <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+
+              {/* Sandbox Demo */}
+              <Route path="/sandbox/login" element={<SandboxLogin />} />
+              <Route path="/sandbox/vendor" element={<SandboxLayout />}>
+                <Route index element={<SandboxVendorOverview />} />
+                <Route path="orders" element={<SandboxOrders />} />
+                <Route path="messages" element={<SandboxMessages />} />
+              </Route>
+              <Route path="/sandbox/buyer" element={<SandboxLayout />}>
+                <Route index element={<SandboxBuyerOverview />} />
+                <Route path="orders" element={<SandboxOrders />} />
+                <Route path="messages" element={<SandboxMessages />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
