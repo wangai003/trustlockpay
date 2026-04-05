@@ -412,9 +412,15 @@ const WidgetCheckout = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full gap-2 text-sm">
+                <Button
+                  type="submit"
+                  className="w-full gap-2 text-sm"
+                  disabled={isMilestoneIndustry && !scheduleAccepted}
+                >
                   <Lock className="w-4 h-4" />
-                  {isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
+                  {isMilestoneIndustry && !scheduleAccepted
+                    ? "Accept milestone schedule above first"
+                    : isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
                 </Button>
               </form>
               )}
