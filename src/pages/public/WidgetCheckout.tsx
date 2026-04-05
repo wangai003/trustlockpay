@@ -42,6 +42,31 @@ const WidgetCheckout = () => {
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
+  const [scheduleAccepted, setScheduleAccepted] = useState(false);
+  const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
+
+  // Resolve milestone templates for this industry
+  const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
+  const milestoneSchedule = useMemo(() => {
+    if (!isMilestoneIndustry) return [];
+    const key = vendor.industry.replace(/_/g, "-");
+    const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[vendor.industry] || [];
+    // Check for vendor-preset percentages in localStorage
+    try {
+      const raw = localStorage.getItem(`tl_widget_config_${vendor.industry}`);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.milestonePercentages) {
+          return templates.map((t, i) => ({
+            name: t.name,
+            percentage: cfg.milestonePercentages[i] ?? t.percentage,
+            description: t.description,
+          }));
+        }
+      }
+    } catch {}
+    return templates.map(t => ({ name: t.name, percentage: t.percentage, description: t.description }));
+  }, [vendor.industry, isMilestoneIndustry]);
 
   useEffect(() => {
     loadVendor();
