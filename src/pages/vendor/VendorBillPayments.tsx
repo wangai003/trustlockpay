@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
@@ -11,7 +12,7 @@ import {
   Receipt, DollarSign, Calendar, Filter, Download, CheckCircle,
   Clock, AlertTriangle, CreditCard, Minus
 } from "lucide-react";
-
+import { useVendorBills, usePayBill, type VendorBill } from "@/hooks/useVendorBilling";
 
 type BillStatus = "all" | "paid" | "pending" | "overdue";
 
@@ -131,15 +132,32 @@ const statusConfig = {
 
 const VendorBillPayments = () => {
   const { vendor } = useVendor();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<BillStatus>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const payBill = usePayBill();
 
-  // In mainnet, pull from os_payments table; in testnet use mock
   const isTestnet = localStorage.getItem("tl_vendor_network") !== "mainnet";
+  const { data: dbBills = [] } = useVendorBills();
 
-  const bills = isTestnet ? mockBillPayments : mockBillPayments; // TODO: replace with real data in mainnet
+  // Merge DB bills with mock data for testnet display
+  const dbBillsMapped: BillPayment[] = dbBills.map((b) => ({
+    id: b.id,
+    date: b.created_at,
+    description: b.description || b.bill_type,
+    category: b.bill_type === "widget_install" ? "Installation" : b.bill_type === "widget_restore" ? "Installation" : b.bill_type === "plan_subscription" ? "Subscription" : "Other",
+    amount: Number(b.amount),
+    fee: 0,
+    deductions: 0,
+    netAmount: Number(b.amount),
+    status: b.status as "paid" | "pending" | "overdue",
+    method: b.status === "paid" ? "OS Pay" : "Pending",
+    reference: b.id.slice(0, 8).toUpperCase(),
+  }));
+
+  const bills = isTestnet && dbBillsMapped.length === 0 ? mockBillPayments : [...dbBillsMapped, ...(isTestnet ? mockBillPayments : [])];
 
   const filtered = bills.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
@@ -150,11 +168,16 @@ const VendorBillPayments = () => {
   });
 
   const totalPaid = bills.filter(b => b.status === "paid").reduce((s, b) => s + b.netAmount, 0);
-  const totalPending = bills.filter(b => b.status === "pending").reduce((s, b) => s + b.netAmount, 0);
+  const totalPending = bills.filter(b => b.status === "pending" || b.status === "overdue").reduce((s, b) => s + b.netAmount, 0);
   const totalDeductions = bills.reduce((s, b) => s + b.deductions, 0);
   const totalFees = bills.reduce((s, b) => s + b.fee, 0);
 
   const categories = [...new Set(bills.map(b => b.category))];
+
+  const handlePayBill = (bill: BillPayment) => {
+    // Route to OS Pay with bill details
+    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(bill.description)}&amount=${bill.amount.toFixed(2)}&bill_id=${bill.id}`);
+  };
 
   return (
     <div>
@@ -279,7 +302,13 @@ const VendorBillPayments = () => {
                             {cfg.label}
                           </span>
                         </td>
-                        <td className="p-4 hidden sm:table-cell text-xs text-muted-foreground">{bill.method}</td>
+                        <td className="p-4 hidden sm:table-cell text-xs text-muted-foreground">
+                          {bill.status === "pending" || bill.status === "overdue" ? (
+                            <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handlePayBill(bill)}>
+                              <DollarSign className="w-3 h-3" /> Pay Now
+                            </Button>
+                          ) : bill.method}
+                        </td>
                       </tr>
                     );
                   })}

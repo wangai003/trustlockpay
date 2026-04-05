@@ -3541,6 +3541,62 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_bills: {
+        Row: {
+          amount: number
+          bill_type: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          paid_at: string | null
+          reminder_count: number
+          reminder_sent_at: string | null
+          site_id: string | null
+          status: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount?: number
+          bill_type: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          bill_type?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
+          site_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_bills_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_claim_tokens: {
         Row: {
           claimed_by: string | null
@@ -3824,11 +3880,57 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_subscriptions: {
+        Row: {
+          amount_paid: number
+          billing_cycle: string
+          created_at: string
+          expires_at: string | null
+          grace_ends_at: string | null
+          id: string
+          payment_id: string | null
+          plan_id: string
+          starts_at: string
+          status: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          billing_cycle?: string
+          created_at?: string
+          expires_at?: string | null
+          grace_ends_at?: string | null
+          id?: string
+          payment_id?: string | null
+          plan_id?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount_paid?: number
+          billing_cycle?: string
+          created_at?: string
+          expires_at?: string | null
+          grace_ends_at?: string | null
+          id?: string
+          payment_id?: string | null
+          plan_id?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vendor_widget_fees: {
         Row: {
           created_at: string
           id: string
           install_fee_paid: boolean
+          payment_confirmed: boolean
           pending_restoration_fee: boolean
           site_id: string | null
           total_install_fees_charged: number
@@ -3840,6 +3942,7 @@ export type Database = {
           created_at?: string
           id?: string
           install_fee_paid?: boolean
+          payment_confirmed?: boolean
           pending_restoration_fee?: boolean
           site_id?: string | null
           total_install_fees_charged?: number
@@ -3851,6 +3954,7 @@ export type Database = {
           created_at?: string
           id?: string
           install_fee_paid?: boolean
+          payment_confirmed?: boolean
           pending_restoration_fee?: boolean
           site_id?: string | null
           total_install_fees_charged?: number
