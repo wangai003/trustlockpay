@@ -111,6 +111,19 @@ export default function AdminStaffManager() {
   const activeAccounts = accounts.filter((a) => !a.is_deleted);
   const deletedAccounts = accounts.filter((a) => a.is_deleted);
 
+  // Auto-generate username from first + last name (firstname.lastname.tl)
+  const generatedUsername = (() => {
+    const f = newFirstName.trim().toLowerCase().replace(/[^a-z]/g, "");
+    const l = newLastName.trim().toLowerCase().replace(/[^a-z]/g, "");
+    if (!f || !l) return "";
+    let base = `${f}.${l}.tl`;
+    const usernames = new Set(accounts.map((a) => a.username));
+    if (!usernames.has(base)) return base;
+    let counter = 2;
+    while (usernames.has(`${f}.${l}${counter}.tl`)) counter++;
+    return `${f}.${l}${counter}.tl`;
+  })();
+
   const addMutation = useMutation({
     mutationFn: () => {
       const username = generatedUsername;
