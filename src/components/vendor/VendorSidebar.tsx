@@ -11,16 +11,6 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
-import { useVendorSites } from "@/hooks/useSupabaseData";
-
-// Industries that have RFQ enabled
-const RFQ_ENABLED_INDUSTRIES = [
-  "mining", "agriculture", "freelance", "real_estate", "construction",
-  "logistics", "education", "project_management", "energy", "pharmaceuticals",
-  "telecommunications", "manufacturing", "renewable_energy", "textiles",
-  "marine_fisheries", "automotive", "water_sanitation", "media_entertainment",
-  "aviation", "insurance", "legal_services", "food_beverage", "waste_management",
-];
 
 const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
@@ -47,25 +37,17 @@ const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
-  const { data: sites = [] } = useVendorSites();
-
-  // Show CRM only if vendor has at least one site in an RFQ-enabled industry
-  const hasRfqSite = useMemo(() => {
-    return sites.some((s: any) => s.industry && RFQ_ENABLED_INDUSTRIES.includes(s.industry));
-  }, [sites]);
 
   const navItems = useMemo(() => {
     const items = [...baseNavItems];
-    if (hasRfqSite) {
-      // Insert CRM after "Plans & Pricing"
-      const pricingIdx = items.findIndex(i => i.to === "/trustlock/vendor/pricing");
-      items.splice(pricingIdx + 1, 0, {
-        label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm",
-        tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM",
-      });
-    }
+    // Always show Quote Requests (CRM) after "Plans & Pricing"
+    const pricingIdx = items.findIndex(i => i.to === "/trustlock/vendor/pricing");
+    items.splice(pricingIdx + 1, 0, {
+      label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm",
+      tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM",
+    });
     return items;
-  }, [hasRfqSite]);
+  }, []);
 
   useEffect(() => {
     const handler = () => setOpen(true);
