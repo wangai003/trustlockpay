@@ -26,7 +26,7 @@ const WidgetCheckout = () => {
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
 
-  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done">("loading");
+  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
