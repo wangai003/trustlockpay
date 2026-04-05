@@ -608,6 +608,16 @@ const MilestoneWorkOrderPanel = ({
                           {ms.payment_percentage || 100}%
                         </Badge>
                       )}
+                      {/* Step owner badge */}
+                      {!isDone && !isDeleted && (
+                        <Badge variant="outline" className={`text-[7px] h-3.5 px-1 shrink-0 ${
+                          stepOwner === "vendor" ? "border-primary/30 text-primary" :
+                          stepOwner === "buyer" ? "border-accent/30 text-accent" :
+                          "border-muted-foreground/30 text-muted-foreground"
+                        }`}>
+                          {stepOwner === "both" ? "Both" : stepOwner === "vendor" ? "Vendor" : "Buyer"}
+                        </Badge>
+                      )}
                     </div>
                     {/* One-line status summary */}
                     <div className="flex items-center gap-1.5 mt-0.5">
