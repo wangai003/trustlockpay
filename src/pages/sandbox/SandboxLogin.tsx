@@ -116,16 +116,40 @@ const SandboxLogin = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sb-name">Your Name</Label>
+                <Label htmlFor="sb-name">Your Name *</Label>
                 <Input id="sb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Mensah" required />
               </div>
 
-              <Button type="submit" className="w-full" disabled={!name.trim()}>
-                Enter Sandbox
+              <div className="space-y-2">
+                <Label htmlFor="sb-email">Email Address *</Label>
+                <Input id="sb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Phone Number</Label>
+                <div className="flex gap-2">
+                  <Select value={countryCode} onValueChange={setCountryCode}>
+                    <SelectTrigger className="w-[120px] shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {COUNTRY_CODES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.code} {c.country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="555 123 4567" />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={!name.trim() || !email.trim() || saving}>
+                {saving ? "Saving…" : "Enter Sandbox"}
               </Button>
 
               <p className="text-center text-[11px] text-muted-foreground">
-                No account or email needed. Data stored locally. Active until December 31, 2026.
+                We'll notify you when TrustLock goes live. Data stored securely. Active until December 31, 2026.
               </p>
             </form>
           </CardContent>
