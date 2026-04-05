@@ -343,6 +343,14 @@ const VendorTeams = () => {
                 )}
               </CardContent>
             </Card>
+            {/* Post-completion summary */}
+            <TeamCompletionSummary
+              tasks={tasks}
+              workspaceId={selectedWs.id}
+              workspaceTitle={selectedWs.title}
+              isOwner={isOwner}
+              onClose={() => { setSelectedWs(null); fetchWorkspaces(); }}
+            />
           </TabsContent>
 
           {isOwner && (
