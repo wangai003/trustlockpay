@@ -9,7 +9,7 @@ import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
-import MilestonePaymentSchedule, { type ScheduleItem } from "@/components/shared/MilestonePaymentSchedule";
+import MilestonePaymentSchedule, { type ScheduleItem, type CounterProposalContact } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
