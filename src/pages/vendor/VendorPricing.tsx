@@ -29,10 +29,19 @@ const VendorPricing = () => {
   const planState = getVendorPlanState();
   const trialUsed = localStorage.getItem("tl_vendor_trial_start") !== null;
 
+  // Locked-in plan from previous selection
+  const lockedPlan = localStorage.getItem("tl_vendor_plan") as PlanId | null;
+  const lockedBilling = localStorage.getItem("tl_vendor_billing") as BillingCycle | null;
+  const hasLockedPlan = lockedPlan && lockedPlan !== "basic" && lockedPlan !== ("free" as string) && PLANS[lockedPlan as PlanId];
+
   const handleSelect = (planId: PlanId) => {
     if (planId === "basic") return;
-    const price = billing === "monthly" ? PLANS[planId].monthly : PLANS[planId].yearly;
-    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`TrustLock OS License — ${PLANS[planId].name} (${billing})`)}&amount=${price.toFixed(2)}`);
+    navigate(`/trustlock/vendor/checkout?plan=${planId}&billing=${billing}`);
+  };
+
+  const handleRenew = () => {
+    if (!hasLockedPlan || !lockedBilling) return;
+    navigate(`/trustlock/vendor/checkout?plan=${lockedPlan}&billing=${lockedBilling}&renew=true`);
   };
 
   const activateTrial = useActivateTrial();
@@ -56,6 +65,25 @@ const VendorPricing = () => {
             <p className="text-[10px] text-muted-foreground mt-1">
               Limited to {PLANS.basic.orderMin}–{PLANS.basic.orderMax} orders/month. Orders above this range are grayed out.
             </p>
+          </div>
+        )}
+
+        {/* One-click renewal for vendors with a locked-in plan */}
+        {hasLockedPlan && (planState.isExpired || (planState.daysUntilExpiry !== null && planState.daysUntilExpiry <= 14)) && (
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-3">
+            <Shield className="w-5 h-5 text-primary shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold">
+                {planState.isExpired ? "Renew Your Plan" : "Quick Renewal"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your <strong>{PLANS[lockedPlan as PlanId].name}</strong> plan ({lockedBilling}) is locked in from your original selection. 
+                Just click to pay — no need to re-select.
+              </p>
+            </div>
+            <Button size="sm" onClick={handleRenew}>
+              Renew ${lockedBilling === "monthly" ? PLANS[lockedPlan as PlanId].monthly : PLANS[lockedPlan as PlanId].yearly}/{lockedBilling === "monthly" ? "mo" : "yr"}
+            </Button>
           </div>
         )}
 

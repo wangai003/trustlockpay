@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
       grace_periods_started: 0,
       widgets_disabled: 0,
       inbox_messages_sent: 0,
+      renewal_bills_generated: 0,
     };
 
     // ─── Helper: send notification + inbox message to vendor ───
@@ -108,16 +109,49 @@ Deno.serve(async (req) => {
       const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
       if ([7, 3, 1].includes(daysLeft)) {
+        // At 7 days: auto-generate a renewal bill so vendor can just pay it
+        if (daysLeft === 7) {
+          // Check if renewal bill already exists for this cycle
+          const { count: existingBill } = await supabase
+            .from("vendor_bills")
+            .select("id", { count: "exact", head: true })
+            .eq("vendor_id", sub.vendor_id)
+            .eq("bill_type", "plan_subscription")
+            .eq("status", "pending")
+            .gte("created_at", new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString());
+
+          if (!existingBill || existingBill === 0) {
+            // Compute UTC-midnight due date = expiry date
+            const expiryDate = new Date(sub.expires_at);
+            const dueUtc = new Date(Date.UTC(
+              expiryDate.getUTCFullYear(),
+              expiryDate.getUTCMonth(),
+              expiryDate.getUTCDate(),
+              23, 59, 59, 999
+            ));
+
+            await supabase.from("vendor_bills").insert({
+              vendor_id: sub.vendor_id,
+              bill_type: "plan_subscription",
+              amount: sub.amount_paid || 0,
+              status: "pending",
+              due_date: dueUtc.toISOString(),
+              description: `${sub.plan_id} plan renewal (${sub.billing_cycle}) — auto-generated`,
+            });
+            results.renewal_bills_generated++;
+          }
+        }
+
         await notifyVendor(
           sub.vendor_id,
           daysLeft === 1 ? "⚠️ Plan Expires Tomorrow" : `📅 Plan Expires in ${daysLeft} Days`,
           daysLeft === 1
-            ? `Your ${sub.plan_id} plan expires tomorrow. Renew now to avoid losing the ability to receive new orders. Go to Plans & Pricing to renew.`
-            : `Your ${sub.plan_id} plan expires in ${daysLeft} days. Renew via Plans & Pricing to avoid falling back to Basic and losing the ability to accept new orders.`,
+            ? `Your ${sub.plan_id} plan expires tomorrow at midnight UTC. A renewal bill has been generated — go to Bill Payments to pay it. No need to re-select your plan.`
+            : `Your ${sub.plan_id} plan expires in ${daysLeft} days. A renewal bill has been generated in Bill Payments. Just pay it to renew — your plan and billing cycle are already locked in.`,
           daysLeft <= 3 ? "warning" : "info",
           {
             is_action_required: daysLeft <= 3,
-            action_url: "/trustlock/vendor/pricing",
+            action_url: "/trustlock/vendor/bill-payments",
             entity_type: "subscription",
             entity_id: sub.id,
           }

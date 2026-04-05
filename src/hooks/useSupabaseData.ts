@@ -607,10 +607,60 @@ export function useSaveVendorSettings() {
 export function useActivatePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { planId: string; billingCycle: string; expiresAt: string }) =>
-      callEdgeFunction("manage-vendor", { action: "activate_plan", ...params }),
+    mutationFn: async (params: { planId: string; billingCycle: string; expiresAt: string }) => {
+      // 1. Legacy vendor_plans table
+      await callEdgeFunction("manage-vendor", { action: "activate_plan", ...params });
+      // 2. Upsert vendor_subscriptions for billing lifecycle
+      const session = (await supabase.auth.getSession()).data.session;
+      if (session?.user?.id) {
+        const { data: existing } = await supabase
+          .from("vendor_subscriptions")
+          .select("id")
+          .eq("vendor_id", session.user.id)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (existing) {
+          // Update existing active subscription
+          await supabase
+            .from("vendor_subscriptions")
+            .update({
+              plan_id: params.planId,
+              billing_cycle: params.billingCycle,
+              expires_at: params.expiresAt,
+              status: "active",
+              amount_paid: params.billingCycle === "monthly"
+                ? (await import("@/hooks/useVendorPlan")).PLANS[params.planId as import("@/hooks/useVendorPlan").PlanId]?.monthly || 0
+                : (await import("@/hooks/useVendorPlan")).PLANS[params.planId as import("@/hooks/useVendorPlan").PlanId]?.yearly || 0,
+            })
+            .eq("id", existing.id);
+        } else {
+          // Insert new subscription
+          const plans = (await import("@/hooks/useVendorPlan")).PLANS;
+          const plan = plans[params.planId as import("@/hooks/useVendorPlan").PlanId];
+          await supabase.from("vendor_subscriptions").insert({
+            vendor_id: session.user.id,
+            plan_id: params.planId,
+            billing_cycle: params.billingCycle,
+            status: "active",
+            expires_at: params.expiresAt,
+            amount_paid: params.billingCycle === "monthly" ? (plan?.monthly || 0) : (plan?.yearly || 0),
+          });
+        }
+
+        // Mark any pending plan_subscription bills as paid
+        await supabase
+          .from("vendor_bills")
+          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .eq("vendor_id", session.user.id)
+          .eq("bill_type", "plan_subscription")
+          .eq("status", "pending");
+      }
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vendor_plans"] });
+      qc.invalidateQueries({ queryKey: ["vendor-subscription"] });
+      qc.invalidateQueries({ queryKey: ["vendor-bills"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
