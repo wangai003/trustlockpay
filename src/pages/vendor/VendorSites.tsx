@@ -146,15 +146,16 @@ const VendorSites = () => {
   };
 
   const handleFirstInstall = (siteId: string) => {
-    const ws = getWidgetFeeState();
+    const ws = getSiteWidgetState(siteId);
     if (ws.widgetState === "never_installed") {
+      setActiveSiteId(siteId);
       setPendingInvoiceAction("install");
       setShowInvoice(true);
     } else if (ws.widgetState === "deleted") {
+      setActiveSiteId(siteId);
       setPendingInvoiceAction("restore");
       setShowInvoice(true);
     } else {
-      // Already installed/disabled — just enable
       setSiteWidgetStates(prev => ({ ...prev, [siteId]: true }));
       toast.success("Widget enabled on this site.");
     }
