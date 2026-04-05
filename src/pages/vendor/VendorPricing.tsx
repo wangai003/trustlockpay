@@ -68,6 +68,25 @@ const VendorPricing = () => {
           </div>
         )}
 
+        {/* One-click renewal for vendors with a locked-in plan */}
+        {hasLockedPlan && (planState.isExpired || (planState.daysUntilExpiry !== null && planState.daysUntilExpiry <= 14)) && (
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-3">
+            <Shield className="w-5 h-5 text-primary shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold">
+                {planState.isExpired ? "Renew Your Plan" : "Quick Renewal"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your <strong>{PLANS[lockedPlan as PlanId].name}</strong> plan ({lockedBilling}) is locked in from your original selection. 
+                Just click to pay — no need to re-select.
+              </p>
+            </div>
+            <Button size="sm" onClick={handleRenew}>
+              Renew ${lockedBilling === "monthly" ? PLANS[lockedPlan as PlanId].monthly : PLANS[lockedPlan as PlanId].yearly}/{lockedBilling === "monthly" ? "mo" : "yr"}
+            </Button>
+          </div>
+        )}
+
         {!trialUsed && planState.currentPlan === "basic" && !planState.isExpired && (
           <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
             <div className="flex items-center gap-3">
