@@ -122,10 +122,9 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, vendorContact, onS
         if (s.key.trim() && s.value.trim()) specifications[s.key] = s.value;
       });
 
-      const insertPayload = {
+      const payload = {
         vendor_id: vendorId,
         rfq_number: rfqNumber,
-        status: "submitted",
         buyer_name: buyerName.trim(),
         buyer_email: buyerEmail.trim(),
         buyer_company: buyerCompany.trim() || null,
@@ -144,11 +143,10 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, vendorContact, onS
         requested_delivery_date: deliveryDate || null,
         notes: notes.trim() || null,
         rfq_label: terms.rfqLabel,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      } as any;
+      };
 
-      const { data, error } = await supabase.from("rfq_requests").insert(insertPayload).select().single();
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("submit-rfq", { body: payload });
+      if (error || !data?.id) throw new Error(data?.error || error?.message || "Failed to submit");
       toast.success(`${terms.rfqLabel} ${rfqNumber} submitted successfully`);
       onSubmitted?.(data.id);
     } catch (err: any) {
