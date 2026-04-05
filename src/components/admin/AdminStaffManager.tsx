@@ -358,15 +358,21 @@ export default function AdminStaffManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Admin Staff</DialogTitle>
-            <DialogDescription>A temporary password will be generated. Share it securely with the new admin.</DialogDescription>
+            <DialogDescription>Enter the recruit's name. The system will auto-generate a unique username and temporary password.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Input placeholder="Username (e.g. sarah.tl)" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
-            <Input placeholder="Display Name (e.g. Sarah)" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input placeholder="First Name" value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} />
+            <Input placeholder="Last Name" value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
+            {generatedUsername && (
+              <div className="p-3 bg-muted rounded-lg space-y-1">
+                <p className="text-xs text-muted-foreground">Auto-generated username</p>
+                <p className="font-mono text-sm font-bold">{generatedUsername}</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!newUsername.trim() || !newName.trim() || addMutation.isPending}>
+            <Button onClick={() => addMutation.mutate()} disabled={!generatedUsername || addMutation.isPending}>
               {addMutation.isPending ? "Creating…" : "Create Account"}
             </Button>
           </DialogFooter>
