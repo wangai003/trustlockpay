@@ -16,10 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle,
   ClipboardList, RotateCcw, Upload, Clock, Shield, FileText, Activity,
-  Hash, Eye
+  Hash, Eye, MessageSquare, Copy, Link, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -53,7 +54,48 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   const [showCompleteTask, setShowCompleteTask] = useState<string | null>(null);
   const [showResult, setShowResult] = useState<{ title: string; detail: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
-  const [wsTab, setWsTab] = useState<"tasks" | "members" | "log">("tasks");
+  const [wsTab, setWsTab] = useState<"tasks" | "members" | "chat" | "log">("tasks");
+
+  // Chat simulation
+  type ChatMsg = { id: string; sender: string; body: string; timestamp: string };
+  const [chatMessages, setChatMessages] = useState<Record<string, ChatMsg[]>>(() => {
+    try {
+      const saved = localStorage.getItem("tl_testnet_team_chat");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      "ws-mining-1": [
+        { id: "cm1", sender: "Kwame Asante", body: "Survey uploaded. GPS coords attached — check the evidence file.", timestamp: new Date(Date.now() - 4 * 86400000).toISOString() },
+        { id: "cm2", sender: "Fatima Diallo", body: "Assay results confirm 3.2g/t gold grade. Ready for export docs.", timestamp: new Date(Date.now() - 3 * 86400000).toISOString() },
+        { id: "cm3", sender: "David Okonkwo", body: "I've contacted the trucking company. Waiting on insurance quote.", timestamp: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { id: "cm4", sender: "Team Lead", body: "Great progress everyone. Amina, please prioritize the EPA clearance.", timestamp: new Date(Date.now() - 1 * 86400000).toISOString() },
+      ],
+      "ws-agri-1": [
+        { id: "cm5", sender: "Grace Nyambura", body: "Harvest schedule confirmed for next week. Labor team ready.", timestamp: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { id: "cm6", sender: "Pierre Dumont", body: "I'll need 48h for moisture testing once harvest arrives.", timestamp: new Date(Date.now() - 1 * 86400000).toISOString() },
+      ],
+      "ws-constr-1": [
+        { id: "cm7", sender: "Ibrahim Toure", body: "All 3 quotes received. Recommended supplier: Dangote Cement.", timestamp: new Date(Date.now() - 8 * 86400000).toISOString() },
+        { id: "cm8", sender: "Carlos Silva", body: "Foundation pour scheduled for Monday. Need weather clearance.", timestamp: new Date(Date.now() - 5 * 86400000).toISOString() },
+      ],
+    };
+  });
+  const [chatInput, setChatInput] = useState("");
+
+  // Invite codes
+  const [inviteCodes, setInviteCodes] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem("tl_testnet_invite_codes");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      "ws-mining-1": "TL-INV-MIN-7X4K",
+      "ws-agri-1": "TL-INV-AGR-9P2M",
+      "ws-constr-1": "TL-INV-CON-3R8W",
+      "ws-realestate-1": "TL-INV-RE-5N6J",
+    };
+  });
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   // Create form
   const [newTitle, setNewTitle] = useState("");
@@ -160,11 +202,12 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           </CardContent>
         </Card>
 
-        {/* Inner Tabs: Tasks / Members / Activity Log */}
+        {/* Inner Tabs: Tasks / Members / Chat / Activity Log */}
         <Tabs value={wsTab} onValueChange={v => setWsTab(v as any)}>
-          <TabsList className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="tasks" className="flex-1 sm:flex-none gap-1"><ClipboardList className="w-3.5 h-3.5" /> Tasks ({tasks.length})</TabsTrigger>
-            <TabsTrigger value="members" className="flex-1 sm:flex-none gap-1"><Users className="w-3.5 h-3.5" /> Members ({members.length})</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1 sm:flex-none gap-1"><Users className="w-3.5 h-3.5" /> Team ({members.length})</TabsTrigger>
+            <TabsTrigger value="chat" className="flex-1 sm:flex-none gap-1"><MessageSquare className="w-3.5 h-3.5" /> Chat</TabsTrigger>
             <TabsTrigger value="log" className="flex-1 sm:flex-none gap-1"><Activity className="w-3.5 h-3.5" /> Log ({wsLog.length})</TabsTrigger>
           </TabsList>
 
@@ -274,9 +317,53 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                   </Button>
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Invite Code Section */}
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold flex items-center gap-1"><Link className="w-3 h-3" /> Team Invite Code</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Share this code with team members. They sign up as {role}, then join this workspace using this code.
+                      </p>
+                      <code className="text-sm font-mono font-bold text-primary mt-1 block">
+                        {inviteCodes[selectedWs.id] || (() => {
+                          const prefix = selectedWs.industry.slice(0, 3).toUpperCase();
+                          const code = `TL-INV-${prefix}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+                          setInviteCodes(prev => {
+                            const updated = { ...prev, [selectedWs.id]: code };
+                            localStorage.setItem("tl_testnet_invite_codes", JSON.stringify(updated));
+                            return updated;
+                          });
+                          return code;
+                        })()}
+                      </code>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => {
+                      const code = inviteCodes[selectedWs.id] || "";
+                      navigator.clipboard.writeText(code);
+                      setInviteCopied(true);
+                      setTimeout(() => setInviteCopied(false), 2000);
+                      toast.success("Invite code copied!");
+                    }}>
+                      {inviteCopied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {inviteCopied ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                  <div className="mt-2 p-2 rounded bg-muted/50 border border-border">
+                    <p className="text-[10px] text-muted-foreground font-medium">How members join:</p>
+                    <ol className="text-[10px] text-muted-foreground mt-1 space-y-0.5 list-decimal pl-3">
+                      <li>Member creates account via {role === "vendor" ? "Vendor" : "Buyer"} Signup</li>
+                      <li>Member navigates to Teams → "Join Workspace"</li>
+                      <li>Member enters invite code: <strong>{inviteCodes[selectedWs.id]}</strong></li>
+                      <li>Team Lead approves and assigns role + tasks</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Team Structure */}
                 {members.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No members added yet.</p>
+                  <p className="text-sm text-muted-foreground">No members added yet. Share the invite code above or click "Add Member" to get started.</p>
                 ) : (
                   <div className="space-y-2">
                     {members.map(m => {
@@ -311,6 +398,72 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Chat Tab ── */}
+          <TabsContent value="chat">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Workspace Chat
+                  <Badge variant="secondary" className="text-[10px]">{selectedWs.order_number}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px] sm:h-[400px] pr-3">
+                  <div className="space-y-3">
+                    {(chatMessages[selectedWs.id] || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start the conversation below.</p>
+                    ) : (
+                      (chatMessages[selectedWs.id] || []).map(msg => {
+                        const isTeamLead = msg.sender === "Team Lead";
+                        return (
+                          <div key={msg.id} className={cn("flex flex-col max-w-[85%]", isTeamLead ? "ml-auto items-end" : "items-start")}>
+                            <div className={cn(
+                              "p-3 rounded-lg text-sm",
+                              isTeamLead ? "bg-primary text-primary-foreground" : "bg-muted border border-border"
+                            )}>
+                              {!isTeamLead && <p className="text-xs font-semibold mb-1">{msg.sender}</p>}
+                              <p>{msg.body}</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{formatTime(msg.timestamp)}</p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {selectedWs.status === "active" && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                    <Input
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      placeholder="Type a message to your team..."
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && chatInput.trim()) {
+                          const newMsg: ChatMsg = { id: `cm-${Date.now()}`, sender: "Team Lead", body: chatInput.trim(), timestamp: new Date().toISOString() };
+                          const updated = { ...chatMessages, [selectedWs.id]: [...(chatMessages[selectedWs.id] || []), newMsg] };
+                          setChatMessages(updated);
+                          localStorage.setItem("tl_testnet_team_chat", JSON.stringify(updated));
+                          setChatInput("");
+                        }
+                      }}
+                    />
+                    <Button size="icon" disabled={!chatInput.trim()} onClick={() => {
+                      if (!chatInput.trim()) return;
+                      const newMsg: ChatMsg = { id: `cm-${Date.now()}`, sender: "Team Lead", body: chatInput.trim(), timestamp: new Date().toISOString() };
+                      const updated = { ...chatMessages, [selectedWs.id]: [...(chatMessages[selectedWs.id] || []), newMsg] };
+                      setChatMessages(updated);
+                      localStorage.setItem("tl_testnet_team_chat", JSON.stringify(updated));
+                      setChatInput("");
+                    }}>
+                      <Send className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </CardContent>
