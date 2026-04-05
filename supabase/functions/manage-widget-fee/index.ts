@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { action } = await req.json() as { action: Action };
+    const { action, site_id } = await req.json() as { action: Action; site_id?: string };
     const validActions: Action[] = ["get_state", "install", "enable", "disable", "delete", "restore"];
     if (!validActions.includes(action)) {
       return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {
@@ -78,19 +78,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Build query filter — per-site if site_id provided, otherwise legacy per-vendor
+    const filterCol = site_id ? "site_id" : "vendor_id";
+    const filterVal = site_id || user.id;
+
     // Fetch or create state row
     let { data: row, error: fetchErr } = await supabase
       .from("vendor_widget_fees")
       .select("*")
       .eq("vendor_id", user.id)
+      .eq(site_id ? "site_id" : "vendor_id", site_id || user.id)
       .maybeSingle();
 
     if (fetchErr) throw fetchErr;
 
     if (!row) {
+      const insertPayload: Record<string, unknown> = { vendor_id: user.id };
+      if (site_id) insertPayload.site_id = site_id;
       const { data: inserted, error: insertErr } = await supabase
         .from("vendor_widget_fees")
-        .insert({ vendor_id: user.id })
+        .insert(insertPayload)
         .select()
         .single();
       if (insertErr) throw insertErr;
