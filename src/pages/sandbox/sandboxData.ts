@@ -32,7 +32,7 @@ export const SANDBOX_VENDOR = {
   industry: "Textiles & Fashion",
 };
 
-export const SANDBOX_ORDERS = [
+export const SANDBOX_ORDERS: SandboxOrder[] = [
   {
     id: "SBX-ORD-1001",
     item: "Custom Kente Cloth — 3 Yards",
