@@ -722,14 +722,23 @@ const MilestoneWorkOrderPanel = ({
                                 const uploadedKeys = getUploadedKeys(ms);
                                 const docLower = doc.toLowerCase();
                                 const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
+                                const isAutoSatisfied = gateStatus.autoSatisfied.includes(doc);
                                 const owner = docOwners[doc] || "either";
                                 return (
-                                  <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"}`}>
-                                    {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                                  <Badge key={doc} variant="outline" className={`text-[8px] ${
+                                    isAutoSatisfied ? "border-muted-foreground/30 text-muted-foreground line-through" :
+                                    isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"
+                                  }`}>
+                                    {isAutoSatisfied ? <Unlock className="w-2.5 h-2.5 mr-0.5" /> :
+                                     isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
                                     {doc}
-                                    <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
-                                      ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
-                                    </span>
+                                    {isAutoSatisfied ? (
+                                      <span className="ml-0.5 text-[7px] text-muted-foreground italic">N/A — Escrow Funded</span>
+                                    ) : (
+                                      <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
+                                        ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
+                                      </span>
+                                    )}
                                   </Badge>
                                 );
                               })}
