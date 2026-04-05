@@ -37,7 +37,7 @@ interface MilestoneWorkOrderPanelProps {
   transactionId?: string | null;
   txId: string;
   industry?: string | null;
-  role: "buyer" | "vendor";
+  role: "buyer" | "vendor" | "admin";
   transactionStatus?: string;
   orderType?: OrderType;
   isTestnet?: boolean;
@@ -358,7 +358,8 @@ const MilestoneWorkOrderPanel = ({
   const layoutMode = resolveLayoutMode(industry, orderType);
   const layoutLabels = LAYOUT_MODE_LABELS[layoutMode];
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
-  const rolePrefix = role === "vendor" ? "V" : "B";
+  const rolePrefix = role === "vendor" ? "V" : role === "admin" ? "A" : "B";
+  const isAdmin = role === "admin";
 
   const milestones = isTestnet ? (testnetMilestones || []) : dbMilestones;
   const observers = isTestnet
@@ -531,6 +532,11 @@ const MilestoneWorkOrderPanel = ({
             const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
             const canBuyerRelease = role === "buyer" && ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released;
             const hasObserver = !!ms.observer_id;
+
+            // Counterparty status indicators
+            const vendorFulfilled = ms.status === "completed" || ms.status === "released";
+            const buyerReleased = ms.status === "released";
+            const isDisputed = ms.status === "disputed";
             const isDone = ms.status === "completed" || ms.status === "released";
             const isActive = idx === activeIndex;
             const expanded = isExpanded(idx);
@@ -592,6 +598,27 @@ const MilestoneWorkOrderPanel = ({
                       {ms.gps_latitude && <MapPin className="w-2.5 h-2.5 text-primary" />}
                       {gateStatus.mode === "required" && !gateStatus.satisfied && (
                         <AlertTriangle className="w-2.5 h-2.5 text-destructive" />
+                      )}
+                      {isDisputed && (
+                        <Badge variant="destructive" className="text-[8px] h-4">Disputed</Badge>
+                      )}
+                      {/* Counterparty status indicators */}
+                      {role === "buyer" && vendorFulfilled && !buyerReleased && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Vendor ✅</Badge>
+                      )}
+                      {role === "buyer" && !vendorFulfilled && !isDisputed && ms.status !== "deleted" && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30 text-muted-foreground">Vendor ⏳</Badge>
+                      )}
+                      {role === "vendor" && vendorFulfilled && !buyerReleased && ms.is_payment_milestone && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30 text-muted-foreground">Buyer ⏳</Badge>
+                      )}
+                      {role === "vendor" && buyerReleased && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Buyer ✅</Badge>
+                      )}
+                      {isAdmin && (
+                        <span className="text-[8px] text-muted-foreground">
+                          V:{vendorFulfilled ? "✅" : "⏳"} B:{buyerReleased ? "✅" : vendorFulfilled ? "⏳" : "—"}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -704,8 +731,8 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* Observer Linked */}
-                    {role === "vendor" && hasObserver && (
+                    {/* Observer Linked (visible to vendor and admin) */}
+                    {(role === "vendor" || isAdmin) && hasObserver && (
                       <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
                         <p className="font-medium text-foreground">Observer linked</p>
                         {observers.filter((obs: any) => (obs.milestone_ids ? obs.milestone_ids.includes(ms.id) : obs.milestoneId === ms.id)).map((obs: any) => {
@@ -714,7 +741,7 @@ const MilestoneWorkOrderPanel = ({
                           return (
                             <div key={obs.id || obs.observer_email} className="flex items-center gap-2 flex-wrap">
                               <span>{obs.observer_name} ({obs.observer_email})</span>
-                              {link && (
+                              {link && !isAdmin && (
                                 <Button size="sm" variant="ghost" className="h-6 px-2" onClick={async () => { await navigator.clipboard.writeText(link); toast.success("Observer link copied"); }}>
                                   <Copy className="w-3 h-3 mr-1" /> Copy Link
                                 </Button>
@@ -725,17 +752,28 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* Note */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-medium flex items-center gap-1">
-                        <StickyNote className="w-3 h-3" /> Note
-                      </label>
-                      <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
-                      <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
-                    </div>
+                    {/* Note — admin sees read-only */}
+                    {isAdmin ? (
+                      ms.description && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium flex items-center gap-1">
+                            <StickyNote className="w-3 h-3" /> Notes
+                          </label>
+                          <p className="text-[11px] text-muted-foreground bg-muted/30 rounded p-2">{ms.description}</p>
+                        </div>
+                      )
+                    ) : (
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium flex items-center gap-1">
+                          <StickyNote className="w-3 h-3" /> Note
+                        </label>
+                        <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
+                        <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
+                      </div>
+                    )}
 
-                    {/* Document Type Selector + Upload */}
-                    {(() => {
+                    {/* Document Type Selector + Upload (not for admin) */}
+                    {!isAdmin && (() => {
                       const allDocs = [...requiredDocs, ...optionalDocs];
                       if (allDocs.length > 0) {
                         return (
@@ -755,7 +793,7 @@ const MilestoneWorkOrderPanel = ({
                       return null;
                     })()}
 
-                    {isTestnet ? (
+                    {!isAdmin && (isTestnet ? (
                       <Button size="sm" variant="outline" className="text-xs" onClick={() => {
                         const name = `Evidence-${ms.title.replace(/\s/g, "_")}-${Date.now()}.pdf`;
                         onTestnetAddDocument?.(ms.id, { name, url: `testnet://mock/${name}` });
@@ -783,12 +821,47 @@ const MilestoneWorkOrderPanel = ({
                           })();
                         }}
                       />
-                    )}
+                    ))}
 
                     {/* Offline guidance */}
                     {layoutMode === "offline" && ms.status === "pending" && (
                       <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground">
                         💼 This step happens offline. Once completed, confirm digitally below.
+                      </div>
+                    )}
+
+                    {/* ── Admin Status Summary ── */}
+                    {isAdmin && (
+                      <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-1.5">
+                        <p className="text-[10px] font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Admin View</p>
+                        <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Vendor:</span>
+                            {vendorFulfilled
+                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Fulfilled ✅</Badge>
+                              : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Pending ⏳</Badge>
+                            }
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Buyer:</span>
+                            {buyerReleased
+                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Released ✅</Badge>
+                              : vendorFulfilled
+                                ? <Badge variant="outline" className="text-[8px] h-4 border-accent/30 text-accent">Action Required ⏳</Badge>
+                                : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Waiting —</Badge>
+                            }
+                          </div>
+                        </div>
+                        {isDisputed && (
+                          <div className="flex items-center gap-1 text-destructive text-[10px] font-medium mt-1">
+                            <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
+                          </div>
+                        )}
+                        {ms.is_payment_milestone && (
+                          <p className="text-[9px] text-muted-foreground">
+                            💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -814,6 +887,14 @@ const MilestoneWorkOrderPanel = ({
                         </div>
                       )}
 
+                      {/* Buyer: waiting for vendor */}
+                      {role === "buyer" && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          Waiting for vendor to fulfill this milestone before you can review and release.
+                        </div>
+                      )}
+
                       {canBuyerRelease && (
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
@@ -833,12 +914,12 @@ const MilestoneWorkOrderPanel = ({
 
                       {/* Secondary actions row */}
                       <div className="flex gap-2 flex-wrap">
-                        {ms.status === "pending" && !fundsAreLocked && (
+                        {!isAdmin && ms.status === "pending" && !fundsAreLocked && (
                           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive text-xs" onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}>
                             <Trash2 className="w-3 h-3 mr-1" /> Remove
                           </Button>
                         )}
-                        {ms.status === "pending" && fundsAreLocked && (
+                        {!isAdmin && ms.status === "pending" && fundsAreLocked && (
                           <Button size="sm" variant="ghost" className="text-muted-foreground text-xs" onClick={() => toast.info("Use milestone negotiation or contact admin for amendments.")}>
                             <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
                           </Button>

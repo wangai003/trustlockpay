@@ -284,7 +284,7 @@ const AdminTransactions = () => {
                                 <OrderStepGuide status={tx.status} role="admin" industry={tx.industry} />
                                 {/* Blueprint now integrated into MilestoneWorkOrderPanel header */}
                                 <MilestoneWorkOrderPanel
-                                  role="buyer"
+                                  role="admin"
                                   txId={tx.id}
                                   transactionId={tx.dbId}
                                   industry={tx.industry}
