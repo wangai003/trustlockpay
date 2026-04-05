@@ -18,9 +18,85 @@ Deno.serve(async (req) => {
     );
 
     const now = new Date();
-    const results = { reminders_sent: 0, subscriptions_expired: 0, grace_periods_started: 0 };
+    const results = {
+      reminders_sent: 0,
+      subscriptions_expired: 0,
+      grace_periods_started: 0,
+      widgets_disabled: 0,
+      inbox_messages_sent: 0,
+    };
 
-    // 1. Check subscriptions approaching expiry (7 days, 3 days, 1 day)
+    // ─── Helper: send notification + inbox message to vendor ───
+    async function notifyVendor(
+      vendorId: string,
+      title: string,
+      message: string,
+      type: string,
+      opts?: { is_action_required?: boolean; action_url?: string; entity_type?: string; entity_id?: string }
+    ) {
+      // 1. Notification
+      await supabase.from("notifications").insert({
+        user_id: vendorId,
+        title,
+        message,
+        type,
+        is_action_required: opts?.is_action_required || false,
+        action_url: opts?.action_url || null,
+        related_entity_type: opts?.entity_type || null,
+        related_entity_id: opts?.entity_id || null,
+      });
+
+      // 2. Automated inbox message via system thread
+      const systemSenderId = "00000000-0000-0000-0000-000000000000";
+      // Find or create a system billing thread for this vendor
+      let threadId: string | null = null;
+      const { data: existingThread } = await supabase
+        .from("message_threads")
+        .select("id")
+        .eq("participant_1", systemSenderId)
+        .eq("participant_2", vendorId)
+        .eq("category", "billing")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingThread) {
+        threadId = existingThread.id;
+      } else {
+        const { data: newThread } = await supabase
+          .from("message_threads")
+          .insert({
+            participant_1: systemSenderId,
+            participant_2: vendorId,
+            category: "billing",
+            subject: "Billing & Account Notifications",
+            status: "open",
+            case_status: "active",
+          })
+          .select("id")
+          .single();
+        threadId = newThread?.id || null;
+      }
+
+      if (threadId) {
+        await supabase.from("messages").insert({
+          thread_id: threadId,
+          sender_id: systemSenderId,
+          body: `**${title}**\n\n${message}`,
+          is_read: false,
+        });
+        await supabase
+          .from("message_threads")
+          .update({ last_message_at: now.toISOString() })
+          .eq("id", threadId);
+        results.inbox_messages_sent++;
+      }
+
+      results.reminders_sent++;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 1. Subscription Expiry Reminders (7, 3, 1 days)
+    // ═══════════════════════════════════════════════════════════
     const { data: subs } = await supabase
       .from("vendor_subscriptions")
       .select("*")
@@ -31,53 +107,52 @@ Deno.serve(async (req) => {
       const expires = new Date(sub.expires_at);
       const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Send reminders at 7, 3, and 1 day marks
       if ([7, 3, 1].includes(daysLeft)) {
-        await supabase.from("notifications").insert({
-          user_id: sub.vendor_id,
-          title: daysLeft === 1
-            ? "⚠️ Plan Expires Tomorrow"
-            : `📅 Plan Expires in ${daysLeft} Days`,
-          message: daysLeft === 1
-            ? `Your ${sub.plan_id} plan expires tomorrow. Renew now to avoid losing access to premium features.`
-            : `Your ${sub.plan_id} plan expires in ${daysLeft} days. Renew via Plans & Pricing to avoid falling back to Basic.`,
-          type: daysLeft <= 3 ? "warning" : "info",
-          is_action_required: daysLeft <= 3,
-          action_url: "/trustlock/vendor/pricing",
-          related_entity_type: "subscription",
-          related_entity_id: sub.id,
-        });
-        results.reminders_sent++;
+        await notifyVendor(
+          sub.vendor_id,
+          daysLeft === 1 ? "⚠️ Plan Expires Tomorrow" : `📅 Plan Expires in ${daysLeft} Days`,
+          daysLeft === 1
+            ? `Your ${sub.plan_id} plan expires tomorrow. Renew now to avoid losing the ability to receive new orders. Go to Plans & Pricing to renew.`
+            : `Your ${sub.plan_id} plan expires in ${daysLeft} days. Renew via Plans & Pricing to avoid falling back to Basic and losing the ability to accept new orders.`,
+          daysLeft <= 3 ? "warning" : "info",
+          {
+            is_action_required: daysLeft <= 3,
+            action_url: "/trustlock/vendor/pricing",
+            entity_type: "subscription",
+            entity_id: sub.id,
+          }
+        );
       }
 
-      // Expire subscription and start 7-day grace period
+      // Expire subscription → start 7-day grace period
       if (daysLeft <= 0) {
         const graceEnd = new Date(now);
         graceEnd.setDate(graceEnd.getDate() + 7);
 
         await supabase
           .from("vendor_subscriptions")
-          .update({
-            status: "grace_period",
-            grace_ends_at: graceEnd.toISOString(),
-          })
+          .update({ status: "grace_period", grace_ends_at: graceEnd.toISOString() })
           .eq("id", sub.id);
 
-        await supabase.from("notifications").insert({
-          user_id: sub.vendor_id,
-          title: "🔴 Plan Expired — 7 Day Grace Period",
-          message: `Your ${sub.plan_id} plan has expired. You have 7 days to renew before your account reverts to Basic. All your data is preserved.`,
-          type: "warning",
-          is_action_required: true,
-          action_url: "/trustlock/vendor/pricing",
-          related_entity_type: "subscription",
-          related_entity_id: sub.id,
-        });
+        await notifyVendor(
+          sub.vendor_id,
+          "🔴 Plan Expired — 7 Day Grace Period",
+          `Your ${sub.plan_id} plan has expired. You have 7 days to renew before your account reverts to Basic and new orders will be blocked. All your data is preserved. Go to Plans & Pricing to renew immediately.`,
+          "warning",
+          {
+            is_action_required: true,
+            action_url: "/trustlock/vendor/pricing",
+            entity_type: "subscription",
+            entity_id: sub.id,
+          }
+        );
         results.grace_periods_started++;
       }
     }
 
-    // 2. Check grace periods that have ended → expire fully
+    // ═══════════════════════════════════════════════════════════
+    // 2. Grace Periods Ended → Fully Expired (orders blocked)
+    // ═══════════════════════════════════════════════════════════
     const { data: graceSubs } = await supabase
       .from("vendor_subscriptions")
       .select("*")
@@ -90,20 +165,24 @@ Deno.serve(async (req) => {
         .update({ status: "expired" })
         .eq("id", sub.id);
 
-      await supabase.from("notifications").insert({
-        user_id: sub.vendor_id,
-        title: "❌ Plan Fully Expired — Basic Mode Active",
-        message: `Your grace period has ended. Your account is now on the Basic plan (max 15 orders/month). Upgrade anytime to restore full features.`,
-        type: "warning",
-        is_action_required: true,
-        action_url: "/trustlock/vendor/pricing",
-        related_entity_type: "subscription",
-        related_entity_id: sub.id,
-      });
+      await notifyVendor(
+        sub.vendor_id,
+        "❌ Plan Fully Expired — New Orders Blocked",
+        `Your grace period has ended. Your account is now on the Basic plan. New checkout orders through your widget will be blocked until you renew your plan. Your existing orders and payouts continue to process normally. Go to Plans & Pricing to upgrade and start receiving orders again.`,
+        "warning",
+        {
+          is_action_required: true,
+          action_url: "/trustlock/vendor/pricing",
+          entity_type: "subscription",
+          entity_id: sub.id,
+        }
+      );
       results.subscriptions_expired++;
     }
 
-    // 3. Check unpaid widget bills (past due date)
+    // ═══════════════════════════════════════════════════════════
+    // 3. Overdue Bills — Reminders + Enforcement Warnings
+    // ═══════════════════════════════════════════════════════════
     const { data: overdueBills } = await supabase
       .from("vendor_bills")
       .select("*")
@@ -115,38 +194,95 @@ Deno.serve(async (req) => {
         .from("vendor_bills")
         .update({ status: "overdue" })
         .eq("id", bill.id);
+    }
 
-      // Send reminder if not sent in last 3 days
+    // Send reminders for all overdue bills
+    const { data: allOverdue } = await supabase
+      .from("vendor_bills")
+      .select("*")
+      .eq("status", "overdue");
+
+    for (const bill of allOverdue || []) {
       const lastReminder = bill.reminder_sent_at ? new Date(bill.reminder_sent_at) : null;
       const daysSinceReminder = lastReminder
         ? Math.ceil((now.getTime() - lastReminder.getTime()) / (1000 * 60 * 60 * 24))
         : 999;
 
       if (daysSinceReminder >= 3 && bill.reminder_count < 5) {
-        await supabase.from("notifications").insert({
-          user_id: bill.vendor_id,
-          title: "💳 Overdue Bill — Action Required",
-          message: `You have an overdue ${bill.bill_type === "widget_install" ? "widget installation" : bill.bill_type} bill of $${Number(bill.amount).toFixed(2)}. ${bill.description || ""}`,
-          type: "warning",
-          is_action_required: true,
-          action_url: "/trustlock/vendor/bill-payments",
-          related_entity_type: "bill",
-          related_entity_id: bill.id,
-        });
+        const dueDate = new Date(bill.due_date);
+        const daysOverdue = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        let enforcementWarning = "";
+        if (daysOverdue >= 5 && daysOverdue < 7) {
+          enforcementWarning = "\n\n⚠️ If this bill remains unpaid for 7+ days, new order intake will be blocked.";
+        } else if (daysOverdue >= 7 && bill.bill_type.includes("widget")) {
+          enforcementWarning = "\n\n🚫 New orders through your checkout are currently blocked due to this overdue bill. Pay now to resume.";
+        }
+        if (bill.bill_type.includes("widget") && daysOverdue >= 12) {
+          enforcementWarning += "\n\n⛔ Your widget will be auto-disabled in " + (14 - daysOverdue) + " day(s) if this bill remains unpaid.";
+        }
+
+        await notifyVendor(
+          bill.vendor_id,
+          "💳 Overdue Bill — Action Required",
+          `You have an overdue ${bill.bill_type === "widget_install" ? "widget installation" : bill.bill_type} bill of $${Number(bill.amount).toFixed(2)}. ${bill.description || ""}${enforcementWarning}\n\nPay now via Bill Payments to avoid service disruption.`,
+          "warning",
+          {
+            is_action_required: true,
+            action_url: "/trustlock/vendor/bill-payments",
+            entity_type: "bill",
+            entity_id: bill.id,
+          }
+        );
 
         await supabase
           .from("vendor_bills")
-          .update({
-            reminder_sent_at: now.toISOString(),
-            reminder_count: bill.reminder_count + 1,
-          })
+          .update({ reminder_sent_at: now.toISOString(), reminder_count: bill.reminder_count + 1 })
           .eq("id", bill.id);
-
-        results.reminders_sent++;
       }
     }
 
-    // 4. Check pending widget bills approaching due date (3 days, 1 day)
+    // ═══════════════════════════════════════════════════════════
+    // 4. Widget Auto-Disable: unpaid widget bills >14 days
+    // ═══════════════════════════════════════════════════════════
+    const fourteenDaysAgo = new Date(now);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const { data: widgetBillsToDisable } = await supabase
+      .from("vendor_bills")
+      .select("*")
+      .eq("status", "overdue")
+      .in("bill_type", ["widget_install", "widget_restore"])
+      .lt("due_date", fourteenDaysAgo.toISOString());
+
+    for (const bill of widgetBillsToDisable || []) {
+      if (bill.site_id) {
+        // Disable the widget
+        await supabase
+          .from("vendor_widget_fees")
+          .update({ widget_state: "disabled" })
+          .eq("vendor_id", bill.vendor_id)
+          .eq("site_id", bill.site_id);
+
+        await notifyVendor(
+          bill.vendor_id,
+          "⛔ Widget Disabled — Unpaid Bill",
+          `Your checkout widget has been disabled because the $${Number(bill.amount).toFixed(2)} installation fee has been overdue for more than 14 days. Your widget will no longer appear on your site and cannot accept orders. Pay the outstanding bill in Bill Payments to re-enable your widget.`,
+          "warning",
+          {
+            is_action_required: true,
+            action_url: "/trustlock/vendor/bill-payments",
+            entity_type: "bill",
+            entity_id: bill.id,
+          }
+        );
+        results.widgets_disabled++;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 5. Upcoming Bill Reminders (3 days, 1 day)
+    // ═══════════════════════════════════════════════════════════
     const threeDaysFromNow = new Date(now);
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
 
@@ -161,35 +297,24 @@ Deno.serve(async (req) => {
       const dueDate = new Date(bill.due_date);
       const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Only send if not recently reminded
       const lastReminder = bill.reminder_sent_at ? new Date(bill.reminder_sent_at) : null;
       const daysSinceReminder = lastReminder
         ? Math.ceil((now.getTime() - lastReminder.getTime()) / (1000 * 60 * 60 * 24))
         : 999;
 
       if (daysSinceReminder >= 2) {
-        await supabase.from("notifications").insert({
-          user_id: bill.vendor_id,
-          title: daysUntilDue <= 1
-            ? "⏰ Bill Due Tomorrow"
-            : `📅 Bill Due in ${daysUntilDue} Days`,
-          message: `Your ${bill.bill_type === "widget_install" ? "widget installation" : bill.bill_type} bill of $${Number(bill.amount).toFixed(2)} is due ${daysUntilDue <= 1 ? "tomorrow" : `in ${daysUntilDue} days`}.`,
-          type: "info",
-          is_action_required: false,
-          action_url: "/trustlock/vendor/bill-payments",
-          related_entity_type: "bill",
-          related_entity_id: bill.id,
-        });
+        await notifyVendor(
+          bill.vendor_id,
+          daysUntilDue <= 1 ? "⏰ Bill Due Tomorrow" : `📅 Bill Due in ${daysUntilDue} Days`,
+          `Your ${bill.bill_type === "widget_install" ? "widget installation" : bill.bill_type} bill of $${Number(bill.amount).toFixed(2)} is due ${daysUntilDue <= 1 ? "tomorrow" : `in ${daysUntilDue} days`}. Pay early to avoid any service disruption.`,
+          "info",
+          { action_url: "/trustlock/vendor/bill-payments", entity_type: "bill", entity_id: bill.id }
+        );
 
         await supabase
           .from("vendor_bills")
-          .update({
-            reminder_sent_at: now.toISOString(),
-            reminder_count: bill.reminder_count + 1,
-          })
+          .update({ reminder_sent_at: now.toISOString(), reminder_count: bill.reminder_count + 1 })
           .eq("id", bill.id);
-
-        results.reminders_sent++;
       }
     }
 
