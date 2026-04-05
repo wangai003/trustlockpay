@@ -409,7 +409,8 @@ const VendorSites = () => {
         <div className="grid gap-4">
           {allSites.map((site, siteIdx) => {
             const isWidgetEnabled = siteWidgetStates[site.id] ?? false;
-            const isDeleted = widgetState.widgetState === "deleted";
+            const siteWS = getSiteWidgetState(site.id);
+            const isDeleted = siteWS.widgetState === "deleted";
             const isNoCheckoutPlatform = NO_CHECKOUT_PLATFORMS.includes(site.platform || "");
             const row = siteIdx + 1;
             return (
