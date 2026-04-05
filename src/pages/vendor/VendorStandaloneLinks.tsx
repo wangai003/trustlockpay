@@ -197,6 +197,22 @@ const VendorStandaloneLinks = () => {
     <div>
       <VendorHeader title="Standalone Payment Links" />
       <div className="p-3 sm:p-6 space-y-6 max-w-4xl mx-auto">
+        {/* Enforcement banner */}
+        {enforcement?.blocked && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="p-4 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+              <div className="text-xs">
+                <p className="font-semibold text-destructive">Account Restricted</p>
+                <p className="text-muted-foreground mt-1">{enforcement.reason} You cannot create or activate standalone links until resolved.</p>
+                <Button size="sm" variant="outline" className="mt-2 text-xs" onClick={() => navigate("/trustlock/vendor/bill-payments")}>
+                  View Bills
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Info banner */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-start gap-3">
