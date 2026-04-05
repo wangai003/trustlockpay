@@ -712,6 +712,13 @@ const MilestoneWorkOrderPanel = ({
                     {/* ── Document Gate Checklist ── */}
                     {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
                       <div className="rounded-md border border-border p-2 space-y-2">
+                        {/* Auto-satisfied notice */}
+                        {gateStatus.autoSatisfied.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                            <Unlock className="w-3 h-3 shrink-0" />
+                            <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved — escrow already funded</span>
+                          </div>
+                        )}
                         {requiredDocs.length > 0 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-semibold flex items-center gap-1">
