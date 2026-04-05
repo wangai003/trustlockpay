@@ -1448,6 +1448,62 @@ export type Database = {
         }
         Relationships: []
       }
+      offline_reconciliations: {
+        Row: {
+          confirmed_by_buyer: boolean
+          confirmed_by_vendor: boolean
+          created_at: string
+          evidence_note: string | null
+          evidence_url: string | null
+          id: string
+          milestone_index: number
+          milestone_name: string
+          proposed_by: string
+          proposed_by_role: string
+          status: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_by_buyer?: boolean
+          confirmed_by_vendor?: boolean
+          created_at?: string
+          evidence_note?: string | null
+          evidence_url?: string | null
+          id?: string
+          milestone_index: number
+          milestone_name: string
+          proposed_by: string
+          proposed_by_role?: string
+          status?: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_by_buyer?: boolean
+          confirmed_by_vendor?: boolean
+          created_at?: string
+          evidence_note?: string | null
+          evidence_url?: string | null
+          id?: string
+          milestone_index?: number
+          milestone_name?: string
+          proposed_by?: string
+          proposed_by_role?: string
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offline_reconciliations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_carbon_copies: {
         Row: {
           admin_activated: boolean | null

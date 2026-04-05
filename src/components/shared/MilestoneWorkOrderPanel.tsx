@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -362,6 +363,8 @@ const MilestoneWorkOrderPanel = ({
   const [pendingRestoreMilestone, setPendingRestoreMilestone] = useState<{ id: string; title: string } | null>(null);
   const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [reconciliationComplete, setReconciliationComplete] = useState(false);
+  const [skippedMilestoneIndices, setSkippedMilestoneIndices] = useState<number[]>([]);
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
@@ -500,6 +503,47 @@ const MilestoneWorkOrderPanel = ({
     );
   }
   if (milestones.length === 0) return null;
+
+  // ── Offline Reconciliation Gate ──
+  // Show before the work order activates when funds are first locked
+  const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+  const reconciliationTemplates = INDUSTRY_MILESTONES[indKey]
+    || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
+    || null;
+
+  if (
+    !isAdmin &&
+    fundsAreLocked &&
+    !reconciliationComplete &&
+    reconciliationTemplates &&
+    reconciliationTemplates.length > 1 &&
+    layoutMode !== "single"
+  ) {
+    return (
+      <TLId code={`TL-${rolePrefix}-WO-RECONCILIATION`}>
+        <OfflineReconciliation
+          role={role}
+          transactionId={transactionId}
+          txId={txId}
+          industry={industry}
+          milestoneTemplates={reconciliationTemplates.map(t => ({
+            name: t.name,
+            percentage: t.percentage,
+            documents: t.documents,
+            description: t.description,
+          }))}
+          onReconciliationComplete={(skipped) => {
+            setSkippedMilestoneIndices(skipped);
+            setReconciliationComplete(true);
+            if (skipped.length > 0) {
+              toast.success(`Work order adjusted — ${skipped.length} milestone(s) marked as completed offline`);
+            }
+          }}
+          isTestnet={isTestnet}
+        />
+      </TLId>
+    );
+  }
 
   return (
     <>
