@@ -19,6 +19,7 @@ import TeamTemplateManager from "@/components/shared/TeamTemplateManager";
 import WorkspaceChat from "@/components/shared/WorkspaceChat";
 import TeamBulkImport from "@/components/shared/TeamBulkImport";
 import TeamTaskCard, { type TaskAssignment } from "@/components/shared/TeamTaskCard";
+import TeamCompletionSummary from "@/components/shared/TeamCompletionSummary";
 import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib/offlineQueue";
 import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, MessageSquare, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -197,10 +198,17 @@ const BuyerTeams = () => {
 
   const updateWorkspaceStatus = async (status: string) => {
     if (!selectedWs) return;
-    const update: any = { status, updated_at: new Date().toISOString() };
-    if (status === "archived") update.archived_at = new Date().toISOString();
-    await supabase.from("team_workspaces").update(update).eq("id", selectedWs.id);
-    toast.success(`Work order marked as ${status}`); setConfirmAction(null); setSelectedWs(null); fetchWorkspaces();
+    const closeStatus = status === "dissolved" ? "dissolved" : "complete";
+    const { error } = await supabase.functions.invoke("manage-teams", {
+      body: { action: "close_workspace", workspace_id: selectedWs.id, close_status: closeStatus },
+    });
+    if (error) {
+      const update: any = { status, updated_at: new Date().toISOString() };
+      if (status === "archived") update.archived_at = new Date().toISOString();
+      await supabase.from("team_workspaces").update(update).eq("id", selectedWs.id);
+    }
+    toast.success(`Work order ${closeStatus === "complete" ? "finalized" : "dissolved"}! All members notified.`);
+    setConfirmAction(null); setSelectedWs(null); fetchWorkspaces();
   };
 
   const activeWs = workspaces.filter((w) => w.status === "active");
@@ -338,6 +346,14 @@ const BuyerTeams = () => {
                 )}
               </CardContent>
             </Card>
+            {/* Post-completion summary */}
+            <TeamCompletionSummary
+              tasks={tasks}
+              workspaceId={selectedWs.id}
+              workspaceTitle={selectedWs.title}
+              isOwner={isOwner}
+              onClose={() => { setSelectedWs(null); fetchWorkspaces(); }}
+            />
           </TabsContent>
 
           {isOwner && (

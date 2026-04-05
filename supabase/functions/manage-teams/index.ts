@@ -311,6 +311,69 @@ Deno.serve(async (req) => {
       return json({ matched: matchingWs.length, assigned: totalAssigned });
     }
 
+    // ── Close workspace: notify all members, archive ──
+    if (action === "close_workspace") {
+      const { workspace_id, close_status } = body;
+      if (!workspace_id) return json({ error: "workspace_id required" }, 400);
+      const finalStatus = close_status === "dissolved" ? "dissolved" : "complete";
+
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id, title, transaction_id")
+        .eq("id", workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Only team lead can close" }, 403);
+
+      // Update workspace status
+      await supabase.from("team_workspaces").update({
+        status: finalStatus,
+        updated_at: new Date().toISOString(),
+        ...(finalStatus === "complete" ? {} : { archived_at: new Date().toISOString() }),
+      }).eq("id", workspace_id);
+
+      // Get all members to notify
+      const { data: allMembers } = await supabase
+        .from("team_members").select("user_id, display_name")
+        .eq("workspace_id", workspace_id).is("removed_at", null);
+
+      const statusLabel = finalStatus === "complete" ? "completed" : "dissolved";
+      if (allMembers && allMembers.length > 0) {
+        const notifications = allMembers
+          .filter((m: any) => m.user_id !== user.id)
+          .map((m: any) => ({
+            user_id: m.user_id,
+            title: finalStatus === "complete" ? "✅ Work Order Completed" : "🔴 Work Order Dissolved",
+            message: `"${ws.title}" has been ${statusLabel} by the team lead. ${finalStatus === "complete" ? "All tasks have been finalized." : "This workspace is no longer active."}`,
+            type: finalStatus === "complete" ? "info" : "warning",
+          }));
+        if (notifications.length > 0) {
+          await supabase.from("notifications").insert(notifications);
+        }
+      }
+
+      // If linked to a transaction, notify the counterparty
+      if (ws.transaction_id && finalStatus === "complete") {
+        const { data: wsRole } = await supabase
+          .from("team_workspaces").select("role").eq("id", workspace_id).single();
+        const { data: tx } = await supabase
+          .from("transactions").select("buyer_id, vendor_id").eq("id", ws.transaction_id).single();
+        if (tx) {
+          const notifyId = wsRole?.role === "vendor" ? tx.buyer_id : tx.vendor_id;
+          if (notifyId) {
+            await supabase.from("notifications").insert({
+              user_id: notifyId,
+              title: "📋 Team Work Complete",
+              message: `The team handling "${ws.title}" has marked all work as complete. Review the milestones on your work order.`,
+              type: "info",
+              is_action_required: true,
+              related_entity_type: "transaction",
+              related_entity_id: ws.transaction_id,
+            });
+          }
+        }
+      }
+
+      return json({ success: true, status: finalStatus, notified: allMembers?.length || 0 });
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
