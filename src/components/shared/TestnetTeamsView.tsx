@@ -16,10 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle,
   ClipboardList, RotateCcw, Upload, Clock, Shield, FileText, Activity,
-  Hash, Eye
+  Hash, Eye, MessageSquare, Copy, Link, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
