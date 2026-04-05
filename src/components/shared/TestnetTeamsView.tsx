@@ -317,9 +317,53 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                   </Button>
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Invite Code Section */}
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold flex items-center gap-1"><Link className="w-3 h-3" /> Team Invite Code</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Share this code with team members. They sign up as {role}, then join this workspace using this code.
+                      </p>
+                      <code className="text-sm font-mono font-bold text-primary mt-1 block">
+                        {inviteCodes[selectedWs.id] || (() => {
+                          const prefix = selectedWs.industry.slice(0, 3).toUpperCase();
+                          const code = `TL-INV-${prefix}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+                          setInviteCodes(prev => {
+                            const updated = { ...prev, [selectedWs.id]: code };
+                            localStorage.setItem("tl_testnet_invite_codes", JSON.stringify(updated));
+                            return updated;
+                          });
+                          return code;
+                        })()}
+                      </code>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => {
+                      const code = inviteCodes[selectedWs.id] || "";
+                      navigator.clipboard.writeText(code);
+                      setInviteCopied(true);
+                      setTimeout(() => setInviteCopied(false), 2000);
+                      toast.success("Invite code copied!");
+                    }}>
+                      {inviteCopied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {inviteCopied ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                  <div className="mt-2 p-2 rounded bg-muted/50 border border-border">
+                    <p className="text-[10px] text-muted-foreground font-medium">How members join:</p>
+                    <ol className="text-[10px] text-muted-foreground mt-1 space-y-0.5 list-decimal pl-3">
+                      <li>Member creates account via {role === "vendor" ? "Vendor" : "Buyer"} Signup</li>
+                      <li>Member navigates to Teams → "Join Workspace"</li>
+                      <li>Member enters invite code: <strong>{inviteCodes[selectedWs.id]}</strong></li>
+                      <li>Team Lead approves and assigns role + tasks</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Team Structure */}
                 {members.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No members added yet.</p>
+                  <p className="text-sm text-muted-foreground">No members added yet. Share the invite code above or click "Add Member" to get started.</p>
                 ) : (
                   <div className="space-y-2">
                     {members.map(m => {
@@ -354,6 +398,72 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Chat Tab ── */}
+          <TabsContent value="chat">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Workspace Chat
+                  <Badge variant="secondary" className="text-[10px]">{selectedWs.order_number}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px] sm:h-[400px] pr-3">
+                  <div className="space-y-3">
+                    {(chatMessages[selectedWs.id] || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start the conversation below.</p>
+                    ) : (
+                      (chatMessages[selectedWs.id] || []).map(msg => {
+                        const isTeamLead = msg.sender === "Team Lead";
+                        return (
+                          <div key={msg.id} className={cn("flex flex-col max-w-[85%]", isTeamLead ? "ml-auto items-end" : "items-start")}>
+                            <div className={cn(
+                              "p-3 rounded-lg text-sm",
+                              isTeamLead ? "bg-primary text-primary-foreground" : "bg-muted border border-border"
+                            )}>
+                              {!isTeamLead && <p className="text-xs font-semibold mb-1">{msg.sender}</p>}
+                              <p>{msg.body}</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{formatTime(msg.timestamp)}</p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {selectedWs.status === "active" && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                    <Input
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      placeholder="Type a message to your team..."
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && chatInput.trim()) {
+                          const newMsg: ChatMsg = { id: `cm-${Date.now()}`, sender: "Team Lead", body: chatInput.trim(), timestamp: new Date().toISOString() };
+                          const updated = { ...chatMessages, [selectedWs.id]: [...(chatMessages[selectedWs.id] || []), newMsg] };
+                          setChatMessages(updated);
+                          localStorage.setItem("tl_testnet_team_chat", JSON.stringify(updated));
+                          setChatInput("");
+                        }
+                      }}
+                    />
+                    <Button size="icon" disabled={!chatInput.trim()} onClick={() => {
+                      if (!chatInput.trim()) return;
+                      const newMsg: ChatMsg = { id: `cm-${Date.now()}`, sender: "Team Lead", body: chatInput.trim(), timestamp: new Date().toISOString() };
+                      const updated = { ...chatMessages, [selectedWs.id]: [...(chatMessages[selectedWs.id] || []), newMsg] };
+                      setChatMessages(updated);
+                      localStorage.setItem("tl_testnet_team_chat", JSON.stringify(updated));
+                      setChatInput("");
+                    }}>
+                      <Send className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </CardContent>
