@@ -238,6 +238,17 @@ const BuyerTeams = () => {
   if (selectedWs) {
     const visibleTasks = isOwner ? tasks : tasks.filter((t) => myMembership && t.member_id === myMembership.id);
 
+    const generateInviteCode = async () => {
+      const { data, error } = await supabase.functions.invoke("manage-teams", {
+        body: { action: "generate_invite_code", workspace_id: selectedWs.id },
+      });
+      if (error) return toast.error("Failed to generate code");
+      if (data?.invite_code) {
+        setSelectedWs({ ...selectedWs, invite_code: data.invite_code });
+        toast.success("Invite code generated!");
+      }
+    };
+
     return (
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
         <OfflineBanner />
@@ -260,6 +271,24 @@ const BuyerTeams = () => {
               <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ type: "dissolve", id: selectedWs.id, label: "Dissolve Work Order" })}><XCircle className="w-4 h-4 mr-1" /> Dissolve</Button>
             </div>
           )}
+        </div>
+
+        {/* Invite Code — visible to everyone */}
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex-1">
+            <p className="text-xs font-semibold">Team Invite Code</p>
+            <p className="text-[11px] text-muted-foreground">Share this code with team members so they can join this workspace.</p>
+            {selectedWs.invite_code ? (
+              <code className="text-sm font-mono font-bold text-primary mt-1 block">{selectedWs.invite_code}</code>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">No invite code yet.</p>
+            )}
+          </div>
+          {selectedWs.invite_code ? (
+            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(selectedWs.invite_code || ""); toast.success("Invite code copied!"); }}>Copy</Button>
+          ) : isOwner ? (
+            <Button size="sm" onClick={generateInviteCode}>Generate Code</Button>
+          ) : null}
         </div>
 
         <Tabs defaultValue="tasks" className="space-y-4">
@@ -301,7 +330,8 @@ const BuyerTeams = () => {
                       return (
                         <TeamTaskCard key={t.id} task={t} index={i} isOwner={isOwner} isMyTask={isMyTask}
                           canComplete={canComplete} allPriorDone={allPriorDone} member={member}
-                          workspaceId={selectedWs.id} onRefresh={() => fetchTasks(selectedWs.id)} />
+                          workspaceId={selectedWs.id} onRefresh={() => fetchTasks(selectedWs.id)}
+                          allMembers={members} />
                       );
                     })}
                   </div>
