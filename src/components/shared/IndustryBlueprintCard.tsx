@@ -48,7 +48,7 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
     { name: "Delivery", percentage: 15, documents: ["Acceptance Form"], documentMode: "required", description: "Released", requiresObserver: false },
   ],
   "logistics": [
-    { name: "LC / Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "LC opened", requiresObserver: true },
+    { name: "Trade Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "Agreement signed", requiresObserver: true },
     { name: "Origin Inspection", percentage: 15, documents: ["Inspection Cert"], documentMode: "required", description: "Inspected", requiresObserver: true },
     { name: "Export Customs", percentage: 15, documents: ["Export License"], documentMode: "required", description: "Cleared", requiresObserver: true },
     { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true },

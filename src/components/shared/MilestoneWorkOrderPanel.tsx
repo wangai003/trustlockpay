@@ -154,7 +154,7 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
     { name: "Delivery", percentage: 15, documents: ["Acceptance Form"], documentMode: "required", description: "Released", requiresObserver: false, owner: "buyer", buyerAction: "Accept & Sign Off", documentOwners: { "Acceptance Form": "buyer" } },
   ],
   "logistics": [
-    { name: "LC / Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "LC opened", requiresObserver: true, owner: "buyer", buyerAction: "Issue Letter of Credit", documentOwners: { "Trade Contract": "buyer" } },
+    { name: "Trade Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "Agreement signed", requiresObserver: true, owner: "buyer", buyerAction: "Sign Trade Agreement", documentOwners: { "Trade Contract": "buyer" } },
     { name: "Origin Inspection", percentage: 15, documents: ["Inspection Cert"], documentMode: "required", description: "Inspected", requiresObserver: true, owner: "vendor", vendorAction: "Submit Inspection", documentOwners: { "Inspection Cert": "vendor" } },
     { name: "Export Customs", percentage: 15, documents: ["Export License"], documentMode: "required", description: "Cleared", requiresObserver: true, owner: "vendor", vendorAction: "Clear Export", documentOwners: { "Export License": "vendor" } },
     { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Shipping", documentOwners: { "Bill of Lading": "vendor" } },
@@ -182,7 +182,7 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
     { name: "Certification", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certified", requiresObserver: false, owner: "vendor", vendorAction: "Issue Certificate", documentOwners: { "Certificate": "vendor" } },
   ],
   "oil-gas": [
-    { name: "Contract & LC", percentage: 5, documents: ["Trade Contract", "LC Copy"], documentMode: "required", description: "Agreement signed", requiresObserver: true, owner: "both", vendorAction: "Sign Contract", buyerAction: "Issue LC", documentOwners: { "Trade Contract": "either", "LC Copy": "buyer" } },
+    { name: "Contract & PO", percentage: 5, documents: ["Trade Contract", "Purchase Order"], documentMode: "required", description: "Agreement signed", requiresObserver: true, owner: "both", vendorAction: "Sign Contract", buyerAction: "Confirm Purchase Order", documentOwners: { "Trade Contract": "either", "Purchase Order": "buyer" } },
     { name: "Pre-Shipment Inspection", percentage: 15, documents: ["SGS/Intertek Report"], documentMode: "required", description: "Quality verified", requiresObserver: true, owner: "vendor", vendorAction: "Submit SGS Report", documentOwners: { "SGS/Intertek Report": "vendor" } },
     { name: "Loading", percentage: 20, documents: ["Bill of Lading", "Certificate of Origin"], documentMode: "required", description: "Loaded at terminal", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Loading", documentOwners: { "Bill of Lading": "vendor", "Certificate of Origin": "vendor" } },
     { name: "In Transit", percentage: 20, documents: ["Insurance Cert"], documentMode: "required", description: "Vessel tracking", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Vessel Departure", documentOwners: { "Insurance Cert": "vendor" } },
@@ -207,17 +207,9 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-/* ─── Pre-payment instruments that are auto-satisfied when escrow is funded ─── */
-const PRE_PAYMENT_DOCS = new Set([
-  "lc copy", "lc", "letter of credit", "trade contract",
-  "bank guarantee", "standby lc", "payment guarantee",
-  "proforma invoice", "purchase order",
-]);
-
-const isPrePaymentDoc = (doc: string): boolean => {
-  const d = doc.toLowerCase();
-  return PRE_PAYMENT_DOCS.has(d) || d.includes("letter of credit") || d.includes(" lc");
-};
+/* ─── Note: All pre-payment instruments (LC, bank guarantees) have been removed.
+   TrustLock escrow replaces traditional payment guarantees — funds are always locked before
+   the work order begins. No document gate bypass logic is needed. ─── */
 
 const getUploadedKeys = (ms: any): Set<string> => {
   const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
@@ -248,27 +240,11 @@ const getDocGateStatus = (ms: any, escrowFunded = false) => {
     return false;
   };
 
-  // Auto-satisfy pre-payment docs when escrow is funded
-  const autoSatisfied: string[] = [];
-  const missingRequired = requiredDocs.filter((doc) => {
-    if (checkDoc(doc)) return false;
-    if (escrowFunded && isPrePaymentDoc(doc)) {
-      autoSatisfied.push(doc);
-      return false; // treated as satisfied
-    }
-    return true;
-  });
-  const missingOptional = optionalDocs.filter((doc) => {
-    if (checkDoc(doc)) return false;
-    if (escrowFunded && isPrePaymentDoc(doc)) {
-      autoSatisfied.push(doc);
-      return false;
-    }
-    return true;
-  });
+  const missingRequired = requiredDocs.filter((doc) => !checkDoc(doc));
+  const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
   const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
 
-  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied };
+  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied: [] as string[] };
 };
 
 /* ─── Progress Stepper ─── */

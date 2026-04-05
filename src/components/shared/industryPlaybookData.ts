@@ -55,14 +55,14 @@ export const industries: IndustryEntry[] = [
     desc: "High-compliance escrow for gold, diamonds, and mineral exports with assay verification.",
     stages: ["Mining License & Contract Upload", "Assay Report & Certification", "Export License Verification", "Customs Declaration & Inspection", "Logistics & Chain-of-Custody", "Destination Arrival & Re-Assay", "Final Settlement with Observer Sign-Off"],
     buyerCaps: ["Verify assay reports before purchase", "Track chain-of-custody documentation", "Dispute based on re-assay discrepancy", "Bank-level observer sign-off required", "Access Kimberley Process certificates", "Escrow holdback until destination verification"],
-    vendorCaps: ["Escrow-protected mineral sales", "Upload mining licenses and permits", "Chain-of-custody documentation trail", "Letter of Credit (LC) workflow support", "Multi-stage payout with holdback", "Compliance dashboard for export tracking"],
+    vendorCaps: ["Escrow-protected mineral sales", "Upload mining licenses and permits", "Chain-of-custody documentation trail", "Escrow-backed payment guarantee", "Multi-stage payout with holdback", "Compliance dashboard for export tracking"],
   },
   {
     id: "energy", name: "Energy / Oil & Gas", icon: Fuel, color: "text-yellow-700",
     desc: "Upstream, midstream, and downstream oil & gas services including equipment procurement, drilling, and petrochemical exports.",
-    stages: ["Contract & LC / PO Upload", "Equipment Inspection at Origin", "Export License & NNPC/Regulatory Clearance", "Shipping & Freight Documentation", "Import Customs & Duty Settlement", "Installation & Commissioning", "Final Acceptance & Payout"],
+    stages: ["Contract & PO Upload", "Equipment Inspection at Origin", "Export License & NNPC/Regulatory Clearance", "Shipping & Freight Documentation", "Import Customs & Duty Settlement", "Installation & Commissioning", "Final Acceptance & Payout"],
     buyerCaps: ["Track equipment from origin to installation", "Verify API compliance certificates", "Observer sign-off from commissioning engineers", "Dispute based on performance test failures", "Access HSE documentation", "Escrow holdback until commissioning complete"],
-    vendorCaps: ["Milestone-based payments for large projects", "Upload API/IOGP compliance docs", "LC replacement workflow", "Multi-phase drilling project support", "Insurance verification gates", "Equipment warranty escrow"],
+    vendorCaps: ["Milestone-based payments for large projects", "Upload API/IOGP compliance docs", "Escrow-backed payment guarantee", "Multi-phase drilling project support", "Insurance verification gates", "Equipment warranty escrow"],
   },
   {
     id: "pharmaceuticals", name: "Pharmaceuticals & Healthcare", icon: Pill, color: "text-red-600",
@@ -186,10 +186,10 @@ export const industries: IndustryEntry[] = [
   },
   {
     id: "logistics", name: "Logistics & Cross-Border Trade", icon: Ship, color: "text-teal-600",
-    desc: "End-to-end escrow for import/export with customs documentation and LC support.",
-    stages: ["Trade Agreement & LC Issuance", "Goods Inspection at Origin", "Export Customs & Documentation", "Shipping & Bill of Lading", "Import Customs & Duty Payment", "Destination Inspection", "Final Settlement"],
-    buyerCaps: ["Track shipment across borders", "Verify customs documentation", "Bank observer sign-off at LC stages", "Access bill of lading copies", "Tariff and duty calculation preview", "Multi-currency escrow holding"],
-    vendorCaps: ["Letter of Credit workflow support", "Upload export documentation", "Staged payout per shipping milestone", "Customs broker integration", "Multi-destination order management", "Trade finance documentation"],
+    desc: "End-to-end escrow for import/export with customs documentation and trade compliance.",
+    stages: ["Trade Agreement", "Goods Inspection at Origin", "Export Customs & Documentation", "Shipping & Bill of Lading", "Import Customs & Duty Payment", "Destination Inspection", "Final Settlement"],
+    buyerCaps: ["Track shipment across borders", "Verify customs documentation", "Observer sign-off at trade stages", "Access bill of lading copies", "Tariff and duty calculation preview", "Multi-currency escrow holding"],
+    vendorCaps: ["Escrow-backed payment guarantee", "Upload export documentation", "Staged payout per shipping milestone", "Customs broker integration", "Multi-destination order management", "Trade finance documentation"],
   },
   {
     id: "education", name: "Education & Training", icon: GraduationCap, color: "text-rose-600",
@@ -241,7 +241,7 @@ export const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Delivery & Fund Release", percentage: 15, documents: ["Delivery Receipt", "Buyer Acceptance Form"], documentMode: "required", description: "Physical delivery confirmed, escrow funds released", requiresObserver: false },
   ],
   "energy": [
-    { name: "Contract & LC / PO Upload", percentage: 5, documents: ["Service Contract", "Purchase Order", "LC (if applicable)"], documentMode: "required", description: "Trade agreement and financial instrument uploaded and co-signed", requiresObserver: false },
+    { name: "Contract & PO Upload", percentage: 5, documents: ["Service Contract", "Purchase Order"], documentMode: "required", description: "Trade agreement and purchase order uploaded and co-signed", requiresObserver: false },
     { name: "Equipment Inspection at Origin", percentage: 10, documents: ["Equipment Inspection Report", "Manufacturer Certificate", "API Compliance Certificate"], documentMode: "required", description: "Third-party inspection of equipment or materials before dispatch", requiresObserver: true },
     { name: "Export License & Regulatory Clearance", percentage: 10, documents: ["Export License", "NNPC Approval", "Environmental Impact Assessment"], documentMode: "required", description: "Government and regulatory body clearance for export", requiresObserver: true },
     { name: "Shipping & Freight Documentation", percentage: 20, documents: ["Bill of Lading", "Marine Insurance Certificate", "Dangerous Goods Declaration"], documentMode: "required", description: "Goods dispatched with full freight documentation", requiresObserver: true },
@@ -397,7 +397,7 @@ export const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Final Delivery & Sign-Off", percentage: 30, documents: ["Final Deliverable", "Acceptance Sign-off"], documentMode: "required", description: "Approved final work product, escrow released", requiresObserver: false },
   ],
   "logistics": [
-    { name: "LC Issuance / Trade Agreement", percentage: 5, documents: ["Letter of Credit", "Trade Contract"], documentMode: "required", description: "Issuing bank opens the LC or trade agreement signed", requiresObserver: true },
+    { name: "Trade Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "Trade agreement signed by both parties", requiresObserver: true },
     { name: "Origin Inspection", percentage: 15, documents: ["Inspection Certificate", "Quality Report"], documentMode: "required", description: "Goods inspected at origin", requiresObserver: true },
     { name: "Export Customs", percentage: 15, documents: ["Customs Declaration", "Export License"], documentMode: "required", description: "Origin country customs clearance", requiresObserver: true },
     { name: "In Transit", percentage: 25, documents: ["Bill of Lading", "Insurance Certificate", "GPS Tracking"], documentMode: "required", description: "Goods in transit via sea, air, or road freight", requiresObserver: true },
