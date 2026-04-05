@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
       grace_periods_started: 0,
       widgets_disabled: 0,
       inbox_messages_sent: 0,
+      renewal_bills_generated: 0,
     };
 
     // ─── Helper: send notification + inbox message to vendor ───
