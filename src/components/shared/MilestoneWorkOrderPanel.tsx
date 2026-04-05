@@ -244,7 +244,7 @@ const getDocGateStatus = (ms: any, escrowFunded = false) => {
   const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
   const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
 
-  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied };
+  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied: [] as string[] };
 };
 
 /* ─── Progress Stepper ─── */
