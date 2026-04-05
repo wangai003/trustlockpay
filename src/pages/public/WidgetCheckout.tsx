@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight } from "lucide-react";
+import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
-import MilestonePaymentSchedule, { type ScheduleItem } from "@/components/shared/MilestonePaymentSchedule";
+import MilestonePaymentSchedule, { type ScheduleItem, type CounterProposalContact } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
@@ -28,7 +28,7 @@ const WidgetCheckout = () => {
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
 
-  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked">("loading");
+  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
@@ -248,9 +248,26 @@ const WidgetCheckout = () => {
                     setScheduleAccepted(true);
                     toast.success("Payment schedule accepted — proceed to payment");
                   }}
-                  onCounterPropose={(schedule) => {
-                    toast.info("Counter-proposal submitted. The vendor will be notified to review your suggested percentages.");
-                    // In production this would create a negotiation record
+                  onCounterPropose={async (schedule, contact) => {
+                    try {
+                      await supabase.from("milestone_counter_proposals").insert({
+                        vendor_id: vendorId,
+                        site_id: siteId || null,
+                        industry: vendor.industry,
+                        order_item: form.item,
+                        order_amount: parseFloat(form.amount || "0"),
+                        buyer_full_name: contact.fullName,
+                        buyer_email: contact.email,
+                        buyer_phone: contact.phone || null,
+                        buyer_country_code: contact.countryCode,
+                        vendor_schedule: milestoneSchedule as any,
+                        proposed_schedule: schedule as any,
+                      } as any);
+                      setStep("counter_submitted");
+                      toast.success("Counter-proposal submitted!");
+                    } catch {
+                      toast.error("Failed to submit counter-proposal. Please try again.");
+                    }
                   }}
                 />
               )}
@@ -456,6 +473,40 @@ const WidgetCheckout = () => {
                 <p className="text-[10px] text-muted-foreground">
                   No payment has been charged. Escrow protection will activate automatically once you accept the vendor's quote and proceed to payment.
                 </p>
+              </div>
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>
+                  Close
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Counter-proposal submitted confirmation */}
+        {step === "counter_submitted" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Handshake className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Counter-Proposal Submitted!</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your proposed milestone percentages have been sent to <strong>{vendor.name}</strong> for review.
+                  They will contact you via email or phone once they've reviewed your proposal.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                <p className="text-[10px] text-muted-foreground">
+                  <strong>What happens next?</strong>
+                </p>
+                <ul className="text-[10px] text-muted-foreground space-y-0.5 text-left list-disc list-inside">
+                  <li>The vendor reviews your proposed schedule</li>
+                  <li>If agreed, you'll receive a separate payment link with the locked schedule</li>
+                  <li>If they counter, they'll reach out to negotiate further</li>
+                  <li>No payment is charged until both parties agree</li>
+                </ul>
               </div>
               {isEmbed && (
                 <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>

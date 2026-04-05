@@ -1353,6 +1353,69 @@ export type Database = {
           },
         ]
       }
+      milestone_counter_proposals: {
+        Row: {
+          buyer_country_code: string | null
+          buyer_email: string
+          buyer_full_name: string
+          buyer_phone: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          order_amount: number | null
+          order_item: string | null
+          proposal_number: string
+          proposed_schedule: Json
+          site_id: string | null
+          standalone_link_id: string | null
+          status: string
+          updated_at: string
+          vendor_id: string
+          vendor_notes: string | null
+          vendor_schedule: Json
+        }
+        Insert: {
+          buyer_country_code?: string | null
+          buyer_email: string
+          buyer_full_name: string
+          buyer_phone?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          order_amount?: number | null
+          order_item?: string | null
+          proposal_number?: string
+          proposed_schedule?: Json
+          site_id?: string | null
+          standalone_link_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id: string
+          vendor_notes?: string | null
+          vendor_schedule?: Json
+        }
+        Update: {
+          buyer_country_code?: string | null
+          buyer_email?: string
+          buyer_full_name?: string
+          buyer_phone?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          order_amount?: number | null
+          order_item?: string | null
+          proposal_number?: string
+          proposed_schedule?: Json
+          site_id?: string | null
+          standalone_link_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id?: string
+          vendor_notes?: string | null
+          vendor_schedule?: Json
+        }
+        Relationships: []
+      }
       milestone_negotiations: {
         Row: {
           agreed_at: string | null

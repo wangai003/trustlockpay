@@ -3,11 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  CheckCircle2, AlertTriangle, Percent, Lock, PenLine, Handshake, ArrowRight,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  CheckCircle2, AlertTriangle, Percent, Lock, PenLine, Handshake,
+  ArrowRight, Phone, Mail, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { COUNTRY_CODES } from "@/lib/countryCodes";
 
 export interface ScheduleItem {
   name: string;
@@ -15,24 +21,23 @@ export interface ScheduleItem {
   description: string;
 }
 
+export interface CounterProposalContact {
+  fullName: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+}
+
 interface MilestonePaymentScheduleProps {
   industry: string;
   orderAmount: number;
-  /** Vendor-preset defaults from industry template or widget config */
   defaultSchedule: ScheduleItem[];
-  /** When buyer accepts the schedule, fire this with the final schedule */
   onAccept: (schedule: ScheduleItem[]) => void;
-  /** If buyer wants to counter-propose (async negotiation) */
-  onCounterPropose?: (schedule: ScheduleItem[]) => void;
+  onCounterPropose?: (schedule: ScheduleItem[], contact: CounterProposalContact) => void;
   vendorName?: string;
   readOnly?: boolean;
 }
 
-/**
- * Pre-escrow step shown during checkout for milestone industries.
- * Buyer reviews the vendor's proposed payout percentages per milestone
- * and can accept or request edits before payment.
- */
 const MilestonePaymentSchedule = ({
   industry,
   orderAmount,
@@ -44,20 +49,22 @@ const MilestonePaymentSchedule = ({
 }: MilestonePaymentScheduleProps) => {
   const [schedule, setSchedule] = useState<ScheduleItem[]>(defaultSchedule);
   const [editing, setEditing] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contact, setContact] = useState<CounterProposalContact>({
+    fullName: "", email: "", phone: "", countryCode: "+1",
+  });
 
   const totalPct = useMemo(() => schedule.reduce((s, m) => s + (m.percentage || 0), 0), [schedule]);
   const isValid = totalPct === 100;
+  const contactValid = contact.fullName.trim().length > 0 && contact.email.trim().length > 0;
 
   const updatePct = (idx: number, val: number) => {
     setSchedule(prev => prev.map((item, i) => i === idx ? { ...item, percentage: val } : item));
   };
 
-  const handleAccept = () => {
-    if (editing) {
-      // Buyer edited — this is a counter-proposal
-      onCounterPropose?.(schedule);
-    } else {
-      onAccept(schedule);
+  const handleSubmitCounter = () => {
+    if (isValid && contactValid) {
+      onCounterPropose?.(schedule, contact);
     }
   };
 
@@ -126,7 +133,7 @@ const MilestonePaymentSchedule = ({
           <>
             <Separator />
 
-            {!editing ? (
+            {!editing && !showContactForm ? (
               <div className="space-y-2">
                 <Button onClick={() => onAccept(schedule)} className="w-full gap-2 text-xs" size="sm">
                   <Handshake className="h-3.5 w-3.5" />
@@ -144,10 +151,10 @@ const MilestonePaymentSchedule = ({
                   </Button>
                 )}
               </div>
-            ) : (
+            ) : editing && !showContactForm ? (
               <div className="space-y-2">
                 <p className="text-[10px] text-muted-foreground text-center">
-                  Adjust percentages to your preference. Total must equal 100%. Submitting sends a counter-proposal to {vendorName} for approval.
+                  Adjust percentages to your preference. Total must equal 100%.
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -165,14 +172,103 @@ const MilestonePaymentSchedule = ({
                     size="sm"
                     className="flex-1 gap-1.5 text-xs"
                     disabled={!isValid}
-                    onClick={handleAccept}
+                    onClick={() => setShowContactForm(true)}
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
-                    {isValid ? "Submit Counter-Proposal" : `Must equal 100% (${totalPct}%)`}
+                    {isValid ? "Continue" : `Must equal 100% (${totalPct}%)`}
                   </Button>
                 </div>
               </div>
-            )}
+            ) : showContactForm ? (
+              /* ─── Contact capture before counter-proposal submission ─── */
+              <div className="space-y-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <div className="text-center">
+                  <p className="text-xs font-semibold">Your Contact Details</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {vendorName} needs your details to review and respond to your counter-proposal. You'll receive a separate payment link once agreed.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] flex items-center gap-1">
+                      <User className="h-3 w-3" /> Full Name *
+                    </Label>
+                    <Input
+                      placeholder="Jane Mensah"
+                      value={contact.fullName}
+                      onChange={e => setContact(p => ({ ...p, fullName: e.target.value }))}
+                      required
+                      className="h-8 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> Email Address *
+                    </Label>
+                    <Input
+                      type="email"
+                      placeholder="jane@example.com"
+                      value={contact.email}
+                      onChange={e => setContact(p => ({ ...p, email: e.target.value }))}
+                      required
+                      className="h-8 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] flex items-center gap-1">
+                      <Phone className="h-3 w-3" /> Phone Number
+                    </Label>
+                    <div className="flex gap-1.5">
+                      <Select value={contact.countryCode} onValueChange={v => setContact(p => ({ ...p, countryCode: v }))}>
+                        <SelectTrigger className="w-[100px] h-8 text-[10px] shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-56">
+                          {COUNTRY_CODES.map(c => (
+                            <SelectItem key={c.code} value={c.code} className="text-xs">
+                              {c.code} {c.country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="555 123 4567"
+                        value={contact.phone}
+                        onChange={e => setContact(p => ({ ...p, phone: e.target.value }))}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => setShowContactForm(false)}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 gap-1.5 text-xs"
+                    disabled={!contactValid}
+                    onClick={handleSubmitCounter}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    Submit Counter-Proposal
+                  </Button>
+                </div>
+
+                <p className="text-[9px] text-muted-foreground text-center">
+                  No payment is charged now. {vendorName} will review your proposal and send a payment link if agreed.
+                </p>
+              </div>
+            ) : null}
 
             <p className="text-[9px] text-muted-foreground text-center">
               <Lock className="h-3 w-3 inline mr-0.5" />
