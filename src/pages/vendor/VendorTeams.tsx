@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendor } from "@/contexts/VendorContext";
@@ -56,6 +57,7 @@ const VendorTeams = () => {
   const { user } = useAuth();
   const { isTestnet } = useVendor();
   const testnet = useTestnetTeams("vendor");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -112,6 +114,16 @@ const VendorTeams = () => {
   }, []);
 
   useEffect(() => { if (user?.id) fetchWorkspaces(); }, [user?.id]);
+
+  // Auto-open join dialog if ?join=CODE in URL
+  useEffect(() => {
+    const joinParam = searchParams.get("join");
+    if (joinParam && user?.id) {
+      setJoinCode(joinParam);
+      setShowJoin(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, user?.id]);
 
   const fetchWorkspaces = async () => {
     setLoading(true);
@@ -287,21 +299,38 @@ const VendorTeams = () => {
         </div>
 
         {/* Invite Code — visible to everyone */}
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
-          <div className="flex-1">
-            <p className="text-xs font-semibold">Team Invite Code</p>
-            <p className="text-[11px] text-muted-foreground">Share this code with team members so they can join this workspace.</p>
+        <div className="flex flex-col gap-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-xs font-semibold">Team Invite Code</p>
+              <p className="text-[11px] text-muted-foreground">Share the code or link with team members so they can join.</p>
+              {selectedWs.invite_code ? (
+                <code className="text-sm font-mono font-bold text-primary mt-1 block">{selectedWs.invite_code}</code>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">No invite code yet.</p>
+              )}
+            </div>
             {selectedWs.invite_code ? (
-              <code className="text-sm font-mono font-bold text-primary mt-1 block">{selectedWs.invite_code}</code>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-1">No invite code yet.</p>
-            )}
+              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(selectedWs.invite_code || ""); toast.success("Invite code copied!"); }}>Copy Code</Button>
+            ) : isOwner ? (
+              <Button size="sm" onClick={generateInviteCode}>Generate Code</Button>
+            ) : null}
           </div>
-          {selectedWs.invite_code ? (
-            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(selectedWs.invite_code || ""); toast.success("Invite code copied!"); }}>Copy</Button>
-          ) : isOwner ? (
-            <Button size="sm" onClick={generateInviteCode}>Generate Code</Button>
-          ) : null}
+          {selectedWs.invite_code && (
+            <div className="flex items-center gap-2 pt-1 border-t border-primary/10">
+              <Input
+                readOnly
+                value={`${window.location.origin}/vendor/teams?join=${selectedWs.invite_code}`}
+                className="h-7 text-[11px] font-mono bg-background flex-1"
+              />
+              <Button size="sm" variant="secondary" className="shrink-0 text-xs h-7 px-2" onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/vendor/teams?join=${selectedWs.invite_code}`);
+                toast.success("Invite link copied!");
+              }}>
+                Copy Link
+              </Button>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="tasks" className="space-y-4">

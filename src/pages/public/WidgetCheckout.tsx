@@ -26,7 +26,7 @@ const WidgetCheckout = () => {
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
 
-  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done">("loading");
+  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
@@ -60,7 +60,6 @@ const WidgetCheckout = () => {
         .maybeSingle();
 
       if (data) {
-        // Also try to get vendor name from profiles
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
@@ -72,6 +71,25 @@ const WidgetCheckout = () => {
           industry: data.industry_category || "general",
           currency: (data.supported_currencies as string[] | null)?.[0] || "USD",
         });
+
+        // Check vendor billing status (live mode only)
+        if (!isSandbox) {
+          const { data: sub } = await supabase
+            .from("vendor_subscriptions")
+            .select("status, grace_ends_at")
+            .eq("vendor_id", vendorId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (sub && (sub.status === "expired" || sub.status === "locked")) {
+            const graceEnd = sub.grace_ends_at ? new Date(sub.grace_ends_at) : null;
+            if (!graceEnd || new Date() > graceEnd) {
+              setStep("vendor_locked");
+              return;
+            }
+          }
+        }
       }
     } catch {
       // Use defaults
@@ -525,6 +543,30 @@ const WidgetCheckout = () => {
                 <Button variant="outline" size="sm" className="w-full text-xs" onClick={closeWidget}>
                   Close
                 </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "vendor_locked" && (
+          <Card className="border-amber-500/30">
+            <CardContent className="p-5 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">Vendor Temporarily Unavailable</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <strong>{vendor.name}</strong> is not currently accepting orders via TrustLock. Please contact the vendor directly or check back later.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2.5">
+                <p className="text-[10px] text-muted-foreground">
+                  Your funds are safe — TrustLock never processes payments through inactive vendors.
+                </p>
+              </div>
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>Close</Button>
               )}
             </CardContent>
           </Card>
