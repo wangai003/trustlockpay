@@ -483,6 +483,40 @@ const WidgetCheckout = () => {
           </Card>
         )}
 
+        {/* Counter-proposal submitted confirmation */}
+        {step === "counter_submitted" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Handshake className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Counter-Proposal Submitted!</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your proposed milestone percentages have been sent to <strong>{vendor.name}</strong> for review.
+                  They will contact you via email or phone once they've reviewed your proposal.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                <p className="text-[10px] text-muted-foreground">
+                  <strong>What happens next?</strong>
+                </p>
+                <ul className="text-[10px] text-muted-foreground space-y-0.5 text-left list-disc list-inside">
+                  <li>The vendor reviews your proposed schedule</li>
+                  <li>If agreed, you'll receive a separate payment link with the locked schedule</li>
+                  <li>If they counter, they'll reach out to negotiate further</li>
+                  <li>No payment is charged until both parties agree</li>
+                </ul>
+              </div>
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>
+                  Close
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {step === "processing" && (
           <Card>
             <CardContent className="p-8 text-center space-y-4">
