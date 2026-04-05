@@ -186,10 +186,10 @@ export const industries: IndustryEntry[] = [
   },
   {
     id: "logistics", name: "Logistics & Cross-Border Trade", icon: Ship, color: "text-teal-600",
-    desc: "End-to-end escrow for import/export with customs documentation and LC support.",
-    stages: ["Trade Agreement & LC Issuance", "Goods Inspection at Origin", "Export Customs & Documentation", "Shipping & Bill of Lading", "Import Customs & Duty Payment", "Destination Inspection", "Final Settlement"],
-    buyerCaps: ["Track shipment across borders", "Verify customs documentation", "Bank observer sign-off at LC stages", "Access bill of lading copies", "Tariff and duty calculation preview", "Multi-currency escrow holding"],
-    vendorCaps: ["Letter of Credit workflow support", "Upload export documentation", "Staged payout per shipping milestone", "Customs broker integration", "Multi-destination order management", "Trade finance documentation"],
+    desc: "End-to-end escrow for import/export with customs documentation and trade compliance.",
+    stages: ["Trade Agreement", "Goods Inspection at Origin", "Export Customs & Documentation", "Shipping & Bill of Lading", "Import Customs & Duty Payment", "Destination Inspection", "Final Settlement"],
+    buyerCaps: ["Track shipment across borders", "Verify customs documentation", "Observer sign-off at trade stages", "Access bill of lading copies", "Tariff and duty calculation preview", "Multi-currency escrow holding"],
+    vendorCaps: ["Escrow-backed payment guarantee", "Upload export documentation", "Staged payout per shipping milestone", "Customs broker integration", "Multi-destination order management", "Trade finance documentation"],
   },
   {
     id: "education", name: "Education & Training", icon: GraduationCap, color: "text-rose-600",
