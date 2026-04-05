@@ -110,92 +110,100 @@ interface MilestoneTemplate {
   name: string; percentage: number; documents: string[];
   documentMode: "none" | "optional" | "required";
   description: string; requiresObserver: boolean;
+  /** Who drives this step: vendor fulfills, buyer confirms, or both must act */
+  owner: "vendor" | "buyer" | "both";
+  /** Industry-specific label for the primary action button */
+  vendorAction?: string;
+  /** Industry-specific label for the buyer release/confirm button */
+  buyerAction?: string;
+  /** Maps each document to who is responsible for uploading it */
+  documentOwners?: Record<string, "vendor" | "buyer" | "either">;
 }
 
 const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   "construction": [
-    { name: "Contract Upload", percentage: 5, documents: ["Construction Contract"], documentMode: "required", description: "Both parties sign the contract", requiresObserver: false },
-    { name: "Foundation Inspection", percentage: 15, documents: ["Inspection Report", "Soil Test"], documentMode: "required", description: "Inspector verifies foundation", requiresObserver: true },
-    { name: "Structural Phase", percentage: 25, documents: ["Engineer Report"], documentMode: "required", description: "Walls, roofing completed", requiresObserver: true },
-    { name: "MEP Verification", percentage: 20, documents: ["Electrical Cert", "Plumbing Report"], documentMode: "required", description: "Systems verified", requiresObserver: true },
-    { name: "Walkthrough", percentage: 15, documents: ["Punch List"], documentMode: "optional", description: "Final inspection with buyer", requiresObserver: false },
-    { name: "Certificate of Occupancy", percentage: 10, documents: ["Occupancy Certificate"], documentMode: "required", description: "Government cert obtained", requiresObserver: true },
-    { name: "Final Release", percentage: 10, documents: [], documentMode: "none", description: "Escrow released", requiresObserver: false },
+    { name: "Contract Upload", percentage: 5, documents: ["Construction Contract"], documentMode: "required", description: "Both parties sign the contract", requiresObserver: false, owner: "both", vendorAction: "Upload Contract", buyerAction: "Countersign Contract", documentOwners: { "Construction Contract": "either" } },
+    { name: "Foundation Inspection", percentage: 15, documents: ["Inspection Report", "Soil Test"], documentMode: "required", description: "Inspector verifies foundation", requiresObserver: true, owner: "vendor", vendorAction: "Submit Inspection", documentOwners: { "Inspection Report": "vendor", "Soil Test": "vendor" } },
+    { name: "Structural Phase", percentage: 25, documents: ["Engineer Report"], documentMode: "required", description: "Walls, roofing completed", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Structural Complete", documentOwners: { "Engineer Report": "vendor" } },
+    { name: "MEP Verification", percentage: 20, documents: ["Electrical Cert", "Plumbing Report"], documentMode: "required", description: "Systems verified", requiresObserver: true, owner: "vendor", vendorAction: "Submit MEP Verification", documentOwners: { "Electrical Cert": "vendor", "Plumbing Report": "vendor" } },
+    { name: "Walkthrough", percentage: 15, documents: ["Punch List"], documentMode: "optional", description: "Final inspection with buyer", requiresObserver: false, owner: "both", vendorAction: "Schedule Walkthrough", buyerAction: "Approve Walkthrough", documentOwners: { "Punch List": "buyer" } },
+    { name: "Certificate of Occupancy", percentage: 10, documents: ["Occupancy Certificate"], documentMode: "required", description: "Government cert obtained", requiresObserver: true, owner: "vendor", vendorAction: "Submit Occupancy Cert", documentOwners: { "Occupancy Certificate": "vendor" } },
+    { name: "Final Release", percentage: 10, documents: [], documentMode: "none", description: "Escrow released", requiresObserver: false, owner: "buyer", buyerAction: "Approve & Release" },
   ],
   "real-estate": [
-    { name: "Due Diligence", percentage: 10, documents: ["Title Deed", "Survey"], documentMode: "required", description: "Legal review", requiresObserver: true },
-    { name: "Inspection", percentage: 15, documents: ["Inspection Report"], documentMode: "optional", description: "Property inspection", requiresObserver: false },
-    { name: "Appraisal", percentage: 15, documents: ["Appraisal Report"], documentMode: "required", description: "Property valuation", requiresObserver: true },
-    { name: "Closing", percentage: 60, documents: ["Transfer Agreement"], documentMode: "required", description: "Key handover", requiresObserver: true },
+    { name: "Due Diligence", percentage: 10, documents: ["Title Deed", "Survey"], documentMode: "required", description: "Legal review", requiresObserver: true, owner: "buyer", buyerAction: "Confirm Due Diligence", documentOwners: { "Title Deed": "vendor", "Survey": "buyer" } },
+    { name: "Inspection", percentage: 15, documents: ["Inspection Report"], documentMode: "optional", description: "Property inspection", requiresObserver: false, owner: "buyer", buyerAction: "Accept Inspection", documentOwners: { "Inspection Report": "buyer" } },
+    { name: "Appraisal", percentage: 15, documents: ["Appraisal Report"], documentMode: "required", description: "Property valuation", requiresObserver: true, owner: "both", vendorAction: "Submit Appraisal", buyerAction: "Accept Valuation", documentOwners: { "Appraisal Report": "vendor" } },
+    { name: "Closing", percentage: 60, documents: ["Transfer Agreement"], documentMode: "required", description: "Key handover", requiresObserver: true, owner: "both", vendorAction: "Execute Transfer", buyerAction: "Confirm Possession", documentOwners: { "Transfer Agreement": "either" } },
   ],
   "agriculture": [
-    { name: "Contract Signed", percentage: 10, documents: ["Purchase Contract"], documentMode: "required", description: "Trade agreement", requiresObserver: true },
-    { name: "Harvest & Assay", percentage: 15, documents: ["Quality Certificate"], documentMode: "required", description: "Quality testing", requiresObserver: true },
-    { name: "Packaging", percentage: 15, documents: ["Phytosanitary Cert"], documentMode: "required", description: "Export certified", requiresObserver: true },
-    { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true },
-    { name: "Customs", percentage: 15, documents: ["Customs Declaration"], documentMode: "required", description: "Cleared", requiresObserver: true },
-    { name: "Delivery", percentage: 20, documents: ["Delivery Receipt"], documentMode: "optional", description: "Accepted", requiresObserver: false },
+    { name: "Contract Signed", percentage: 10, documents: ["Purchase Contract"], documentMode: "required", description: "Trade agreement", requiresObserver: true, owner: "both", vendorAction: "Sign Trade Contract", buyerAction: "Countersign Contract", documentOwners: { "Purchase Contract": "either" } },
+    { name: "Harvest & Assay", percentage: 15, documents: ["Quality Certificate"], documentMode: "required", description: "Quality testing", requiresObserver: true, owner: "vendor", vendorAction: "Submit Assay Results", documentOwners: { "Quality Certificate": "vendor" } },
+    { name: "Packaging", percentage: 15, documents: ["Phytosanitary Cert"], documentMode: "required", description: "Export certified", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Packaging", documentOwners: { "Phytosanitary Cert": "vendor" } },
+    { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Shipment", documentOwners: { "Bill of Lading": "vendor" } },
+    { name: "Customs", percentage: 15, documents: ["Customs Declaration"], documentMode: "required", description: "Cleared", requiresObserver: true, owner: "vendor", vendorAction: "Submit Customs Clearance", documentOwners: { "Customs Declaration": "vendor" } },
+    { name: "Delivery", percentage: 20, documents: ["Delivery Receipt"], documentMode: "optional", description: "Accepted", requiresObserver: false, owner: "buyer", buyerAction: "Confirm Delivery Received", documentOwners: { "Delivery Receipt": "buyer" } },
   ],
   "mining": [
-    { name: "Assay & Cert", percentage: 10, documents: ["Assay Report"], documentMode: "required", description: "Purity certified", requiresObserver: true },
-    { name: "Export License", percentage: 5, documents: ["Export Permit"], documentMode: "required", description: "Authorized", requiresObserver: true },
-    { name: "Insurance", percentage: 10, documents: ["Insurance Cert"], documentMode: "required", description: "Insured & sealed", requiresObserver: false },
-    { name: "Customs (Origin)", percentage: 15, documents: ["AML Declaration"], documentMode: "required", description: "Origin clearance", requiresObserver: true },
-    { name: "Shipping", percentage: 25, documents: ["Air Waybill"], documentMode: "required", description: "In transit", requiresObserver: true },
-    { name: "Destination", percentage: 20, documents: ["Import Declaration"], documentMode: "required", description: "Dest. clearance", requiresObserver: true },
-    { name: "Delivery", percentage: 15, documents: ["Acceptance Form"], documentMode: "required", description: "Released", requiresObserver: false },
+    { name: "Assay & Cert", percentage: 10, documents: ["Assay Report"], documentMode: "required", description: "Purity certified", requiresObserver: true, owner: "vendor", vendorAction: "Submit Assay Report", documentOwners: { "Assay Report": "vendor" } },
+    { name: "Export License", percentage: 5, documents: ["Export Permit"], documentMode: "required", description: "Authorized", requiresObserver: true, owner: "vendor", vendorAction: "Upload Export License", documentOwners: { "Export Permit": "vendor" } },
+    { name: "Insurance", percentage: 10, documents: ["Insurance Cert"], documentMode: "required", description: "Insured & sealed", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Insurance", documentOwners: { "Insurance Cert": "vendor" } },
+    { name: "Customs (Origin)", percentage: 15, documents: ["AML Declaration"], documentMode: "required", description: "Origin clearance", requiresObserver: true, owner: "vendor", vendorAction: "Clear Origin Customs", documentOwners: { "AML Declaration": "vendor" } },
+    { name: "Shipping", percentage: 25, documents: ["Air Waybill"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Dispatch", documentOwners: { "Air Waybill": "vendor" } },
+    { name: "Destination", percentage: 20, documents: ["Import Declaration"], documentMode: "required", description: "Dest. clearance", requiresObserver: true, owner: "buyer", buyerAction: "Clear Import Customs", documentOwners: { "Import Declaration": "buyer" } },
+    { name: "Delivery", percentage: 15, documents: ["Acceptance Form"], documentMode: "required", description: "Released", requiresObserver: false, owner: "buyer", buyerAction: "Accept & Sign Off", documentOwners: { "Acceptance Form": "buyer" } },
   ],
   "logistics": [
-    { name: "LC / Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "LC opened", requiresObserver: true },
-    { name: "Origin Inspection", percentage: 15, documents: ["Inspection Cert"], documentMode: "required", description: "Inspected", requiresObserver: true },
-    { name: "Export Customs", percentage: 15, documents: ["Export License"], documentMode: "required", description: "Cleared", requiresObserver: true },
-    { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true },
-    { name: "Import Customs", percentage: 15, documents: ["Duty Receipt"], documentMode: "required", description: "Processed", requiresObserver: true },
-    { name: "Delivery", percentage: 10, documents: ["POD"], documentMode: "optional", description: "Delivered", requiresObserver: false },
-    { name: "Settlement", percentage: 15, documents: ["Payment Confirmation"], documentMode: "required", description: "Released", requiresObserver: true },
+    { name: "LC / Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "LC opened", requiresObserver: true, owner: "buyer", buyerAction: "Issue Letter of Credit", documentOwners: { "Trade Contract": "buyer" } },
+    { name: "Origin Inspection", percentage: 15, documents: ["Inspection Cert"], documentMode: "required", description: "Inspected", requiresObserver: true, owner: "vendor", vendorAction: "Submit Inspection", documentOwners: { "Inspection Cert": "vendor" } },
+    { name: "Export Customs", percentage: 15, documents: ["Export License"], documentMode: "required", description: "Cleared", requiresObserver: true, owner: "vendor", vendorAction: "Clear Export", documentOwners: { "Export License": "vendor" } },
+    { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Shipping", documentOwners: { "Bill of Lading": "vendor" } },
+    { name: "Import Customs", percentage: 15, documents: ["Duty Receipt"], documentMode: "required", description: "Processed", requiresObserver: true, owner: "buyer", buyerAction: "Clear Import Duties", documentOwners: { "Duty Receipt": "buyer" } },
+    { name: "Delivery", percentage: 10, documents: ["POD"], documentMode: "optional", description: "Delivered", requiresObserver: false, owner: "buyer", buyerAction: "Confirm Receipt", documentOwners: { "POD": "buyer" } },
+    { name: "Settlement", percentage: 15, documents: ["Payment Confirmation"], documentMode: "required", description: "Released", requiresObserver: true, owner: "buyer", buyerAction: "Approve Settlement" },
   ],
   "freelance": [
-    { name: "Scope", percentage: 20, documents: ["Scope Doc"], documentMode: "optional", description: "Requirements", requiresObserver: false },
-    { name: "Draft", percentage: 30, documents: ["Draft"], documentMode: "optional", description: "First delivery", requiresObserver: false },
-    { name: "Revision", percentage: 20, documents: [], documentMode: "none", description: "Feedback round", requiresObserver: false },
-    { name: "Final", percentage: 30, documents: ["Sign-off Form"], documentMode: "required", description: "Approved", requiresObserver: false },
+    { name: "Scope", percentage: 20, documents: ["Scope Doc"], documentMode: "optional", description: "Requirements", requiresObserver: false, owner: "both", vendorAction: "Submit Scope", buyerAction: "Approve Scope", documentOwners: { "Scope Doc": "vendor" } },
+    { name: "Draft", percentage: 30, documents: ["Draft"], documentMode: "optional", description: "First delivery", requiresObserver: false, owner: "vendor", vendorAction: "Submit Draft", documentOwners: { "Draft": "vendor" } },
+    { name: "Revision", percentage: 20, documents: [], documentMode: "none", description: "Feedback round", requiresObserver: false, owner: "both", vendorAction: "Submit Revision", buyerAction: "Approve Revision" },
+    { name: "Final", percentage: 30, documents: ["Sign-off Form"], documentMode: "required", description: "Approved", requiresObserver: false, owner: "buyer", buyerAction: "Sign Off & Release", documentOwners: { "Sign-off Form": "buyer" } },
   ],
   "ecommerce": [
-    { name: "Payment Locked", percentage: 100, documents: [], documentMode: "none", description: "Full escrow", requiresObserver: false },
+    { name: "Payment Locked", percentage: 100, documents: [], documentMode: "none", description: "Full escrow", requiresObserver: false, owner: "vendor", vendorAction: "Confirm & Ship Order" },
   ],
   "tourism": [
-    { name: "Booking", percentage: 50, documents: ["Booking Confirmation"], documentMode: "optional", description: "Reserved", requiresObserver: false },
-    { name: "Completed", percentage: 50, documents: [], documentMode: "none", description: "Service done", requiresObserver: false },
+    { name: "Booking", percentage: 50, documents: ["Booking Confirmation"], documentMode: "optional", description: "Reserved", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Booking", documentOwners: { "Booking Confirmation": "vendor" } },
+    { name: "Completed", percentage: 50, documents: [], documentMode: "none", description: "Service done", requiresObserver: false, owner: "buyer", buyerAction: "Confirm Service Completed" },
   ],
   "education": [
-    { name: "Enrollment", percentage: 25, documents: ["Enrollment Form"], documentMode: "optional", description: "Enrolled", requiresObserver: false },
-    { name: "Course Access", percentage: 25, documents: [], documentMode: "none", description: "Materials provided", requiresObserver: false },
-    { name: "Assessment", percentage: 25, documents: ["Results"], documentMode: "optional", description: "Assessed", requiresObserver: false },
-    { name: "Certification", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certified", requiresObserver: false },
+    { name: "Enrollment", percentage: 25, documents: ["Enrollment Form"], documentMode: "optional", description: "Enrolled", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Enrollment", documentOwners: { "Enrollment Form": "vendor" } },
+    { name: "Course Access", percentage: 25, documents: [], documentMode: "none", description: "Materials provided", requiresObserver: false, owner: "vendor", vendorAction: "Grant Access" },
+    { name: "Assessment", percentage: 25, documents: ["Results"], documentMode: "optional", description: "Assessed", requiresObserver: false, owner: "vendor", vendorAction: "Submit Results", documentOwners: { "Results": "vendor" } },
+    { name: "Certification", percentage: 25, documents: ["Certificate"], documentMode: "required", description: "Certified", requiresObserver: false, owner: "vendor", vendorAction: "Issue Certificate", documentOwners: { "Certificate": "vendor" } },
   ],
   "oil-gas": [
-    { name: "Contract & LC", percentage: 5, documents: ["Trade Contract", "LC Copy"], documentMode: "required", description: "Agreement signed", requiresObserver: true },
-    { name: "Pre-Shipment Inspection", percentage: 15, documents: ["SGS/Intertek Report"], documentMode: "required", description: "Quality verified", requiresObserver: true },
-    { name: "Loading", percentage: 20, documents: ["Bill of Lading", "Certificate of Origin"], documentMode: "required", description: "Loaded at terminal", requiresObserver: true },
-    { name: "In Transit", percentage: 20, documents: ["Insurance Cert"], documentMode: "required", description: "Vessel tracking", requiresObserver: false },
-    { name: "Discharge", percentage: 20, documents: ["Discharge Report"], documentMode: "required", description: "Port arrival", requiresObserver: true },
-    { name: "Final Settlement", percentage: 20, documents: ["Final Invoice"], documentMode: "required", description: "Funds released", requiresObserver: true },
+    { name: "Contract & LC", percentage: 5, documents: ["Trade Contract", "LC Copy"], documentMode: "required", description: "Agreement signed", requiresObserver: true, owner: "both", vendorAction: "Sign Contract", buyerAction: "Issue LC", documentOwners: { "Trade Contract": "either", "LC Copy": "buyer" } },
+    { name: "Pre-Shipment Inspection", percentage: 15, documents: ["SGS/Intertek Report"], documentMode: "required", description: "Quality verified", requiresObserver: true, owner: "vendor", vendorAction: "Submit SGS Report", documentOwners: { "SGS/Intertek Report": "vendor" } },
+    { name: "Loading", percentage: 20, documents: ["Bill of Lading", "Certificate of Origin"], documentMode: "required", description: "Loaded at terminal", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Loading", documentOwners: { "Bill of Lading": "vendor", "Certificate of Origin": "vendor" } },
+    { name: "In Transit", percentage: 20, documents: ["Insurance Cert"], documentMode: "required", description: "Vessel tracking", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Vessel Departure", documentOwners: { "Insurance Cert": "vendor" } },
+    { name: "Discharge", percentage: 20, documents: ["Discharge Report"], documentMode: "required", description: "Port arrival", requiresObserver: true, owner: "buyer", buyerAction: "Confirm Discharge", documentOwners: { "Discharge Report": "buyer" } },
+    { name: "Final Settlement", percentage: 20, documents: ["Final Invoice"], documentMode: "required", description: "Funds released", requiresObserver: true, owner: "buyer", buyerAction: "Approve Final Settlement", documentOwners: { "Final Invoice": "vendor" } },
   ],
   "pharma": [
-    { name: "Order Confirmation", percentage: 10, documents: ["Purchase Order"], documentMode: "required", description: "Order placed", requiresObserver: false },
-    { name: "GMP Verification", percentage: 15, documents: ["GMP Certificate", "NAFDAC/WHO Approval"], documentMode: "required", description: "Quality certified", requiresObserver: true },
-    { name: "Cold Chain Packaging", percentage: 15, documents: ["Temperature Log"], documentMode: "required", description: "Packaged correctly", requiresObserver: true },
-    { name: "Shipping", percentage: 25, documents: ["Air Waybill", "Import Permit"], documentMode: "required", description: "In transit", requiresObserver: true },
-    { name: "Customs & Inspection", percentage: 20, documents: ["Customs Release"], documentMode: "required", description: "Cleared", requiresObserver: true },
-    { name: "Delivery & Acceptance", percentage: 15, documents: ["Delivery Receipt"], documentMode: "required", description: "Accepted", requiresObserver: false },
+    { name: "Order Confirmation", percentage: 10, documents: ["Purchase Order"], documentMode: "required", description: "Order placed", requiresObserver: false, owner: "buyer", buyerAction: "Confirm Purchase Order", documentOwners: { "Purchase Order": "buyer" } },
+    { name: "GMP Verification", percentage: 15, documents: ["GMP Certificate", "NAFDAC/WHO Approval"], documentMode: "required", description: "Quality certified", requiresObserver: true, owner: "vendor", vendorAction: "Submit GMP Cert", documentOwners: { "GMP Certificate": "vendor", "NAFDAC/WHO Approval": "vendor" } },
+    { name: "Cold Chain Packaging", percentage: 15, documents: ["Temperature Log"], documentMode: "required", description: "Packaged correctly", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Cold Chain", documentOwners: { "Temperature Log": "vendor" } },
+    { name: "Shipping", percentage: 25, documents: ["Air Waybill", "Import Permit"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Shipment", documentOwners: { "Air Waybill": "vendor", "Import Permit": "buyer" } },
+    { name: "Customs & Inspection", percentage: 20, documents: ["Customs Release"], documentMode: "required", description: "Cleared", requiresObserver: true, owner: "buyer", buyerAction: "Clear Customs", documentOwners: { "Customs Release": "buyer" } },
+    { name: "Delivery & Acceptance", percentage: 15, documents: ["Delivery Receipt"], documentMode: "required", description: "Accepted", requiresObserver: false, owner: "buyer", buyerAction: "Accept Delivery", documentOwners: { "Delivery Receipt": "buyer" } },
   ],
   "manufacturing": [
-    { name: "PO Confirmation", percentage: 10, documents: ["Purchase Order"], documentMode: "required", description: "Order confirmed", requiresObserver: false },
-    { name: "Production Start", percentage: 15, documents: ["Production Plan"], documentMode: "optional", description: "Manufacturing begins", requiresObserver: false },
-    { name: "QA Inspection", percentage: 20, documents: ["QA Report", "ISO Cert"], documentMode: "required", description: "Quality checked", requiresObserver: true },
-    { name: "Packaging & Shipping", percentage: 25, documents: ["Packing List", "Bill of Lading"], documentMode: "required", description: "Shipped", requiresObserver: false },
-    { name: "Delivery", percentage: 15, documents: ["Delivery Note"], documentMode: "optional", description: "Received", requiresObserver: false },
-    { name: "Final Acceptance", percentage: 15, documents: ["Acceptance Certificate"], documentMode: "required", description: "Approved", requiresObserver: true },
+    { name: "PO Confirmation", percentage: 10, documents: ["Purchase Order"], documentMode: "required", description: "Order confirmed", requiresObserver: false, owner: "buyer", buyerAction: "Issue Purchase Order", documentOwners: { "Purchase Order": "buyer" } },
+    { name: "Production Start", percentage: 15, documents: ["Production Plan"], documentMode: "optional", description: "Manufacturing begins", requiresObserver: false, owner: "vendor", vendorAction: "Begin Production", documentOwners: { "Production Plan": "vendor" } },
+    { name: "QA Inspection", percentage: 20, documents: ["QA Report", "ISO Cert"], documentMode: "required", description: "Quality checked", requiresObserver: true, owner: "vendor", vendorAction: "Submit QA Report", documentOwners: { "QA Report": "vendor", "ISO Cert": "vendor" } },
+    { name: "Packaging & Shipping", percentage: 25, documents: ["Packing List", "Bill of Lading"], documentMode: "required", description: "Shipped", requiresObserver: false, owner: "vendor", vendorAction: "Confirm Shipment", documentOwners: { "Packing List": "vendor", "Bill of Lading": "vendor" } },
+    { name: "Delivery", percentage: 15, documents: ["Delivery Note"], documentMode: "optional", description: "Received", requiresObserver: false, owner: "buyer", buyerAction: "Confirm Receipt", documentOwners: { "Delivery Note": "buyer" } },
+    { name: "Final Acceptance", percentage: 15, documents: ["Acceptance Certificate"], documentMode: "required", description: "Approved", requiresObserver: true, owner: "buyer", buyerAction: "Sign Acceptance", documentOwners: { "Acceptance Certificate": "buyer" } },
   ],
 };
 
@@ -529,9 +537,27 @@ const MilestoneWorkOrderPanel = ({
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
             const gateStatus = getDocGateStatus(ms);
-            const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
+
+            // Look up blueprint template for this milestone
+            const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+            const blueprint = INDUSTRY_MILESTONES[indKey]
+              || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
+              || null;
+            const template = blueprint?.[idx] || null;
+            const stepOwner = template?.owner || "vendor";
+            const docOwners = template?.documentOwners || {};
+
+            // Ownership-aware action logic
+            const isVendorStep = stepOwner === "vendor" || stepOwner === "both";
+            const isBuyerStep = stepOwner === "buyer" || stepOwner === "both";
+            const canVendorFulfill = role === "vendor" && isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
+            const canBuyerAct = role === "buyer" && isBuyerStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
             const canBuyerRelease = role === "buyer" && ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released;
             const hasObserver = !!ms.observer_id;
+
+            // Custom action labels from template
+            const vendorActionLabel = template?.vendorAction || (layoutMode === "offline" ? "Confirm Offline Step" : layoutMode === "single" ? "Confirm & Ship Order" : "Mark Fulfilled");
+            const buyerActionLabel = template?.buyerAction || "Confirm & Approve";
 
             // Counterparty status indicators
             const vendorFulfilled = ms.status === "completed" || ms.status === "released";
@@ -580,6 +606,16 @@ const MilestoneWorkOrderPanel = ({
                       {ms.is_payment_milestone && (
                         <Badge className="text-[8px] h-4 px-1 shrink-0">
                           {ms.payment_percentage || 100}%
+                        </Badge>
+                      )}
+                      {/* Step owner badge */}
+                      {!isDone && !isDeleted && (
+                        <Badge variant="outline" className={`text-[7px] h-3.5 px-1 shrink-0 ${
+                          stepOwner === "vendor" ? "border-primary/30 text-primary" :
+                          stepOwner === "buyer" ? "border-accent/30 text-accent" :
+                          "border-muted-foreground/30 text-muted-foreground"
+                        }`}>
+                          {stepOwner === "both" ? "Both" : stepOwner === "vendor" ? "Vendor" : "Buyer"}
                         </Badge>
                       )}
                     </div>
@@ -660,10 +696,14 @@ const MilestoneWorkOrderPanel = ({
                                 const uploadedKeys = getUploadedKeys(ms);
                                 const docLower = doc.toLowerCase();
                                 const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
+                                const owner = docOwners[doc] || "either";
                                 return (
                                   <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"}`}>
                                     {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
                                     {doc}
+                                    <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
+                                      ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
+                                    </span>
                                   </Badge>
                                 );
                               })}
@@ -857,11 +897,14 @@ const MilestoneWorkOrderPanel = ({
                             <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
                           </div>
                         )}
-                        {ms.is_payment_milestone && (
+                         {ms.is_payment_milestone && (
                           <p className="text-[9px] text-muted-foreground">
                             💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
                           </p>
                         )}
+                        <p className="text-[9px] text-muted-foreground">
+                          🎯 Step owned by: <span className="font-semibold capitalize">{stepOwner}</span>
+                        </p>
                       </div>
                     )}
 
@@ -876,7 +919,7 @@ const MilestoneWorkOrderPanel = ({
                             className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
                           >
                             <CheckCircle2 className="w-4 h-4 mr-2" />
-                            {layoutMode === "offline" ? "Confirm Offline Step" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
+                            {vendorActionLabel}
                           </Button>
                           {gateStatus.mode === "required" && !gateStatus.satisfied && (
                             <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
@@ -887,11 +930,40 @@ const MilestoneWorkOrderPanel = ({
                         </div>
                       )}
 
-                      {/* Buyer: waiting for vendor */}
-                      {role === "buyer" && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                      {/* Buyer-driven step fulfillment (when step owner is buyer/both) */}
+                      {canBuyerAct && !canBuyerRelease && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="default"
+                            onClick={() => handleMarkFulfilled(ms.id)}
+                            disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                            className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            {buyerActionLabel}
+                          </Button>
+                          {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                            <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Vendor: waiting message when step is buyer-owned */}
+                      {role === "vendor" && !isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted" && (
                         <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
                           <Lock className="w-3.5 h-3.5 shrink-0" />
-                          Waiting for vendor to fulfill this milestone before you can review and release.
+                          This step is buyer-driven. Waiting for buyer to complete: <span className="font-medium">{buyerActionLabel}</span>
+                        </div>
+                      )}
+
+                      {/* Buyer: waiting for vendor (only when step is vendor-owned) */}
+                      {role === "buyer" && !isBuyerStep && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          This step is vendor-driven. Waiting for vendor to complete: <span className="font-medium">{vendorActionLabel}</span>
                         </div>
                       )}
 
