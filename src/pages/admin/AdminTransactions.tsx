@@ -19,7 +19,7 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
-import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -282,7 +282,7 @@ const AdminTransactions = () => {
                                   <MilestoneProgress industry={tx.industry} status={tx.status} transactionId={tx.dbId} />
                                 </details>
                                 <OrderStepGuide status={tx.status} role="admin" industry={tx.industry} />
-                                <IndustryBlueprintCard industry={tx.industry} />
+                                {/* Blueprint now integrated into MilestoneWorkOrderPanel header */}
                                 <MilestoneWorkOrderPanel
                                   role="buyer"
                                   txId={tx.id}

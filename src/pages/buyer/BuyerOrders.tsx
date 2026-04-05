@@ -368,7 +368,7 @@ const BuyerOrders = () => {
                   {expandedOrder === order.id && (
                     <div className="mt-3 border-t border-border pt-3 space-y-3">
                       <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
-                      <IndustryBlueprintCard industry={order.industry} />
+                      {/* Blueprint now integrated into MilestoneWorkOrderPanel header */}
                       <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
