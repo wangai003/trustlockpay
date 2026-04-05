@@ -252,6 +252,16 @@ export default function AdminStaffManager() {
 
   return (
     <div className="space-y-6">
+      {/* Testnet Banner */}
+      {isTestnet && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center justify-between">
+          <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">🧪 Testnet Mode — Simulated staff data. All actions are local.</p>
+          <Button size="sm" variant="outline" className="text-xs" onClick={() => { saveTestnetStaff(TESTNET_MOCK_STAFF); toast.success("Staff data reset"); }}>
+            Reset Data
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
