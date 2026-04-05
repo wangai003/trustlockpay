@@ -9,7 +9,7 @@ const corsHeaders = {
 const WIDGET_INSTALL_FEE = 5.0;
 
 type WidgetState = "never_installed" | "installed" | "disabled" | "deleted";
-type Action = "get_state" | "install" | "enable" | "disable" | "delete" | "restore";
+type Action = "get_state" | "install" | "enable" | "disable" | "delete" | "restore" | "confirm_payment";
 type ChargeMode = "immediate" | "next_cycle" | "none";
 
 interface TransitionResult {
@@ -61,6 +61,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
@@ -70,17 +75,13 @@ Deno.serve(async (req) => {
     }
 
     const { action, site_id } = await req.json() as { action: Action; site_id?: string };
-    const validActions: Action[] = ["get_state", "install", "enable", "disable", "delete", "restore"];
+    const validActions: Action[] = ["get_state", "install", "enable", "disable", "delete", "restore", "confirm_payment"];
     if (!validActions.includes(action)) {
       return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Build query filter — per-site if site_id provided, otherwise legacy per-vendor
-    const filterCol = site_id ? "site_id" : "vendor_id";
-    const filterVal = site_id || user.id;
 
     // Fetch or create state row
     let { data: row, error: fetchErr } = await supabase
@@ -104,6 +105,40 @@ Deno.serve(async (req) => {
       row = inserted;
     }
 
+    // Handle payment confirmation
+    if (action === "confirm_payment") {
+      const { error: updateErr } = await supabase
+        .from("vendor_widget_fees")
+        .update({ payment_confirmed: true, updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+
+      if (updateErr) throw updateErr;
+
+      // Mark related bill as paid
+      if (site_id) {
+        await serviceClient
+          .from("vendor_bills")
+          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .eq("vendor_id", user.id)
+          .eq("site_id", site_id)
+          .in("bill_type", ["widget_install", "widget_restore"])
+          .eq("status", "pending");
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        fee: 0,
+        chargeMode: "none",
+        state: {
+          widgetState: row.widget_state,
+          installFeePaid: row.install_fee_paid,
+          pendingRestorationFee: row.pending_restoration_fee,
+          totalInstallFeesCharged: row.total_install_fees_charged,
+          paymentConfirmed: true,
+        },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "get_state") {
       return new Response(JSON.stringify({
         success: true,
@@ -114,6 +149,7 @@ Deno.serve(async (req) => {
           installFeePaid: row.install_fee_paid,
           pendingRestorationFee: row.pending_restoration_fee,
           totalInstallFeesCharged: row.total_install_fees_charged,
+          paymentConfirmed: row.payment_confirmed,
         },
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -128,11 +164,29 @@ Deno.serve(async (req) => {
         install_fee_paid: row.install_fee_paid || (action === "install" && fee > 0),
         pending_restoration_fee: chargeMode === "next_cycle",
         total_install_fees_charged: Number(row.total_install_fees_charged) + (fee > 0 ? fee : 0),
+        // Reset payment confirmation on new install/restore (requires new payment)
+        payment_confirmed: (action === "install" || action === "restore") && fee > 0 ? false : row.payment_confirmed,
         updated_at: new Date().toISOString(),
       })
-      .eq("vendor_id", user.id);
+      .eq("id", row.id);
 
     if (updateErr) throw updateErr;
+
+    // Create a bill for install/restore actions with fees
+    if (fee > 0 && (action === "install" || action === "restore")) {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 7);
+
+      await serviceClient.from("vendor_bills").insert({
+        vendor_id: user.id,
+        bill_type: action === "install" ? "widget_install" : "widget_restore",
+        amount: fee,
+        status: "pending",
+        due_date: dueDate.toISOString(),
+        site_id: site_id || null,
+        description: `TrustLock Pay Widget ${action === "install" ? "Installation" : "Restoration"} Fee`,
+      });
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -143,6 +197,7 @@ Deno.serve(async (req) => {
         installFeePaid: row.install_fee_paid || (action === "install" && fee > 0),
         pendingRestorationFee: chargeMode === "next_cycle",
         totalInstallFeesCharged: Number(row.total_install_fees_charged) + (fee > 0 ? fee : 0),
+        paymentConfirmed: (action === "install" || action === "restore") && fee > 0 ? false : row.payment_confirmed,
       },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
