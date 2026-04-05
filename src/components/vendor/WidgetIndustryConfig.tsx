@@ -506,6 +506,8 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessPhoneCode, setBusinessPhoneCode] = useState("+1");
   const [businessEmail, setBusinessEmail] = useState("");
+  const [expandMilestones, setExpandMilestones] = useState(false);
+  const [milestonePercentages, setMilestonePercentages] = useState<Record<number, number>>({});
 
   const preconfig = INDUSTRY_PRECONFIGS[industry] || DEFAULT_PRECONFIG;
   const subcats = INDUSTRY_SUBCATEGORIES[industry] || [];
