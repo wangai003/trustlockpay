@@ -36,7 +36,7 @@ interface LinkData {
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"loading" | "invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done">("loading");
+  const [step, setStep] = useState<"loading" | "invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
   const [linkData, setLinkData] = useState<LinkData | null>(null);
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
@@ -46,6 +46,7 @@ const PublicCheckout = () => {
   } | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
+  const [lockedVendorName, setLockedVendorName] = useState("");
 
   // Load link data from DB
   useEffect(() => {
@@ -63,10 +64,31 @@ const PublicCheckout = () => {
         .single();
 
       if (error || !data) {
-        // Fallback to demo mode if link not found
         setLinkData(null);
         setStep("invoice");
         return;
+      }
+
+      // Check if vendor's subscription is locked/expired
+      const vendorId = data.vendor_id;
+      if (vendorId) {
+        const { data: sub } = await supabase
+          .from("vendor_subscriptions")
+          .select("status, grace_ends_at")
+          .eq("vendor_id", vendorId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (sub && (sub.status === "expired" || sub.status === "locked")) {
+          const graceEnd = sub.grace_ends_at ? new Date(sub.grace_ends_at) : null;
+          const now = new Date();
+          if (!graceEnd || now > graceEnd) {
+            setLockedVendorName(data.vendor_name || "This vendor");
+            setStep("vendor_locked");
+            return;
+          }
+        }
       }
 
       setLinkData({
@@ -85,7 +107,6 @@ const PublicCheckout = () => {
         delivery_terms: (data as any).delivery_terms || "",
       });
 
-      // Auto-set invoice data from saved link
       setInvoiceData({
         subtotal: Number(data.subtotal),
         taxTotal: Number(data.tax_total),
