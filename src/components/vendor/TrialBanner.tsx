@@ -127,6 +127,7 @@ const TrialBanner = () => {
   // Active paid plan with approaching expiry (≤14 days)
   if (state.daysUntilExpiry !== null && state.daysUntilExpiry <= 14 && !state.isTrialActive) {
     const isUrgent = state.daysUntilExpiry <= 7;
+    const lockedBilling = localStorage.getItem("tl_vendor_billing") as string | null;
     return (
       <>
         <div className={`mx-4 sm:mx-6 mt-3 flex items-center gap-3 p-3 rounded-lg border ${
@@ -137,9 +138,22 @@ const TrialBanner = () => {
             <p className="text-xs font-semibold">
               {state.daysUntilExpiry} day{state.daysUntilExpiry !== 1 ? "s" : ""} until {PLANS[state.currentPlan].name} renewal
             </p>
-            <p className="text-[10px] text-muted-foreground">Renew before expiry to avoid falling back to Basic ({PLANS.basic.orderMax} orders/mo).</p>
+            <p className="text-[10px] text-muted-foreground">
+              {isUrgent
+                ? "A renewal bill has been generated in Bill Payments. Just pay it — no need to re-select your plan."
+                : `Renew before expiry to avoid falling back to Basic (${PLANS.basic.orderMax} orders/mo).`
+              }
+            </p>
           </div>
-          <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => navigate("/trustlock/vendor/pricing")}>
+          <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => {
+            // Route directly to checkout with locked-in plan
+            const lockedPlan = localStorage.getItem("tl_vendor_plan");
+            if (lockedPlan && lockedPlan !== "basic" && lockedBilling) {
+              navigate(`/trustlock/vendor/checkout?plan=${lockedPlan}&billing=${lockedBilling}&renew=true`);
+            } else {
+              navigate("/trustlock/vendor/pricing");
+            }
+          }}>
             Renew
           </Button>
         </div>
