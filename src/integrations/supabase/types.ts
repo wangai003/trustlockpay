@@ -3795,6 +3795,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          industry: string | null
           is_active: boolean | null
           name: string
           platform: string | null
@@ -3804,6 +3805,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          industry?: string | null
           is_active?: boolean | null
           name: string
           platform?: string | null
@@ -3813,6 +3815,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          industry?: string | null
           is_active?: boolean | null
           name?: string
           platform?: string | null
@@ -3827,6 +3830,7 @@ export type Database = {
           id: string
           install_fee_paid: boolean
           pending_restoration_fee: boolean
+          site_id: string | null
           total_install_fees_charged: number
           updated_at: string
           vendor_id: string
@@ -3837,6 +3841,7 @@ export type Database = {
           id?: string
           install_fee_paid?: boolean
           pending_restoration_fee?: boolean
+          site_id?: string | null
           total_install_fees_charged?: number
           updated_at?: string
           vendor_id: string
@@ -3847,12 +3852,21 @@ export type Database = {
           id?: string
           install_fee_paid?: boolean
           pending_restoration_fee?: boolean
+          site_id?: string | null
           total_install_fees_charged?: number
           updated_at?: string
           vendor_id?: string
           widget_state?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vendor_widget_fees_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

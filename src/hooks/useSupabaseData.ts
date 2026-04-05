@@ -464,7 +464,7 @@ export function useVendorSites() {
 export function useAddSite() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { name: string; platform: string; url: string }) =>
+    mutationFn: (params: { name: string; platform: string; url: string; industry?: string }) =>
       callEdgeFunction("manage-vendor", { action: "add_site", ...params }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vendor_sites"] });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
@@ -11,8 +11,18 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
+import { useVendorSites } from "@/hooks/useSupabaseData";
 
-const navItems = [
+// Industries that have RFQ enabled
+const RFQ_ENABLED_INDUSTRIES = [
+  "mining", "agriculture", "freelance", "real_estate", "construction",
+  "logistics", "education", "project_management", "energy", "pharmaceuticals",
+  "telecommunications", "manufacturing", "renewable_energy", "textiles",
+  "marine_fisheries", "automotive", "water_sanitation", "media_entertainment",
+  "aviation", "insurance", "legal_services", "food_beverage", "waste_management",
+];
+
+const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY" },
   { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow work orders and order statuses", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
@@ -23,7 +33,6 @@ const navItems = [
   { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files", tlId: "TL-V-SB-NAV-DOCUMENTS" },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help", tip: "Guides, FAQs, and platform documentation", tlId: "TL-V-SB-NAV-HELP" },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan", tlId: "TL-V-SB-NAV-PRICING" },
-  { label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm", tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM" },
   { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals", tlId: "TL-V-SB-NAV-LINKS" },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments", tlId: "TL-V-SB-NAV-OSPAY" },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails", tlId: "TL-V-SB-NAV-PAYOUT" },
@@ -38,6 +47,25 @@ const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
+  const { data: sites = [] } = useVendorSites();
+
+  // Show CRM only if vendor has at least one site in an RFQ-enabled industry
+  const hasRfqSite = useMemo(() => {
+    return sites.some((s: any) => s.industry && RFQ_ENABLED_INDUSTRIES.includes(s.industry));
+  }, [sites]);
+
+  const navItems = useMemo(() => {
+    const items = [...baseNavItems];
+    if (hasRfqSite) {
+      // Insert CRM after "Plans & Pricing"
+      const pricingIdx = items.findIndex(i => i.to === "/trustlock/vendor/pricing");
+      items.splice(pricingIdx + 1, 0, {
+        label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm",
+        tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM",
+      });
+    }
+    return items;
+  }, [hasRfqSite]);
 
   useEffect(() => {
     const handler = () => setOpen(true);

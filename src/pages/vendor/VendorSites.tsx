@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import {
   getWidgetFeeState,
   processWidgetTransition,
+  calculateWidgetTransitionFee,
   WIDGET_INSTALL_FEE,
   type WidgetFeeState,
   type WidgetState,
@@ -71,17 +72,32 @@ const VendorSites = () => {
   const [siteUrl, setSiteUrl] = useState("");
   const [siteIndustry, setSiteIndustry] = useState("");
   const [hasCheckout, setHasCheckout] = useState(true);
-  const [widgetState, setWidgetState] = useState<WidgetFeeState>(getWidgetFeeState);
+  const [widgetStates, setWidgetStates] = useState<Record<string, WidgetFeeState>>(() => {
+    const stored = localStorage.getItem("tl_site_widget_fee_states");
+    return stored ? JSON.parse(stored) : {};
+  });
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
+
+  // Persist per-site widget fee states
+  useEffect(() => {
+    localStorage.setItem("tl_site_widget_fee_states", JSON.stringify(widgetStates));
+  }, [widgetStates]);
+
+  const getSiteWidgetState = (siteId: string): WidgetFeeState =>
+    widgetStates[siteId] || { widgetState: "never_installed" as WidgetState, installFeePaid: false, pendingRestorationFee: false, totalInstallFeesCharged: 0 };
+
+  const anyInstallFeePaid = Object.values(widgetStates).some(s => s.installFeePaid);
+  const anyPendingRestoration = Object.values(widgetStates).some(s => s.pendingRestorationFee);
 
   const { data: dbSites = [] } = useVendorSites();
   const addSite = useAddSite();
   const deleteSite = useDeleteSite();
 
   const allSites = dbSites.length > 0
-    ? dbSites.map(s => ({ id: s.id, name: s.name, platform: s.platform || "Custom", url: s.url || "" }))
-    : vendor.sites;
+    ? dbSites.map(s => ({ id: s.id, name: s.name, platform: s.platform || "Custom", url: s.url || "", industry: (s as any).industry || "" }))
+    : vendor.sites.map(s => ({ ...s, industry: "" }));
 
   // Track per-site widget enabled state
   const [siteWidgetStates, setSiteWidgetStates] = useState<Record<string, boolean>>(() => {
@@ -106,16 +122,20 @@ const VendorSites = () => {
       toast.error("Please select an industry for your site.");
       return;
     }
-    await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl });
+    await addSite.mutateAsync({ name: siteName, platform: sitePlatform, url: siteUrl, industry: siteIndustry || undefined });
     setSiteName(""); setSitePlatform(""); setSiteUrl(""); setSiteIndustry(""); setHasCheckout(true);
     setShowAdd(false);
   };
 
   const handleDeleteSite = async (siteId: string) => {
     await deleteSite.mutateAsync(siteId);
-    // Mark widget as deleted for this site
-    const { fee, chargeMode, state } = processWidgetTransition("delete");
-    setWidgetState(state);
+    const siteState = getSiteWidgetState(siteId);
+    const { fee } = calculateWidgetTransitionFee(siteState.widgetState, "delete");
+    setWidgetStates(prev => {
+      const next = { ...prev };
+      delete next[siteId];
+      return next;
+    });
     setSiteWidgetStates(prev => {
       const next = { ...prev };
       delete next[siteId];
@@ -127,26 +147,37 @@ const VendorSites = () => {
   };
 
   const handleFirstInstall = (siteId: string) => {
-    const ws = getWidgetFeeState();
+    const ws = getSiteWidgetState(siteId);
     if (ws.widgetState === "never_installed") {
+      setActiveSiteId(siteId);
       setPendingInvoiceAction("install");
       setShowInvoice(true);
     } else if (ws.widgetState === "deleted") {
+      setActiveSiteId(siteId);
       setPendingInvoiceAction("restore");
       setShowInvoice(true);
     } else {
-      // Already installed/disabled — just enable
       setSiteWidgetStates(prev => ({ ...prev, [siteId]: true }));
       toast.success("Widget enabled on this site.");
     }
   };
 
   const handleConfirmInvoice = () => {
+    if (!activeSiteId) return;
     const action = pendingInvoiceAction || "install";
-    const { fee, chargeMode, state } = processWidgetTransition(action);
-    setWidgetState(state);
+    const siteState = getSiteWidgetState(activeSiteId);
+    const { fee, newState, chargeMode } = calculateWidgetTransitionFee(siteState.widgetState, action);
+    const updated: WidgetFeeState = {
+      widgetState: newState,
+      installFeePaid: siteState.installFeePaid || (action === "install" && fee > 0),
+      pendingRestorationFee: chargeMode === "next_cycle",
+      totalInstallFeesCharged: siteState.totalInstallFeesCharged + (fee > 0 ? fee : 0),
+    };
+    setWidgetStates(prev => ({ ...prev, [activeSiteId]: updated }));
+    setSiteWidgetStates(prev => ({ ...prev, [activeSiteId]: true }));
     setShowInvoice(false);
     setPendingInvoiceAction(null);
+    setActiveSiteId(null);
 
     if (chargeMode === "immediate") {
       toast.success(`Widget installed! $${fee.toFixed(2)} one-time installation fee will be charged with your first plan payment.`);
@@ -157,21 +188,23 @@ const VendorSites = () => {
 
   const handleToggleWidget = (siteId: string, enabled: boolean) => {
     if (enabled) {
-      const ws = getWidgetFeeState();
+      const ws = getSiteWidgetState(siteId);
       if (ws.widgetState === "never_installed" || ws.widgetState === "deleted") {
         handleFirstInstall(siteId);
         return;
       }
-      processWidgetTransition("enable");
+      // Re-enable from disabled
+      setWidgetStates(prev => ({ ...prev, [siteId]: { ...ws, widgetState: "installed" as WidgetState } }));
     } else {
-      processWidgetTransition("disable");
+      const ws = getSiteWidgetState(siteId);
+      setWidgetStates(prev => ({ ...prev, [siteId]: { ...ws, widgetState: "disabled" as WidgetState } }));
     }
     setSiteWidgetStates(prev => ({ ...prev, [siteId]: enabled }));
-    setWidgetState(getWidgetFeeState());
     toast.success(enabled ? "Widget enabled" : "Widget disabled — no fee charged.");
   };
 
   const handleRestoreWidget = (siteId: string) => {
+    setActiveSiteId(siteId);
     setPendingInvoiceAction("restore");
     setShowInvoice(true);
   };
@@ -246,13 +279,13 @@ const VendorSites = () => {
         )}
 
         {/* Widget Fee Status */}
-        {widgetState.installFeePaid && (
+        {anyInstallFeePaid && (
           <Card className="border-primary/20">
             <CardContent className="p-3 flex items-center gap-3">
               <CheckCircle className="w-4 h-4 text-primary shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Installation fee paid.</strong> Disabling and re-enabling the widget on any site is free.
-                {widgetState.pendingRestorationFee && (
+                <strong className="text-foreground">Widget installation fees active.</strong> Disabling and re-enabling any widget is free.
+                {anyPendingRestoration && (
                   <Badge variant="outline" className="ml-2 text-[9px] border-accent/30 text-accent">
                     $5 restoration fee pending on next cycle
                   </Badge>
@@ -376,7 +409,8 @@ const VendorSites = () => {
         <div className="grid gap-4">
           {allSites.map((site, siteIdx) => {
             const isWidgetEnabled = siteWidgetStates[site.id] ?? false;
-            const isDeleted = widgetState.widgetState === "deleted";
+            const siteWS = getSiteWidgetState(site.id);
+            const isDeleted = siteWS.widgetState === "deleted";
             const isNoCheckoutPlatform = NO_CHECKOUT_PLATFORMS.includes(site.platform || "");
             const row = siteIdx + 1;
             return (
@@ -401,6 +435,11 @@ const VendorSites = () => {
                         <TLId code={dynTLId("V", "SIT", row, "BDG-PLATFORM")} inline>
                           <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
                         </TLId>
+                        {site.industry && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {INDUSTRY_ICONS[site.industry] || "📦"} {TRUSTLOCK_INDUSTRIES.find(i => i.key === site.industry)?.label || site.industry}
+                          </Badge>
+                        )}
                         {isNoCheckoutPlatform ? (
                           <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
                             <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
