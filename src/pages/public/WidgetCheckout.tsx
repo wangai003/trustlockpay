@@ -351,6 +351,7 @@ const WidgetCheckout = () => {
                   {isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
                 </Button>
               </form>
+              )}
 
               {/* Trust badges */}
               <div className="flex items-center justify-center gap-3 pt-1">
@@ -361,6 +362,34 @@ const WidgetCheckout = () => {
                   <Lock className="w-3 h-3" /> Encrypted
                 </Badge>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* RFQ Submitted Confirmation */}
+        {step === "rfq_done" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{rfqTerms.rfqLabel} Submitted!</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your request has been sent to <strong>{vendor.name}</strong>. They will review your requirements
+                  and respond with a custom {rfqTerms.proformaLabel.toLowerCase()} via email or phone.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground">
+                  No payment has been charged. Escrow protection will activate automatically once you accept the vendor's quote and proceed to payment.
+                </p>
+              </div>
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>
+                  Close
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
