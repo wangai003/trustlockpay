@@ -48,6 +48,7 @@ const PublicCheckout = () => {
   const [loadError, setLoadError] = useState(false);
   const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
   const [lockedVendorName, setLockedVendorName] = useState("");
+  const [buyerRecognized, setBuyerRecognized] = useState(false);
 
   // Load link data from DB
   useEffect(() => {
