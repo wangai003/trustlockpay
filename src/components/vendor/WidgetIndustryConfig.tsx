@@ -796,6 +796,71 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
           )}
         </div>
 
+        {/* ─── Vendor Contact for RFQ (only for RFQ-eligible industries) ─── */}
+        {isRFQEligible(industry) && (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandContact(!expandContact)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <span className="text-xs font-semibold flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-primary" /> Business Contact for {getRFQTerms(industry).rfqLabel}
+                <Badge variant="destructive" className="text-[8px] ml-1">Required</Badge>
+              </span>
+              {expandContact ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            {expandContact && (
+              <div className="p-3 space-y-3">
+                <p className="text-[10px] text-muted-foreground">
+                  Customers who request a custom quote will see this contact information. This is mandatory for your industry.
+                </p>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Mail className="w-3 h-3" /> Business Email *
+                    </Label>
+                    <Input
+                      value={businessEmail}
+                      onChange={e => setBusinessEmail(e.target.value)}
+                      placeholder="sales@yourcompany.com"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-[100px] space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Code</Label>
+                      <Select value={businessPhoneCode} onValueChange={setBusinessPhoneCode}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-48">
+                          {COUNTRY_CODES.map(c => (
+                            <SelectItem key={c.code} value={c.code} className="text-xs">{c.code} {c.country}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Phone className="w-3 h-3" /> Business Phone *
+                      </Label>
+                      <Input
+                        value={businessPhone}
+                        onChange={e => setBusinessPhone(e.target.value)}
+                        placeholder="Phone number"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded p-2">
+                  <p className="text-[9px] text-muted-foreground">
+                    💡 This info is shown to customers on the {getRFQTerms(industry).rfqLabel} form so they can reach you directly. It also appears on your CRM page under <strong>Quote Requests</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Custom Notes */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Additional Setup Notes (optional)</Label>
