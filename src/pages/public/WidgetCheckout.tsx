@@ -13,6 +13,7 @@ import MilestonePaymentSchedule, { type ScheduleItem, type CounterProposalContac
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
+import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 
 interface VendorInfo {
   name: string;
@@ -216,6 +217,9 @@ const WidgetCheckout = () => {
             </p>
           </div>
         )}
+
+        {/* Returning buyer sign-in prompt */}
+        <ReturningBuyerBanner />
 
         {step === "form" && (
           <Card className="border-primary/20">

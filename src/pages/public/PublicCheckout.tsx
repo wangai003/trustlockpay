@@ -16,6 +16,7 @@ import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryCont
 import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
+import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 
 interface LinkData {
   link_id: string;
@@ -145,7 +146,20 @@ const PublicCheckout = () => {
     setStep("compliance");
   };
 
-  const handleComplianceClear = useCallback(() => {
+  const handleComplianceClear = useCallback(async () => {
+    // Check if signed-in buyer already completed acknowledgement
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      const { count } = await supabase
+        .from("acknowledgement_forms")
+        .select("id", { count: "exact", head: true })
+        .eq("signed_by_buyer", true);
+      if (count && count > 0) {
+        // Skip acknowledge step — already signed before
+        setStep("contract");
+        return;
+      }
+    }
     setStep("acknowledge");
   }, []);
 
@@ -299,6 +313,9 @@ const PublicCheckout = () => {
       </div>
 
       <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
+        {/* Returning buyer sign-in prompt */}
+        <ReturningBuyerBanner />
+
         {/* Steps indicator */}
         <div className="flex items-center gap-2 justify-center flex-wrap">
           {[
