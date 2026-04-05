@@ -830,6 +830,41 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
+                    {/* ── Admin Status Summary ── */}
+                    {isAdmin && (
+                      <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-1.5">
+                        <p className="text-[10px] font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Admin View</p>
+                        <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Vendor:</span>
+                            {vendorFulfilled
+                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Fulfilled ✅</Badge>
+                              : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Pending ⏳</Badge>
+                            }
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Buyer:</span>
+                            {buyerReleased
+                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Released ✅</Badge>
+                              : vendorFulfilled
+                                ? <Badge variant="outline" className="text-[8px] h-4 border-accent/30 text-accent">Action Required ⏳</Badge>
+                                : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Waiting —</Badge>
+                            }
+                          </div>
+                        </div>
+                        {isDisputed && (
+                          <div className="flex items-center gap-1 text-destructive text-[10px] font-medium mt-1">
+                            <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
+                          </div>
+                        )}
+                        {ms.is_payment_milestone && (
+                          <p className="text-[9px] text-muted-foreground">
+                            💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* ── PRIMARY ACTION (visually dominant) ── */}
                     <div className="flex flex-col gap-2 pt-1">
                       {canVendorFulfill && (
@@ -852,6 +887,14 @@ const MilestoneWorkOrderPanel = ({
                         </div>
                       )}
 
+                      {/* Buyer: waiting for vendor */}
+                      {role === "buyer" && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          Waiting for vendor to fulfill this milestone before you can review and release.
+                        </div>
+                      )}
+
                       {canBuyerRelease && (
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
@@ -871,12 +914,12 @@ const MilestoneWorkOrderPanel = ({
 
                       {/* Secondary actions row */}
                       <div className="flex gap-2 flex-wrap">
-                        {ms.status === "pending" && !fundsAreLocked && (
+                        {!isAdmin && ms.status === "pending" && !fundsAreLocked && (
                           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive text-xs" onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}>
                             <Trash2 className="w-3 h-3 mr-1" /> Remove
                           </Button>
                         )}
-                        {ms.status === "pending" && fundsAreLocked && (
+                        {!isAdmin && ms.status === "pending" && fundsAreLocked && (
                           <Button size="sm" variant="ghost" className="text-muted-foreground text-xs" onClick={() => toast.info("Use milestone negotiation or contact admin for amendments.")}>
                             <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
                           </Button>
