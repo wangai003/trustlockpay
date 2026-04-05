@@ -235,7 +235,7 @@ export default function AdminStaffManager() {
     );
   }
 
-  if (error) {
+  if (error && !isTestnet) {
     return (
       <Card>
         <CardHeader>
