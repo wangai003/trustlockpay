@@ -220,7 +220,7 @@ export default function AdminStaffManager() {
     return "";
   };
 
-  if (missingChiefSession) {
+  if (missingChiefSession && !isTestnet) {
     return (
       <Card>
         <CardHeader>
