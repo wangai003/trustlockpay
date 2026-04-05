@@ -128,9 +128,13 @@ const VendorSites = () => {
 
   const handleDeleteSite = async (siteId: string) => {
     await deleteSite.mutateAsync(siteId);
-    // Mark widget as deleted for this site
-    const { fee, chargeMode, state } = processWidgetTransition("delete");
-    setWidgetState(state);
+    const siteState = getSiteWidgetState(siteId);
+    const { fee } = calculateWidgetTransitionFee(siteState.widgetState, "delete");
+    setWidgetStates(prev => {
+      const next = { ...prev };
+      delete next[siteId];
+      return next;
+    });
     setSiteWidgetStates(prev => {
       const next = { ...prev };
       delete next[siteId];
