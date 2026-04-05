@@ -241,7 +241,7 @@ export const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Delivery & Fund Release", percentage: 15, documents: ["Delivery Receipt", "Buyer Acceptance Form"], documentMode: "required", description: "Physical delivery confirmed, escrow funds released", requiresObserver: false },
   ],
   "energy": [
-    { name: "Contract & LC / PO Upload", percentage: 5, documents: ["Service Contract", "Purchase Order", "LC (if applicable)"], documentMode: "required", description: "Trade agreement and financial instrument uploaded and co-signed", requiresObserver: false },
+    { name: "Contract & PO Upload", percentage: 5, documents: ["Service Contract", "Purchase Order"], documentMode: "required", description: "Trade agreement and purchase order uploaded and co-signed", requiresObserver: false },
     { name: "Equipment Inspection at Origin", percentage: 10, documents: ["Equipment Inspection Report", "Manufacturer Certificate", "API Compliance Certificate"], documentMode: "required", description: "Third-party inspection of equipment or materials before dispatch", requiresObserver: true },
     { name: "Export License & Regulatory Clearance", percentage: 10, documents: ["Export License", "NNPC Approval", "Environmental Impact Assessment"], documentMode: "required", description: "Government and regulatory body clearance for export", requiresObserver: true },
     { name: "Shipping & Freight Documentation", percentage: 20, documents: ["Bill of Lading", "Marine Insurance Certificate", "Dangerous Goods Declaration"], documentMode: "required", description: "Goods dispatched with full freight documentation", requiresObserver: true },
