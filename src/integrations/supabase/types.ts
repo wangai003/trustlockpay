@@ -2311,6 +2311,36 @@ export type Database = {
           },
         ]
       }
+      sandbox_leads: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          role: string | null
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          role?: string | null
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
       sar_filings: {
         Row: {
           acknowledged_at: string | null
