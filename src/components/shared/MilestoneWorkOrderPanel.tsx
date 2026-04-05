@@ -207,7 +207,17 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-/* ─── Helpers ─── */
+/* ─── Pre-payment instruments that are auto-satisfied when escrow is funded ─── */
+const PRE_PAYMENT_DOCS = new Set([
+  "lc copy", "lc", "letter of credit", "trade contract",
+  "bank guarantee", "standby lc", "payment guarantee",
+  "proforma invoice", "purchase order",
+]);
+
+const isPrePaymentDoc = (doc: string): boolean => {
+  const d = doc.toLowerCase();
+  return PRE_PAYMENT_DOCS.has(d) || d.includes("letter of credit") || d.includes(" lc");
+};
 
 const getUploadedKeys = (ms: any): Set<string> => {
   const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
@@ -219,14 +229,14 @@ const getUploadedKeys = (ms: any): Set<string> => {
   return keys;
 };
 
-const getDocGateStatus = (ms: any) => {
+const getDocGateStatus = (ms: any, escrowFunded = false) => {
   const mode: string = ms.document_mode || "none";
   const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
   const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
   const uploadedKeys = getUploadedKeys(ms);
 
   if (mode === "none" && requiredDocs.length === 0) {
-    return { mode: "none", satisfied: true, missingRequired: [] as string[], missingOptional: [] as string[] };
+    return { mode: "none", satisfied: true, missingRequired: [] as string[], missingOptional: [] as string[], autoSatisfied: [] as string[] };
   }
 
   const effectiveMode = requiredDocs.length > 0 ? (mode === "none" ? "required" : mode) : mode;
@@ -238,11 +248,27 @@ const getDocGateStatus = (ms: any) => {
     return false;
   };
 
-  const missingRequired = requiredDocs.filter((doc) => !checkDoc(doc));
-  const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
+  // Auto-satisfy pre-payment docs when escrow is funded
+  const autoSatisfied: string[] = [];
+  const missingRequired = requiredDocs.filter((doc) => {
+    if (checkDoc(doc)) return false;
+    if (escrowFunded && isPrePaymentDoc(doc)) {
+      autoSatisfied.push(doc);
+      return false; // treated as satisfied
+    }
+    return true;
+  });
+  const missingOptional = optionalDocs.filter((doc) => {
+    if (checkDoc(doc)) return false;
+    if (escrowFunded && isPrePaymentDoc(doc)) {
+      autoSatisfied.push(doc);
+      return false;
+    }
+    return true;
+  });
   const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
 
-  return { mode: effectiveMode, satisfied, missingRequired, missingOptional };
+  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied };
 };
 
 /* ─── Progress Stepper ─── */
@@ -420,10 +446,13 @@ const MilestoneWorkOrderPanel = ({
   const handleMarkFulfilled = async (milestoneId: string) => {
     const milestone = milestones.find((m: any) => m.id === milestoneId) as any;
     if (milestone) {
-      const gate = getDocGateStatus(milestone);
+      const gate = getDocGateStatus(milestone, fundsAreLocked);
       if (gate.mode === "required" && !gate.satisfied) {
         toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
         return;
+      }
+      if (gate.autoSatisfied.length > 0) {
+        toast.info(`${gate.autoSatisfied.join(", ")} auto-resolved — escrow already funded`, { duration: 4000 });
       }
       if (gate.mode === "optional" && gate.missingOptional.length > 0) {
         toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
@@ -536,7 +565,7 @@ const MilestoneWorkOrderPanel = ({
         <CardContent className="space-y-2 pt-0">
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
-            const gateStatus = getDocGateStatus(ms);
+            const gateStatus = getDocGateStatus(ms, fundsAreLocked);
 
             // Look up blueprint template for this milestone
             const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
@@ -683,6 +712,13 @@ const MilestoneWorkOrderPanel = ({
                     {/* ── Document Gate Checklist ── */}
                     {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
                       <div className="rounded-md border border-border p-2 space-y-2">
+                        {/* Auto-satisfied notice */}
+                        {gateStatus.autoSatisfied.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                            <Unlock className="w-3 h-3 shrink-0" />
+                            <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved — escrow already funded</span>
+                          </div>
+                        )}
                         {requiredDocs.length > 0 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-semibold flex items-center gap-1">
@@ -696,14 +732,23 @@ const MilestoneWorkOrderPanel = ({
                                 const uploadedKeys = getUploadedKeys(ms);
                                 const docLower = doc.toLowerCase();
                                 const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
+                                const isAutoSatisfied = gateStatus.autoSatisfied.includes(doc);
                                 const owner = docOwners[doc] || "either";
                                 return (
-                                  <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"}`}>
-                                    {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                                  <Badge key={doc} variant="outline" className={`text-[8px] ${
+                                    isAutoSatisfied ? "border-muted-foreground/30 text-muted-foreground line-through" :
+                                    isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"
+                                  }`}>
+                                    {isAutoSatisfied ? <Unlock className="w-2.5 h-2.5 mr-0.5" /> :
+                                     isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
                                     {doc}
-                                    <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
-                                      ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
-                                    </span>
+                                    {isAutoSatisfied ? (
+                                      <span className="ml-0.5 text-[7px] text-muted-foreground italic">N/A — Escrow Funded</span>
+                                    ) : (
+                                      <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
+                                        ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
+                                      </span>
+                                    )}
                                   </Badge>
                                 );
                               })}
