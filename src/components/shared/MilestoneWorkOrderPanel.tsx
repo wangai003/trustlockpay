@@ -537,9 +537,27 @@ const MilestoneWorkOrderPanel = ({
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
             const gateStatus = getDocGateStatus(ms);
-            const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
+
+            // Look up blueprint template for this milestone
+            const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+            const blueprint = INDUSTRY_MILESTONES[indKey]
+              || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
+              || null;
+            const template = blueprint?.[idx] || null;
+            const stepOwner = template?.owner || "vendor";
+            const docOwners = template?.documentOwners || {};
+
+            // Ownership-aware action logic
+            const isVendorStep = stepOwner === "vendor" || stepOwner === "both";
+            const isBuyerStep = stepOwner === "buyer" || stepOwner === "both";
+            const canVendorFulfill = role === "vendor" && isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
+            const canBuyerAct = role === "buyer" && isBuyerStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
             const canBuyerRelease = role === "buyer" && ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released;
             const hasObserver = !!ms.observer_id;
+
+            // Custom action labels from template
+            const vendorActionLabel = template?.vendorAction || (layoutMode === "offline" ? "Confirm Offline Step" : layoutMode === "single" ? "Confirm & Ship Order" : "Mark Fulfilled");
+            const buyerActionLabel = template?.buyerAction || "Confirm & Approve";
 
             // Counterparty status indicators
             const vendorFulfilled = ms.status === "completed" || ms.status === "released";
