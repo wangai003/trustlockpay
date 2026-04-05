@@ -14,7 +14,7 @@ interface MilestoneTemplate {
   requiresObserver: boolean;
 }
 
-const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
+export const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   "construction": [
     { name: "Contract Upload", percentage: 5, documents: ["Construction Contract"], documentMode: "required", description: "Both parties sign the contract", requiresObserver: false },
     { name: "Foundation Inspection", percentage: 15, documents: ["Inspection Report", "Soil Test"], documentMode: "required", description: "Inspector verifies foundation", requiresObserver: true },

@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/select";
 import {
   Globe, FileCheck, DollarSign, Truck, Shield, Scale, Upload,
-  Settings2, ChevronDown, ChevronUp, Building2, Landmark, Zap, Phone, Mail,
+  Settings2, ChevronDown, ChevronUp, Building2, Landmark, Zap, Phone, Mail, Percent,
 } from "lucide-react";
-import { ALL_INDUSTRIES } from "@/lib/industryList";
+import { ALL_INDUSTRIES, isMilestoneIndustryByKey } from "@/lib/industryList";
+import { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
 
