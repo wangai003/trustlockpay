@@ -59,13 +59,42 @@ const VendorPricing = () => {
         )}
 
         {!trialUsed && planState.currentPlan === "basic" && !planState.isExpired && (
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+            <div className="flex items-center gap-3">
+              <Gift className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold">Try Growth features free for 30 days</p>
+                <p className="text-xs text-muted-foreground">Full access to analytics, AI, and up to 300 orders. No payment required.</p>
+              </div>
+              <TLId code="TL-V-PRC-BTN-TRIAL" inline><Button size="sm" onClick={() => setActivatingTrial(true)}>Activate Free Trial</Button></TLId>
+            </div>
+            <div className="p-3 bg-background/50 rounded-lg border border-border">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">⚠️ Important — Activate trial BEFORE installing widgets:</strong>{" "}
+                Widget installation fees ($5/site) are waived during your trial period. If you install widgets without activating a trial first, 
+                our system will treat your account as a regular (non-trial) account and charge standard fees. 
+                To avoid unnecessary charges: <strong>1)</strong> Activate your free trial here → <strong>2)</strong> Go to My Sites → <strong>3)</strong> Install widgets for free.
+                Once your trial ends, you'll automatically move to the Basic plan and widget fees will apply for the next billing cycle.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Active trial — cancel button */}
+        {planState.isTrialActive && (
           <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-3">
             <Gift className="w-5 h-5 text-primary shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold">Try Growth features free for 30 days</p>
-              <p className="text-xs text-muted-foreground">Full access to analytics, AI, and up to 300 orders. No payment required.</p>
+              <p className="text-sm font-semibold">Free Trial Active — {planState.trialDaysLeft} days left</p>
+              <p className="text-xs text-muted-foreground">You have Growth-level access. Widget installations are free during trial. Cancel anytime.</p>
             </div>
-            <TLId code="TL-V-PRC-BTN-TRIAL" inline><Button size="sm" onClick={() => setActivatingTrial(true)}>Activate Free Trial</Button></TLId>
+            <Button size="sm" variant="destructive" onClick={() => {
+              localStorage.removeItem("tl_vendor_trial_start");
+              localStorage.setItem("tl_vendor_plan", "basic");
+              localStorage.removeItem("tl_vendor_plan_expires");
+              toast.success("Trial cancelled. You're now on the Basic plan.");
+              window.location.reload();
+            }}>Cancel Trial</Button>
           </div>
         )}
 
