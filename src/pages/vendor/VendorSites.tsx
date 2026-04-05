@@ -63,6 +63,7 @@ import {
   type WidgetFeeState,
   type WidgetState,
 } from "@/lib/widgetFeeLogic";
+import { isVendorInTrial } from "@/hooks/useVendorBilling";
 
 const VendorSites = () => {
   const { vendor } = useVendor();
