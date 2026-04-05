@@ -60,7 +60,6 @@ const WidgetCheckout = () => {
         .maybeSingle();
 
       if (data) {
-        // Also try to get vendor name from profiles
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
@@ -72,6 +71,25 @@ const WidgetCheckout = () => {
           industry: data.industry_category || "general",
           currency: (data.supported_currencies as string[] | null)?.[0] || "USD",
         });
+
+        // Check vendor billing status (live mode only)
+        if (!isSandbox) {
+          const { data: sub } = await supabase
+            .from("vendor_subscriptions")
+            .select("status, grace_ends_at")
+            .eq("vendor_id", vendorId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (sub && (sub.status === "expired" || sub.status === "locked")) {
+            const graceEnd = sub.grace_ends_at ? new Date(sub.grace_ends_at) : null;
+            if (!graceEnd || new Date() > graceEnd) {
+              setStep("vendor_locked");
+              return;
+            }
+          }
+        }
       }
     } catch {
       // Use defaults
