@@ -277,7 +277,13 @@ const VendorStandaloneLinks = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             <TLId code="TL-V-LNK-BTN-CREATE" inline>
-              <Button size="sm" className="gap-2 h-8" onClick={() => setShowCreate(!showCreate)}>
+              <Button size="sm" className="gap-2 h-8" onClick={() => {
+                if (enforcement?.blocked) {
+                  toast.error(enforcement.reason);
+                  return;
+                }
+                setShowCreate(!showCreate);
+              }}>
                 <Plus className="w-3.5 h-3.5" /> New
               </Button>
             </TLId>
