@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
+import MilestonePaymentSchedule, { type ScheduleItem } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
+import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 
 interface VendorInfo {
