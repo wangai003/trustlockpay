@@ -128,11 +128,13 @@ export default function AdminStaffManager() {
 
   const addMutation = useMutation({
     mutationFn: () => {
+      const username = generatedUsername;
+      const name = generatedDisplayName;
       if (isTestnet) {
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&";
         const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
         const newAccount: AdminAccount = {
-          id: `staff-${Date.now()}`, username: newUsername.trim().toLowerCase(), name: newName.trim(),
+          id: `staff-${Date.now()}`, username, name,
           email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
         };
@@ -140,14 +142,14 @@ export default function AdminStaffManager() {
         saveTestnetStaff(updated);
         return Promise.resolve({ account: { username: newAccount.username, temp_password: tempPw } });
       }
-      return callStaffApi({ action: "add", chiefAdminId, username: newUsername.trim(), name: newName.trim() });
+      return callStaffApi({ action: "add", chiefAdminId, username, name });
     },
     onSuccess: (res) => {
       if (res.error) { toast.error(res.error); return; }
       setTempPwResult({ username: res.account.username, temp_password: res.account.temp_password });
       setShowAddDialog(false);
-      setNewUsername("");
-      setNewName("");
+      setNewFirstName("");
+      setNewLastName("");
       if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Admin staff added");
     },
