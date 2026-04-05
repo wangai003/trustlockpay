@@ -75,21 +75,6 @@ export default function AdminStaffManager() {
   const [tempPwResult, setTempPwResult] = useState<{ username: string; temp_password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Auto-generate username from first + last name (firstname.lastname.tl)
-  const generatedUsername = (() => {
-    const f = newFirstName.trim().toLowerCase().replace(/[^a-z]/g, "");
-    const l = newLastName.trim().toLowerCase().replace(/[^a-z]/g, "");
-    if (!f || !l) return "";
-    let base = `${f}.${l}.tl`;
-    // Check uniqueness against existing accounts
-    const existing = (isTestnet ? testnetStaff : (data?.accounts || [])) as AdminAccount[];
-    const usernames = new Set(existing.map((a: AdminAccount) => a.username));
-    if (!usernames.has(base)) return base;
-    let counter = 2;
-    while (usernames.has(`${f}.${l}${counter}.tl`)) counter++;
-    return `${f}.${l}${counter}.tl`;
-  })();
-
   const generatedDisplayName = [newFirstName.trim(), newLastName.trim()].filter(Boolean).join(" ");
 
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null);
