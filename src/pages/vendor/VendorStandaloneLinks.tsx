@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
+import { useVendorEnforcementStatus } from "@/hooks/useVendorBilling";
 
 interface GeneratedLink {
   id: string;
@@ -45,6 +46,7 @@ const VendorStandaloneLinks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<GeneratedLink | null>(null);
+  const { data: enforcement } = useVendorEnforcementStatus();
 
   const baseUrl = window.location.origin;
 
@@ -92,6 +94,11 @@ const VendorStandaloneLinks = () => {
   };
 
   const handleToggleStatus = async (link: GeneratedLink) => {
+    // Block activation if enforcement is active
+    if (link.status !== "active" && enforcement?.blocked) {
+      toast.error(enforcement.reason);
+      return;
+    }
     const newStatus = link.status === "active" ? "inactive" : "active";
     const { error } = await supabase
       .from("standalone_links")
@@ -195,6 +202,22 @@ const VendorStandaloneLinks = () => {
     <div>
       <VendorHeader title="Standalone Payment Links" />
       <div className="p-3 sm:p-6 space-y-6 max-w-4xl mx-auto">
+        {/* Enforcement banner */}
+        {enforcement?.blocked && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="p-4 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+              <div className="text-xs">
+                <p className="font-semibold text-destructive">Account Restricted</p>
+                <p className="text-muted-foreground mt-1">{enforcement.reason} You cannot create or activate standalone links until resolved.</p>
+                <Button size="sm" variant="outline" className="mt-2 text-xs" onClick={() => navigate("/trustlock/vendor/bill-payments")}>
+                  View Bills
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Info banner */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 flex items-start gap-3">
@@ -259,7 +282,13 @@ const VendorStandaloneLinks = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             <TLId code="TL-V-LNK-BTN-CREATE" inline>
-              <Button size="sm" className="gap-2 h-8" onClick={() => setShowCreate(!showCreate)}>
+              <Button size="sm" className="gap-2 h-8" onClick={() => {
+                if (enforcement?.blocked) {
+                  toast.error(enforcement.reason);
+                  return;
+                }
+                setShowCreate(!showCreate);
+              }}>
                 <Plus className="w-3.5 h-3.5" /> New
               </Button>
             </TLId>
