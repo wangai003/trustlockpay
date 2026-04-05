@@ -1825,6 +1825,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_email: string | null
+          business_phone: string | null
+          business_phone_country_code: string | null
           company_name: string | null
           corridor: string | null
           created_at: string
@@ -1845,6 +1848,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          business_email?: string | null
+          business_phone?: string | null
+          business_phone_country_code?: string | null
           company_name?: string | null
           corridor?: string | null
           created_at?: string
@@ -1865,6 +1871,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          business_email?: string | null
+          business_phone?: string | null
+          business_phone_country_code?: string | null
           company_name?: string | null
           corridor?: string | null
           created_at?: string
@@ -2133,11 +2142,19 @@ export type Database = {
       rfq_requests: {
         Row: {
           buyer_company: string | null
+          buyer_country_code_1: string | null
+          buyer_country_code_2: string | null
+          buyer_country_code_3: string | null
           buyer_email: string | null
           buyer_id: string | null
           buyer_location: string | null
           buyer_name: string | null
+          buyer_phone_1: string | null
+          buyer_phone_2: string | null
+          buyer_phone_3: string | null
           created_at: string
+          customer_response: string | null
+          customer_response_at: string | null
           expires_at: string | null
           id: string
           incoterms: string | null
@@ -2146,8 +2163,10 @@ export type Database = {
           quantity: number | null
           requested_delivery_date: string | null
           required_documents: Json | null
+          rfq_label: string | null
           rfq_number: string
           specifications: Json | null
+          standalone_link_id: string | null
           status: string
           transaction_id: string | null
           unit: string | null
@@ -2157,11 +2176,19 @@ export type Database = {
         }
         Insert: {
           buyer_company?: string | null
+          buyer_country_code_1?: string | null
+          buyer_country_code_2?: string | null
+          buyer_country_code_3?: string | null
           buyer_email?: string | null
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          buyer_phone_1?: string | null
+          buyer_phone_2?: string | null
+          buyer_phone_3?: string | null
           created_at?: string
+          customer_response?: string | null
+          customer_response_at?: string | null
           expires_at?: string | null
           id?: string
           incoterms?: string | null
@@ -2170,8 +2197,10 @@ export type Database = {
           quantity?: number | null
           requested_delivery_date?: string | null
           required_documents?: Json | null
+          rfq_label?: string | null
           rfq_number: string
           specifications?: Json | null
+          standalone_link_id?: string | null
           status?: string
           transaction_id?: string | null
           unit?: string | null
@@ -2181,11 +2210,19 @@ export type Database = {
         }
         Update: {
           buyer_company?: string | null
+          buyer_country_code_1?: string | null
+          buyer_country_code_2?: string | null
+          buyer_country_code_3?: string | null
           buyer_email?: string | null
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          buyer_phone_1?: string | null
+          buyer_phone_2?: string | null
+          buyer_phone_3?: string | null
           created_at?: string
+          customer_response?: string | null
+          customer_response_at?: string | null
           expires_at?: string | null
           id?: string
           incoterms?: string | null
@@ -2194,8 +2231,10 @@ export type Database = {
           quantity?: number | null
           requested_delivery_date?: string | null
           required_documents?: Json | null
+          rfq_label?: string | null
           rfq_number?: string
           specifications?: Json | null
+          standalone_link_id?: string | null
           status?: string
           transaction_id?: string | null
           unit?: string | null

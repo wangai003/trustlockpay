@@ -1,20 +1,23 @@
 // Phase 3: RFQ (Request for Quote) form for B2B industries
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Shield, FileText, Send, Plus, X, AlertTriangle } from "lucide-react";
+import { Shield, FileText, Send, Plus, X, AlertTriangle, Phone, User, Mail, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getRFQTerms } from "@/lib/rfqIndustryConfig";
+import { COUNTRY_CODES } from "@/lib/countryCodes";
 
 interface RFQFormProps {
   vendorId: string;
   vendorName?: string;
   industry?: string;
+  vendorContact?: { phone?: string; email?: string; phoneCode?: string };
   onSubmitted?: (rfqId: string) => void;
 }
 
@@ -62,11 +65,22 @@ const industryFields: Record<string, { label: string; placeholder: string; requi
 
 const incotermsOptions = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
-const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQFormProps) => {
+const RFQForm = ({ vendorId, vendorName = "Vendor", industry, vendorContact, onSubmitted }: RFQFormProps) => {
+  const terms = getRFQTerms(industry || "");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerCompany, setBuyerCompany] = useState("");
   const [buyerLocation, setBuyerLocation] = useState("");
+  // Phone numbers (up to 3)
+  const [phone1, setPhone1] = useState("");
+  const [code1, setCode1] = useState("+1");
+  const [phone2, setPhone2] = useState("");
+  const [code2, setCode2] = useState("+1");
+  const [phone3, setPhone3] = useState("");
+  const [code3, setCode3] = useState("+1");
+  const [showPhone2, setShowPhone2] = useState(false);
+  const [showPhone3, setShowPhone3] = useState(false);
+
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("MT");
   const [incoterms, setIncoterms] = useState("");
@@ -77,19 +91,11 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
 
   const fields = industryFields[industry || ""] || [];
 
-  const addSpec = () => {
-    setSpecs([...specs, { id: crypto.randomUUID(), key: "", value: "" }]);
-  };
-
-  const removeSpec = (id: string) => {
-    setSpecs(specs.filter((s) => s.id !== id));
-  };
-
-  const updateSpec = (id: string, field: "key" | "value", val: string) => {
+  const addSpec = () => setSpecs([...specs, { id: crypto.randomUUID(), key: "", value: "" }]);
+  const removeSpec = (id: string) => setSpecs(specs.filter((s) => s.id !== id));
+  const updateSpec = (id: string, field: "key" | "value", val: string) =>
     setSpecs(specs.map((s) => (s.id === id ? { ...s, [field]: val } : s)));
-  };
 
-  // Initialize specs from industry fields on first render
   useState(() => {
     if (fields.length > 0 && specs.length === 0) {
       setSpecs(fields.map((f) => ({ id: crypto.randomUUID(), key: f.label, value: "" })));
@@ -108,15 +114,12 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
       toast.error("Name and email are required");
       return;
     }
-
     setLoading(true);
     try {
       const rfqNumber = `RFQ-${Date.now().toString(36).toUpperCase()}`;
       const specifications: Record<string, string> = {};
       specs.forEach((s) => {
-        if (s.key.trim() && s.value.trim()) {
-          specifications[s.key] = s.value;
-        }
+        if (s.key.trim() && s.value.trim()) specifications[s.key] = s.value;
       });
 
       const insertPayload = {
@@ -127,6 +130,12 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
         buyer_email: buyerEmail.trim(),
         buyer_company: buyerCompany.trim() || null,
         buyer_location: buyerLocation.trim() || null,
+        buyer_phone_1: phone1.trim() || null,
+        buyer_country_code_1: phone1.trim() ? code1 : null,
+        buyer_phone_2: phone2.trim() || null,
+        buyer_country_code_2: phone2.trim() ? code2 : null,
+        buyer_phone_3: phone3.trim() || null,
+        buyer_country_code_3: phone3.trim() ? code3 : null,
         industry: industry || null,
         specifications,
         quantity: quantity ? parseFloat(quantity) : null,
@@ -134,36 +143,65 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
         incoterms: incoterms || null,
         requested_delivery_date: deliveryDate || null,
         notes: notes.trim() || null,
+        rfq_label: terms.rfqLabel,
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       } as any;
+
       const { data, error } = await supabase.from("rfq_requests").insert(insertPayload).select().single();
-
       if (error) throw error;
-
-      toast.success(`RFQ ${rfqNumber} submitted successfully`);
+      toast.success(`${terms.rfqLabel} ${rfqNumber} submitted successfully`);
       onSubmitted?.(data.id);
     } catch (err: any) {
-      toast.error(err.message || "Failed to submit RFQ");
+      toast.error(err.message || "Failed to submit request");
     } finally {
       setLoading(false);
     }
   };
+
+  const PhoneRow = ({
+    code, onCodeChange, phone, onPhoneChange, label, onRemove,
+  }: {
+    code: string; onCodeChange: (v: string) => void;
+    phone: string; onPhoneChange: (v: string) => void;
+    label: string; onRemove?: () => void;
+  }) => (
+    <div className="flex items-end gap-1.5">
+      <div className="w-[90px] space-y-1">
+        <Label className="text-[10px] text-muted-foreground">{label}</Label>
+        <Select value={code} onValueChange={onCodeChange}>
+          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent className="max-h-48">
+            {COUNTRY_CODES.map((c) => (
+              <SelectItem key={c.code} value={c.code} className="text-xs">{c.code} {c.country}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex-1 space-y-1">
+        <Label className="text-[10px] text-muted-foreground invisible">Phone</Label>
+        <Input value={phone} onChange={(e) => onPhoneChange(e.target.value)} placeholder="Phone number" className="h-8 text-xs" />
+      </div>
+      {onRemove && (
+        <button onClick={onRemove} className="text-destructive mb-1"><X className="w-3.5 h-3.5" /></button>
+      )}
+    </div>
+  );
 
   return (
     <Card className="overflow-hidden border-2 border-primary/20 shadow-xl max-w-lg mx-auto">
       <div className="bg-primary px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary-foreground" />
-          <span className="text-sm font-bold text-primary-foreground">TrustLock RFQ</span>
+          <span className="text-sm font-bold text-primary-foreground">TrustLock {terms.rfqLabel}</span>
         </div>
         <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">
-          <FileText className="w-3 h-3 mr-1" /> Request for Quote
+          <FileText className="w-3 h-3 mr-1" /> {terms.rfqLabel}
         </Badge>
       </div>
 
       <CardContent className="p-5 space-y-4 bg-background">
         <div className="text-center pb-3 border-b border-border">
-          <p className="text-xs text-muted-foreground">Request quote from</p>
+          <p className="text-xs text-muted-foreground">{terms.rfqLabel} for</p>
           <p className="font-heading font-bold text-foreground">{vendorName}</p>
           {industry && (
             <Badge variant="outline" className="mt-1 text-[10px]">
@@ -171,6 +209,25 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
             </Badge>
           )}
         </div>
+
+        {/* Vendor Contact Info */}
+        {vendorContact && (vendorContact.phone || vendorContact.email) && (
+          <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Vendor Contact</p>
+            {vendorContact.email && (
+              <div className="flex items-center gap-2 text-xs">
+                <Mail className="w-3 h-3 text-muted-foreground" />
+                <a href={`mailto:${vendorContact.email}`} className="text-primary underline">{vendorContact.email}</a>
+              </div>
+            )}
+            {vendorContact.phone && (
+              <div className="flex items-center gap-2 text-xs">
+                <Phone className="w-3 h-3 text-muted-foreground" />
+                <span>{vendorContact.phoneCode || ""} {vendorContact.phone}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Buyer info */}
         <div className="grid grid-cols-2 gap-3">
@@ -192,12 +249,29 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
           </div>
         </div>
 
+        {/* Phone Numbers */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <Phone className="w-3 h-3" /> Contact Numbers
+          </p>
+          <PhoneRow code={code1} onCodeChange={setCode1} phone={phone1} onPhoneChange={setPhone1} label="Primary *" />
+          {showPhone2 ? (
+            <PhoneRow code={code2} onCodeChange={setCode2} phone={phone2} onPhoneChange={setPhone2} label="Secondary" onRemove={() => { setShowPhone2(false); setPhone2(""); }} />
+          ) : null}
+          {showPhone3 ? (
+            <PhoneRow code={code3} onCodeChange={setCode3} phone={phone3} onPhoneChange={setPhone3} label="Alternate" onRemove={() => { setShowPhone3(false); setPhone3(""); }} />
+          ) : null}
+          {(!showPhone2 || !showPhone3) && (
+            <Button type="button" variant="ghost" size="sm" className="text-xs gap-1 h-7" onClick={() => !showPhone2 ? setShowPhone2(true) : setShowPhone3(true)}>
+              <Plus className="w-3 h-3" /> Add another number
+            </Button>
+          )}
+        </div>
+
         {/* Industry-specific fields */}
         {specs.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Specifications
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Specifications</p>
             {specs.map((spec) => {
               const fieldDef = fields.find((f) => f.label === spec.key);
               return (
@@ -215,9 +289,7 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
                     />
                   </div>
                   {!fieldDef && (
-                    <button onClick={() => removeSpec(spec.id)} className="text-destructive mt-4">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <button onClick={() => removeSpec(spec.id)} className="text-destructive mt-4"><X className="w-3.5 h-3.5" /></button>
                   )}
                 </div>
               );
@@ -265,7 +337,7 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
 
         <div className="space-y-1">
           <Label className="text-xs">Additional Notes</Label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Packaging, certifications, special requirements..." rows={3} className="text-xs" />
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={terms.specPrompt} rows={3} className="text-xs" />
         </div>
 
         {requiredFieldsMissing && (
@@ -280,12 +352,12 @@ const RFQForm = ({ vendorId, vendorName = "Vendor", industry, onSubmitted }: RFQ
           disabled={loading || !buyerName.trim() || !buyerEmail.trim()}
           onClick={handleSubmit}
         >
-          {loading ? "Submitting..." : "Submit Request for Quote"} <Send className="w-4 h-4" />
+          {loading ? "Submitting..." : `Submit ${terms.rfqLabel}`} <Send className="w-4 h-4" />
         </Button>
 
         <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
           <Shield className="w-3 h-3" />
-          Escrow protection activates when you accept the vendor's proforma
+          Escrow protection activates when you accept the vendor's {terms.proformaLabel.toLowerCase()}
         </div>
       </CardContent>
     </Card>
