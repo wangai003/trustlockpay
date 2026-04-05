@@ -87,6 +87,7 @@ const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryP
 const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
 const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketplaceOrders"));
+const VendorCRM = lazy(() => import("./pages/vendor/VendorCRM"));
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
