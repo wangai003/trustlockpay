@@ -363,6 +363,8 @@ const MilestoneWorkOrderPanel = ({
   const [pendingRestoreMilestone, setPendingRestoreMilestone] = useState<{ id: string; title: string } | null>(null);
   const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [reconciliationComplete, setReconciliationComplete] = useState(false);
+  const [skippedMilestoneIndices, setSkippedMilestoneIndices] = useState<number[]>([]);
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
