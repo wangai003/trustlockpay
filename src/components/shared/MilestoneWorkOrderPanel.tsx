@@ -446,10 +446,13 @@ const MilestoneWorkOrderPanel = ({
   const handleMarkFulfilled = async (milestoneId: string) => {
     const milestone = milestones.find((m: any) => m.id === milestoneId) as any;
     if (milestone) {
-      const gate = getDocGateStatus(milestone);
+      const gate = getDocGateStatus(milestone, fundsAreLocked);
       if (gate.mode === "required" && !gate.satisfied) {
         toast.error(`Cannot fulfill — upload required documents first: ${gate.missingRequired.join(", ")}`);
         return;
+      }
+      if (gate.autoSatisfied.length > 0) {
+        toast.info(`${gate.autoSatisfied.join(", ")} auto-resolved — escrow already funded`, { duration: 4000 });
       }
       if (gate.mode === "optional" && gate.missingOptional.length > 0) {
         toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
