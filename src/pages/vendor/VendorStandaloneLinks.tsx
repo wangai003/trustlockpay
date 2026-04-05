@@ -46,6 +46,7 @@ const VendorStandaloneLinks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<GeneratedLink | null>(null);
+  const { data: enforcement } = useVendorEnforcementStatus();
 
   const baseUrl = window.location.origin;
 
