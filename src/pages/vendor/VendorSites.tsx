@@ -80,8 +80,8 @@ const VendorSites = () => {
   const deleteSite = useDeleteSite();
 
   const allSites = dbSites.length > 0
-    ? dbSites.map(s => ({ id: s.id, name: s.name, platform: s.platform || "Custom", url: s.url || "" }))
-    : vendor.sites;
+    ? dbSites.map(s => ({ id: s.id, name: s.name, platform: s.platform || "Custom", url: s.url || "", industry: (s as any).industry || "" }))
+    : vendor.sites.map(s => ({ ...s, industry: "" }));
 
   // Track per-site widget enabled state
   const [siteWidgetStates, setSiteWidgetStates] = useState<Record<string, boolean>>(() => {

@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "add_site": {
-        const { name, platform, url, vendorId } = body;
+        const { name, platform, url, vendorId, industry } = body;
         const { data, error } = await supabase
           .from("vendor_sites")
-          .insert({ vendor_id: vendorId || null, name, platform, url })
+          .insert({ vendor_id: vendorId || null, name, platform, url, industry: industry || null })
           .select()
           .single();
         if (error) throw error;
