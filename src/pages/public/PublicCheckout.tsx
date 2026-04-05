@@ -16,6 +16,7 @@ import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryCont
 import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
+import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 
 interface LinkData {
   link_id: string;
