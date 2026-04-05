@@ -752,14 +752,25 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* Note */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-medium flex items-center gap-1">
-                        <StickyNote className="w-3 h-3" /> Note
-                      </label>
-                      <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
-                      <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
-                    </div>
+                    {/* Note — admin sees read-only */}
+                    {isAdmin ? (
+                      ms.description && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium flex items-center gap-1">
+                            <StickyNote className="w-3 h-3" /> Notes
+                          </label>
+                          <p className="text-[11px] text-muted-foreground bg-muted/30 rounded p-2">{ms.description}</p>
+                        </div>
+                      )
+                    ) : (
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium flex items-center gap-1">
+                          <StickyNote className="w-3 h-3" /> Note
+                        </label>
+                        <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
+                        <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
+                      </div>
+                    )}
 
                     {/* Document Type Selector + Upload */}
                     {(() => {
