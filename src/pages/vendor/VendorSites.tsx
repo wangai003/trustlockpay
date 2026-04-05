@@ -401,6 +401,11 @@ const VendorSites = () => {
                         <TLId code={dynTLId("V", "SIT", row, "BDG-PLATFORM")} inline>
                           <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
                         </TLId>
+                        {site.industry && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {INDUSTRY_ICONS[site.industry] || "📦"} {TRUSTLOCK_INDUSTRIES.find(i => i.key === site.industry)?.label || site.industry}
+                          </Badge>
+                        )}
                         {isNoCheckoutPlatform ? (
                           <TLId code={dynTLId("V", "SIT", row, "BDG-STATUS")} inline>
                             <Badge className="bg-accent/15 text-accent text-[10px]">Standalone Links</Badge>
