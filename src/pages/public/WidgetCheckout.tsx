@@ -248,9 +248,26 @@ const WidgetCheckout = () => {
                     setScheduleAccepted(true);
                     toast.success("Payment schedule accepted — proceed to payment");
                   }}
-                  onCounterPropose={(schedule) => {
-                    toast.info("Counter-proposal submitted. The vendor will be notified to review your suggested percentages.");
-                    // In production this would create a negotiation record
+                  onCounterPropose={async (schedule, contact) => {
+                    try {
+                      await supabase.from("milestone_counter_proposals").insert({
+                        vendor_id: vendorId,
+                        site_id: siteId || null,
+                        industry: vendor.industry,
+                        order_item: form.item,
+                        order_amount: parseFloat(form.amount || "0"),
+                        buyer_full_name: contact.fullName,
+                        buyer_email: contact.email,
+                        buyer_phone: contact.phone || null,
+                        buyer_country_code: contact.countryCode,
+                        vendor_schedule: milestoneSchedule as any,
+                        proposed_schedule: schedule as any,
+                      } as any);
+                      setStep("counter_submitted");
+                      toast.success("Counter-proposal submitted!");
+                    } catch {
+                      toast.error("Failed to submit counter-proposal. Please try again.");
+                    }
                   }}
                 />
               )}
