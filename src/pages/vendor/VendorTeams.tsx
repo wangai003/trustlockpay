@@ -61,6 +61,10 @@ const VendorTeams = () => {
   const [tasks, setTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinName, setJoinName] = useState("");
+  const [joiningTeam, setJoiningTeam] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
