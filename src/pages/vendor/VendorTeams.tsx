@@ -57,6 +57,7 @@ const VendorTeams = () => {
   const { user } = useAuth();
   const { isTestnet } = useVendor();
   const testnet = useTestnetTeams("vendor");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
