@@ -163,11 +163,21 @@ const VendorSites = () => {
   };
 
   const handleConfirmInvoice = () => {
+    if (!activeSiteId) return;
     const action = pendingInvoiceAction || "install";
-    const { fee, chargeMode, state } = processWidgetTransition(action);
-    setWidgetState(state);
+    const siteState = getSiteWidgetState(activeSiteId);
+    const { fee, newState, chargeMode } = calculateWidgetTransitionFee(siteState.widgetState, action);
+    const updated: WidgetFeeState = {
+      widgetState: newState,
+      installFeePaid: siteState.installFeePaid || (action === "install" && fee > 0),
+      pendingRestorationFee: chargeMode === "next_cycle",
+      totalInstallFeesCharged: siteState.totalInstallFeesCharged + (fee > 0 ? fee : 0),
+    };
+    setWidgetStates(prev => ({ ...prev, [activeSiteId]: updated }));
+    setSiteWidgetStates(prev => ({ ...prev, [activeSiteId]: true }));
     setShowInvoice(false);
     setPendingInvoiceAction(null);
+    setActiveSiteId(null);
 
     if (chargeMode === "immediate") {
       toast.success(`Widget installed! $${fee.toFixed(2)} one-time installation fee will be charged with your first plan payment.`);
@@ -178,21 +188,23 @@ const VendorSites = () => {
 
   const handleToggleWidget = (siteId: string, enabled: boolean) => {
     if (enabled) {
-      const ws = getWidgetFeeState();
+      const ws = getSiteWidgetState(siteId);
       if (ws.widgetState === "never_installed" || ws.widgetState === "deleted") {
         handleFirstInstall(siteId);
         return;
       }
-      processWidgetTransition("enable");
+      // Re-enable from disabled
+      setWidgetStates(prev => ({ ...prev, [siteId]: { ...ws, widgetState: "installed" as WidgetState } }));
     } else {
-      processWidgetTransition("disable");
+      const ws = getSiteWidgetState(siteId);
+      setWidgetStates(prev => ({ ...prev, [siteId]: { ...ws, widgetState: "disabled" as WidgetState } }));
     }
     setSiteWidgetStates(prev => ({ ...prev, [siteId]: enabled }));
-    setWidgetState(getWidgetFeeState());
     toast.success(enabled ? "Widget enabled" : "Widget disabled — no fee charged.");
   };
 
   const handleRestoreWidget = (siteId: string) => {
+    setActiveSiteId(siteId);
     setPendingInvoiceAction("restore");
     setShowInvoice(true);
   };
