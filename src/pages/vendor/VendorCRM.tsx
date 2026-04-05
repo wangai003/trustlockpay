@@ -407,6 +407,161 @@ const VendorCRM = () => {
             })}
           </div>
         )}
+
+          </TabsContent>
+
+          {/* ─── Milestone Agreements Tab ─── */}
+          <TabsContent value="milestones" className="space-y-4 mt-4">
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Handshake className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-semibold text-foreground">Milestone Counter-Proposals</p>
+                    <p className="text-xs text-muted-foreground">
+                      Buyers who proposed different milestone payout percentages during checkout appear here.
+                      Review their proposal, then accept (and send a standalone link) or reject.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Total", count: proposalCounts.total, color: "text-foreground" },
+                { label: "Pending", count: proposalCounts.pending, color: "text-amber-600" },
+                { label: "Accepted", count: proposalCounts.accepted, color: "text-green-600" },
+              ].map(s => (
+                <Card key={s.label} className="text-center p-2">
+                  <p className={`text-lg font-bold ${s.color}`}>{s.count}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </Card>
+              ))}
+            </div>
+
+            {proposalsLoading ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">Loading proposals...</div>
+            ) : proposals.length === 0 ? (
+              <Card className="text-center py-12">
+                <Percent className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No milestone counter-proposals yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  When a buyer proposes different percentages during checkout, they'll appear here
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {proposals.map(p => {
+                  const isExp = expandedProposal === p.id;
+                  const vendorSch = (p.vendor_schedule || []) as any[];
+                  const buyerSch = (p.proposed_schedule || []) as any[];
+                  return (
+                    <Card
+                      key={p.id}
+                      className={`cursor-pointer transition-all hover:shadow-md ${isExp ? "ring-1 ring-amber-500/30" : ""}`}
+                      onClick={() => setExpandedProposal(isExp ? null : p.id)}
+                    >
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Badge variant="outline" className="text-[10px] shrink-0">{p.proposal_number}</Badge>
+                            <span className="text-sm font-semibold truncate">{p.buyer_full_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge className={`text-[10px] border ${
+                              p.status === "pending" ? "bg-amber-500/10 text-amber-700 border-amber-500/30"
+                              : p.status === "accepted" ? "bg-green-500/10 text-green-700 border-green-500/30"
+                              : "bg-destructive/10 text-destructive border-destructive/30"
+                            }`}>
+                              {p.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{p.buyer_email}</span>
+                          {p.buyer_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{p.buyer_country_code} {p.buyer_phone}</span>}
+                          {p.industry && <Badge variant="outline" className="text-[9px]">{INDUSTRY_LABELS[p.industry] || p.industry}</Badge>}
+                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${Number(p.order_amount || 0).toLocaleString()}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{format(new Date(p.created_at), "MMM d, yyyy")}</span>
+                        </div>
+
+                        {isExp && (
+                          <div className="mt-4 pt-3 border-t border-border space-y-4" onClick={e => e.stopPropagation()}>
+                            {/* Side-by-side comparison */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Your Preset</p>
+                                {vendorSch.map((m: any, i: number) => (
+                                  <div key={i} className="flex justify-between text-xs py-1 border-b border-border/50 last:border-0">
+                                    <span className="truncate">{m.name}</span>
+                                    <Badge variant="secondary" className="text-[9px]">{m.percentage}%</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-2">Buyer's Proposal</p>
+                                {buyerSch.map((m: any, i: number) => {
+                                  const changed = vendorSch[i] && vendorSch[i].percentage !== m.percentage;
+                                  return (
+                                    <div key={i} className={`flex justify-between text-xs py-1 border-b border-border/50 last:border-0 ${changed ? "bg-amber-500/5" : ""}`}>
+                                      <span className="truncate">{m.name}</span>
+                                      <Badge variant={changed ? "default" : "secondary"} className={`text-[9px] ${changed ? "bg-amber-600" : ""}`}>
+                                        {m.percentage}%
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {p.order_item && (
+                              <div className="text-xs"><span className="font-medium">Item:</span> {p.order_item}</div>
+                            )}
+
+                            {/* Actions for pending proposals */}
+                            {p.status === "pending" && (
+                              <div className="flex gap-2 pt-2 border-t border-border">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs gap-1 text-destructive border-destructive/30"
+                                  onClick={() => handleProposalAction(p.id, "rejected")}
+                                >
+                                  <XCircle className="w-3.5 h-3.5" /> Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="text-xs gap-1 flex-1"
+                                  onClick={() => handleProposalAction(p.id, "accepted")}
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" /> Accept & Create Payment Link
+                                </Button>
+                              </div>
+                            )}
+                            {p.status === "accepted" && (
+                              <div className="pt-2 border-t border-border">
+                                <Button
+                                  size="sm"
+                                  className="w-full text-xs gap-1"
+                                  onClick={() => window.location.href = "/trustlock/vendor/standalone-links"}
+                                >
+                                  <Link2 className="w-3.5 h-3.5" /> Send Payment Link <ArrowRight className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
