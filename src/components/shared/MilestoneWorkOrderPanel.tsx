@@ -154,7 +154,7 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
     { name: "Delivery", percentage: 15, documents: ["Acceptance Form"], documentMode: "required", description: "Released", requiresObserver: false, owner: "buyer", buyerAction: "Accept & Sign Off", documentOwners: { "Acceptance Form": "buyer" } },
   ],
   "logistics": [
-    { name: "LC / Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "LC opened", requiresObserver: true, owner: "buyer", buyerAction: "Issue Letter of Credit", documentOwners: { "Trade Contract": "buyer" } },
+    { name: "Trade Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "Agreement signed", requiresObserver: true, owner: "buyer", buyerAction: "Sign Trade Agreement", documentOwners: { "Trade Contract": "buyer" } },
     { name: "Origin Inspection", percentage: 15, documents: ["Inspection Cert"], documentMode: "required", description: "Inspected", requiresObserver: true, owner: "vendor", vendorAction: "Submit Inspection", documentOwners: { "Inspection Cert": "vendor" } },
     { name: "Export Customs", percentage: 15, documents: ["Export License"], documentMode: "required", description: "Cleared", requiresObserver: true, owner: "vendor", vendorAction: "Clear Export", documentOwners: { "Export License": "vendor" } },
     { name: "Shipping", percentage: 25, documents: ["Bill of Lading"], documentMode: "required", description: "In transit", requiresObserver: true, owner: "vendor", vendorAction: "Confirm Shipping", documentOwners: { "Bill of Lading": "vendor" } },
