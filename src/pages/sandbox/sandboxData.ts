@@ -114,7 +114,6 @@ export const SANDBOX_MESSAGES = [
   },
 ];
 
-export type SandboxOrder = typeof SANDBOX_ORDERS[number];
 export type SandboxMessage = typeof SANDBOX_MESSAGES[number];
 
 export const statusLabels: Record<string, { label: string; color: string }> = {
