@@ -50,10 +50,24 @@ interface AdminAccount {
   created_at: string;
 }
 
+// Testnet mock staff for simulation
+const TESTNET_MOCK_STAFF: AdminAccount[] = [
+  { id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", username: "michael.tl", name: "Michael", email: "michael@trustlock.co", is_setup: true, is_deleted: false, is_chief: true, chief_rank: 1, deleted_at: null, reinstated_at: null, created_at: "2025-01-15T00:00:00Z" },
+  { id: "staff-david-001", username: "david.tl", name: "David", email: "david@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-01T00:00:00Z" },
+  { id: "staff-emmanuel-001", username: "emmanuel.tl", name: "Emmanuel", email: "emmanuel@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-10T00:00:00Z" },
+  { id: "staff-sarah-001", username: "sarah.tl", name: "Sarah", email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2026-03-20T00:00:00Z" },
+  { id: "staff-kwame-001", username: "kwame.tl", name: "Kwame", email: "kwame@trustlock.co", is_setup: true, is_deleted: true, is_chief: false, chief_rank: null, deleted_at: "2026-03-01T00:00:00Z", reinstated_at: null, created_at: "2025-06-01T00:00:00Z" },
+];
+
+function isTestnetMode(): boolean {
+  return localStorage.getItem("tl_network") === "testnet";
+}
+
 export default function AdminStaffManager() {
   const qc = useQueryClient();
   const chiefAdminId = getChiefAdminId();
   const missingChiefSession = !chiefAdminId;
+  const isTestnet = isTestnetMode();
 
   const [newUsername, setNewUsername] = useState("");
   const [newName, setNewName] = useState("");
@@ -67,14 +81,29 @@ export default function AdminStaffManager() {
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
 
+  // Testnet local state for mock staff
+  const [testnetStaff, setTestnetStaff] = useState<AdminAccount[]>(() => {
+    if (!isTestnet) return [];
+    try {
+      const saved = localStorage.getItem("tl_testnet_admin_staff");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return TESTNET_MOCK_STAFF;
+  });
+
+  const saveTestnetStaff = (staff: AdminAccount[]) => {
+    setTestnetStaff(staff);
+    localStorage.setItem("tl_testnet_admin_staff", JSON.stringify(staff));
+  };
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-staff-list", chiefAdminId],
     queryFn: () => callStaffApi({ action: "list", chiefAdminId }),
-    enabled: !missingChiefSession,
+    enabled: !missingChiefSession && !isTestnet,
   });
 
-  const accounts: AdminAccount[] = data?.accounts || [];
-  const callerRank: number | null = data?.callerRank ?? null;
+  const accounts: AdminAccount[] = isTestnet ? testnetStaff : (data?.accounts || []);
+  const callerRank: number | null = isTestnet ? 1 : (data?.callerRank ?? null);
   const isOriginalChief = callerRank === 1;
 
   const activeAccounts = accounts.filter((a) => !a.is_deleted);
