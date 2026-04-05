@@ -75,8 +75,20 @@ const VendorSites = () => {
     const stored = localStorage.getItem("tl_site_widget_fee_states");
     return stored ? JSON.parse(stored) : {};
   });
+  const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
+
+  // Persist per-site widget fee states
+  useEffect(() => {
+    localStorage.setItem("tl_site_widget_fee_states", JSON.stringify(widgetStates));
+  }, [widgetStates]);
+
+  const getSiteWidgetState = (siteId: string): WidgetFeeState =>
+    widgetStates[siteId] || { widgetState: "never_installed" as WidgetState, installFeePaid: false, pendingRestorationFee: false, totalInstallFeesCharged: 0 };
+
+  const anyInstallFeePaid = Object.values(widgetStates).some(s => s.installFeePaid);
+  const anyPendingRestoration = Object.values(widgetStates).some(s => s.pendingRestorationFee);
 
   const { data: dbSites = [] } = useVendorSites();
   const addSite = useAddSite();
