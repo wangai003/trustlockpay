@@ -302,7 +302,13 @@ const VendorBillPayments = () => {
                             {cfg.label}
                           </span>
                         </td>
-                        <td className="p-4 hidden sm:table-cell text-xs text-muted-foreground">{bill.method}</td>
+                        <td className="p-4 hidden sm:table-cell text-xs text-muted-foreground">
+                          {bill.status === "pending" || bill.status === "overdue" ? (
+                            <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => handlePayBill(bill)}>
+                              <DollarSign className="w-3 h-3" /> Pay Now
+                            </Button>
+                          ) : bill.method}
+                        </td>
                       </tr>
                     );
                   })}
