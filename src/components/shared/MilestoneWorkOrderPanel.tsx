@@ -562,7 +562,7 @@ const MilestoneWorkOrderPanel = ({
         <CardContent className="space-y-2 pt-0">
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
-            const gateStatus = getDocGateStatus(ms);
+            const gateStatus = getDocGateStatus(ms, fundsAreLocked);
 
             // Look up blueprint template for this milestone
             const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
