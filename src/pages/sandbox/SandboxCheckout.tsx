@@ -268,7 +268,7 @@ const SandboxCheckout = () => {
                       <li>I understand the dispute resolution process and 7-day arbitration window.</li>
                       <li>I agree to TrustLock's Terms of Service and Escrow Protection Policy.</li>
                       <li>Industry: <strong>{config.label}</strong> — milestone-based escrow applies.</li>
-                      <li>A PDF receipt of this acknowledgement is available for download ($0.50).</li>
+                      <li>A PDF receipt of this acknowledgement is available for download (free in sandbox).</li>
                     </ul>
                   </div>
 
