@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight } from "lucide-react";
+import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
