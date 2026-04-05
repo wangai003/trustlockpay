@@ -411,53 +411,118 @@ const WidgetCheckout = () => {
 
         {step === "done" && (
           <Card className="border-primary/20">
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <CheckCircle className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">
+            <CardContent className="p-5 space-y-4">
+              {/* Success header */}
+              <div className="text-center space-y-2">
+                <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CheckCircle className="w-7 h-7 text-primary" />
+                </div>
+                <p className="text-sm font-bold">
                   {isSandbox ? "Test Payment Successful!" : "Payment Locked in Escrow!"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   {isSandbox
-                    ? "This was a simulated transaction. In live mode, funds would be held securely in escrow until delivery is confirmed."
+                    ? "This sandbox transaction simulates the full escrow-protected payment flow."
                     : "Your funds are safely held in escrow until the order is fulfilled."}
                 </p>
               </div>
 
-              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Confirmation</span>
-                  <span className="font-mono font-semibold text-primary">{confirmationCode}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span>${parseFloat(form.amount).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Vendor</span>
-                  <span>{vendor.name}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Status</span>
-                  <Badge variant="secondary" className="text-[10px]">
-                    <Lock className="w-3 h-3 mr-1" />
-                    {isSandbox ? "Demo Locked" : "In Escrow"}
-                  </Badge>
+              {/* On-screen receipt */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Transaction Receipt</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Confirmation Code</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-primary">{confirmationCode}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(confirmationCode).catch(() => {});
+                          toast.success("Confirmation code copied!");
+                        }}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Buyer</span>
+                    <span className="font-medium">{form.buyerName}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Email</span>
+                    <span className="font-medium">{form.buyerEmail}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Item</span>
+                    <span className="font-medium">{form.item}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Vendor</span>
+                    <span className="font-medium">{vendor.name}</span>
+                  </div>
+                  <div className="border-t border-border pt-2 flex justify-between text-xs">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${parseFloat(form.amount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Escrow Fee (1.5%)</span>
+                    <span>${(parseFloat(form.amount) * 0.015).toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-border pt-2 flex justify-between text-xs font-bold">
+                    <span>Total Charged</span>
+                    <span>${(parseFloat(form.amount) * 1.015).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant="secondary" className="text-[10px] gap-1">
+                      <Lock className="w-3 h-3" />
+                      {isSandbox ? "Demo — Funds Locked" : "In Escrow"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Date</span>
+                    <span>{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* What happens next */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-semibold flex items-center gap-1.5">
+                  <ArrowRight className="w-3.5 h-3.5 text-primary" /> What happens next?
+                </p>
+                <ul className="text-[11px] text-muted-foreground space-y-1.5 ml-5">
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-primary font-bold mt-0.5">1.</span>
+                    <span>Your funds are held in a secure escrow vault — the vendor <strong>cannot</strong> access them yet.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-primary font-bold mt-0.5">2.</span>
+                    <span>The vendor fulfills your order according to the agreed milestones.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-primary font-bold mt-0.5">3.</span>
+                    <span>Once you confirm delivery, funds are released to the vendor automatically.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-primary font-bold mt-0.5">4.</span>
+                    <span>If there's a dispute, TrustLock mediates with full blockchain-backed proof.</span>
+                  </li>
+                </ul>
+              </div>
+
               {isSandbox && (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                <div className="bg-accent/50 rounded-lg p-3 text-center">
                   <p className="text-[10px] text-muted-foreground">
-                    <strong className="text-foreground">Widget integration verified!</strong> The TrustLock widget is correctly installed on your site. When you're ready for live payments, switch to live mode in your vendor dashboard.
+                    <strong className="text-foreground">✓ Widget verified!</strong> This was a sandbox test. In live mode, real funds are locked and the full escrow lifecycle activates. Save your confirmation code above for your records.
                   </p>
                 </div>
               )}
 
               {isEmbed && (
-                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>
+                <Button variant="outline" size="sm" className="w-full text-xs" onClick={closeWidget}>
                   Close
                 </Button>
               )}
