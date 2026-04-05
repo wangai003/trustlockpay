@@ -61,6 +61,10 @@ const VendorTeams = () => {
   const [tasks, setTasks] = useState<TaskAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinName, setJoinName] = useState("");
+  const [joiningTeam, setJoiningTeam] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
@@ -205,6 +209,22 @@ const VendorTeams = () => {
   const activeWs = workspaces.filter((w) => w.status === "active");
   const completedWs = workspaces.filter((w) => w.status === "complete");
   const dissolvedWs = workspaces.filter((w) => w.status === "dissolved");
+
+  const joinTeamByCode = async () => {
+    if (!joinCode.trim() || !user) return toast.error("Enter an invite code");
+    setJoiningTeam(true);
+    try {
+      const { data: ws, error: wsErr } = await supabase.from("team_workspaces").select("id, title, industry, status").eq("invite_code", joinCode.trim()).eq("status", "active").maybeSingle();
+      if (wsErr || !ws) { toast.error("Invalid or expired invite code"); setJoiningTeam(false); return; }
+      const { data: existing } = await supabase.from("team_members").select("id").eq("workspace_id", ws.id).eq("user_id", user.id).is("removed_at", null).maybeSingle();
+      if (existing) { toast.error("You're already a member of this team"); setJoiningTeam(false); return; }
+      const { error: insertErr } = await supabase.from("team_members").insert({ workspace_id: ws.id, user_id: user.id, display_name: joinName.trim() || null, added_by: user.id } as any);
+      if (insertErr) { toast.error(insertErr.message); setJoiningTeam(false); return; }
+      toast.success(`Joined "${ws.title}" successfully!`);
+      setShowJoin(false); setJoinCode(""); setJoinName(""); fetchWorkspaces();
+    } catch { toast.error("Failed to join team"); }
+    setJoiningTeam(false);
+  };
 
   // Offline banner
   const OfflineBanner = () => !isOnline ? (
@@ -441,7 +461,10 @@ const VendorTeams = () => {
           <h1 className="text-xl sm:text-2xl font-bold">Teams</h1>
           <p className="text-sm text-muted-foreground">Manage work order teams and assign industry-specific tasks.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowJoin(true)}><UserPlus className="w-4 h-4 mr-1" /> Join Team</Button>
+          <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -484,6 +507,22 @@ const VendorTeams = () => {
             <div><Label>Transaction ID (optional)</Label><Input value={newTxId} onChange={(e) => setNewTxId(e.target.value)} placeholder="Link to existing transaction" /></div>
           </div>
           <DialogFooter><Button onClick={createWorkspace}>Create</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Join Team Dialog */}
+      <Dialog open={showJoin} onOpenChange={setShowJoin}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Join a Team</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Enter the invite code shared by your team lead to join their workspace.</p>
+          <div className="space-y-4 py-2">
+            <div><Label>Invite Code</Label><Input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="e.g. a1b2c3d4e5f6" /></div>
+            <div><Label>Your Display Name</Label><Input value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="e.g. John Doe" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowJoin(false)}>Cancel</Button>
+            <Button onClick={joinTeamByCode} disabled={!joinCode.trim() || joiningTeam}>{joiningTeam ? "Joining…" : "Join Team"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
