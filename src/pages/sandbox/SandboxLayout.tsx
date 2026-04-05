@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Clock } from "lucide-react";
+import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SandboxCountdown } from "./SandboxCountdown";
 
 interface SandboxSession {
   name: string;
@@ -47,8 +48,6 @@ const SandboxLayout = () => {
     navigate("/sandbox/login");
   };
 
-  const hoursLeft = Math.max(0, Math.round((new Date(session.expiresAt).getTime() - Date.now()) / 3600000));
-
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
@@ -76,12 +75,16 @@ const SandboxLayout = () => {
               </Link>
             );
           })}
+          <Link
+            to="/sandbox/store"
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-md text-muted-foreground hover:bg-muted"
+          >
+            <Globe className="w-4 h-4" />
+            Browse Store
+          </Link>
         </nav>
         <div className="p-3 border-t border-border space-y-2">
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{hoursLeft}h remaining</span>
-          </div>
+          <SandboxCountdown />
           <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={handleLogout}>
             <LogOut className="w-3 h-3 mr-1" /> Exit Sandbox
           </Button>
@@ -103,10 +106,13 @@ const SandboxLayout = () => {
         </header>
 
         {/* Sandbox banner */}
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-between">
           <p className="text-xs text-primary font-medium">
             🧪 Sandbox Mode — Welcome, {session.name}. No real payments are processed.
           </p>
+          <div className="hidden md:block">
+            <SandboxCountdown />
+          </div>
         </div>
 
         {/* Mobile nav */}
@@ -124,6 +130,10 @@ const SandboxLayout = () => {
               </Link>
             );
           })}
+          <Link to="/sandbox/store" className="flex-1 flex flex-col items-center gap-1 py-2 text-[11px] text-muted-foreground">
+            <Globe className="w-4 h-4" />
+            Store
+          </Link>
         </nav>
 
         <main className="flex-1 overflow-auto p-4 md:p-6">

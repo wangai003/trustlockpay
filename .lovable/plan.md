@@ -1,25 +1,34 @@
+## Sandbox Overhaul Plan
 
-## Multi-Site / Multi-Industry Widget Architecture
+### 1. Dummy Vendor Website Hub (`/sandbox/store`)
+- Landing page with 5 industry cards: E-Commerce, Real Estate, Mining, Energy, Freelance
+- Each card links to `/sandbox/store/:industry` with a mock vendor website page
+- Each page has a TrustLock Pay widget button that opens the checkout flow
 
-### Phase 1: Database Changes
-- Add `industry` column to `vendor_sites` table
-- Add `site_id` column to `vendor_widget_fees` table (change from per-vendor to per-site tracking)
-- Add unique constraint on `(vendor_id, site_id)` in `vendor_widget_fees`
+### 2. Industry Checkout Flow (`/sandbox/checkout/:industry`)
+- Pre-filled invoice based on industry (item, price, milestones, documents)
+- RFQ bypass — goes straight to invoice review
+- Industry-specific document gates shown (view-only)
+- Payment method selector (simulated — auto-completes on click)
+- Generates confirmation code + order number, shows instructions to copy and go to buyer dashboard
 
-### Phase 2: Widget Fee Logic Updates
-- Update `widgetFeeLogic.ts` to accept a `siteId` parameter
-- Update `manage-widget-fee` edge function to scope state per site
-- Update localStorage keys to be site-scoped
+### 3. Shared Order Storage
+- Orders stored in `localStorage` keyed by sandbox session
+- Both vendor and buyer views read from same store
+- Vendor sees ALL orders across 5 industries
+- Buyer enters order number to "claim" and track it
 
-### Phase 3: CRM Sidebar Conditional Visibility
-- Update `VendorSidebar.tsx` to only show CRM link when at least one vendor site has an RFQ-enabled industry
-- Query `vendor_sites` joined with `industry_templates` to determine visibility
+### 4. Updated Sandbox Layout
+- Remove 24h expiry → show countdown to Dec 31, 2026
+- Add "Browse Store" link in sidebar for discovering the dummy websites
+- Buyer orders page: add "Enter Order #" field to pull up orders
+- Vendor orders page: show all sandbox orders with industry badges
 
-### Phase 4: Vendor Sites UI Updates
-- Add industry selector to site creation/editing in `VendorSites.tsx`
-- Each site card shows its assigned industry
-- Widget install/config is per-site with industry-specific fields
+### 5. Milestone Collaboration Flow
+- After buyer claims order, both can advance milestones
+- Industry-specific milestone steps with document placeholders
+- Final stage marks order complete
 
-### Phase 5: Widget Config Per-Site
-- `WidgetIndustryConfig` loads config based on the site's industry, not a global vendor industry
-- Each widget embed code is site-specific
+### Files to create/modify:
+- **Create**: `SandboxStore.tsx` (hub), `SandboxStorePage.tsx` (per-industry mock site), `SandboxCheckout.tsx` (checkout flow), `sandboxIndustryData.ts` (invoices/milestones per industry)
+- **Modify**: `SandboxLayout.tsx` (sidebar + countdown), `SandboxOrders.tsx` (order lookup), `sandboxData.ts` (shared storage utils), `App.tsx` (routes)

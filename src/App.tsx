@@ -104,6 +104,9 @@ const SandboxVendorOverview = lazy(() => import("./pages/sandbox/SandboxVendorOv
 const SandboxBuyerOverview = lazy(() => import("./pages/sandbox/SandboxBuyerOverview"));
 const SandboxOrders = lazy(() => import("./pages/sandbox/SandboxOrders"));
 const SandboxMessages = lazy(() => import("./pages/sandbox/SandboxMessages"));
+const SandboxStore = lazy(() => import("./pages/sandbox/SandboxStore"));
+const SandboxStorePage = lazy(() => import("./pages/sandbox/SandboxStorePage"));
+const SandboxCheckout = lazy(() => import("./pages/sandbox/SandboxCheckout"));
 
 const queryClient = new QueryClient();
 
@@ -229,6 +232,9 @@ const App = () => (
 
               {/* Sandbox Demo */}
               <Route path="/sandbox/login" element={<SandboxLogin />} />
+              <Route path="/sandbox/store" element={<SandboxStore />} />
+              <Route path="/sandbox/store/:industry" element={<SandboxStorePage />} />
+              <Route path="/sandbox/checkout/:industry" element={<SandboxCheckout />} />
               <Route path="/sandbox/vendor" element={<SandboxLayout />}>
                 <Route index element={<SandboxVendorOverview />} />
                 <Route path="orders" element={<SandboxOrders />} />

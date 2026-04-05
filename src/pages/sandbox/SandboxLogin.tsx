@@ -1,28 +1,28 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Store, ShoppingBag } from "lucide-react";
+import { Shield, Store, ShoppingBag, Globe } from "lucide-react";
+import { SandboxCountdown } from "./SandboxCountdown";
 
 type DemoRole = "vendor" | "buyer";
 
 const SandboxLogin = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [role, setRole] = useState<DemoRole>("vendor");
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
     const session = {
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: "",
       role,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: "2026-12-31T23:59:59Z",
     };
     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
     navigate(role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
@@ -31,7 +31,7 @@ const SandboxLogin = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-6">
+        <div className="flex items-center justify-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
             <Shield className="w-6 h-6 text-primary-foreground" />
           </div>
@@ -41,17 +41,36 @@ const SandboxLogin = () => {
           </div>
         </div>
 
+        <div className="flex justify-center mb-4">
+          <SandboxCountdown />
+        </div>
+
+        {/* Browse Store CTA */}
+        <Link to="/sandbox/store">
+          <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">Browse Demo Vendor Websites</p>
+                <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout, then come back to track your order.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Try TrustLock — No Account Needed</CardTitle>
+            <CardTitle className="text-lg">Enter Sandbox Dashboard</CardTitle>
             <CardDescription>
-              Experience full escrow-protected checkout, order tracking, milestones, and messaging. Your session lasts 24 hours.
+              Pick a role to explore the dashboard. Vendors see all orders. Buyers enter their order number to track.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleStart} className="space-y-4">
               <div className="space-y-2">
-                <Label>I want to try as a…</Label>
+                <Label>I want to explore as…</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -60,7 +79,7 @@ const SandboxLogin = () => {
                   >
                     <Store className={`w-6 h-6 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
                     <span className={`text-sm font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
-                    <span className="text-xs text-muted-foreground text-center">Sell with escrow protection</span>
+                    <span className="text-xs text-muted-foreground text-center">Manage & fulfill orders</span>
                   </button>
                   <button
                     type="button"
@@ -69,7 +88,7 @@ const SandboxLogin = () => {
                   >
                     <ShoppingBag className={`w-6 h-6 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
                     <span className={`text-sm font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
-                    <span className="text-xs text-muted-foreground text-center">Buy with funds protected</span>
+                    <span className="text-xs text-muted-foreground text-center">Track & release orders</span>
                   </button>
                 </div>
               </div>
@@ -78,17 +97,13 @@ const SandboxLogin = () => {
                 <Label htmlFor="sb-name">Your Name</Label>
                 <Input id="sb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Mensah" required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sb-email">Email (for demo only)</Label>
-                <Input id="sb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
-              </div>
 
-              <Button type="submit" className="w-full" disabled={!name.trim() || !email.trim()}>
-                Start Demo
+              <Button type="submit" className="w-full" disabled={!name.trim()}>
+                Enter Sandbox
               </Button>
 
               <p className="text-center text-[11px] text-muted-foreground">
-                This is a sandbox environment. No real payments are processed. Your data is stored locally and expires in 24 hours.
+                No account or email needed. Data stored locally. Active until December 31, 2026.
               </p>
             </form>
           </CardContent>
