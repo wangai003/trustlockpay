@@ -202,11 +202,12 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           </CardContent>
         </Card>
 
-        {/* Inner Tabs: Tasks / Members / Activity Log */}
+        {/* Inner Tabs: Tasks / Members / Chat / Activity Log */}
         <Tabs value={wsTab} onValueChange={v => setWsTab(v as any)}>
-          <TabsList className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="tasks" className="flex-1 sm:flex-none gap-1"><ClipboardList className="w-3.5 h-3.5" /> Tasks ({tasks.length})</TabsTrigger>
-            <TabsTrigger value="members" className="flex-1 sm:flex-none gap-1"><Users className="w-3.5 h-3.5" /> Members ({members.length})</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1 sm:flex-none gap-1"><Users className="w-3.5 h-3.5" /> Team ({members.length})</TabsTrigger>
+            <TabsTrigger value="chat" className="flex-1 sm:flex-none gap-1"><MessageSquare className="w-3.5 h-3.5" /> Chat</TabsTrigger>
             <TabsTrigger value="log" className="flex-1 sm:flex-none gap-1"><Activity className="w-3.5 h-3.5" /> Log ({wsLog.length})</TabsTrigger>
           </TabsList>
 
