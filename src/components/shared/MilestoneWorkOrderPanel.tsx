@@ -959,11 +959,11 @@ const MilestoneWorkOrderPanel = ({
                         </div>
                       )}
 
-                      {/* Buyer: waiting for vendor */}
-                      {role === "buyer" && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                      {/* Buyer: waiting for vendor (only when step is vendor-owned) */}
+                      {role === "buyer" && !isBuyerStep && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
                         <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
                           <Lock className="w-3.5 h-3.5 shrink-0" />
-                          Waiting for vendor to fulfill this milestone before you can review and release.
+                          This step is vendor-driven. Waiting for vendor to complete: <span className="font-medium">{vendorActionLabel}</span>
                         </div>
                       )}
 
