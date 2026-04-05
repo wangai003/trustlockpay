@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
+import MilestonePaymentSchedule, { type ScheduleItem } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
+import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 
 interface VendorInfo {
@@ -40,6 +42,31 @@ const WidgetCheckout = () => {
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
+  const [scheduleAccepted, setScheduleAccepted] = useState(false);
+  const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
+
+  // Resolve milestone templates for this industry
+  const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
+  const milestoneSchedule = useMemo(() => {
+    if (!isMilestoneIndustry) return [];
+    const key = vendor.industry.replace(/_/g, "-");
+    const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[vendor.industry] || [];
+    // Check for vendor-preset percentages in localStorage
+    try {
+      const raw = localStorage.getItem(`tl_widget_config_${vendor.industry}`);
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.milestonePercentages) {
+          return templates.map((t, i) => ({
+            name: t.name,
+            percentage: cfg.milestonePercentages[i] ?? t.percentage,
+            description: t.description,
+          }));
+        }
+      }
+    } catch {}
+    return templates.map(t => ({ name: t.name, percentage: t.percentage, description: t.description }));
+  }, [vendor.industry, isMilestoneIndustry]);
 
   useEffect(() => {
     loadVendor();
@@ -208,6 +235,26 @@ const WidgetCheckout = () => {
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
+              {/* Milestone Payment Schedule — pre-escrow negotiation for milestone industries */}
+              {isMilestoneIndustry && milestoneSchedule.length > 0 && parseFloat(form.amount || "0") > 0 && (
+                <MilestonePaymentSchedule
+                  industry={vendor.industry}
+                  orderAmount={parseFloat(form.amount || "0")}
+                  defaultSchedule={milestoneSchedule}
+                  vendorName={vendor.name}
+                  readOnly={scheduleAccepted}
+                  onAccept={(schedule) => {
+                    setAgreedSchedule(schedule);
+                    setScheduleAccepted(true);
+                    toast.success("Payment schedule accepted — proceed to payment");
+                  }}
+                  onCounterPropose={(schedule) => {
+                    toast.info("Counter-proposal submitted. The vendor will be notified to review your suggested percentages.");
+                    // In production this would create a negotiation record
+                  }}
+                />
+              )}
+
               {/* Checkout mode toggle — RFQ-eligible industries only */}
               {rfqEligible && (
                 <div className="space-y-1.5">
@@ -365,9 +412,15 @@ const WidgetCheckout = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full gap-2 text-sm">
+                <Button
+                  type="submit"
+                  className="w-full gap-2 text-sm"
+                  disabled={isMilestoneIndustry && !scheduleAccepted}
+                >
                   <Lock className="w-4 h-4" />
-                  {isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
+                  {isMilestoneIndustry && !scheduleAccepted
+                    ? "Accept milestone schedule above first"
+                    : isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
                 </Button>
               </form>
               )}

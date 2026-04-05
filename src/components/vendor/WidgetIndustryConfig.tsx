@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/select";
 import {
   Globe, FileCheck, DollarSign, Truck, Shield, Scale, Upload,
-  Settings2, ChevronDown, ChevronUp, Building2, Landmark, Zap, Phone, Mail,
+  Settings2, ChevronDown, ChevronUp, Building2, Landmark, Zap, Phone, Mail, Percent,
 } from "lucide-react";
-import { ALL_INDUSTRIES } from "@/lib/industryList";
+import { ALL_INDUSTRIES, isMilestoneIndustryByKey } from "@/lib/industryList";
+import { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
 
@@ -505,6 +506,8 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessPhoneCode, setBusinessPhoneCode] = useState("+1");
   const [businessEmail, setBusinessEmail] = useState("");
+  const [expandMilestones, setExpandMilestones] = useState(false);
+  const [milestonePercentages, setMilestonePercentages] = useState<Record<number, number>>({});
 
   const preconfig = INDUSTRY_PRECONFIGS[industry] || DEFAULT_PRECONFIG;
   const subcats = INDUSTRY_SUBCATEGORIES[industry] || [];
@@ -535,6 +538,7 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
       businessPhone,
       businessPhoneCode,
       businessEmail,
+      milestonePercentages: milestonePercentages,
     };
     onConfigSave(config);
     localStorage.setItem(`tl_widget_config_${industry}`, JSON.stringify(config));
@@ -860,6 +864,54 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
             )}
           </div>
         )}
+
+        {/* ─── Milestone Payout Percentages ─── */}
+        {isMilestoneIndustryByKey(industry) && (() => {
+          const key = industry.replace(/_/g, "-");
+          const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[industry] || [];
+          if (templates.length === 0) return null;
+          const totalPct = templates.reduce((s, m, i) => s + (milestonePercentages[i] ?? m.percentage), 0);
+          return (
+            <div className="border border-border rounded-lg overflow-hidden">
+              <button
+                onClick={() => setExpandMilestones(!expandMilestones)}
+                className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
+                <span className="text-xs font-semibold flex items-center gap-1.5">
+                  <Percent className="w-3.5 h-3.5 text-primary" /> Milestone Payout Percentages
+                </span>
+                {expandMilestones ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+              {expandMilestones && (
+                <div className="p-3 space-y-2">
+                  <p className="text-[10px] text-muted-foreground">
+                    Set the default payout percentages for each milestone. Buyers will see these during checkout and can accept or counter-propose.
+                  </p>
+                  <div className="space-y-1.5">
+                    {templates.map((ms, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <span className="text-[10px] font-bold text-muted-foreground w-5">#{idx + 1}</span>
+                        <span className="flex-1 truncate">{ms.name}</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={milestonePercentages[idx] ?? ms.percentage}
+                          onChange={e => setMilestonePercentages(prev => ({ ...prev, [idx]: Number(e.target.value) }))}
+                          className="w-16 h-7 text-xs text-center"
+                        />
+                        <span className="text-[10px] text-muted-foreground">%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`text-xs font-semibold text-center ${totalPct === 100 ? "text-green-600" : "text-destructive"}`}>
+                    Total: {totalPct}% {totalPct !== 100 && "(must equal 100%)"}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Custom Notes */}
         <div className="space-y-1.5">
