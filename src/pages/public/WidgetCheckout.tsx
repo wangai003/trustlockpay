@@ -218,6 +218,9 @@ const WidgetCheckout = () => {
           </div>
         )}
 
+        {/* Returning buyer sign-in prompt */}
+        <ReturningBuyerBanner />
+
         {step === "form" && (
           <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
