@@ -147,22 +147,14 @@ const PublicCheckout = () => {
     setStep("compliance");
   };
 
-  const handleComplianceClear = useCallback(async () => {
-    // Check if signed-in buyer already completed acknowledgement
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
-      const { count } = await supabase
-        .from("acknowledgement_forms")
-        .select("id", { count: "exact", head: true })
-        .eq("signed_by_buyer", true);
-      if (count && count > 0) {
-        // Skip acknowledge step — already signed before
-        setStep("contract");
-        return;
-      }
+  const handleComplianceClear = useCallback(() => {
+    // If buyer was recognized via email/username lookup, skip acknowledgement
+    if (buyerRecognized) {
+      setStep("contract");
+      return;
     }
     setStep("acknowledge");
-  }, []);
+  }, [buyerRecognized]);
 
   const handleAcknowledgementAccept = useCallback(async () => {
     // Call auto-signature-protocol to check if vendor auto-signed
