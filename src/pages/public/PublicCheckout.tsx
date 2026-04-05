@@ -517,6 +517,43 @@ const PublicCheckout = () => {
           </div>
         )}
 
+        {/* Vendor Locked */}
+        {step === "vendor_locked" && (
+          <Card className="border-amber-500/30">
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <Shield className="w-7 h-7 text-amber-600" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-bold">Vendor Temporarily Unavailable</h2>
+                <p className="text-sm text-muted-foreground">
+                  <strong>{lockedVendorName}</strong> is currently unable to accept new orders through TrustLock. This is typically a temporary billing issue on the vendor's side.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-left">
+                <p className="text-xs font-semibold">What you can do:</p>
+                <ul className="text-xs text-muted-foreground space-y-1.5">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold mt-0.5">•</span>
+                    <span>Contact the vendor directly and let them know their TrustLock payment link is inactive.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold mt-0.5">•</span>
+                    <span>Check back later — once the vendor resolves their account status, this link will work automatically.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold mt-0.5">•</span>
+                    <span>Your funds are never at risk — TrustLock only processes payments through active, verified vendors.</span>
+                  </li>
+                </ul>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Reference: <span className="font-mono">{linkId}</span>
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Footer */}
         <div className="text-center space-y-1 pt-4">
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
