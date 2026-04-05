@@ -548,6 +548,30 @@ const WidgetCheckout = () => {
           </Card>
         )}
 
+        {step === "vendor_locked" && (
+          <Card className="border-amber-500/30">
+            <CardContent className="p-5 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">Vendor Temporarily Unavailable</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <strong>{vendor.name}</strong> is not currently accepting orders via TrustLock. Please contact the vendor directly or check back later.
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2.5">
+                <p className="text-[10px] text-muted-foreground">
+                  Your funds are safe — TrustLock never processes payments through inactive vendors.
+                </p>
+              </div>
+              {isEmbed && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={closeWidget}>Close</Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {step === "error" && (
           <Card className="border-destructive/30">
             <CardContent className="p-6 text-center space-y-3">
