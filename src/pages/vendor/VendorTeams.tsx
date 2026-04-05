@@ -461,7 +461,10 @@ const VendorTeams = () => {
           <h1 className="text-xl sm:text-2xl font-bold">Teams</h1>
           <p className="text-sm text-muted-foreground">Manage work order teams and assign industry-specific tasks.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowJoin(true)}><UserPlus className="w-4 h-4 mr-1" /> Join Team</Button>
+          <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
