@@ -55,7 +55,7 @@ export const industries: IndustryEntry[] = [
     desc: "High-compliance escrow for gold, diamonds, and mineral exports with assay verification.",
     stages: ["Mining License & Contract Upload", "Assay Report & Certification", "Export License Verification", "Customs Declaration & Inspection", "Logistics & Chain-of-Custody", "Destination Arrival & Re-Assay", "Final Settlement with Observer Sign-Off"],
     buyerCaps: ["Verify assay reports before purchase", "Track chain-of-custody documentation", "Dispute based on re-assay discrepancy", "Bank-level observer sign-off required", "Access Kimberley Process certificates", "Escrow holdback until destination verification"],
-    vendorCaps: ["Escrow-protected mineral sales", "Upload mining licenses and permits", "Chain-of-custody documentation trail", "Letter of Credit (LC) workflow support", "Multi-stage payout with holdback", "Compliance dashboard for export tracking"],
+    vendorCaps: ["Escrow-protected mineral sales", "Upload mining licenses and permits", "Chain-of-custody documentation trail", "Escrow-backed payment guarantee", "Multi-stage payout with holdback", "Compliance dashboard for export tracking"],
   },
   {
     id: "energy", name: "Energy / Oil & Gas", icon: Fuel, color: "text-yellow-700",
