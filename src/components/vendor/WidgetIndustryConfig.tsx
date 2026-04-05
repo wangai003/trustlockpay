@@ -535,6 +535,7 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
       businessPhone,
       businessPhoneCode,
       businessEmail,
+      milestonePercentages: milestonePercentages,
     };
     onConfigSave(config);
     localStorage.setItem(`tl_widget_config_${industry}`, JSON.stringify(config));
