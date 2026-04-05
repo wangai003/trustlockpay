@@ -207,6 +207,22 @@ const BuyerTeams = () => {
   const completedWs = workspaces.filter((w) => w.status === "complete");
   const dissolvedWs = workspaces.filter((w) => w.status === "dissolved");
 
+  const joinTeamByCode = async () => {
+    if (!joinCode.trim() || !user) return toast.error("Enter an invite code");
+    setJoiningTeam(true);
+    try {
+      const { data: ws, error: wsErr } = await supabase.from("team_workspaces").select("id, title, industry, status").eq("invite_code", joinCode.trim()).eq("status", "active").maybeSingle();
+      if (wsErr || !ws) { toast.error("Invalid or expired invite code"); setJoiningTeam(false); return; }
+      const { data: existing } = await supabase.from("team_members").select("id").eq("workspace_id", ws.id).eq("user_id", user.id).is("removed_at", null).maybeSingle();
+      if (existing) { toast.error("You're already a member of this team"); setJoiningTeam(false); return; }
+      const { error: insertErr } = await supabase.from("team_members").insert({ workspace_id: ws.id, user_id: user.id, display_name: joinName.trim() || null, added_by: user.id } as any);
+      if (insertErr) { toast.error(insertErr.message); setJoiningTeam(false); return; }
+      toast.success(`Joined "${ws.title}" successfully!`);
+      setShowJoin(false); setJoinCode(""); setJoinName(""); fetchWorkspaces();
+    } catch { toast.error("Failed to join team"); }
+    setJoiningTeam(false);
+  };
+
   const OfflineBanner = () => !isOnline ? (
     <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-700">
       <WifiOff className="w-4 h-4" /> You're offline. Task completions will sync when connected.
