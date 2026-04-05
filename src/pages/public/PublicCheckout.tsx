@@ -307,7 +307,7 @@ const PublicCheckout = () => {
 
       <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
         {/* Returning buyer sign-in prompt */}
-        <ReturningBuyerBanner />
+        <ReturningBuyerBanner onRecognized={setBuyerRecognized} />
 
         {/* Steps indicator */}
         <div className="flex items-center gap-2 justify-center flex-wrap">
