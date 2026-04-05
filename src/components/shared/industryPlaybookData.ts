@@ -60,9 +60,9 @@ export const industries: IndustryEntry[] = [
   {
     id: "energy", name: "Energy / Oil & Gas", icon: Fuel, color: "text-yellow-700",
     desc: "Upstream, midstream, and downstream oil & gas services including equipment procurement, drilling, and petrochemical exports.",
-    stages: ["Contract & LC / PO Upload", "Equipment Inspection at Origin", "Export License & NNPC/Regulatory Clearance", "Shipping & Freight Documentation", "Import Customs & Duty Settlement", "Installation & Commissioning", "Final Acceptance & Payout"],
+    stages: ["Contract & PO Upload", "Equipment Inspection at Origin", "Export License & NNPC/Regulatory Clearance", "Shipping & Freight Documentation", "Import Customs & Duty Settlement", "Installation & Commissioning", "Final Acceptance & Payout"],
     buyerCaps: ["Track equipment from origin to installation", "Verify API compliance certificates", "Observer sign-off from commissioning engineers", "Dispute based on performance test failures", "Access HSE documentation", "Escrow holdback until commissioning complete"],
-    vendorCaps: ["Milestone-based payments for large projects", "Upload API/IOGP compliance docs", "LC replacement workflow", "Multi-phase drilling project support", "Insurance verification gates", "Equipment warranty escrow"],
+    vendorCaps: ["Milestone-based payments for large projects", "Upload API/IOGP compliance docs", "Escrow-backed payment guarantee", "Multi-phase drilling project support", "Insurance verification gates", "Equipment warranty escrow"],
   },
   {
     id: "pharmaceuticals", name: "Pharmaceuticals & Healthcare", icon: Pill, color: "text-red-600",
