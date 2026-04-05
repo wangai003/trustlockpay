@@ -532,6 +532,9 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
       incoterms: preconfig.incotermsRelevant ? incoterms : undefined,
       contractType: preconfig.contractType,
       notes: customNotes,
+      businessPhone,
+      businessPhoneCode,
+      businessEmail,
     };
     onConfigSave(config);
     localStorage.setItem(`tl_widget_config_${industry}`, JSON.stringify(config));
