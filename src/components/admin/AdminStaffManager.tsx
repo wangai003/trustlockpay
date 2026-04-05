@@ -69,11 +69,13 @@ export default function AdminStaffManager() {
   const missingChiefSession = !chiefAdminId;
   const isTestnet = isTestnetMode();
 
-  const [newUsername, setNewUsername] = useState("");
-  const [newName, setNewName] = useState("");
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [tempPwResult, setTempPwResult] = useState<{ username: string; temp_password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const generatedDisplayName = [newFirstName.trim(), newLastName.trim()].filter(Boolean).join(" ");
 
   const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null);
   const [confirmDeleteStep, setConfirmDeleteStep] = useState(0);
@@ -109,13 +111,28 @@ export default function AdminStaffManager() {
   const activeAccounts = accounts.filter((a) => !a.is_deleted);
   const deletedAccounts = accounts.filter((a) => a.is_deleted);
 
+  // Auto-generate username from first + last name (firstname.lastname.tl)
+  const generatedUsername = (() => {
+    const f = newFirstName.trim().toLowerCase().replace(/[^a-z]/g, "");
+    const l = newLastName.trim().toLowerCase().replace(/[^a-z]/g, "");
+    if (!f || !l) return "";
+    let base = `${f}.${l}.tl`;
+    const usernames = new Set(accounts.map((a) => a.username));
+    if (!usernames.has(base)) return base;
+    let counter = 2;
+    while (usernames.has(`${f}.${l}${counter}.tl`)) counter++;
+    return `${f}.${l}${counter}.tl`;
+  })();
+
   const addMutation = useMutation({
     mutationFn: () => {
+      const username = generatedUsername;
+      const name = generatedDisplayName;
       if (isTestnet) {
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&";
         const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
         const newAccount: AdminAccount = {
-          id: `staff-${Date.now()}`, username: newUsername.trim().toLowerCase(), name: newName.trim(),
+          id: `staff-${Date.now()}`, username, name,
           email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
         };
@@ -123,14 +140,14 @@ export default function AdminStaffManager() {
         saveTestnetStaff(updated);
         return Promise.resolve({ account: { username: newAccount.username, temp_password: tempPw } });
       }
-      return callStaffApi({ action: "add", chiefAdminId, username: newUsername.trim(), name: newName.trim() });
+      return callStaffApi({ action: "add", chiefAdminId, username, name });
     },
     onSuccess: (res) => {
       if (res.error) { toast.error(res.error); return; }
       setTempPwResult({ username: res.account.username, temp_password: res.account.temp_password });
       setShowAddDialog(false);
-      setNewUsername("");
-      setNewName("");
+      setNewFirstName("");
+      setNewLastName("");
       if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Admin staff added");
     },
@@ -354,15 +371,21 @@ export default function AdminStaffManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Admin Staff</DialogTitle>
-            <DialogDescription>A temporary password will be generated. Share it securely with the new admin.</DialogDescription>
+            <DialogDescription>Enter the recruit's name. The system will auto-generate a unique username and temporary password.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Input placeholder="Username (e.g. sarah.tl)" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
-            <Input placeholder="Display Name (e.g. Sarah)" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input placeholder="First Name" value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} />
+            <Input placeholder="Last Name" value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
+            {generatedUsername && (
+              <div className="p-3 bg-muted rounded-lg space-y-1">
+                <p className="text-xs text-muted-foreground">Auto-generated username</p>
+                <p className="font-mono text-sm font-bold">{generatedUsername}</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!newUsername.trim() || !newName.trim() || addMutation.isPending}>
+            <Button onClick={() => addMutation.mutate()} disabled={!generatedUsername || addMutation.isPending}>
               {addMutation.isPending ? "Creating…" : "Create Account"}
             </Button>
           </DialogFooter>
