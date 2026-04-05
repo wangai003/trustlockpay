@@ -358,7 +358,8 @@ const MilestoneWorkOrderPanel = ({
   const layoutMode = resolveLayoutMode(industry, orderType);
   const layoutLabels = LAYOUT_MODE_LABELS[layoutMode];
   const industryNeedsObservers = !OBSERVER_FREE_INDUSTRIES.has(industry || "");
-  const rolePrefix = role === "vendor" ? "V" : "B";
+  const rolePrefix = role === "vendor" ? "V" : role === "admin" ? "A" : "B";
+  const isAdmin = role === "admin";
 
   const milestones = isTestnet ? (testnetMilestones || []) : dbMilestones;
   const observers = isTestnet
