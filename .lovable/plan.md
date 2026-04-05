@@ -1,41 +1,25 @@
 
-## Wire Complete Blockchain Proof Anchoring (14-Block Protocol)
+## Multi-Site / Multi-Industry Widget Architecture
 
-### Already Done ✅
-- Shipping confirmed (manage-transaction)
-- Delivery confirmed (manage-transaction)
-- Vendor rejection + refund (manage-transaction)
-- Dispute opened (manage-transaction)
+### Phase 1: Database Changes
+- Add `industry` column to `vendor_sites` table
+- Add `site_id` column to `vendor_widget_fees` table (change from per-vendor to per-site tracking)
+- Add unique constraint on `(vendor_id, site_id)` in `vendor_widget_fees`
 
-### Phase 1: Fix manage-transaction gaps
-- Add anchoring to `unfreeze_transaction` (compliance resolution proof)
-- Add anchoring to `compliance_reject_refund` (compliance rejection + refund proof)
+### Phase 2: Widget Fee Logic Updates
+- Update `widgetFeeLogic.ts` to accept a `siteId` parameter
+- Update `manage-widget-fee` edge function to scope state per site
+- Update localStorage keys to be site-scoped
 
-### Phase 2: Survey & wire remaining edge functions
-Read and add `anchorProof` calls to:
-- `escrow-manager` — milestone release, cancellation, fund locking
-- `manage-dispute` — dispute resolution/ruling outcome
-- `process-payment` — invoice creation, price lock snapshot
-- `manage-kyc` — KYC approval/rejection outcomes
-- `transak-offramp` / payout functions — payout completion events
-- `auto-signature-protocol` — contract signing (digital signatures)
-- `acknowledgement-form` — acknowledgement form signing
-- `document-scanner` — document upload verification
-- `sanctions-screening` — AML screening results
-- `checkout-widget` — initial order/invoice creation
+### Phase 3: CRM Sidebar Conditional Visibility
+- Update `VendorSidebar.tsx` to only show CRM link when at least one vendor site has an RFQ-enabled industry
+- Query `vendor_sites` joined with `industry_templates` to determine visibility
 
-### Phase 3: Verify all 14 record types are covered
-1. Invoice ← checkout-widget / process-payment
-2. Contract ← auto-signature-protocol
-3. Digital Signatures ← auto-signature-protocol
-4. Milestones ← escrow-manager
-5. Observer Sign-offs ← escrow-manager
-6. Dispute Rulings ← manage-dispute
-7. Document Uploads ← document-scanner
-8. Acknowledgement Forms ← acknowledgement-form
-9. Payout Events ← transak-offramp / payout functions
-10. AML Screening ← sanctions-screening
-11. GPS Verification ← escrow-manager (shipment)
-12. Price Lock Snapshots ← process-payment / checkout-widget
-13. Rejection Records ← manage-transaction ✅
-14. Integrity Checkpoints ← registry-anchor (batch job) ✅
+### Phase 4: Vendor Sites UI Updates
+- Add industry selector to site creation/editing in `VendorSites.tsx`
+- Each site card shows its assigned industry
+- Widget install/config is per-site with industry-specific fields
+
+### Phase 5: Widget Config Per-Site
+- `WidgetIndustryConfig` loads config based on the site's industry, not a global vendor industry
+- Each widget embed code is site-specific
