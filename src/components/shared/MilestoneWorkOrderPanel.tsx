@@ -599,6 +599,27 @@ const MilestoneWorkOrderPanel = ({
                       {gateStatus.mode === "required" && !gateStatus.satisfied && (
                         <AlertTriangle className="w-2.5 h-2.5 text-destructive" />
                       )}
+                      {isDisputed && (
+                        <Badge variant="destructive" className="text-[8px] h-4">Disputed</Badge>
+                      )}
+                      {/* Counterparty status indicators */}
+                      {role === "buyer" && vendorFulfilled && !buyerReleased && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Vendor ✅</Badge>
+                      )}
+                      {role === "buyer" && !vendorFulfilled && !isDisputed && ms.status !== "deleted" && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30 text-muted-foreground">Vendor ⏳</Badge>
+                      )}
+                      {role === "vendor" && vendorFulfilled && !buyerReleased && ms.is_payment_milestone && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30 text-muted-foreground">Buyer ⏳</Badge>
+                      )}
+                      {role === "vendor" && buyerReleased && (
+                        <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Buyer ✅</Badge>
+                      )}
+                      {isAdmin && (
+                        <span className="text-[8px] text-muted-foreground">
+                          V:{vendorFulfilled ? "✅" : "⏳"} B:{buyerReleased ? "✅" : vendorFulfilled ? "⏳" : "—"}
+                        </span>
+                      )}
                     </div>
                   </div>
 
