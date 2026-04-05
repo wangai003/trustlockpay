@@ -226,8 +226,14 @@ const VendorPricing = () => {
             <DialogTitle>Activate Free Trial</DialogTitle>
             <DialogDescription>
               Your 30-day countdown starts now. You'll get full Growth-level access including advanced analytics, AI assistant, and up to 300 orders/month.
+              <br /><br />
+              <strong>🎁 Widget fees are waived during trial.</strong> Install as many widgets as you need across different sites — no charge until trial ends.
             </DialogDescription>
           </DialogHeader>
+          <div className="p-3 bg-muted/30 rounded-lg border border-border text-[10px] text-muted-foreground">
+            <strong className="text-foreground">Note:</strong> The free trial will be fully activated once all payment processing and smart contract infrastructure is live on mainnet. 
+            During testnet, you can preview the trial experience. Trial can be cancelled anytime from this page.
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActivatingTrial(false)}>Cancel</Button>
             <Button onClick={confirmTrial}>Start Free Trial</Button>
