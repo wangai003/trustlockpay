@@ -32,7 +32,7 @@ const VendorPricing = () => {
   // Locked-in plan from previous selection
   const lockedPlan = localStorage.getItem("tl_vendor_plan") as PlanId | null;
   const lockedBilling = localStorage.getItem("tl_vendor_billing") as BillingCycle | null;
-  const hasLockedPlan = lockedPlan && lockedPlan !== "basic" && lockedPlan !== "free" && PLANS[lockedPlan];
+  const hasLockedPlan = lockedPlan && lockedPlan !== "basic" && lockedPlan !== ("free" as string) && PLANS[lockedPlan as PlanId];
 
   const handleSelect = (planId: PlanId) => {
     if (planId === "basic") return;
