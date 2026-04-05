@@ -443,7 +443,10 @@ const BuyerTeams = () => {
           <h1 className="text-xl sm:text-2xl font-bold">Procurement Teams</h1>
           <p className="text-sm text-muted-foreground">Manage procurement teams and coordinate buyer-side tasks.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowJoin(true)}><UserPlus className="w-4 h-4 mr-1" /> Join Team</Button>
+          <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
