@@ -397,7 +397,7 @@ export const INDUSTRY_MILESTONE_MAP: Record<string, MilestoneTemplate[]> = {
     { name: "Final Delivery & Sign-Off", percentage: 30, documents: ["Final Deliverable", "Acceptance Sign-off"], documentMode: "required", description: "Approved final work product, escrow released", requiresObserver: false },
   ],
   "logistics": [
-    { name: "LC Issuance / Trade Agreement", percentage: 5, documents: ["Letter of Credit", "Trade Contract"], documentMode: "required", description: "Issuing bank opens the LC or trade agreement signed", requiresObserver: true },
+    { name: "Trade Agreement", percentage: 5, documents: ["Trade Contract"], documentMode: "required", description: "Trade agreement signed by both parties", requiresObserver: true },
     { name: "Origin Inspection", percentage: 15, documents: ["Inspection Certificate", "Quality Report"], documentMode: "required", description: "Goods inspected at origin", requiresObserver: true },
     { name: "Export Customs", percentage: 15, documents: ["Customs Declaration", "Export License"], documentMode: "required", description: "Origin country customs clearance", requiresObserver: true },
     { name: "In Transit", percentage: 25, documents: ["Bill of Lading", "Insurance Certificate", "GPS Tracking"], documentMode: "required", description: "Goods in transit via sea, air, or road freight", requiresObserver: true },

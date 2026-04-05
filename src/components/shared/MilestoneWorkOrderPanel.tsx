@@ -207,17 +207,9 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-/* ─── Pre-payment instruments that are auto-satisfied when escrow is funded ─── */
-const PRE_PAYMENT_DOCS = new Set([
-  "lc copy", "lc", "letter of credit", "trade contract",
-  "bank guarantee", "standby lc", "payment guarantee",
-  "proforma invoice", "purchase order",
-]);
-
-const isPrePaymentDoc = (doc: string): boolean => {
-  const d = doc.toLowerCase();
-  return PRE_PAYMENT_DOCS.has(d) || d.includes("letter of credit") || d.includes(" lc");
-};
+/* ─── Note: All pre-payment instruments (LC, bank guarantees) have been removed.
+   TrustLock escrow replaces traditional payment guarantees — funds are always locked before
+   the work order begins. No document gate bypass logic is needed. ─── */
 
 const getUploadedKeys = (ms: any): Set<string> => {
   const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
