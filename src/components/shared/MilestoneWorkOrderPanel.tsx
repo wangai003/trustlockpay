@@ -504,6 +504,47 @@ const MilestoneWorkOrderPanel = ({
   }
   if (milestones.length === 0) return null;
 
+  // ── Offline Reconciliation Gate ──
+  // Show before the work order activates when funds are first locked
+  const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+  const reconciliationTemplates = INDUSTRY_MILESTONES[indKey]
+    || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
+    || null;
+
+  if (
+    !isAdmin &&
+    fundsAreLocked &&
+    !reconciliationComplete &&
+    reconciliationTemplates &&
+    reconciliationTemplates.length > 1 &&
+    layoutMode !== "single"
+  ) {
+    return (
+      <TLId code={`TL-${rolePrefix}-WO-RECONCILIATION`}>
+        <OfflineReconciliation
+          role={role}
+          transactionId={transactionId}
+          txId={txId}
+          industry={industry}
+          milestoneTemplates={reconciliationTemplates.map(t => ({
+            name: t.name,
+            percentage: t.percentage,
+            documents: t.documents,
+            description: t.description,
+          }))}
+          onReconciliationComplete={(skipped) => {
+            setSkippedMilestoneIndices(skipped);
+            setReconciliationComplete(true);
+            if (skipped.length > 0) {
+              toast.success(`Work order adjusted — ${skipped.length} milestone(s) marked as completed offline`);
+            }
+          }}
+          isTestnet={isTestnet}
+        />
+      </TLId>
+    );
+  }
+
   return (
     <>
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
