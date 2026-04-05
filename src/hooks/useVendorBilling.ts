@@ -111,19 +111,108 @@ export function useCreateWidgetBill() {
 
 export function usePayBill() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (billId: string) => {
+      const { data: bill, error: fetchErr } = await supabase
+        .from("vendor_bills")
+        .select("*")
+        .eq("id", billId)
+        .single();
+      if (fetchErr) throw fetchErr;
+
       const { error } = await supabase
         .from("vendor_bills")
         .update({ status: "paid", paid_at: new Date().toISOString() })
         .eq("id", billId);
       if (error) throw error;
+
+      // Auto-grant access based on bill type
+      if (bill && user) {
+        if (bill.bill_type === "widget_install" || bill.bill_type === "widget_restore") {
+          // Mark widget fee as payment confirmed
+          if (bill.site_id) {
+            await supabase
+              .from("vendor_widget_fees")
+              .update({ payment_confirmed: true, widget_state: "installed" })
+              .eq("vendor_id", user.id)
+              .eq("site_id", bill.site_id);
+            // Update localStorage cache
+            const cached = JSON.parse(localStorage.getItem("tl_site_widget_fee_states") || "{}");
+            if (cached[bill.site_id]) {
+              cached[bill.site_id].installFeePaid = true;
+              cached[bill.site_id].pendingRestorationFee = false;
+              cached[bill.site_id].widgetState = "installed";
+            } else {
+              cached[bill.site_id] = { widgetState: "installed", installFeePaid: true, pendingRestorationFee: false, totalInstallFeesCharged: 5 };
+            }
+            localStorage.setItem("tl_site_widget_fee_states", JSON.stringify(cached));
+          }
+        } else if (bill.bill_type === "plan_subscription") {
+          // Re-activate subscription
+          await supabase
+            .from("vendor_subscriptions")
+            .update({ status: "active" })
+            .eq("vendor_id", user.id)
+            .eq("status", "grace_period");
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
-      toast.success("Bill paid successfully!");
+      queryClient.invalidateQueries({ queryKey: ["vendor-subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["widget-payment-status"] });
+      toast.success("Bill paid — access granted automatically!");
     },
+  });
+}
+
+// Check if vendor is in trial mode (no widget fees)
+export function isVendorInTrial(): boolean {
+  const plan = localStorage.getItem("tl_vendor_plan");
+  const trialStart = localStorage.getItem("tl_vendor_trial_start");
+  if (plan !== "free" || !trialStart) return false;
+  const start = new Date(trialStart);
+  const elapsed = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return elapsed < 30;
+}
+
+// Check if vendor has overdue bills (for standalone link enforcement)
+export function useVendorEnforcementStatus() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["vendor-enforcement-status", user?.id],
+    queryFn: async () => {
+      if (!user) return { blocked: false, reason: "" };
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Check overdue bills older than 7 days
+      const { count: overdueBills } = await supabase
+        .from("vendor_bills")
+        .select("id", { count: "exact", head: true })
+        .eq("vendor_id", user.id)
+        .eq("status", "overdue")
+        .lt("due_date", sevenDaysAgo);
+      
+      // Check subscription status
+      const { data: sub } = await supabase
+        .from("vendor_subscriptions")
+        .select("status")
+        .eq("vendor_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (sub?.status === "expired") {
+        return { blocked: true, reason: "Your plan has expired. Please renew to continue creating links." };
+      }
+      if ((overdueBills || 0) > 0) {
+        return { blocked: true, reason: "You have overdue bills. Please settle them before creating new links." };
+      }
+      return { blocked: false, reason: "" };
+    },
+    enabled: !!user,
   });
 }
 
