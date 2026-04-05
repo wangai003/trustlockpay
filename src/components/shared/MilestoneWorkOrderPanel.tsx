@@ -919,7 +919,7 @@ const MilestoneWorkOrderPanel = ({
                             className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
                           >
                             <CheckCircle2 className="w-4 h-4 mr-2" />
-                            {layoutMode === "offline" ? "Confirm Offline Step" : layoutMode === "single" ? "Confirm Delivery" : "Mark Fulfilled"}
+                            {vendorActionLabel}
                           </Button>
                           {gateStatus.mode === "required" && !gateStatus.satisfied && (
                             <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
@@ -927,6 +927,35 @@ const MilestoneWorkOrderPanel = ({
                               Upload {gateStatus.missingRequired.length} required doc(s) to unlock
                             </p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Buyer-driven step fulfillment (when step owner is buyer/both) */}
+                      {canBuyerAct && !canBuyerRelease && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="default"
+                            onClick={() => handleMarkFulfilled(ms.id)}
+                            disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                            className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            {buyerActionLabel}
+                          </Button>
+                          {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                            <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Vendor: waiting message when step is buyer-owned */}
+                      {role === "vendor" && !isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted" && (
+                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          This step is buyer-driven. Waiting for buyer to complete: <span className="font-medium">{buyerActionLabel}</span>
                         </div>
                       )}
 
