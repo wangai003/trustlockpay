@@ -731,8 +731,8 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* Observer Linked */}
-                    {role === "vendor" && hasObserver && (
+                    {/* Observer Linked (visible to vendor and admin) */}
+                    {(role === "vendor" || isAdmin) && hasObserver && (
                       <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
                         <p className="font-medium text-foreground">Observer linked</p>
                         {observers.filter((obs: any) => (obs.milestone_ids ? obs.milestone_ids.includes(ms.id) : obs.milestoneId === ms.id)).map((obs: any) => {
@@ -741,7 +741,7 @@ const MilestoneWorkOrderPanel = ({
                           return (
                             <div key={obs.id || obs.observer_email} className="flex items-center gap-2 flex-wrap">
                               <span>{obs.observer_name} ({obs.observer_email})</span>
-                              {link && (
+                              {link && !isAdmin && (
                                 <Button size="sm" variant="ghost" className="h-6 px-2" onClick={async () => { await navigator.clipboard.writeText(link); toast.success("Observer link copied"); }}>
                                   <Copy className="w-3 h-3 mr-1" /> Copy Link
                                 </Button>
