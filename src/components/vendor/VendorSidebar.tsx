@@ -11,16 +11,6 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
-import { useVendorSites } from "@/hooks/useSupabaseData";
-
-// Industries that have RFQ enabled
-const RFQ_ENABLED_INDUSTRIES = [
-  "mining", "agriculture", "freelance", "real_estate", "construction",
-  "logistics", "education", "project_management", "energy", "pharmaceuticals",
-  "telecommunications", "manufacturing", "renewable_energy", "textiles",
-  "marine_fisheries", "automotive", "water_sanitation", "media_entertainment",
-  "aviation", "insurance", "legal_services", "food_beverage", "waste_management",
-];
 
 const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
