@@ -36,46 +36,39 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { action } = body;
+    const json = (data: any, status = 200) =>
+      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // ── Auto-archive: completed/dissolved > 90 days ──
     if (action === "auto_archive") {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 90);
       const { data: stale } = await supabase
-        .from("team_workspaces")
-        .select("id")
+        .from("team_workspaces").select("id")
         .in("status", ["complete", "dissolved"])
         .is("archived_at", null)
         .lt("updated_at", cutoff.toISOString());
       if (stale && stale.length > 0) {
-        await supabase
-          .from("team_workspaces")
+        await supabase.from("team_workspaces")
           .update({ status: "archived", archived_at: new Date().toISOString() })
           .in("id", stale.map((w: any) => w.id));
       }
-      return new Response(JSON.stringify({ archived: stale?.length || 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ archived: stale?.length || 0 });
     }
 
     // ── Complete task (sequential handoff) ──
     if (action === "complete_task") {
       const { task_id } = body;
-      if (!task_id) {
-        return new Response(JSON.stringify({ error: "task_id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!task_id) return json({ error: "task_id required" }, 400);
+
       const { data: task } = await supabase
         .from("team_task_assignments")
         .select("*, team_members!inner(user_id, workspace_id)")
-        .eq("id", task_id)
-        .single();
+        .eq("id", task_id).single();
       if (!task || task.team_members.user_id !== user.id) {
-        return new Response(JSON.stringify({ error: "Not authorized" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: "Not authorized" }, 403);
       }
+
       const { data: priorTasks } = await supabase
         .from("team_task_assignments")
         .select("id, status, sort_order")
@@ -83,162 +76,230 @@ Deno.serve(async (req) => {
         .lt("sort_order", task.sort_order)
         .neq("status", "completed");
       if (priorTasks && priorTasks.length > 0) {
-        return new Response(
-          JSON.stringify({ error: "Previous tasks must be completed first" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ error: "Previous tasks must be completed first" }, 400);
       }
+
       const updatePayload: any = { status: "completed", completed_at: new Date().toISOString() };
       if (body.evidence_url) updatePayload.evidence_url = body.evidence_url;
-      await supabase
+      await supabase.from("team_task_assignments").update(updatePayload).eq("id", task_id);
+
+      // Notify workspace owner (team lead)
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id, title").eq("id", task.team_members.workspace_id).single();
+      if (ws) {
+        await supabase.from("notifications").insert({
+          user_id: ws.owner_id,
+          title: "✅ Team Task Completed",
+          message: `${task.milestone_label || task.milestone_key} has been completed in "${ws.title}". Review and verify it.`,
+          type: "info",
+          is_action_required: true,
+          action_url: "/trustlock/vendor/teams",
+          related_entity_type: "team_task",
+          related_entity_id: task_id,
+        });
+      }
+
+      return json({ success: true });
+    }
+
+    // ── Lead verifies a completed task → bridges to work order milestone ──
+    if (action === "verify_task") {
+      const { task_id } = body;
+      if (!task_id) return json({ error: "task_id required" }, 400);
+
+      const { data: task } = await supabase
         .from("team_task_assignments")
-        .update(updatePayload)
-        .eq("id", task_id);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        .select("*, team_members!inner(workspace_id)")
+        .eq("id", task_id).single();
+      if (!task) return json({ error: "Task not found" }, 404);
+
+      // Check caller is workspace owner
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id, transaction_id, title")
+        .eq("id", task.team_members.workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Only team lead can verify" }, 403);
+      if (task.status !== "completed") return json({ error: "Task must be completed first" }, 400);
+
+      // Mark as verified by lead
+      await supabase.from("team_task_assignments").update({
+        lead_verified_at: new Date().toISOString(),
+        lead_verified_by: user.id,
+      }).eq("id", task_id);
+
+      // If linked to a transaction milestone, update milestone status
+      if (task.transaction_milestone_id && ws.transaction_id) {
+        await supabase.from("transaction_milestones").update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        }).eq("id", task.transaction_milestone_id);
+
+        // Notify the other party (buyer if vendor workspace, vendor if buyer workspace)
+        const { data: tx } = await supabase
+          .from("transactions").select("buyer_id, vendor_id").eq("id", ws.transaction_id).single();
+        if (tx) {
+          const { data: wsRole } = await supabase
+            .from("team_workspaces").select("role").eq("id", task.team_members.workspace_id).single();
+          const notifyUserId = wsRole?.role === "vendor" ? tx.buyer_id : tx.vendor_id;
+          if (notifyUserId) {
+            await supabase.from("notifications").insert({
+              user_id: notifyUserId,
+              title: "📋 Milestone Updated",
+              message: `"${task.milestone_label || task.milestone_key}" has been verified and completed for order linked to "${ws.title}".`,
+              type: "info",
+              related_entity_type: "transaction",
+              related_entity_id: ws.transaction_id,
+            });
+          }
+        }
+      }
+
+      return json({ success: true, verified: true });
+    }
+
+    // ── Reassign task to another member ──
+    if (action === "reassign_task") {
+      const { task_id, new_member_id } = body;
+      if (!task_id || !new_member_id) return json({ error: "task_id and new_member_id required" }, 400);
+
+      const { data: task } = await supabase
+        .from("team_task_assignments")
+        .select("*, team_members!inner(workspace_id)")
+        .eq("id", task_id).single();
+      if (!task) return json({ error: "Task not found" }, 404);
+
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id")
+        .eq("id", task.team_members.workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Only team lead can reassign" }, 403);
+
+      const oldMemberId = task.member_id;
+      await supabase.from("team_task_assignments").update({
+        member_id: new_member_id,
+        reassigned_from: oldMemberId,
+        status: "pending",
+        completed_at: null,
+        lead_verified_at: null,
+        lead_verified_by: null,
+        evidence_url: null,
+      }).eq("id", task_id);
+
+      // Notify new member
+      const { data: newMember } = await supabase
+        .from("team_members").select("user_id").eq("id", new_member_id).single();
+      if (newMember) {
+        await supabase.from("notifications").insert({
+          user_id: newMember.user_id,
+          title: "📌 Task Reassigned to You",
+          message: `You've been assigned: "${task.milestone_label || task.milestone_key}". Check your Teams tab.`,
+          type: "info",
+          is_action_required: true,
+          action_url: "/trustlock/vendor/teams",
+        });
+      }
+
+      return json({ success: true });
+    }
+
+    // ── Generate invite code for a workspace (if missing) ──
+    if (action === "generate_invite_code") {
+      const { workspace_id } = body;
+      if (!workspace_id) return json({ error: "workspace_id required" }, 400);
+
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id, invite_code")
+        .eq("id", workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Not authorized" }, 403);
+
+      if (ws.invite_code) return json({ invite_code: ws.invite_code });
+
+      // Generate new code
+      const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+        .map(b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
+      await supabase.from("team_workspaces")
+        .update({ invite_code: code }).eq("id", workspace_id);
+
+      return json({ invite_code: code });
     }
 
     // ── Apply template: clone template rules into task assignments ──
     if (action === "apply_template") {
       const { template_id, workspace_id, transaction_id } = body;
-      if (!template_id || !workspace_id) {
-        return new Response(JSON.stringify({ error: "template_id and workspace_id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!template_id || !workspace_id) return json({ error: "template_id and workspace_id required" }, 400);
 
-      // Verify ownership
       const { data: ws } = await supabase
-        .from("team_workspaces")
-        .select("owner_id")
-        .eq("id", workspace_id)
-        .single();
-      if (!ws || ws.owner_id !== user.id) {
-        return new Response(JSON.stringify({ error: "Not authorized" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        .from("team_workspaces").select("owner_id").eq("id", workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Not authorized" }, 403);
 
-      // Link transaction if provided
       if (transaction_id) {
-        await supabase
-          .from("team_workspaces")
+        await supabase.from("team_workspaces")
           .update({ transaction_id, updated_at: new Date().toISOString() })
           .eq("id", workspace_id);
       }
 
-      // Fetch template rules
       const { data: rules } = await supabase
-        .from("team_template_rules")
-        .select("*")
+        .from("team_template_rules").select("*")
         .eq("template_id", template_id)
         .order("sort_order", { ascending: true });
 
-      if (!rules || rules.length === 0) {
-        return new Response(JSON.stringify({ error: "Template has no rules" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!rules || rules.length === 0) return json({ error: "Template has no rules" }, 400);
 
-      // Create task assignments from auto-assign rules
       const assignments = rules
         .filter((r: any) => r.auto_assign && r.member_id)
         .map((r: any) => ({
-          workspace_id,
-          member_id: r.member_id,
-          milestone_key: r.milestone_key,
-          milestone_label: r.milestone_label,
-          instructions: r.instructions,
-          sort_order: r.sort_order,
-          status: "pending",
+          workspace_id, member_id: r.member_id,
+          milestone_key: r.milestone_key, milestone_label: r.milestone_label,
+          instructions: r.instructions, sort_order: r.sort_order, status: "pending",
         }));
 
       if (assignments.length > 0) {
         const { error } = await supabase.from("team_task_assignments").insert(assignments);
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        if (error) return json({ error: error.message }, 500);
       }
 
-      // Return which rules were skipped (manual assignment needed)
       const manual = rules.filter((r: any) => !r.auto_assign || !r.member_id);
-
-      return new Response(JSON.stringify({
-        success: true,
-        auto_assigned: assignments.length,
+      return json({
+        success: true, auto_assigned: assignments.length,
         manual_pending: manual.length,
-        manual_rules: manual.map((r: any) => ({
-          milestone_key: r.milestone_key,
-          milestone_label: r.milestone_label,
-        })),
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        manual_rules: manual.map((r: any) => ({ milestone_key: r.milestone_key, milestone_label: r.milestone_label })),
+      });
     }
 
     // ── Auto-trigger: match new transaction to workspaces with auto_match_industry ──
     if (action === "auto_trigger_check") {
       const { transaction_id, industry } = body;
-      if (!transaction_id || !industry) {
-        return new Response(JSON.stringify({ error: "transaction_id and industry required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!transaction_id || !industry) return json({ error: "transaction_id and industry required" }, 400);
 
-      // Find workspaces with auto-match enabled for this industry
       const { data: matchingWs } = await supabase
-        .from("team_workspaces")
-        .select("id, owner_id")
-        .eq("industry", industry)
-        .eq("auto_match_industry", true)
-        .eq("status", "active")
-        .is("transaction_id", null);
+        .from("team_workspaces").select("id, owner_id")
+        .eq("industry", industry).eq("auto_match_industry", true)
+        .eq("status", "active").is("transaction_id", null);
 
-      if (!matchingWs || matchingWs.length === 0) {
-        return new Response(JSON.stringify({ matched: 0 }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!matchingWs || matchingWs.length === 0) return json({ matched: 0 });
 
       let totalAssigned = 0;
       for (const ws of matchingWs) {
-        // Get default template
         const { data: defaultTemplate } = await supabase
-          .from("team_assignment_templates")
-          .select("id")
-          .eq("workspace_id", ws.id)
-          .eq("is_default", true)
-          .eq("auto_trigger_mode", "auto")
-          .single();
-
+          .from("team_assignment_templates").select("id")
+          .eq("workspace_id", ws.id).eq("is_default", true)
+          .eq("auto_trigger_mode", "auto").single();
         if (!defaultTemplate) continue;
 
-        // Link transaction
-        await supabase
-          .from("team_workspaces")
+        await supabase.from("team_workspaces")
           .update({ transaction_id, updated_at: new Date().toISOString() })
           .eq("id", ws.id);
 
-        // Fetch and apply rules
         const { data: rules } = await supabase
-          .from("team_template_rules")
-          .select("*")
-          .eq("template_id", defaultTemplate.id)
-          .eq("auto_assign", true)
+          .from("team_template_rules").select("*")
+          .eq("template_id", defaultTemplate.id).eq("auto_assign", true)
           .order("sort_order", { ascending: true });
 
         if (rules && rules.length > 0) {
           const assignments = rules
             .filter((r: any) => r.member_id)
             .map((r: any) => ({
-              workspace_id: ws.id,
-              member_id: r.member_id,
-              milestone_key: r.milestone_key,
-              milestone_label: r.milestone_label,
-              instructions: r.instructions,
-              sort_order: r.sort_order,
-              status: "pending",
+              workspace_id: ws.id, member_id: r.member_id,
+              milestone_key: r.milestone_key, milestone_label: r.milestone_label,
+              instructions: r.instructions, sort_order: r.sort_order, status: "pending",
             }));
           if (assignments.length > 0) {
             await supabase.from("team_task_assignments").insert(assignments);
@@ -247,17 +308,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      return new Response(JSON.stringify({ matched: matchingWs.length, assigned: totalAssigned }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ matched: matchingWs.length, assigned: totalAssigned });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: "Unknown action" }, 400);
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

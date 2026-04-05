@@ -2858,12 +2858,16 @@ export type Database = {
           evidence_url: string | null
           id: string
           instructions: string | null
+          lead_verified_at: string | null
+          lead_verified_by: string | null
           member_id: string
           milestone_key: string
           milestone_label: string | null
+          reassigned_from: string | null
           sla_hours: number | null
           sort_order: number
           status: string
+          transaction_milestone_id: string | null
           updated_at: string
           workspace_id: string
         }
@@ -2874,12 +2878,16 @@ export type Database = {
           evidence_url?: string | null
           id?: string
           instructions?: string | null
+          lead_verified_at?: string | null
+          lead_verified_by?: string | null
           member_id: string
           milestone_key: string
           milestone_label?: string | null
+          reassigned_from?: string | null
           sla_hours?: number | null
           sort_order?: number
           status?: string
+          transaction_milestone_id?: string | null
           updated_at?: string
           workspace_id: string
         }
@@ -2890,12 +2898,16 @@ export type Database = {
           evidence_url?: string | null
           id?: string
           instructions?: string | null
+          lead_verified_at?: string | null
+          lead_verified_by?: string | null
           member_id?: string
           milestone_key?: string
           milestone_label?: string | null
+          reassigned_from?: string | null
           sla_hours?: number | null
           sort_order?: number
           status?: string
+          transaction_milestone_id?: string | null
           updated_at?: string
           workspace_id?: string
         }
@@ -2905,6 +2917,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_task_assignments_transaction_milestone_id_fkey"
+            columns: ["transaction_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_milestones"
             referencedColumns: ["id"]
           },
           {
