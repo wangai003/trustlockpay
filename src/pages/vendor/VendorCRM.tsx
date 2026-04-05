@@ -113,10 +113,56 @@ const VendorCRM = () => {
     return `${code || ""} ${phone}`.trim();
   };
 
+  // ─── Milestone Counter-Proposals ───
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState(true);
+  const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchProposals = async () => {
+      setProposalsLoading(true);
+      const { data } = await supabase
+        .from("milestone_counter_proposals")
+        .select("*")
+        .eq("vendor_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) setProposals(data as any);
+      setProposalsLoading(false);
+    };
+    fetchProposals();
+  }, [user?.id]);
+
+  const handleProposalAction = async (id: string, action: "accepted" | "rejected", notes?: string) => {
+    await supabase.from("milestone_counter_proposals").update({ status: action, vendor_notes: notes || null } as any).eq("id", id);
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, status: action, vendor_notes: notes || null } : p));
+    toast.success(action === "accepted" ? "Proposal accepted — create a standalone link to send payment" : "Proposal rejected");
+  };
+
+  const proposalCounts = {
+    total: proposals.length,
+    pending: proposals.filter(p => p.status === "pending").length,
+    accepted: proposals.filter(p => p.status === "accepted").length,
+  };
+
   return (
     <div>
-      <VendorHeader title="Quote Requests (CRM)" />
+      <VendorHeader title="CRM & Agreements" />
       <div className="p-3 sm:p-6 space-y-4 max-w-5xl mx-auto">
+        <Tabs defaultValue="rfq" className="w-full">
+          <TabsList className="h-9">
+            <TabsTrigger value="rfq" className="text-xs gap-1.5">
+              <FileText className="h-3.5 w-3.5" /> Quote Requests
+              {counts.submitted > 0 && <Badge className="h-4 px-1 text-[9px] bg-blue-600">{counts.submitted}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="milestones" className="text-xs gap-1.5">
+              <Percent className="h-3.5 w-3.5" /> Milestone Agreements
+              {proposalCounts.pending > 0 && <Badge className="h-4 px-1 text-[9px] bg-amber-600">{proposalCounts.pending}</Badge>}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="rfq" className="space-y-4 mt-4">
+
         {/* Instruction Banner */}
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4">
