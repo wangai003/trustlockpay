@@ -37,7 +37,7 @@ interface MilestoneWorkOrderPanelProps {
   transactionId?: string | null;
   txId: string;
   industry?: string | null;
-  role: "buyer" | "vendor";
+  role: "buyer" | "vendor" | "admin";
   transactionStatus?: string;
   orderType?: OrderType;
   isTestnet?: boolean;
