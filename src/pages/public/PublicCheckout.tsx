@@ -48,6 +48,7 @@ const PublicCheckout = () => {
   const [loadError, setLoadError] = useState(false);
   const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
   const [lockedVendorName, setLockedVendorName] = useState("");
+  const [buyerRecognized, setBuyerRecognized] = useState(false);
 
   // Load link data from DB
   useEffect(() => {
@@ -146,22 +147,14 @@ const PublicCheckout = () => {
     setStep("compliance");
   };
 
-  const handleComplianceClear = useCallback(async () => {
-    // Check if signed-in buyer already completed acknowledgement
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
-      const { count } = await supabase
-        .from("acknowledgement_forms")
-        .select("id", { count: "exact", head: true })
-        .eq("signed_by_buyer", true);
-      if (count && count > 0) {
-        // Skip acknowledge step — already signed before
-        setStep("contract");
-        return;
-      }
+  const handleComplianceClear = useCallback(() => {
+    // If buyer was recognized via email/username lookup, skip acknowledgement
+    if (buyerRecognized) {
+      setStep("contract");
+      return;
     }
     setStep("acknowledge");
-  }, []);
+  }, [buyerRecognized]);
 
   const handleAcknowledgementAccept = useCallback(async () => {
     // Call auto-signature-protocol to check if vendor auto-signed
@@ -314,7 +307,7 @@ const PublicCheckout = () => {
 
       <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
         {/* Returning buyer sign-in prompt */}
-        <ReturningBuyerBanner />
+        <ReturningBuyerBanner onRecognized={setBuyerRecognized} />
 
         {/* Steps indicator */}
         <div className="flex items-center gap-2 justify-center flex-wrap">
