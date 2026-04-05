@@ -47,25 +47,17 @@ const VendorSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
-  const { data: sites = [] } = useVendorSites();
-
-  // Show CRM only if vendor has at least one site in an RFQ-enabled industry
-  const hasRfqSite = useMemo(() => {
-    return sites.some((s: any) => s.industry && RFQ_ENABLED_INDUSTRIES.includes(s.industry));
-  }, [sites]);
 
   const navItems = useMemo(() => {
     const items = [...baseNavItems];
-    if (hasRfqSite) {
-      // Insert CRM after "Plans & Pricing"
-      const pricingIdx = items.findIndex(i => i.to === "/trustlock/vendor/pricing");
-      items.splice(pricingIdx + 1, 0, {
-        label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm",
-        tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM",
-      });
-    }
+    // Always show Quote Requests (CRM) after "Plans & Pricing"
+    const pricingIdx = items.findIndex(i => i.to === "/trustlock/vendor/pricing");
+    items.splice(pricingIdx + 1, 0, {
+      label: "Quote Requests", icon: ClipboardList, to: "/trustlock/vendor/crm",
+      tip: "View and manage customer quote requests (RFQ/Proforma CRM)", tlId: "TL-V-SB-NAV-CRM",
+    });
     return items;
-  }, [hasRfqSite]);
+  }, []);
 
   useEffect(() => {
     const handler = () => setOpen(true);
