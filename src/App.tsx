@@ -97,6 +97,14 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
 
+// Sandbox
+const SandboxLogin = lazy(() => import("./pages/sandbox/SandboxLogin"));
+const SandboxLayout = lazy(() => import("./pages/sandbox/SandboxLayout"));
+const SandboxVendorOverview = lazy(() => import("./pages/sandbox/SandboxVendorOverview"));
+const SandboxBuyerOverview = lazy(() => import("./pages/sandbox/SandboxBuyerOverview"));
+const SandboxOrders = lazy(() => import("./pages/sandbox/SandboxOrders"));
+const SandboxMessages = lazy(() => import("./pages/sandbox/SandboxMessages"));
+
 const queryClient = new QueryClient();
 
 const Loading = () => (
@@ -218,6 +226,20 @@ const App = () => (
               <Route path="/data-rights" element={<DataRights />} />
               <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+
+              {/* Sandbox Demo */}
+              <Route path="/sandbox/login" element={<SandboxLogin />} />
+              <Route path="/sandbox/vendor" element={<SandboxLayout />}>
+                <Route index element={<SandboxVendorOverview />} />
+                <Route path="orders" element={<SandboxOrders />} />
+                <Route path="messages" element={<SandboxMessages />} />
+              </Route>
+              <Route path="/sandbox/buyer" element={<SandboxLayout />}>
+                <Route index element={<SandboxBuyerOverview />} />
+                <Route path="orders" element={<SandboxOrders />} />
+                <Route path="messages" element={<SandboxMessages />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
