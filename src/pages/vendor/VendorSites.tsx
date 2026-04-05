@@ -279,13 +279,13 @@ const VendorSites = () => {
         )}
 
         {/* Widget Fee Status */}
-        {widgetState.installFeePaid && (
+        {anyInstallFeePaid && (
           <Card className="border-primary/20">
             <CardContent className="p-3 flex items-center gap-3">
               <CheckCircle className="w-4 h-4 text-primary shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Installation fee paid.</strong> Disabling and re-enabling the widget on any site is free.
-                {widgetState.pendingRestorationFee && (
+                <strong className="text-foreground">Widget installation fees active.</strong> Disabling and re-enabling any widget is free.
+                {anyPendingRestoration && (
                   <Badge variant="outline" className="ml-2 text-[9px] border-accent/30 text-accent">
                     $5 restoration fee pending on next cycle
                   </Badge>
