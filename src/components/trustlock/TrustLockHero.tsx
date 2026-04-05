@@ -32,7 +32,7 @@ const TrustLockHero = () => {
               <Button variant="hero" size="lg" className="text-base px-8" onClick={() => setPortalOpen(true)}>
                 Start Free Integration
               </Button>
-              <Button variant="hero-outline" size="lg" className="text-base px-8 gap-2" onClick={() => navigate("/test-widget")}>
+              <Button variant="hero-outline" size="lg" className="hidden sm:inline-flex text-base px-8 gap-2" onClick={() => navigate("/test-widget")}>
                 <Code className="w-4 h-4" /> Test Our Widget
               </Button>
             </div>
