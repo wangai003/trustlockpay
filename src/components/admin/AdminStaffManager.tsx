@@ -110,56 +110,100 @@ export default function AdminStaffManager() {
   const deletedAccounts = accounts.filter((a) => a.is_deleted);
 
   const addMutation = useMutation({
-    mutationFn: () => callStaffApi({ action: "add", chiefAdminId, username: newUsername.trim(), name: newName.trim() }),
+    mutationFn: () => {
+      if (isTestnet) {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&";
+        const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        const newAccount: AdminAccount = {
+          id: `staff-${Date.now()}`, username: newUsername.trim().toLowerCase(), name: newName.trim(),
+          email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
+          deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
+        };
+        const updated = [...testnetStaff, newAccount];
+        saveTestnetStaff(updated);
+        return Promise.resolve({ account: { username: newAccount.username, temp_password: tempPw } });
+      }
+      return callStaffApi({ action: "add", chiefAdminId, username: newUsername.trim(), name: newName.trim() });
+    },
     onSuccess: (res) => {
       if (res.error) { toast.error(res.error); return; }
       setTempPwResult({ username: res.account.username, temp_password: res.account.temp_password });
       setShowAddDialog(false);
       setNewUsername("");
       setNewName("");
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Admin staff added");
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "delete", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
+    mutationFn: (adminId: string) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(a => a.id === adminId ? { ...a, is_deleted: true, deleted_at: new Date().toISOString() } : a);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "delete", chiefAdminId, adminId });
+    },
+    onSuccess: (res: any) => {
+      if (res?.error) { toast.error(res.error); return; }
       setDeleteTarget(null);
       setConfirmDeleteStep(0);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Admin staff deleted");
     },
   });
 
   const reinstateMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "reinstate", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
+    mutationFn: (adminId: string) => {
+      if (isTestnet) {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&";
+        const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        const updated = testnetStaff.map(a => a.id === adminId ? { ...a, is_deleted: false, deleted_at: null, reinstated_at: new Date().toISOString(), is_setup: false, email: null } : a);
+        saveTestnetStaff(updated);
+        return Promise.resolve({ temp_password: tempPw });
+      }
+      return callStaffApi({ action: "reinstate", chiefAdminId, adminId });
+    },
+    onSuccess: (res: any) => {
+      if (res?.error) { toast.error(res.error); return; }
       setTempPwResult({ username: reinstateTarget?.username || "", temp_password: res.temp_password });
       setReinstateTarget(null);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Admin staff reinstated");
     },
   });
 
   const promoteMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "promote", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
+    mutationFn: (adminId: string) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(a => a.id === adminId ? { ...a, is_chief: true, chief_rank: 2 } : a);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "promote", chiefAdminId, adminId });
+    },
+    onSuccess: (res: any) => {
+      if (res?.error) { toast.error(res.error); return; }
       setPromoteTarget(null);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Promoted to Chief Admin");
     },
   });
 
   const demoteMutation = useMutation({
-    mutationFn: (adminId: string) => callStaffApi({ action: "demote", chiefAdminId, adminId }),
-    onSuccess: (res) => {
-      if (res.error) { toast.error(res.error); return; }
+    mutationFn: (adminId: string) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(a => a.id === adminId ? { ...a, is_chief: false, chief_rank: null } : a);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "demote", chiefAdminId, adminId });
+    },
+    onSuccess: (res: any) => {
+      if (res?.error) { toast.error(res.error); return; }
       setDemoteTarget(null);
-      qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
       toast.success("Demoted to regular staff");
     },
   });
