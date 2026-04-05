@@ -500,6 +500,11 @@ const WidgetIndustryConfig = ({ industry, onConfigSave }: WidgetIndustryConfigPr
   const [marketplaceMode, setMarketplaceMode] = useState(false);
   const [marketplacePlatform, setMarketplacePlatform] = useState("custom");
   const [marketplaceCallback, setMarketplaceCallback] = useState("");
+  // Vendor contact fields for RFQ
+  const [expandContact, setExpandContact] = useState(false);
+  const [businessPhone, setBusinessPhone] = useState("");
+  const [businessPhoneCode, setBusinessPhoneCode] = useState("+1");
+  const [businessEmail, setBusinessEmail] = useState("");
 
   const preconfig = INDUSTRY_PRECONFIGS[industry] || DEFAULT_PRECONFIG;
   const subcats = INDUSTRY_SUBCATEGORIES[industry] || [];
