@@ -67,6 +67,12 @@ const VendorSidebar = () => {
     return items;
   }, [hasRfqSite]);
 
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("tl-open-sidebar", handler);
+    return () => window.removeEventListener("tl-open-sidebar", handler);
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("tl_vendor_auth");

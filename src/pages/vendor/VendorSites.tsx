@@ -71,7 +71,10 @@ const VendorSites = () => {
   const [siteUrl, setSiteUrl] = useState("");
   const [siteIndustry, setSiteIndustry] = useState("");
   const [hasCheckout, setHasCheckout] = useState(true);
-  const [widgetState, setWidgetState] = useState<WidgetFeeState>(getWidgetFeeState);
+  const [widgetStates, setWidgetStates] = useState<Record<string, WidgetFeeState>>(() => {
+    const stored = localStorage.getItem("tl_site_widget_fee_states");
+    return stored ? JSON.parse(stored) : {};
+  });
   const [showInvoice, setShowInvoice] = useState(false);
   const [pendingInvoiceAction, setPendingInvoiceAction] = useState<"install" | "restore" | null>(null);
 
