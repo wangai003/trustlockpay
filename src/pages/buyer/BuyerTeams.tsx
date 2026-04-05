@@ -112,6 +112,16 @@ const BuyerTeams = () => {
 
   useEffect(() => { if (user?.id) fetchWorkspaces(); }, [user?.id]);
 
+  // Auto-open join dialog if ?join=CODE in URL
+  useEffect(() => {
+    const joinParam = searchParams.get("join");
+    if (joinParam && user?.id) {
+      setJoinCode(joinParam);
+      setShowJoin(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, user?.id]);
+
   const fetchWorkspaces = async () => {
     setLoading(true);
     const { data: owned } = await supabase.from("team_workspaces").select("*").eq("owner_id", user!.id).eq("role", "buyer").order("created_at", { ascending: false });
