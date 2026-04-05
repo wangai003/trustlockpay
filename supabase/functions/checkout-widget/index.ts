@@ -252,6 +252,46 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
 
   const supabase = getSupabase();
 
+  // ── Vendor Billing Enforcement: block new orders if vendor has expired plan or overdue bills ──
+  const { data: vendorSub } = await supabase
+    .from("vendor_subscriptions")
+    .select("status")
+    .eq("vendor_id", String(vendorId))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (vendorSub?.status === "expired") {
+    return errorResponse("This vendor is temporarily unable to accept new orders. Please try again later.", 503);
+  }
+
+  // Check for overdue bills older than 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { count: overdueBillCount } = await supabase
+    .from("vendor_bills")
+    .select("id", { count: "exact", head: true })
+    .eq("vendor_id", String(vendorId))
+    .eq("status", "overdue")
+    .lt("due_date", sevenDaysAgo);
+
+  if ((overdueBillCount || 0) > 0) {
+    return errorResponse("This vendor is temporarily unable to accept new orders. Please try again later.", 503);
+  }
+
+  // Check if widget is disabled due to unpaid installation fee
+  if (params.site_id) {
+    const { data: widgetFee } = await supabase
+      .from("vendor_widget_fees")
+      .select("widget_state, payment_confirmed")
+      .eq("vendor_id", String(vendorId))
+      .eq("site_id", String(params.site_id))
+      .maybeSingle();
+
+    if (widgetFee?.widget_state === "disabled") {
+      return errorResponse("This checkout widget is currently inactive. Please contact the vendor.", 503);
+    }
+  }
+
   // Look up vendor
   const { data: vendor } = await supabase
     .from("profiles")
