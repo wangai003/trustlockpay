@@ -94,6 +94,11 @@ const VendorStandaloneLinks = () => {
   };
 
   const handleToggleStatus = async (link: GeneratedLink) => {
+    // Block activation if enforcement is active
+    if (link.status !== "active" && enforcement?.blocked) {
+      toast.error(enforcement.reason);
+      return;
+    }
     const newStatus = link.status === "active" ? "inactive" : "active";
     const { error } = await supabase
       .from("standalone_links")
