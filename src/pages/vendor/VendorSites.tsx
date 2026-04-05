@@ -497,17 +497,39 @@ const VendorSites = () => {
                             )}
                           </div>
 
-                          {/* Guided Installation */}
+                          {/* Guided Installation — gated behind payment confirmation */}
                           {isWidgetEnabled && (
                             <>
-                              <WidgetInstallGuide
-                                platform={site.platform || "Custom Website"}
-                                siteId={site.id}
-                                vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
-                              />
-                              <div className="mt-4">
-                                <WidgetPreviewMockup />
-                              </div>
+                              {siteWS.installFeePaid && !siteWS.pendingRestorationFee ? (
+                                <>
+                                  <WidgetInstallGuide
+                                    platform={site.platform || "Custom Website"}
+                                    siteId={site.id}
+                                    vendorSlug={vendor.name.toLowerCase().replace(/\s/g, '-')}
+                                  />
+                                  <div className="mt-4">
+                                    <WidgetPreviewMockup />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                                  <div className="flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                                    <div className="text-xs text-muted-foreground">
+                                      <p className="font-semibold text-foreground mb-1">Widget embed code locked</p>
+                                      <p>Your $5.00 installation fee must be paid before you can access the embed code and install guide. Go to <strong>Bill Payments</strong> to complete payment.</p>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="mt-2 text-xs gap-1"
+                                        onClick={() => window.location.href = "/trustlock/vendor/bill-payments"}
+                                      >
+                                        <DollarSign className="w-3 h-3" /> Pay Installation Fee
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </>
                           )}
                         </>
