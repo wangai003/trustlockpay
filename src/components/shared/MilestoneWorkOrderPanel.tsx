@@ -532,6 +532,11 @@ const MilestoneWorkOrderPanel = ({
             const canVendorFulfill = role === "vendor" && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
             const canBuyerRelease = role === "buyer" && ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released;
             const hasObserver = !!ms.observer_id;
+
+            // Counterparty status indicators
+            const vendorFulfilled = ms.status === "completed" || ms.status === "released";
+            const buyerReleased = ms.status === "released";
+            const isDisputed = ms.status === "disputed";
             const isDone = ms.status === "completed" || ms.status === "released";
             const isActive = idx === activeIndex;
             const expanded = isExpanded(idx);
