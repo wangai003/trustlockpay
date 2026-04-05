@@ -1,0 +1,2 @@
+GRANT SELECT, INSERT ON public.rfq_requests TO anon;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon;
