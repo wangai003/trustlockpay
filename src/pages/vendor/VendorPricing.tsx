@@ -29,10 +29,19 @@ const VendorPricing = () => {
   const planState = getVendorPlanState();
   const trialUsed = localStorage.getItem("tl_vendor_trial_start") !== null;
 
+  // Locked-in plan from previous selection
+  const lockedPlan = localStorage.getItem("tl_vendor_plan") as PlanId | null;
+  const lockedBilling = localStorage.getItem("tl_vendor_billing") as BillingCycle | null;
+  const hasLockedPlan = lockedPlan && lockedPlan !== "basic" && lockedPlan !== "free" && PLANS[lockedPlan];
+
   const handleSelect = (planId: PlanId) => {
     if (planId === "basic") return;
-    const price = billing === "monthly" ? PLANS[planId].monthly : PLANS[planId].yearly;
-    navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`TrustLock OS License — ${PLANS[planId].name} (${billing})`)}&amount=${price.toFixed(2)}`);
+    navigate(`/trustlock/vendor/checkout?plan=${planId}&billing=${billing}`);
+  };
+
+  const handleRenew = () => {
+    if (!hasLockedPlan || !lockedBilling) return;
+    navigate(`/trustlock/vendor/checkout?plan=${lockedPlan}&billing=${lockedBilling}&renew=true`);
   };
 
   const activateTrial = useActivateTrial();
