@@ -207,7 +207,17 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-/* ─── Helpers ─── */
+/* ─── Pre-payment instruments that are auto-satisfied when escrow is funded ─── */
+const PRE_PAYMENT_DOCS = new Set([
+  "lc copy", "lc", "letter of credit", "trade contract",
+  "bank guarantee", "standby lc", "payment guarantee",
+  "proforma invoice", "purchase order",
+]);
+
+const isPrePaymentDoc = (doc: string): boolean => {
+  const d = doc.toLowerCase();
+  return PRE_PAYMENT_DOCS.has(d) || d.includes("letter of credit") || d.includes(" lc");
+};
 
 const getUploadedKeys = (ms: any): Set<string> => {
   const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
@@ -219,14 +229,14 @@ const getUploadedKeys = (ms: any): Set<string> => {
   return keys;
 };
 
-const getDocGateStatus = (ms: any) => {
+const getDocGateStatus = (ms: any, escrowFunded = false) => {
   const mode: string = ms.document_mode || "none";
   const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
   const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
   const uploadedKeys = getUploadedKeys(ms);
 
   if (mode === "none" && requiredDocs.length === 0) {
-    return { mode: "none", satisfied: true, missingRequired: [] as string[], missingOptional: [] as string[] };
+    return { mode: "none", satisfied: true, missingRequired: [] as string[], missingOptional: [] as string[], autoSatisfied: [] as string[] };
   }
 
   const effectiveMode = requiredDocs.length > 0 ? (mode === "none" ? "required" : mode) : mode;
@@ -238,11 +248,27 @@ const getDocGateStatus = (ms: any) => {
     return false;
   };
 
-  const missingRequired = requiredDocs.filter((doc) => !checkDoc(doc));
-  const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
+  // Auto-satisfy pre-payment docs when escrow is funded
+  const autoSatisfied: string[] = [];
+  const missingRequired = requiredDocs.filter((doc) => {
+    if (checkDoc(doc)) return false;
+    if (escrowFunded && isPrePaymentDoc(doc)) {
+      autoSatisfied.push(doc);
+      return false; // treated as satisfied
+    }
+    return true;
+  });
+  const missingOptional = optionalDocs.filter((doc) => {
+    if (checkDoc(doc)) return false;
+    if (escrowFunded && isPrePaymentDoc(doc)) {
+      autoSatisfied.push(doc);
+      return false;
+    }
+    return true;
+  });
   const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
 
-  return { mode: effectiveMode, satisfied, missingRequired, missingOptional };
+  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied };
 };
 
 /* ─── Progress Stepper ─── */
