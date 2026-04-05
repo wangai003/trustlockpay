@@ -1,5 +1,29 @@
 // Pre-loaded demo data for the sandbox environment
 
+type MilestoneStatus = "completed" | "in_progress" | "pending";
+type OrderStatus = "escrow_locked" | "completed" | "pending_payment" | "disputed" | "released";
+
+interface SandboxMilestone {
+  id: string;
+  title: string;
+  status: MilestoneStatus;
+  percentage: number;
+}
+
+export interface SandboxOrder {
+  id: string;
+  item: string;
+  buyer: string;
+  buyerEmail: string;
+  amount: number;
+  currency: string;
+  fee: number;
+  status: OrderStatus;
+  paymentMethod: string;
+  createdAt: string;
+  milestones: SandboxMilestone[];
+}
+
 export const SANDBOX_VENDOR = {
   id: "SBX-VND-001",
   name: "Kente Craft Ltd",
