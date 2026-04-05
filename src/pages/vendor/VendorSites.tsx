@@ -149,6 +149,22 @@ const VendorSites = () => {
 
   const handleFirstInstall = (siteId: string) => {
     const ws = getSiteWidgetState(siteId);
+    const vendorInTrial = isVendorInTrial();
+
+    if (vendorInTrial) {
+      // Trial mode: skip fees, install immediately
+      const updated: WidgetFeeState = {
+        widgetState: "installed" as WidgetState,
+        installFeePaid: true, // Treated as paid during trial
+        pendingRestorationFee: false,
+        totalInstallFeesCharged: 0,
+      };
+      setWidgetStates(prev => ({ ...prev, [siteId]: updated }));
+      setSiteWidgetStates(prev => ({ ...prev, [siteId]: true }));
+      toast.success("Widget installed free during trial! 🎉");
+      return;
+    }
+
     if (ws.widgetState === "never_installed") {
       setActiveSiteId(siteId);
       setPendingInvoiceAction("install");
