@@ -104,6 +104,9 @@ const SandboxVendorOverview = lazy(() => import("./pages/sandbox/SandboxVendorOv
 const SandboxBuyerOverview = lazy(() => import("./pages/sandbox/SandboxBuyerOverview"));
 const SandboxOrders = lazy(() => import("./pages/sandbox/SandboxOrders"));
 const SandboxMessages = lazy(() => import("./pages/sandbox/SandboxMessages"));
+const SandboxStore = lazy(() => import("./pages/sandbox/SandboxStore"));
+const SandboxStorePage = lazy(() => import("./pages/sandbox/SandboxStorePage"));
+const SandboxCheckout = lazy(() => import("./pages/sandbox/SandboxCheckout"));
 
 const queryClient = new QueryClient();
 
