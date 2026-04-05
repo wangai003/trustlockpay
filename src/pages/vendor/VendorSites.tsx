@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import {
   getWidgetFeeState,
   processWidgetTransition,
+  calculateWidgetTransitionFee,
   WIDGET_INSTALL_FEE,
   type WidgetFeeState,
   type WidgetState,
