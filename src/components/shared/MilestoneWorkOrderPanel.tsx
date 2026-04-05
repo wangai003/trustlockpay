@@ -897,11 +897,14 @@ const MilestoneWorkOrderPanel = ({
                             <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
                           </div>
                         )}
-                        {ms.is_payment_milestone && (
+                         {ms.is_payment_milestone && (
                           <p className="text-[9px] text-muted-foreground">
                             💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
                           </p>
                         )}
+                        <p className="text-[9px] text-muted-foreground">
+                          🎯 Step owned by: <span className="font-semibold capitalize">{stepOwner}</span>
+                        </p>
                       </div>
                     )}
 
