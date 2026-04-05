@@ -235,6 +235,26 @@ const WidgetCheckout = () => {
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
+              {/* Milestone Payment Schedule — pre-escrow negotiation for milestone industries */}
+              {isMilestoneIndustry && milestoneSchedule.length > 0 && parseFloat(form.amount || "0") > 0 && (
+                <MilestonePaymentSchedule
+                  industry={vendor.industry}
+                  orderAmount={parseFloat(form.amount || "0")}
+                  defaultSchedule={milestoneSchedule}
+                  vendorName={vendor.name}
+                  readOnly={scheduleAccepted}
+                  onAccept={(schedule) => {
+                    setAgreedSchedule(schedule);
+                    setScheduleAccepted(true);
+                    toast.success("Payment schedule accepted — proceed to payment");
+                  }}
+                  onCounterPropose={(schedule) => {
+                    toast.info("Counter-proposal submitted. The vendor will be notified to review your suggested percentages.");
+                    // In production this would create a negotiation record
+                  }}
+                />
+              )}
+
               {/* Checkout mode toggle — RFQ-eligible industries only */}
               {rfqEligible && (
                 <div className="space-y-1.5">
