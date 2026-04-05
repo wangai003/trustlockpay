@@ -54,7 +54,48 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   const [showCompleteTask, setShowCompleteTask] = useState<string | null>(null);
   const [showResult, setShowResult] = useState<{ title: string; detail: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; label: string } | null>(null);
-  const [wsTab, setWsTab] = useState<"tasks" | "members" | "log">("tasks");
+  const [wsTab, setWsTab] = useState<"tasks" | "members" | "chat" | "log">("tasks");
+
+  // Chat simulation
+  type ChatMsg = { id: string; sender: string; body: string; timestamp: string };
+  const [chatMessages, setChatMessages] = useState<Record<string, ChatMsg[]>>(() => {
+    try {
+      const saved = localStorage.getItem("tl_testnet_team_chat");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      "ws-mining-1": [
+        { id: "cm1", sender: "Kwame Asante", body: "Survey uploaded. GPS coords attached — check the evidence file.", timestamp: new Date(Date.now() - 4 * 86400000).toISOString() },
+        { id: "cm2", sender: "Fatima Diallo", body: "Assay results confirm 3.2g/t gold grade. Ready for export docs.", timestamp: new Date(Date.now() - 3 * 86400000).toISOString() },
+        { id: "cm3", sender: "David Okonkwo", body: "I've contacted the trucking company. Waiting on insurance quote.", timestamp: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { id: "cm4", sender: "Team Lead", body: "Great progress everyone. Amina, please prioritize the EPA clearance.", timestamp: new Date(Date.now() - 1 * 86400000).toISOString() },
+      ],
+      "ws-agri-1": [
+        { id: "cm5", sender: "Grace Nyambura", body: "Harvest schedule confirmed for next week. Labor team ready.", timestamp: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { id: "cm6", sender: "Pierre Dumont", body: "I'll need 48h for moisture testing once harvest arrives.", timestamp: new Date(Date.now() - 1 * 86400000).toISOString() },
+      ],
+      "ws-constr-1": [
+        { id: "cm7", sender: "Ibrahim Toure", body: "All 3 quotes received. Recommended supplier: Dangote Cement.", timestamp: new Date(Date.now() - 8 * 86400000).toISOString() },
+        { id: "cm8", sender: "Carlos Silva", body: "Foundation pour scheduled for Monday. Need weather clearance.", timestamp: new Date(Date.now() - 5 * 86400000).toISOString() },
+      ],
+    };
+  });
+  const [chatInput, setChatInput] = useState("");
+
+  // Invite codes
+  const [inviteCodes, setInviteCodes] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem("tl_testnet_invite_codes");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      "ws-mining-1": "TL-INV-MIN-7X4K",
+      "ws-agri-1": "TL-INV-AGR-9P2M",
+      "ws-constr-1": "TL-INV-CON-3R8W",
+      "ws-realestate-1": "TL-INV-RE-5N6J",
+    };
+  });
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   // Create form
   const [newTitle, setNewTitle] = useState("");
