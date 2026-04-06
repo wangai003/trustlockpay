@@ -252,6 +252,18 @@ const WidgetCheckout = () => {
         {/* Returning buyer sign-in prompt */}
         <ReturningBuyerBanner />
 
+        {/* External platform integration banner */}
+        {isExternalPlatform && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary shrink-0" />
+            <p className="text-[11px] text-muted-foreground">
+              Order from <strong className="text-foreground">{platformName}</strong>
+              {productId && <> · Product #{productId}</>}
+              {vendorRef && <> · Vendor: {vendorRef}</>}
+            </p>
+          </div>
+        )}
+
         {step === "form" && (
           <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
