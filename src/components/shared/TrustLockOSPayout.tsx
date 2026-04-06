@@ -1201,15 +1201,39 @@ const TrustLockOSPayout = ({
                   Please select a payment method to continue
                 </p>
               )}
-              {/* Transak bank transfer hint for international vendors */}
+              {/* International Bank Transfer Selector */}
               {mode === "diaspora" && (
-                <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground">
-                  <p className="font-semibold text-foreground mb-1">🌍 International Bank Transfer Available</p>
-                  <p className="leading-relaxed">
-                    Vendors in <strong className="text-foreground">China, India, Brazil, Turkey, Mexico, Japan, South Korea, Vietnam, Thailand, Philippines, Indonesia</strong> and 
-                    140+ other countries can receive payouts directly to their local bank account via our payment processor. 
-                    Select <strong className="text-foreground">Bank Account (ACH/Wire)</strong> or <strong className="text-foreground">Crypto Wallet</strong> above.
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">🌍 International Bank Transfer</p>
+                    <button
+                      type="button"
+                      onClick={() => { setUseIntlBank(!useIntlBank); if (useIntlBank) { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                      className={cn(
+                        "text-[10px] px-3 py-1 rounded-full font-semibold transition-all",
+                        useIntlBank ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {useIntlBank ? "Using Bank Transfer" : "Use Bank Transfer"}
+                    </button>
+                  </div>
+                  {!useIntlBank && (
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Vendors in <strong className="text-foreground">North America, Europe, Asia, South America, Caribbean, Australia</strong> and 
+                      140+ other countries can receive payouts directly to their local bank account.
+                      Click "Use Bank Transfer" above to select your region and bank.
+                    </p>
+                  )}
+                  {useIntlBank && (
+                    <InternationalBankSelector
+                      selectedBank={intlBankSelected}
+                      onBankSelected={(bank, region) => {
+                        setIntlBankSelected(bank);
+                        setIntlBankRegion(region);
+                      }}
+                      onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                    />
+                  )}
                 </div>
               )}
               {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
