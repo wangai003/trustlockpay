@@ -534,24 +534,39 @@ const WidgetCheckout = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { key: "card", label: "Card", icon: CreditCard, sub: "Visa / MC" },
-                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
-                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
-                    ].map(pm => (
-                      <button
-                        key={pm.key}
-                        type="button"
-                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
-                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                      >
-                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-[11px] font-medium">{pm.label}</span>
-                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {[
+                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / MC" },
+                        { key: "bank_transfer", label: "Bank", icon: Building2, sub: "Checking / Savings" },
+                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                      ].map(pm => (
+                        <button
+                          key={pm.key}
+                          type="button"
+                          onClick={() => { setForm(p => ({ ...p, paymentMethod: pm.key })); if (pm.key !== "bank_transfer") { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                          className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                        >
+                          <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-[11px] font-medium">{pm.label}</span>
+                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* International Bank Selector */}
+                    {form.paymentMethod === "bank_transfer" && (
+                      <InternationalBankSelector
+                        selectedBank={intlBankSelected}
+                        onBankSelected={(bank, region) => {
+                          setIntlBankSelected(bank);
+                          setIntlBankRegion(region);
+                        }}
+                        onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                      />
+                    )}
+                  </>
                 )}
 
                 {/* Fee breakdown */}
