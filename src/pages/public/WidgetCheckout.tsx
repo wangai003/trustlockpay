@@ -604,12 +604,20 @@ const WidgetCheckout = () => {
                     <span>${parseFloat(form.amount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Escrow Fee (1.5%)</span>
-                    <span>${(parseFloat(form.amount) * 0.015).toFixed(2)}</span>
+                    <span className="text-muted-foreground">Platform Fee (0.5%)</span>
+                    <span>${(parseFloat(form.amount) * 0.005).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Processor Fee (2.9%)</span>
+                    <span>${(parseFloat(form.amount) * 0.029).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
+                    <span className="text-muted-foreground italic">At release</span>
                   </div>
                   <div className="border-t border-border pt-2 flex justify-between text-xs font-bold">
                     <span>Total Charged</span>
-                    <span>${(parseFloat(form.amount) * 1.015).toFixed(2)}</span>
+                    <span>${(parseFloat(form.amount) * 1.034).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Status</span>
