@@ -650,30 +650,6 @@ const BuyerTeams = () => {
               {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : list.length === 0 ? (
                 <div className="space-y-4">
                   <Card><CardContent className="py-8 text-center text-muted-foreground">No {status} work orders.</CardContent></Card>
-                  {status === "active" && workspaces.length === 0 && (
-                    <Card className="border-primary/30 bg-primary/5">
-                      <CardContent className="py-6 space-y-4">
-                        <div className="text-center space-y-2">
-                          <UserPlus className="w-10 h-10 mx-auto text-primary" />
-                          <h3 className="font-semibold text-lg">Have an invite code?</h3>
-                          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                            If your team lead shared an invite code with you, enter it below to join their workspace and get assigned tasks.
-                          </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-                          <Input
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value)}
-                            placeholder="Paste invite code here"
-                            className="flex-1"
-                          />
-                          <Button onClick={() => { if (joinCode.trim()) setShowJoin(true); else toast.error("Enter a code first"); }} disabled={!joinCode.trim()}>
-                            <UserPlus className="w-4 h-4 mr-1" /> Join
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               ) : (
                 <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
