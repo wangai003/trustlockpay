@@ -17,7 +17,7 @@ import {
   Settings2, Globe, Palette, ShieldCheck, Webhook, CreditCard,
   Store, Users, Package, AlertTriangle, Copy, Eye, EyeOff, Loader2
 } from "lucide-react";
-import { INDUSTRY_LIST } from "@/lib/industryList";
+import { ALL_INDUSTRIES } from "@/lib/industryList";
 
 const PAYMENT_METHODS = [
   { id: "card", label: "Card (Visa/Mastercard)", region: "international" },
