@@ -184,10 +184,7 @@ const WidgetCheckout = () => {
             bankTransferDetails: {
               bankName: intlBankSelected,
               region: intlBankRegion,
-              processor: (() => {
-                const { getProcessorForRegion } = require("@/lib/internationalBankData");
-                return getProcessorForRegion(intlBankRegion);
-              })(),
+              processor: getProcessorForRegion(intlBankRegion),
             },
           } : {}),
           ...(isExternalPlatform ? {
