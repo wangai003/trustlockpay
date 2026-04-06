@@ -387,7 +387,7 @@ const SandboxCheckout = () => {
                     {config.items.map((item, i) => (
                       <p key={i}>• {item.qty} {item.unit} — {item.name} — ${(item.qty * item.unitPrice).toLocaleString()}</p>
                     ))}
-                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? " + 2.9% processor fee" : ""} + 1.0% escrow service fee at release)</p>
+                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? ` + ${selectedProcessor.feeRate}% ${selectedProcessor.name} processor fee` : ""} + 1.0% escrow service fee at release)</p>
                     <Separator className="my-1" />
                     <p><strong>Terms:</strong></p>
                     <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
