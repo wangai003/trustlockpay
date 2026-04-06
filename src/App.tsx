@@ -161,6 +161,7 @@ const App = () => (
                 <Route path="accountability" element={<AdminAccountability />} />
                 <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="sandbox-leads" element={<AdminSandboxLeads />} />
+                <Route path="platforms" element={<AdminPlatforms />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
