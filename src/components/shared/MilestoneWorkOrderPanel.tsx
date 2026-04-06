@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
 import ExternalFeeTracker from "@/components/shared/ExternalFeeTracker";
 import { getExternalFeeSuggestions } from "@/lib/externalFeeTemplates";
+import { filterDocumentsByScope } from "@/lib/documentScopeFilter";
+import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
