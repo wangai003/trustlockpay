@@ -91,8 +91,6 @@ const BuyerTeams = () => {
   const [taskDeadline, setTaskDeadline] = useState("");
   const [taskSlaHours, setTaskSlaHours] = useState("");
   const [milestoneOptions, setMilestoneOptions] = useState<{ key: string; title: string; description: string; required_documents: string[]; assigned_to: string }[]>([]);
-  const [taskDeadline, setTaskDeadline] = useState("");
-  const [taskSlaHours, setTaskSlaHours] = useState("");
 
   useEffect(() => {
     const goOnline = async () => {
