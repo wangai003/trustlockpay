@@ -151,6 +151,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [localIban, setLocalIban] = useState("");
   const [localRib, setLocalRib] = useState("");
   const [localSortCode, setLocalSortCode] = useState("");
+  const [processing, setProcessing] = useState(false);
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const [seedToken, setSeedToken] = useState("");
   const [seedTokenLinked, setSeedTokenLinked] = useState(false);
