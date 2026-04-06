@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, MapPin, Building2, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { detectTradeScope } from "@/lib/tradeBlocs";
 
 export type TradeScope = "domestic" | "regional" | "international";
 
@@ -26,7 +27,7 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
     value: "regional",
     label: "Regional / Corridor",
     icon: Building2,
-    description: "Within a trade bloc (AfCFTA, ECOWAS, EAC, EU, ASEAN). Simplified docs.",
+    description: "Within a trade bloc (AfCFTA, ECOWAS, EU, ASEAN, USMCA, Mercosur, RCEP, GCC, etc.). Simplified docs.",
     docLevel: "Waybill + basic customs",
   },
   {
@@ -39,12 +40,13 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
 ];
 
 const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false }: TradeScopeSelectorProps) => {
-  // Auto-detect suggestion
-  const suggestedScope = buyerCountry && vendorCountry
-    ? buyerCountry === vendorCountry
-      ? "domestic"
-      : undefined // could detect regional via trade bloc mapping in future
-    : undefined;
+  // Auto-detect suggestion using global trade bloc mapping
+  const detected = useMemo(
+    () => detectTradeScope(buyerCountry || "", vendorCountry || ""),
+    [buyerCountry, vendorCountry]
+  );
+  const suggestedScope = buyerCountry && vendorCountry ? detected.scope : undefined;
+  const detectedBlocName = detected.bloc?.shortName;
 
   if (compact) {
     return (
@@ -69,7 +71,9 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                     <Icon className="w-3 h-3" />
                     {opt.label}
                     {suggestedScope === opt.value && !isSelected && (
-                      <Badge className="text-[7px] px-1 py-0 bg-accent/20 text-accent">suggested</Badge>
+                      <Badge className="text-[7px] px-1 py-0 bg-accent/20 text-accent">
+                        {opt.value === "regional" && detectedBlocName ? detectedBlocName : "suggested"}
+                      </Badge>
                     )}
                   </button>
                 </TooltipTrigger>
@@ -127,7 +131,7 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                 <span className="text-[8px] text-muted-foreground leading-tight">{opt.docLevel}</span>
                 {suggestedScope === opt.value && (
                   <Badge className="absolute -top-1.5 -right-1.5 text-[7px] px-1 py-0 bg-accent text-accent-foreground">
-                    Auto
+                    {opt.value === "regional" && detectedBlocName ? detectedBlocName : "Auto"}
                   </Badge>
                 )}
               </button>
