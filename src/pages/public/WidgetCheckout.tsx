@@ -17,6 +17,7 @@ import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
+import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 
 interface VendorInfo {
@@ -54,6 +55,7 @@ const WidgetCheckout = () => {
   const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
+  const [tradeScope, setTradeScope] = useState<TradeScope>("international");
 
   // Resolve milestone templates for this industry
   const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
@@ -294,6 +296,15 @@ const WidgetCheckout = () => {
                   <span className="text-[10px] text-muted-foreground">Escrow-protected payment</span>
                 </div>
               </div>
+
+              {/* Trade Scope Selector — adjusts document requirements */}
+              {isMilestoneIndustry && (
+                <TradeScopeSelector
+                  value={tradeScope}
+                  onChange={setTradeScope}
+                  buyerCountry={form.buyerCountry}
+                />
+              )}
 
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />

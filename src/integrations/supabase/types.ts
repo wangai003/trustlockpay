@@ -1160,6 +1160,71 @@ export type Database = {
           },
         ]
       }
+      external_fee_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          evidence_note: string | null
+          fee_label: string
+          id: string
+          logged_by: string
+          logged_by_role: string
+          milestone_index: number
+          paid_to: string | null
+          receipt_url: string | null
+          required_scope: string[] | null
+          transaction_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by_counterparty: boolean | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          evidence_note?: string | null
+          fee_label: string
+          id?: string
+          logged_by: string
+          logged_by_role: string
+          milestone_index: number
+          paid_to?: string | null
+          receipt_url?: string | null
+          required_scope?: string[] | null
+          transaction_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_counterparty?: boolean | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          evidence_note?: string | null
+          fee_label?: string
+          id?: string
+          logged_by?: string
+          logged_by_role?: string
+          milestone_index?: number
+          paid_to?: string | null
+          receipt_url?: string | null
+          required_scope?: string[] | null
+          transaction_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_counterparty?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_fee_entries_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gas_reserve_ledger: {
         Row: {
           converted_at: string | null
@@ -3667,6 +3732,8 @@ export type Database = {
           payment_released: boolean | null
           position: number
           required_documents: string[] | null
+          required_scope: string[] | null
+          settlement_type: string
           status: string | null
           title: string
           transaction_id: string
@@ -3695,6 +3762,8 @@ export type Database = {
           payment_released?: boolean | null
           position?: number
           required_documents?: string[] | null
+          required_scope?: string[] | null
+          settlement_type?: string
           status?: string | null
           title: string
           transaction_id: string
@@ -3723,6 +3792,8 @@ export type Database = {
           payment_released?: boolean | null
           position?: number
           required_documents?: string[] | null
+          required_scope?: string[] | null
+          settlement_type?: string
           status?: string | null
           title?: string
           transaction_id?: string
@@ -3829,6 +3900,7 @@ export type Database = {
           status: string
           tax_breakdown: Json | null
           tracking: string | null
+          trade_scope: string
           transaction_source: string | null
           tx_id: string
           type: string | null
@@ -3874,6 +3946,7 @@ export type Database = {
           status?: string
           tax_breakdown?: Json | null
           tracking?: string | null
+          trade_scope?: string
           transaction_source?: string | null
           tx_id: string
           type?: string | null
@@ -3919,6 +3992,7 @@ export type Database = {
           status?: string
           tax_breakdown?: Json | null
           tracking?: string | null
+          trade_scope?: string
           transaction_source?: string | null
           tx_id?: string
           type?: string | null
@@ -4491,6 +4565,7 @@ export type Database = {
       vendor_sites: {
         Row: {
           created_at: string
+          default_trade_scope: string
           id: string
           industry: string | null
           is_active: boolean | null
@@ -4501,6 +4576,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_trade_scope?: string
           id?: string
           industry?: string | null
           is_active?: boolean | null
@@ -4511,6 +4587,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_trade_scope?: string
           id?: string
           industry?: string | null
           is_active?: boolean | null
