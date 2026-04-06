@@ -163,7 +163,13 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
               )}
 
               {!isOwner && !allPriorDone && task.status === "pending" && (
-                <p className="text-xs text-amber-600 mt-1">⏳ Waiting for previous task</p>
+                <p className="text-xs text-amber-600 mt-1">🔒 Locked — waiting for previous task</p>
+              )}
+              {!isOwner && allPriorDone && task.status === "pending" && !canComplete && (
+                <p className="text-xs text-muted-foreground mt-1">⏳ Task pending</p>
+              )}
+              {!isOwner && canComplete && (
+                <p className="text-xs text-primary font-medium mt-1">✅ Ready — you can complete this task now</p>
               )}
             </div>
           </div>
