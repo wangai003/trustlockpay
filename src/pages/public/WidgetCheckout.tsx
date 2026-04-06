@@ -170,12 +170,20 @@ const WidgetCheckout = () => {
           item: form.item,
           buyerEmail: form.buyerEmail,
           buyerName: form.buyerName,
-          buyerLocation: "Unknown",
-          paymentMethod: "card",
+          buyerLocation: form.buyerCountry,
+          paymentMethod: form.paymentMethod,
           industry: vendor.industry,
           orderType: "simple",
           buyerEntityType: form.buyerEntityType,
           buyerCompanyName: form.buyerEntityType !== "individual" ? form.buyerCompanyName : null,
+          ...(isExternalPlatform ? {
+            marketplaceMetadata: {
+              platform: platformName,
+              product_id: productId,
+              vendor_ref: vendorRef,
+              category: productCategory,
+            },
+          } : {}),
         },
       });
 
