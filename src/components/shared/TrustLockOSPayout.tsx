@@ -1236,7 +1236,7 @@ const TrustLockOSPayout = ({
                   )}
                 </div>
               )}
-              {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
+              {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && !(useIntlBank && intlBankSelected) && (
                 <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
                   <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
                   {selectedProvider.fields.map((field) => (
