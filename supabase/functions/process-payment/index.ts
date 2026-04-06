@@ -46,6 +46,23 @@ interface ProcessPaymentRequest {
   vendor_country?: string;
   item_category?: string;
   is_export?: boolean;
+  bankTransferDetails?: {
+    bankName: string;
+    region?: string;
+    country?: string;
+    accountNumber?: string;
+    branchCode?: string;
+    bvn?: string;
+    iban?: string;
+    rib?: string;
+    sortCode?: string;
+    type: "international" | "local_africa";
+  };
+  mobileMoneyDetails?: {
+    provider: string;
+    phoneNumber: string;
+    country: string;
+  };
 }
 
 // ─── Tax Rate Fallbacks ──────────────────────────────────
