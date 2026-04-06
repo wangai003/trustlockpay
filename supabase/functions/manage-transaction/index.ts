@@ -72,14 +72,51 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "add_tracking": {
+        // Look up industry to determine adaptive release window
+        const { data: txLookup } = await supabase
+          .from("transactions")
+          .select("industry")
+          .eq("tx_id", txId)
+          .single();
+
+        // Get industry-adaptive release days via DB function
+        let releaseDays = 14;
+        if (txLookup?.industry) {
+          const { data: daysRow } = await supabase.rpc("get_industry_release_days", { p_industry: txLookup.industry });
+          if (daysRow) releaseDays = daysRow;
+        }
+
+        const shippedDate = new Date().toISOString();
+        const autoReleaseDate = new Date(Date.now() + releaseDays * 86400000).toISOString();
+
         const { data, error } = await supabase
           .from("transactions")
-          .update({ tracking, status: "shipped", shipped_date: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .update({
+            tracking,
+            status: "shipped",
+            shipped_date: shippedDate,
+            auto_release_days: releaseDays,
+            auto_release_date: autoReleaseDate,
+            updated_at: shippedDate,
+          })
           .eq("tx_id", txId)
           .select()
           .single();
         if (error) throw error;
         result = data;
+
+        // Notify buyer about auto-release window
+        if (data.buyer_id) {
+          await supabase.from("notifications").insert({
+            user_id: data.buyer_id,
+            title: "Order Shipped — Action Required",
+            message: `Order #${data.order_number || txId} has been shipped. You have ${releaseDays} days to confirm delivery or file a dispute. If no action is taken, funds will auto-release to the vendor on ${new Date(autoReleaseDate).toLocaleDateString()}.`,
+            type: "warning",
+            is_action_required: true,
+            related_entity_type: "transaction",
+            related_entity_id: data.id,
+          });
+        }
 
         // Anchor: shipping milestone
         await anchorProof(supabase, data.id, "milestone", {
@@ -87,7 +124,9 @@ Deno.serve(async (req) => {
           tx_id: txId,
           tracking_number: tracking,
           status: "shipped",
-          shipped_date: data.shipped_date,
+          shipped_date: shippedDate,
+          auto_release_days: releaseDays,
+          auto_release_date: autoReleaseDate,
           order_number: data.order_number,
         });
         break;
@@ -474,6 +513,139 @@ Deno.serve(async (req) => {
         });
 
         result = refundedTx;
+        break;
+      }
+
+      case "request_extension": {
+        // Buyer requests more time before auto-release
+        const extraDays = body.extra_days || 14;
+        const extReason = body.reason || "Need more time to receive delivery";
+        const maxExtensions = 3;
+
+        // Fetch transaction
+        const { data: extTx, error: extErr } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("tx_id", txId)
+          .single();
+        if (extErr || !extTx) throw new Error("Transaction not found");
+        if (extTx.status !== "shipped") throw new Error("Extensions only apply to shipped orders");
+        if ((extTx.auto_release_extended_count || 0) >= maxExtensions) {
+          throw new Error(`Maximum ${maxExtensions} extensions allowed. Please contact support.`);
+        }
+
+        // Calculate new release date
+        const currentRelease = extTx.auto_release_date ? new Date(extTx.auto_release_date) : new Date();
+        const newRelease = new Date(currentRelease.getTime() + extraDays * 86400000).toISOString();
+
+        // Update transaction
+        const { data: extUpdated, error: extUpdErr } = await supabase
+          .from("transactions")
+          .update({
+            auto_release_date: newRelease,
+            auto_release_extended_count: (extTx.auto_release_extended_count || 0) + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (extUpdErr) throw extUpdErr;
+
+        // Log extension request
+        await supabase.from("escrow_extensions").insert({
+          transaction_id: extTx.id,
+          tx_id: txId,
+          requested_by: extTx.buyer_id,
+          reason: extReason,
+          extra_days: extraDays,
+          status: "approved",
+        });
+
+        // Notify vendor
+        if (extTx.vendor_id) {
+          await supabase.from("notifications").insert({
+            user_id: extTx.vendor_id,
+            title: "Auto-Release Extended",
+            message: `The buyer has extended the delivery window for order #${extTx.order_number || txId} by ${extraDays} days. New auto-release date: ${new Date(newRelease).toLocaleDateString()}.`,
+            type: "info",
+            related_entity_type: "transaction",
+            related_entity_id: extTx.id,
+          });
+        }
+
+        // Anchor
+        await anchorProof(supabase, extTx.id, "milestone", {
+          event: "auto_release_extended",
+          tx_id: txId,
+          extra_days: extraDays,
+          previous_release_date: extTx.auto_release_date,
+          new_release_date: newRelease,
+          extension_count: (extTx.auto_release_extended_count || 0) + 1,
+          reason: extReason,
+        });
+
+        result = extUpdated;
+        break;
+      }
+
+      case "send_release_reminders": {
+        // Cron-triggered: find shipped orders approaching auto-release and send reminders
+        const now = new Date();
+        const reminderWindows = [
+          { days: 7, type: "7_day_reminder" },
+          { days: 3, type: "3_day_reminder" },
+          { days: 1, type: "1_day_reminder" },
+        ];
+
+        let remindersSent = 0;
+
+        for (const window of reminderWindows) {
+          const cutoff = new Date(now.getTime() + window.days * 86400000).toISOString();
+
+          // Find shipped transactions with auto_release_date within this window
+          const { data: approaching } = await supabase
+            .from("transactions")
+            .select("id, tx_id, buyer_id, order_number, auto_release_date, auto_release_paused")
+            .eq("status", "shipped")
+            .eq("auto_release_paused", false)
+            .lte("auto_release_date", cutoff)
+            .gte("auto_release_date", now.toISOString());
+
+          for (const tx of (approaching || [])) {
+            // Check if reminder already sent
+            const { data: existing } = await supabase
+              .from("escrow_release_reminders")
+              .select("id")
+              .eq("transaction_id", tx.id)
+              .eq("reminder_type", window.type)
+              .single();
+
+            if (existing) continue;
+
+            // Send notification
+            if (tx.buyer_id) {
+              const daysLeft = Math.ceil((new Date(tx.auto_release_date).getTime() - now.getTime()) / 86400000);
+              await supabase.from("notifications").insert({
+                user_id: tx.buyer_id,
+                title: `⏰ ${daysLeft} Day${daysLeft > 1 ? "s" : ""} Until Auto-Release`,
+                message: `Order #${tx.order_number || tx.tx_id} will auto-release funds to the vendor in ${daysLeft} day${daysLeft > 1 ? "s" : ""}. Confirm delivery or file a dispute if you haven't received your goods.`,
+                type: "warning",
+                is_action_required: true,
+                related_entity_type: "transaction",
+                related_entity_id: tx.id,
+              });
+
+              // Log reminder
+              await supabase.from("escrow_release_reminders").insert({
+                transaction_id: tx.id,
+                reminder_type: window.type,
+              });
+              remindersSent++;
+            }
+          }
+        }
+
+        result = { reminders_sent: remindersSent };
         break;
       }
 
