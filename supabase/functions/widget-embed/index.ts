@@ -142,7 +142,9 @@ const WIDGET_JS = (baseUrl: string) => `
     + '?vendor=' + encodeURIComponent(vendorId)
     + '&site=' + encodeURIComponent(siteId)
     + '&mode=' + encodeURIComponent(mode)
-    + '&embed=true';
+    + '&embed=true'
+    + (platformFee ? '&platform_fee=' + encodeURIComponent(platformFee) : '')
+    + (platformName ? '&platform_name=' + encodeURIComponent(platformName) : '');
   iframe.src = 'about:blank';
   iframe.setAttribute('allow', 'payment');
   iframe.style.marginTop = '48px';
