@@ -61,7 +61,14 @@ const SandboxCheckout = () => {
   }
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
-  const fee = Math.round(subtotal * 0.015 * 100) / 100;
+  const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
+  const platformFee = Math.round(subtotal * 0.005 * 100) / 100;  // 0.5% TrustLock
+  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * 0.029 * 100) / 100;  // Stripe 2.9% for card
+  const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100; // 1.0% at release
+  const totalFees = Math.round((platformFee + processorFee) * 100) / 100;
+  const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
+  // Legacy alias kept for contract text
+  const fee = totalFees;
 
   const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
   const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
@@ -164,8 +171,10 @@ const SandboxCheckout = () => {
                     ))}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Escrow Fee (1.5%)</span><span>${fee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-sm font-bold pt-1"><span>Total</span><span>${(subtotal + fee).toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
+                    <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic">{config.invoiceNote}</p>
 
@@ -336,7 +345,7 @@ const SandboxCheckout = () => {
                     {config.items.map((item, i) => (
                       <p key={i}>• {item.qty} {item.unit} — {item.name} — ${(item.qty * item.unitPrice).toLocaleString()}</p>
                     ))}
-                    <p><strong>Total: ${(subtotal + fee).toLocaleString()}</strong> (incl. 1.5% escrow fee)</p>
+                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? " + 2.9% processor fee" : ""} + 1.0% escrow service fee at release)</p>
                     <Separator className="my-1" />
                     <p><strong>Terms:</strong></p>
                     <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
@@ -476,9 +485,11 @@ const SandboxCheckout = () => {
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee (1.5%)</span><span>${fee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
-                    <div className="flex justify-between font-bold"><span>Total</span><span>${(subtotal + fee).toLocaleString()}</span></div>
+                    <div className="flex justify-between font-bold"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
 
                   <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-[10px] text-green-700 space-y-0.5">
