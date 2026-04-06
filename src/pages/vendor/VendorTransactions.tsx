@@ -166,7 +166,7 @@ const VendorTransactions = () => {
 
   return (
     <div>
-      <VendorHeader title="Work Order Log" />
+      <VendorHeader title="Direct Work Orders" />
       <div className="p-3 sm:p-6 space-y-4">
         {grayedCount > 0 && (
           <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
