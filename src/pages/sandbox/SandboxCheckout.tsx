@@ -6,6 +6,9 @@ import {
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
   Phone, Building2, Coins
 } from "lucide-react";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
+import { getProcessorForRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
