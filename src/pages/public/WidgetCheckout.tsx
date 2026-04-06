@@ -194,10 +194,25 @@ const WidgetCheckout = () => {
   };
 
   const baseAmount = parseFloat(form.amount || "0");
-  const platformFeeAmount = baseAmount * 0.005;      // 0.5% TrustLock platform fee
-  const processorFeeAmount = baseAmount * 0.029;      // Stripe 2.9% (default fiat)
-  const feeAmount = platformFeeAmount + processorFeeAmount;  // Total upfront fees
-  const totalAmount = baseAmount + feeAmount;
+  const isCryptoPayment = form.paymentMethod === "usdc" || form.paymentMethod === "usdt";
+  const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
+    : form.paymentMethod === "mobile_money" ? "mobile_money"
+    : form.paymentMethod === "bank_transfer" ? "bank_transfer"
+    : "card";
+  const selectedProcessorId = selectProcessor(form.buyerCountry, isCryptoPayment, undefined, feeMethod);
+  const selectedProcessor = PROCESSORS[selectedProcessorId];
+
+  const platformFeeAmount = Math.round(baseAmount * 0.005 * 100) / 100;
+  const processorFeeAmount = isCryptoPayment ? 0 : Math.round(baseAmount * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const feeAmount = Math.round((platformFeeAmount + processorFeeAmount) * 100) / 100;
+  const totalAmount = Math.round((baseAmount + feeAmount) * 100) / 100;
+
+  // Read multi-vendor platform params
+  const productId = params.get("product_id") || "";
+  const vendorRef = params.get("vendor_ref") || "";
+  const productCategory = params.get("category") || "";
+  const isExternalPlatform = !!params.get("platform");
+  const platformName = params.get("platform") || "";
 
   const closeWidget = () => {
     if (isEmbed && window.parent !== window) {
