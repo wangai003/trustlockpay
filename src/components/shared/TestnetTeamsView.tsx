@@ -769,6 +769,7 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowJoinDialog(true)}><UserPlus className="w-4 h-4 mr-1" /> Join Team</Button>
           <Button variant="outline" size="sm" onClick={resetTeams}><RotateCcw className="w-4 h-4 mr-1" /> Reset</Button>
           <Button onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> New Workspace</Button>
         </div>
