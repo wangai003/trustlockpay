@@ -224,13 +224,16 @@ Deno.serve(async (req) => {
       const { data: newMember } = await supabase
         .from("team_members").select("user_id").eq("id", new_member_id).single();
       if (newMember) {
+        const { data: wsRole } = await supabase
+          .from("team_workspaces").select("role").eq("id", task.team_members.workspace_id).single();
+        const roleRoute = wsRole?.role === "buyer" ? "buyer" : "vendor";
         await supabase.from("notifications").insert({
           user_id: newMember.user_id,
           title: "📌 Task Reassigned to You",
           message: `You've been assigned: "${task.milestone_label || task.milestone_key}". Check your Teams tab.`,
           type: "info",
           is_action_required: true,
-          action_url: "/trustlock/vendor/teams",
+          action_url: `/trustlock/${roleRoute}/teams`,
         });
       }
 
