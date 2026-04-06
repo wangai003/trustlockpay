@@ -549,23 +549,38 @@ const SandboxCheckout = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
-                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
-                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
-                      ].map(pm => (
-                        <button
-                          key={pm.key}
-                          onClick={() => setPaymentMethod(pm.key)}
-                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                        >
-                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                          <span className="text-xs font-medium">{pm.label}</span>
-                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {[
+                          { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
+                          { key: "bank_transfer", label: "Bank", icon: Building2, sub: "Checking / Savings" },
+                          { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
+                          { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
+                        ].map(pm => (
+                          <button
+                            key={pm.key}
+                            onClick={() => { setPaymentMethod(pm.key); if (pm.key !== "bank_transfer") { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                            className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                          >
+                            <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className="text-xs font-medium">{pm.label}</span>
+                            <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* International Bank Selector */}
+                      {paymentMethod === "bank_transfer" && (
+                        <InternationalBankSelector
+                          selectedBank={intlBankSelected}
+                          onBankSelected={(bank, region) => {
+                            setIntlBankSelected(bank);
+                            setIntlBankRegion(region);
+                          }}
+                          onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                        />
+                      )}
+                    </>
                   )}
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
