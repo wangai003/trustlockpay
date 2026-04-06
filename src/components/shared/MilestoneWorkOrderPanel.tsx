@@ -760,6 +760,13 @@ const MilestoneWorkOrderPanel = ({
                             <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved — escrow already funded</span>
                           </div>
                         )}
+                        {/* Scope-downgraded notice */}
+                        {scopeDowngraded.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                            <Globe className="w-3 h-3 shrink-0" />
+                            <span><strong>{scopeDowngraded.length}</strong> doc(s) moved to optional — not required for <span className="capitalize font-medium">{tradeScope}</span> trades</span>
+                          </div>
+                        )
                         {requiredDocs.length > 0 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-semibold flex items-center gap-1">
