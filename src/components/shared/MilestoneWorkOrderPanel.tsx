@@ -970,9 +970,22 @@ const MilestoneWorkOrderPanel = ({
                         milestoneIndex={idx}
                         milestoneName={ms.title}
                         role={role}
-                        tradeScope={(ms as any).trade_scope || "international"}
+                        tradeScope={tradeScope}
                         industrySuggestions={getExternalFeeSuggestions(industry || "")}
                         isTestnet={isTestnet}
+                      />
+                    )}
+                    {/* Admin: show external fees read-only */}
+                    {isAdmin && (
+                      <ExternalFeeTracker
+                        transactionId={transactionId}
+                        milestoneIndex={idx}
+                        milestoneName={ms.title}
+                        role={role}
+                        tradeScope={tradeScope}
+                        industrySuggestions={[]}
+                        isTestnet={isTestnet}
+                        readOnly
                       />
                     )}
                     {isAdmin && (
