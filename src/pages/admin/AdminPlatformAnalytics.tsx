@@ -110,7 +110,7 @@ const AdminPlatformAnalytics = () => {
   const geoData = useMemo(() => {
     const map: Record<string, { vendors: Set<string>; txCount: number; volume: number }> = {};
     profiles.forEach(p => {
-      const country = p.country || "Unknown";
+      const country = p.location || "Unknown";
       if (!map[country]) map[country] = { vendors: new Set(), txCount: 0, volume: 0 };
       map[country].vendors.add(p.id);
     });
