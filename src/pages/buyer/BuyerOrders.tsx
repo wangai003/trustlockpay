@@ -173,6 +173,9 @@ const BuyerOrders = () => {
         item: tx.item,
         tracking: tx.tracking,
         industry: tx.industry,
+        cartId: null as string | null,
+        transactionSource: "widget" as string | null,
+        platformId: null as string | null,
       }))
     : rawTransactions.map(tx => ({
         dbId: tx.id,
@@ -184,13 +187,44 @@ const BuyerOrders = () => {
         item: tx.item || "—",
         tracking: tx.tracking || null,
         industry: tx.industry || null,
+        cartId: (tx as any).cart_id as string | null,
+        transactionSource: (tx as any).transaction_source as string | null,
+        platformId: (tx as any).platform_id as string | null,
       }));
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [expandedCart, setExpandedCart] = useState<string | null>(null);
 
   const filtered = allOrders
     .filter((o) => filter === "all" || o.status === filter)
     .filter((o) => o.id.toLowerCase().includes(search.toLowerCase()) || o.vendor.toLowerCase().includes(search.toLowerCase()) || o.item.toLowerCase().includes(search.toLowerCase()));
+
+  // Group orders by cart_id for marketplace multi-vendor carts
+  const { cartGroups, standaloneOrders } = useMemo(() => {
+    const carts = new Map<string, typeof filtered>();
+    const standalone: typeof filtered = [];
+    for (const order of filtered) {
+      if (order.cartId) {
+        const existing = carts.get(order.cartId) || [];
+        existing.push(order);
+        carts.set(order.cartId, existing);
+      } else {
+        standalone.push(order);
+      }
+    }
+    return { cartGroups: Array.from(carts.entries()), standaloneOrders: standalone };
+  }, [filtered]);
+
+  const getSourceBadge = (source: string | null, platformId: string | null) => {
+    if (platformId) return { label: "Marketplace", icon: Store, variant: "secondary" as const };
+    switch (source) {
+      case "widget": return { label: "Widget", icon: Globe, variant: "outline" as const };
+      case "standalone": return { label: "Payment Link", icon: Link2, variant: "outline" as const };
+      case "os_pay": return { label: "OS Pay", icon: CreditCard, variant: "outline" as const };
+      case "direct": return { label: "Direct", icon: Package, variant: "outline" as const };
+      default: return null;
+    }
+  };
 
   return (
     <div>
