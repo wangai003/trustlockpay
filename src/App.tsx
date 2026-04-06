@@ -42,6 +42,7 @@ const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability
 const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
+const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -163,6 +164,7 @@ const App = () => (
                 <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="sandbox-leads" element={<AdminSandboxLeads />} />
                 <Route path="platforms" element={<AdminPlatforms />} />
+                <Route path="platform-analytics" element={<AdminPlatformAnalytics />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

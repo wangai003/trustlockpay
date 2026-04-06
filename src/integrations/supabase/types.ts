@@ -1900,6 +1900,36 @@ export type Database = {
           },
         ]
       }
+      platform_analytics_snapshots: {
+        Row: {
+          created_at: string
+          dimension_key: string | null
+          dimension_value: string | null
+          id: string
+          metric_key: string
+          metric_value: number
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          dimension_key?: string | null
+          dimension_value?: string | null
+          id?: string
+          metric_key: string
+          metric_value?: number
+          snapshot_date: string
+        }
+        Update: {
+          created_at?: string
+          dimension_key?: string | null
+          dimension_value?: string | null
+          id?: string
+          metric_key?: string
+          metric_value?: number
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
       platform_api_keys: {
         Row: {
           api_key_hash: string
@@ -2798,6 +2828,39 @@ export type Database = {
         }
         Relationships: []
       }
+      standalone_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          page_url: string | null
+          standalone_link_id: string | null
+          vendor_id: string | null
+          visitor_fingerprint: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          standalone_link_id?: string | null
+          vendor_id?: string | null
+          visitor_fingerprint?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          standalone_link_id?: string | null
+          vendor_id?: string | null
+          visitor_fingerprint?: string | null
+        }
+        Relationships: []
+      }
       standalone_links: {
         Row: {
           created_at: string
@@ -3687,6 +3750,7 @@ export type Database = {
           status: string
           tax_breakdown: Json | null
           tracking: string | null
+          transaction_source: string | null
           tx_id: string
           type: string | null
           updated_at: string
@@ -3728,6 +3792,7 @@ export type Database = {
           status?: string
           tax_breakdown?: Json | null
           tracking?: string | null
+          transaction_source?: string | null
           tx_id: string
           type?: string | null
           updated_at?: string
@@ -3769,6 +3834,7 @@ export type Database = {
           status?: string
           tax_breakdown?: Json | null
           tracking?: string | null
+          transaction_source?: string | null
           tx_id?: string
           type?: string | null
           updated_at?: string

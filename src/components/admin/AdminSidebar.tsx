@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const allNavItems = [
   { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance", tip: "AML/KYC flags and regulatory compliance", chiefOnly: true },
   { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts", chiefOnly: true },
   { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports", chiefOnly: true },
+  { label: "Platform Analytics", icon: Activity, to: "/trustlock/admin/platform-analytics", tip: "Fund flow, funnels, adoption, and geographic insights across all TrustLock Pay products", chiefOnly: true },
   { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", chiefOnly: true },
   { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", chiefOnly: true },
   { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators", chiefOnly: true },
