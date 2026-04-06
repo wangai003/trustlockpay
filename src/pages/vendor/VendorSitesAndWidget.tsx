@@ -869,6 +869,17 @@ const VendorSitesAndWidget = () => {
                           </CardContent>
                         </Card>
 
+                        {/* Offering Catalog */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Package className="w-4 h-4" /> My Offerings</CardTitle>
+                            <CardDescription>Define your products, services, and projects. The checkout widget dynamically adapts milestones and documents based on what the buyer selects.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <VendorOfferingCatalog />
+                          </CardContent>
+                        </Card>
+
                         {/* Upgrade hint */}
                         <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
                           <Building2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
