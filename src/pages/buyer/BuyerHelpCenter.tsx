@@ -39,14 +39,15 @@ const guides = [
     ],
   },
   {
-    title: "The 48-Hour Auto-Release",
+    title: "Industry-Adaptive Auto-Release",
     icon: Clock,
     steps: [
-      "When the vendor marks your order as 'Delivered', a 48-hour countdown starts",
-      "You'll get notifications at 48h, 24h, and 6h remaining",
-      "If you don't confirm OR dispute within 48 hours, funds auto-release",
-      "This protects vendors from being held up indefinitely",
-      "Always check your orders promptly when you receive delivery notifications",
+      "When the vendor marks your order as 'Shipped', an auto-release countdown starts",
+      "The window varies by industry: E-commerce (14 days), Logistics (45 days), Construction (90 days), etc.",
+      "You'll get reminder notifications at 7 days, 3 days, and 1 day before auto-release",
+      "If you haven't received your goods, you can request up to 3 extensions of 14 days each",
+      "If you don't confirm OR dispute before the deadline, funds auto-release to the vendor",
+      "Always check your orders promptly when you receive shipping and reminder notifications",
     ],
   },
   {

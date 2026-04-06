@@ -203,7 +203,7 @@ ${vendorName} ("Vendor") specifically confirms:
 PLATFORM TERMS:
 - Milestone payment will be released within 24 hours of dual signature.
 - Remaining milestones in the transaction are unaffected by this sign-off.
-- The 14-day auto-release mandate applies per-milestone from the date the Vendor marks it as fulfilled.`,
+- The industry-adaptive auto-release mandate applies per-milestone from the date the Vendor marks it as fulfilled. Window length varies by industry (14–90 days). Buyers may request extensions.`,
 
     final_release: `${baseHeader}
 
