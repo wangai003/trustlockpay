@@ -204,7 +204,7 @@ const SandboxCheckout = () => {
                     <Separator className="my-2" />
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Duties ({(taxRate * 100).toFixed(1)}% + {remittanceFee > 0 ? `$${remittanceFee.toFixed(2)} remittance` : "remittance"})</span><span>${totalTaxes.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
                     <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
