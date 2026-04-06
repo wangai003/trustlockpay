@@ -27,7 +27,6 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
-import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
