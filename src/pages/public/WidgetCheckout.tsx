@@ -223,15 +223,20 @@ const WidgetCheckout = () => {
 
   const platformFeeAmount = Math.round(baseAmount * 0.005 * 100) / 100;
   const processorFeeAmount = isCryptoPayment ? 0 : Math.round(baseAmount * (selectedProcessor.feeRate / 100) * 100) / 100;
-  const feeAmount = Math.round((platformFeeAmount + processorFeeAmount) * 100) / 100;
+
+  // Platform/marketplace commission fee
+  const externalPlatformFeePercent = parseFloat(params.get("platform_fee") || "0");
+  const externalPlatformFeeAmount = externalPlatformFeePercent > 0 ? Math.round(baseAmount * (externalPlatformFeePercent / 100) * 100) / 100 : 0;
+
+  const feeAmount = Math.round((platformFeeAmount + processorFeeAmount + externalPlatformFeeAmount) * 100) / 100;
   const totalAmount = Math.round((baseAmount + feeAmount) * 100) / 100;
 
   // Read multi-vendor platform params
   const productId = params.get("product_id") || "";
   const vendorRef = params.get("vendor_ref") || "";
   const productCategory = params.get("category") || "";
-  const isExternalPlatform = !!params.get("platform");
-  const platformName = params.get("platform") || "";
+  const isExternalPlatform = !!params.get("platform") || !!params.get("platform_name");
+  const platformName = params.get("platform") || params.get("platform_name") || "";
 
   const closeWidget = () => {
     if (isEmbed && window.parent !== window) {
