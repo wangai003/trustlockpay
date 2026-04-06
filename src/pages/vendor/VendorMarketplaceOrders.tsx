@@ -119,7 +119,7 @@ const VendorMarketplaceOrders = () => {
 
   return (
     <div>
-      <VendorHeader title="Marketplace Orders" />
+      <VendorHeader title="Marketplace Work Orders" />
       <div className="p-3 sm:p-6 space-y-4">
         {/* Payout Warning */}
         {!hasPayoutMethod && !isTestnet && (

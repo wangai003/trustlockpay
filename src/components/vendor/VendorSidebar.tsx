@@ -15,7 +15,8 @@ import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY" },
-  { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow work orders and order statuses", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
+  { label: "Direct Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "Orders from your own website widget, standalone payment links, or TrustLock OS Pay — transactions you initiate and manage directly", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
+  { label: "Marketplace Work Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders routed to you from multi-vendor platforms (Amazon, Jumia, Shopify, etc.) — where the marketplace controls checkout and splits cart orders across vendors", tlId: "TL-V-SB-NAV-MARKETPLACE" },
   { label: "My Sites & Widget", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage your websites, widget installation, and configure widget behavior", tlId: "TL-V-SB-NAV-SITES" },
   { label: "KYC / KYB", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity or business documents and verify your account", tlId: "TL-V-SB-NAV-KYC" },
   { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries", tlId: "TL-V-SB-NAV-ASSISTANT" },
@@ -29,7 +30,7 @@ const baseNavItems = [
   { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK" },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages", tip: "Direct messaging with buyers and admin support", tlId: "TL-V-SB-NAV-MESSAGES" },
-  { label: "Marketplace Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders from integrated marketplace platforms (Jumia, Amazon, etc.)", tlId: "TL-V-SB-NAV-MARKETPLACE" },
+  
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS" },
 ];
 
