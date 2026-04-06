@@ -160,6 +160,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
   // ── Rate Lock State ──
