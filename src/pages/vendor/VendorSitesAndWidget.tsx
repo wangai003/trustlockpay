@@ -892,8 +892,9 @@ const VendorSitesAndWidget = () => {
                     ) : (
                       /* ── Business: full tabbed view ── */
                       <Tabs defaultValue="marketplace" className="w-full">
-                        <TabsList className="grid w-full grid-cols-5 h-auto">
+                        <TabsList className="grid w-full grid-cols-6 h-auto">
                           <TabsTrigger value="marketplace" className="text-xs gap-1"><Store className="w-3 h-3" /> Marketplace</TabsTrigger>
+                          <TabsTrigger value="offerings" className="text-xs gap-1"><Package className="w-3 h-3" /> Offerings</TabsTrigger>
                           <TabsTrigger value="payments" className="text-xs gap-1"><CreditCard className="w-3 h-3" /> Payments</TabsTrigger>
                           <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="w-3 h-3" /> Branding</TabsTrigger>
                           <TabsTrigger value="integration" className="text-xs gap-1"><Webhook className="w-3 h-3" /> Integration</TabsTrigger>
