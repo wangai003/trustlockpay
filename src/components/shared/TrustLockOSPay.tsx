@@ -1036,22 +1036,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <Input placeholder={selectedCountry === "NG" ? "10-digit NUBAN" : selectedCountry === "KE" ? "Branch + Account" : "Account number"} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" />
               </div>
               {selectedCountry === "NG" && (
-                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" className="mt-1" /></div>
+                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" value={localBvn} onChange={e => setLocalBvn(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "ZA" || selectedCountry === "KE") && (
-                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
               )}
               {selectedCountry === "EG" && (
-                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" className="mt-1" /></div>
+                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" value={localIban} onChange={e => setLocalIban(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "SN" || selectedCountry === "CI" || selectedCountry === "ML" || selectedCountry === "BF" || selectedCountry === "BJ" || selectedCountry === "TG") && (
-                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" className="mt-1" /></div>
+                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" value={localRib} onChange={e => setLocalRib(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "UG" || selectedCountry === "TZ" || selectedCountry === "RW") && (
-                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "ZM" || selectedCountry === "MW") && (
-                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" className="mt-1" /></div>
+                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" value={localSortCode} onChange={e => setLocalSortCode(e.target.value)} className="mt-1" /></div>
               )}
               {selectedCountry && (
                 <p className="text-[10px] text-muted-foreground">
