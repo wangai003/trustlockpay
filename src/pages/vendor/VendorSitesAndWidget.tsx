@@ -266,21 +266,52 @@ interface SiteConfigOverrideProps {
 }
 
 const SiteConfigOverride = ({ siteId, siteName, onClose }: SiteConfigOverrideProps) => {
-  const [overrides, setOverrides] = useState(() => {
-    const stored = localStorage.getItem(`tl_site_override_${siteId}`);
-    return stored ? JSON.parse(stored) : {
-      payment_methods: null as string[] | null,
-      max_order_amount: "",
-      custom_checkout_message: "",
-      brand_name_override: "",
-    };
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [overrides, setOverrides] = useState({
+    payment_methods: null as string[] | null,
+    max_order_amount: "",
+    custom_checkout_message: "",
+    brand_name_override: "",
   });
 
-  const handleSave = () => {
-    localStorage.setItem(`tl_site_override_${siteId}`, JSON.stringify(overrides));
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("vendor_site_configs").select("*").eq("site_id", siteId).eq("vendor_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setOverrides({
+            payment_methods: data.payment_methods || null,
+            max_order_amount: (data.custom_settings as any)?.max_order_amount || "",
+            custom_checkout_message: (data.custom_settings as any)?.custom_checkout_message || "",
+            brand_name_override: data.display_name || "",
+          });
+        }
+        setLoading(false);
+      });
+  }, [siteId, user?.id]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    const payload = {
+      site_id: siteId,
+      vendor_id: user.id,
+      payment_methods: overrides.payment_methods,
+      display_name: overrides.brand_name_override || null,
+      custom_settings: {
+        max_order_amount: overrides.max_order_amount,
+        custom_checkout_message: overrides.custom_checkout_message,
+      },
+    };
+    await supabase.from("vendor_site_configs").upsert(payload, { onConflict: "site_id,vendor_id" });
+    setSaving(false);
     sonnerToast.success(`Site-specific settings saved for ${siteName}`);
     onClose();
   };
+
+  if (loading) return <div className="p-4 text-center"><Loader2 className="w-4 h-4 animate-spin mx-auto" /></div>;
 
   return (
     <Card className="border-primary/20 mt-3">
@@ -324,7 +355,9 @@ const SiteConfigOverride = ({ siteId, siteName, onClose }: SiteConfigOverridePro
           <Label className="text-xs">Custom Checkout Message</Label>
           <Textarea className="text-xs" rows={2} value={overrides.custom_checkout_message} onChange={(e) => setOverrides((prev: any) => ({ ...prev, custom_checkout_message: e.target.value }))} placeholder="Use global message" />
         </div>
-        <Button size="sm" onClick={handleSave}>Save Site Overrides</Button>
+        <Button size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Saving...</> : "Save Site Overrides"}
+        </Button>
       </CardContent>
     </Card>
   );
