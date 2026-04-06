@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import VendorOfferingCatalog from "@/components/vendor/VendorOfferingCatalog";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -868,6 +869,17 @@ const VendorSitesAndWidget = () => {
                           </CardContent>
                         </Card>
 
+                        {/* Offering Catalog */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Package className="w-4 h-4" /> My Offerings</CardTitle>
+                            <CardDescription>Define your products, services, and projects. The checkout widget dynamically adapts milestones and documents based on what the buyer selects.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <VendorOfferingCatalog />
+                          </CardContent>
+                        </Card>
+
                         {/* Upgrade hint */}
                         <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
                           <Building2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -880,8 +892,9 @@ const VendorSitesAndWidget = () => {
                     ) : (
                       /* ── Business: full tabbed view ── */
                       <Tabs defaultValue="marketplace" className="w-full">
-                        <TabsList className="grid w-full grid-cols-5 h-auto">
+                        <TabsList className="grid w-full grid-cols-6 h-auto">
                           <TabsTrigger value="marketplace" className="text-xs gap-1"><Store className="w-3 h-3" /> Marketplace</TabsTrigger>
+                          <TabsTrigger value="offerings" className="text-xs gap-1"><Package className="w-3 h-3" /> Offerings</TabsTrigger>
                           <TabsTrigger value="payments" className="text-xs gap-1"><CreditCard className="w-3 h-3" /> Payments</TabsTrigger>
                           <TabsTrigger value="branding" className="text-xs gap-1"><Palette className="w-3 h-3" /> Branding</TabsTrigger>
                           <TabsTrigger value="integration" className="text-xs gap-1"><Webhook className="w-3 h-3" /> Integration</TabsTrigger>
@@ -924,6 +937,11 @@ const VendorSitesAndWidget = () => {
                               </Select>
                             </CardContent>
                           </Card>
+                        </TabsContent>
+
+                        {/* Offerings Tab (injected into business view after marketplace) */}
+                        <TabsContent value="offerings" className="space-y-4 mt-4">
+                          <VendorOfferingCatalog />
                         </TabsContent>
 
                         {/* Payments */}

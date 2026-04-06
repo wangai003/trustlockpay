@@ -4013,6 +4013,68 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_offerings: {
+        Row: {
+          base_price: number | null
+          category: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          industry_key: string
+          is_active: boolean
+          metadata: Json | null
+          name: string
+          offering_type: string
+          site_id: string | null
+          unit_label: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          industry_key?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name: string
+          offering_type?: string
+          site_id?: string | null
+          unit_label?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          base_price?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          industry_key?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name?: string
+          offering_type?: string
+          site_id?: string | null
+          unit_label?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_offerings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_plans: {
         Row: {
           billing_cycle: string | null
@@ -4161,6 +4223,38 @@ export type Database = {
           widget_theme?: Json | null
         }
         Relationships: []
+      }
+      vendor_site_industries: {
+        Row: {
+          created_at: string
+          id: string
+          industry_key: string
+          site_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry_key: string
+          site_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry_key?: string
+          site_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_site_industries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_sites: {
         Row: {
