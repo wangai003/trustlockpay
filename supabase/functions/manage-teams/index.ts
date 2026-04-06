@@ -85,15 +85,16 @@ Deno.serve(async (req) => {
 
       // Notify workspace owner (team lead)
       const { data: ws } = await supabase
-        .from("team_workspaces").select("owner_id, title").eq("id", task.team_members.workspace_id).single();
+        .from("team_workspaces").select("owner_id, title, role").eq("id", task.team_members.workspace_id).single();
       if (ws) {
+        const roleRoute = ws.role === "buyer" ? "buyer" : "vendor";
         await supabase.from("notifications").insert({
           user_id: ws.owner_id,
           title: "✅ Team Task Completed",
           message: `${task.milestone_label || task.milestone_key} has been completed in "${ws.title}". Review and verify it.`,
           type: "info",
           is_action_required: true,
-          action_url: "/trustlock/vendor/teams",
+          action_url: `/trustlock/${roleRoute}/teams`,
           related_entity_type: "team_task",
           related_entity_id: task_id,
         });
