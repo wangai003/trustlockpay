@@ -16,6 +16,7 @@ const WIDGET_JS = (baseUrl: string) => `
   var position = currentScript.getAttribute('data-position') || 'bottom-right';
   var platformFee = currentScript.getAttribute('data-platform-fee') || '';
   var platformName = currentScript.getAttribute('data-platform-name') || '';
+  var offeringId = currentScript.getAttribute('data-offering-id') || '';
 
   if (!siteId || !vendorId) {
     console.warn('[TrustLock] Missing data-site-id or data-vendor-id');
