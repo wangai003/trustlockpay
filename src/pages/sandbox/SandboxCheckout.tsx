@@ -220,32 +220,12 @@ const SandboxCheckout = () => {
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
                   </div>
 
-                  {/* Buyer Country for dynamic fee calculation */}
-                  <div className="space-y-2">
-                    <Label>Your Country / Region</Label>
-                    <Select value={buyerCountry} onValueChange={setBuyerCountry}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="US">🇺🇸 United States</SelectItem>
-                        <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
-                        <SelectItem value="CA">🇨🇦 Canada</SelectItem>
-                        <SelectItem value="EU">🇪🇺 Europe</SelectItem>
-                        <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
-                        <SelectItem value="Kenya">🇰🇪 Kenya</SelectItem>
-                        <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
-                        <SelectItem value="South Africa">🇿🇦 South Africa</SelectItem>
-                        <SelectItem value="Egypt">🇪🇬 Egypt</SelectItem>
-                        <SelectItem value="Cameroon">🇨🇲 Cameroon</SelectItem>
-                        <SelectItem value="Uganda">🇺🇬 Uganda</SelectItem>
-                        <SelectItem value="Tanzania">🇹🇿 Tanzania</SelectItem>
-                        <SelectItem value="Rwanda">🇷🇼 Rwanda</SelectItem>
-                        <SelectItem value="IN">🇮🇳 India</SelectItem>
-                        <SelectItem value="CN">🇨🇳 China</SelectItem>
-                        <SelectItem value="JP">🇯🇵 Japan</SelectItem>
-                        <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
-                        <SelectItem value="AU">🇦🇺 Australia</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  {/* Hardcoded corridor info */}
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                    <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor (Sandbox Demo)</p>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Buyer Location</span><span>🇺🇸 United States</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Vendor Location</span><span>🇳🇬 Nigeria</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Trade Scope</span><Badge variant="outline" className="text-[9px]">International</Badge></div>
                   </div>
 
                   <div className="flex gap-2">
