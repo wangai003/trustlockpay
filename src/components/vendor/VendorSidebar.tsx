@@ -16,7 +16,7 @@ const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW" },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY" },
   { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "All escrow work orders and order statuses", tlId: "TL-V-SB-NAV-TRANSACTIONS" },
-  { label: "My Sites", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites with TrustLock widget installed", tlId: "TL-V-SB-NAV-SITES" },
+  { label: "My Sites & Widget", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage your websites, widget installation, and configure widget behavior", tlId: "TL-V-SB-NAV-SITES" },
   { label: "KYC / KYB", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity or business documents and verify your account", tlId: "TL-V-SB-NAV-KYC" },
   { label: "TrustLock Assist", icon: Bot, to: "/trustlock/vendor/assistant", tip: "AI assistant for vendor support and queries", tlId: "TL-V-SB-NAV-ASSISTANT" },
   { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports", tlId: "TL-V-SB-NAV-ANALYTICS" },
