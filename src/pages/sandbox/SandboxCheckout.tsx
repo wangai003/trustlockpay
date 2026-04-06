@@ -71,6 +71,18 @@ const SandboxCheckout = () => {
   }
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+
+  // USA-Nigeria international corridor tax/tariff estimate
+  const SANDBOX_TAX_RATES: Record<string, number> = {
+    ecommerce: 0.075,      // 7.5% VAT
+    real_estate: 0.05,      // 5% property transfer tax
+    mining: 0.12,           // 12% royalty + export levy
+    energy: 0.10,           // 10% petroleum levy
+    freelance: 0.025,       // 2.5% withholding tax
+  };
+  const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
+  const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+  const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
   const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
