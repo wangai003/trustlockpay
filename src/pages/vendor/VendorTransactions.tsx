@@ -28,6 +28,7 @@ import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
