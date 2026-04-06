@@ -11,7 +11,7 @@ const TRADE_BLOCS: Record<string, { name: string; members: string[]; tariffReduc
   ECOWAS: {
     name: "Economic Community of West African States",
     members: ["NG", "GH", "SN", "CI", "BF", "ML", "NE", "BJ", "TG", "SL", "LR", "GW", "GM", "CV"],
-    tariffReduction: 1.0, // 100% reduction for ECOWAS CET
+    tariffReduction: 1.0,
   },
   EAC: {
     name: "East African Community",
@@ -30,7 +30,7 @@ const TRADE_BLOCS: Record<string, { name: string; members: string[]; tariffReduc
   },
   AfCFTA: {
     name: "African Continental Free Trade Area",
-    members: [], // All African countries — handled by continent check
+    members: [],
     tariffReduction: 0.9,
   },
   EU: {
@@ -83,12 +83,9 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-// ─── Resolve shared trade bloc ───────────────────────────
 function findSharedBloc(buyerCountry: string, vendorCountry: string): { bloc: string; reduction: number } | null {
-  // Check AfCFTA first (broadest)
   const bothAfrican = AFRICAN_COUNTRIES.has(buyerCountry) && AFRICAN_COUNTRIES.has(vendorCountry);
 
-  // Check specific blocs first (they have higher reductions)
   for (const [blocId, bloc] of Object.entries(TRADE_BLOCS)) {
     if (blocId === "AfCFTA") continue;
     if (bloc.members.includes(buyerCountry) && bloc.members.includes(vendorCountry)) {
@@ -96,7 +93,6 @@ function findSharedBloc(buyerCountry: string, vendorCountry: string): { bloc: st
     }
   }
 
-  // Fall back to AfCFTA if both African
   if (bothAfrican) {
     return { bloc: "AfCFTA", reduction: TRADE_BLOCS.AfCFTA.tariffReduction };
   }
@@ -121,6 +117,7 @@ interface ResolvedTaxItem {
   amount: number;
   source: "auto";
   notes?: string;
+  category?: "tax" | "tariff" | "remittance";
 }
 
 Deno.serve(async (req) => {
@@ -145,7 +142,10 @@ Deno.serve(async (req) => {
     if (!bCountry && !vCountry) {
       return new Response(JSON.stringify({
         items: [],
-        summary: { total_tax: 0, is_domestic: false, is_cross_border: false, bloc: null, de_minimis_applied: false },
+        summary: {
+          total_tax: 0, total_remittance: 0, taxes_and_duties: 0,
+          is_domestic: false, is_cross_border: false, bloc: null, de_minimis_applied: false,
+        },
         notes: "No country information provided — no taxes auto-applied.",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -155,7 +155,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Fetch tax rates for both countries
     const countries = [bCountry, vCountry].filter(Boolean);
     const { data: rates } = await supabase
       .from("tax_rates")
@@ -188,6 +187,7 @@ Deno.serve(async (req) => {
           value: rate,
           amount: round(amount * rate / 100),
           source: "auto",
+          category: "tax",
           notes: `Domestic ${buyerRate.tax_type} at ${rate}%`,
         });
       }
@@ -204,6 +204,7 @@ Deno.serve(async (req) => {
           value: rate,
           amount: round(amount * rate / 100),
           source: "auto",
+          category: "tax",
           notes: `Destination country ${buyerRate.tax_type}`,
         });
       }
@@ -212,11 +213,9 @@ Deno.serve(async (req) => {
       const deMinimis = Number(buyerRate?.de_minimis_usd ?? 0);
       if (deMinimis > 0 && amount < deMinimis) {
         deMinimisApplied = true;
-        // No tariff below de minimis threshold
       } else if (buyerRate) {
         let baseTariff = Number(buyerRate.tariff_rate_percentage ?? 0);
 
-        // Apply industry-specific override
         const overrides = buyerRate.industry_overrides ?? {};
         const industryOverride = overrides[category];
         let tariffMultiplier = ITEM_TARIFF_MULTIPLIERS[category] ?? 1.0;
@@ -225,7 +224,6 @@ Deno.serve(async (req) => {
           tariffMultiplier = Number(industryOverride.tariff_multiplier);
         }
 
-        // Check trade bloc — reduce tariff if same bloc
         const sharedBloc = findSharedBloc(bCountry, vCountry);
         if (sharedBloc) {
           blocName = sharedBloc.bloc;
@@ -246,23 +244,59 @@ Deno.serve(async (req) => {
             value: effectiveTariff,
             amount: round(amount * effectiveTariff / 100),
             source: "auto",
+            category: "tariff",
             notes: sharedBloc
               ? `Base ${buyerRate.tariff_rate_percentage}% × ${category} multiplier ${tariffMultiplier}, reduced by ${sharedBloc.bloc} (${sharedBloc.reduction * 100}%)`
               : `Base ${buyerRate.tariff_rate_percentage}% × ${category} multiplier ${tariffMultiplier}`,
           });
         }
       }
-
-      // 3. Export duty from vendor country (rare, but some countries have it)
-      // Most countries zero-rate exports, so we skip unless explicitly configured
     }
 
-    const totalTax = items.reduce((s, i) => s + i.amount, 0);
+    // ── Auto-calculate remittance fee ─────────────────────
+    // Remittance fee applies when taxes/tariffs are collected and must be
+    // forwarded to the jurisdiction's tax authority. The fee covers the
+    // administrative cost of tax remittance. Only applies if taxes > 0.
+    const taxSubtotal = items.reduce((s, i) => s + i.amount, 0);
+
+    // Check both buyer and vendor jurisdictions for remittance fees
+    // Buyer jurisdiction: remittance on destination taxes/duties collected
+    const buyerRemittanceRate = Number(buyerRate?.remittance_fee_percentage ?? 0);
+    // Vendor jurisdiction: remittance on origin-side withholding (if any)
+    const vendorRemittanceRate = Number(vendorRate?.remittance_fee_percentage ?? 0);
+
+    // Use the higher of the two (the jurisdiction that requires remittance)
+    const effectiveRemittanceRate = Math.max(buyerRemittanceRate, vendorRemittanceRate);
+    const remittanceSource = buyerRemittanceRate >= vendorRemittanceRate
+      ? buyerRate?.country_name ?? bCountry
+      : vendorRate?.country_name ?? vCountry;
+
+    let remittanceFee = 0;
+    if (effectiveRemittanceRate > 0 && taxSubtotal > 0) {
+      remittanceFee = round(taxSubtotal * effectiveRemittanceRate / 100);
+      items.push({
+        id: crypto.randomUUID(),
+        label: `Tax Remittance Fee (${remittanceSource})`,
+        type: "percentage",
+        value: effectiveRemittanceRate,
+        amount: remittanceFee,
+        source: "auto",
+        category: "remittance",
+        notes: `${effectiveRemittanceRate}% processing fee for forwarding collected taxes to ${remittanceSource} tax authority`,
+      });
+    }
+
+    const totalTax = taxSubtotal + remittanceFee;
 
     return new Response(JSON.stringify({
       items,
       summary: {
         total_tax: round(totalTax),
+        tax_subtotal: round(taxSubtotal),
+        total_remittance: round(remittanceFee),
+        remittance_rate: effectiveRemittanceRate,
+        // Combined "Taxes & Duties" line for buyer display
+        taxes_and_duties: round(totalTax),
         is_domestic: isDomestic,
         is_cross_border: isCrossBorder,
         bloc: blocName,

@@ -1,14 +1,14 @@
 import { motion } from "framer-motion";
 import { Check, Info } from "lucide-react";
 import { useState } from "react";
-import { ALL_IN_RANGES, FEE_CATEGORIES } from "@/lib/feeEngine";
+import { ALL_IN_RANGES, BUYER_FEE_LINES } from "@/lib/feeEngine";
 
 const methods = [
   { name: "Bank Wire", cost: "5% – 10%", highlight: false },
   { name: "Remittance Services", cost: "6% – 9%", highlight: false },
   { name: "Online Payment Platforms", cost: "3% – 7%", highlight: false },
   { name: "Legal Escrow Services", cost: "5% – 12%", highlight: false },
-  { name: "Azix Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range.split(" – ")[0]} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
+  { name: "Azix Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
 ];
 
 const FeeComparisonSection = () => {
@@ -75,29 +75,42 @@ const FeeComparisonSection = () => {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="mt-3 rounded-lg border border-border bg-muted/30 p-4 space-y-3 text-xs"
+              className="mt-3 rounded-lg border border-border bg-muted/30 p-4 space-y-4 text-xs"
             >
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.platform.label}</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.platform.range}</span>
+              <p className="text-[10px] text-muted-foreground text-center font-medium uppercase tracking-wide">
+                What buyers see at checkout
+              </p>
+
+              {/* Line 1: Transaction Fee */}
+              <div className="p-3 rounded-lg bg-background border border-border space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-foreground">{BUYER_FEE_LINES.transactionFee.label}</span>
+                  <span className="font-semibold text-foreground">{BUYER_FEE_LINES.transactionFee.range}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{BUYER_FEE_LINES.transactionFee.description}</p>
+                <p className="text-[10px] text-muted-foreground italic">Includes: {BUYER_FEE_LINES.transactionFee.includes}</p>
               </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.processor.label}</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.processor.range}</span>
+
+              {/* Line 2: Taxes & Duties */}
+              <div className="p-3 rounded-lg bg-background border border-border space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-foreground">{BUYER_FEE_LINES.taxesAndDuties.label}</span>
+                  <span className="font-semibold text-foreground">{BUYER_FEE_LINES.taxesAndDuties.range}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{BUYER_FEE_LINES.taxesAndDuties.description}</p>
               </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">Escrow Service Fee (at release)</span>
-                <span className="text-right font-medium">1.0% of vendor principal</span>
+
+              {/* Line 3: Escrow Service Fee */}
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-primary">{BUYER_FEE_LINES.escrowServiceFee.label}</span>
+                  <span className="font-semibold text-primary">{BUYER_FEE_LINES.escrowServiceFee.display}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{BUYER_FEE_LINES.escrowServiceFee.description}</p>
               </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.escrowService.label} (at release)</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.escrowService.display}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                <span className="text-muted-foreground">{FEE_CATEGORIES.gasModel.label}</span>
-                <span className="text-right font-medium">{FEE_CATEGORIES.gasModel.userCost} (Gasless)</span>
-              </div>
-              <div className="border-t border-border pt-2 space-y-1">
+
+              {/* All-in ranges */}
+              <div className="border-t border-border pt-3 space-y-1.5">
                 <p className="text-muted-foreground">
                   <strong className="text-foreground">Crypto Direct:</strong> {ALL_IN_RANGES.cryptoDirect.range} (no processor fee)
                 </p>
@@ -105,7 +118,7 @@ const FeeComparisonSection = () => {
                   <strong className="text-foreground">Fiat Payment:</strong> {ALL_IN_RANGES.fiat.range} (includes processor)
                 </p>
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Refunds:</strong> {ALL_IN_RANGES.refund.range} — escrow fees waived
+                  <strong className="text-foreground">Refunds:</strong> {ALL_IN_RANGES.refund.range}
                 </p>
               </div>
             </motion.div>
