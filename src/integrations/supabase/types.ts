@@ -1084,6 +1084,82 @@ export type Database = {
           },
         ]
       }
+      escrow_extensions: {
+        Row: {
+          created_at: string
+          extra_days: number
+          id: string
+          reason: string
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string
+          tx_id: string
+        }
+        Insert: {
+          created_at?: string
+          extra_days?: number
+          id?: string
+          reason: string
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id: string
+          tx_id: string
+        }
+        Update: {
+          created_at?: string
+          extra_days?: number
+          id?: string
+          reason?: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id?: string
+          tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_extensions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escrow_release_reminders: {
+        Row: {
+          id: string
+          reminder_type: string
+          sent_at: string
+          transaction_id: string
+        }
+        Insert: {
+          id?: string
+          reminder_type: string
+          sent_at?: string
+          transaction_id: string
+        }
+        Update: {
+          id?: string
+          reminder_type?: string
+          sent_at?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_release_reminders_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gas_reserve_ledger: {
         Row: {
           converted_at: string | null
@@ -3720,6 +3796,9 @@ export type Database = {
         Row: {
           amount: number
           auto_release_date: string | null
+          auto_release_days: number | null
+          auto_release_extended_count: number | null
+          auto_release_paused: boolean | null
           buyer_company_name: string | null
           buyer_entity_type: string | null
           buyer_id: string | null
@@ -3762,6 +3841,9 @@ export type Database = {
         Insert: {
           amount?: number
           auto_release_date?: string | null
+          auto_release_days?: number | null
+          auto_release_extended_count?: number | null
+          auto_release_paused?: boolean | null
           buyer_company_name?: string | null
           buyer_entity_type?: string | null
           buyer_id?: string | null
@@ -3804,6 +3886,9 @@ export type Database = {
         Update: {
           amount?: number
           auto_release_date?: string | null
+          auto_release_days?: number | null
+          auto_release_extended_count?: number | null
+          auto_release_paused?: boolean | null
           buyer_company_name?: string | null
           buyer_entity_type?: string | null
           buyer_id?: string | null
@@ -4581,6 +4666,10 @@ export type Database = {
       get_contract_audit_trail: {
         Args: { _transaction_id: string }
         Returns: Json
+      }
+      get_industry_release_days: {
+        Args: { p_industry: string }
+        Returns: number
       }
       has_role: {
         Args: {
