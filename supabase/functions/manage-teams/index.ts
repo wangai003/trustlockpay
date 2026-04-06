@@ -99,6 +99,41 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Notify next member in sequence that their task is now ready
+      const { data: nextTasks } = await supabase
+        .from("team_task_assignments")
+        .select("id, member_id, milestone_label, milestone_key, status, sort_order, team_members!inner(user_id, workspace_id)")
+        .eq("workspace_id", task.team_members.workspace_id)
+        .eq("status", "pending")
+        .gt("sort_order", task.sort_order)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+
+      if (nextTasks && nextTasks.length > 0) {
+        const nextTask = nextTasks[0];
+        // Check all prior tasks are completed
+        const { data: priorIncomplete } = await supabase
+          .from("team_task_assignments")
+          .select("id")
+          .eq("workspace_id", task.team_members.workspace_id)
+          .lt("sort_order", nextTask.sort_order)
+          .neq("status", "completed");
+
+        if (!priorIncomplete || priorIncomplete.length === 0) {
+          const wsTitle = ws?.title || "your team workspace";
+          await supabase.from("notifications").insert({
+            user_id: nextTask.team_members.user_id,
+            title: "🔔 Your Task Is Ready",
+            message: `"${nextTask.milestone_label || nextTask.milestone_key}" in "${wsTitle}" is now unblocked. Complete it before the next step can proceed.`,
+            type: "info",
+            is_action_required: true,
+            action_url: "/trustlock/vendor/teams",
+            related_entity_type: "team_task",
+            related_entity_id: nextTask.id,
+          });
+        }
+      }
+
       return json({ success: true });
     }
 
@@ -372,6 +407,98 @@ Deno.serve(async (req) => {
       }
 
       return json({ success: true, status: finalStatus, notified: allMembers?.length || 0 });
+    }
+
+    // ── Team lead takeover: reassign task to self and optionally complete it ──
+    if (action === "takeover_task") {
+      const { task_id, auto_complete } = body;
+      if (!task_id) return json({ error: "task_id required" }, 400);
+
+      const { data: task } = await supabase
+        .from("team_task_assignments")
+        .select("*, team_members!inner(workspace_id, user_id)")
+        .eq("id", task_id).single();
+      if (!task) return json({ error: "Task not found" }, 404);
+
+      const { data: ws } = await supabase
+        .from("team_workspaces").select("owner_id, title")
+        .eq("id", task.team_members.workspace_id).single();
+      if (!ws || ws.owner_id !== user.id) return json({ error: "Only team lead can take over" }, 403);
+
+      // Find or create the lead's member record in this workspace
+      let { data: leadMember } = await supabase
+        .from("team_members").select("id")
+        .eq("workspace_id", task.team_members.workspace_id)
+        .eq("user_id", user.id)
+        .is("removed_at", null)
+        .maybeSingle();
+
+      if (!leadMember) {
+        const { data: created } = await supabase
+          .from("team_members").insert({
+            workspace_id: task.team_members.workspace_id,
+            user_id: user.id,
+            display_name: "Team Lead",
+            added_by: user.id,
+          }).select("id").single();
+        leadMember = created;
+      }
+
+      if (!leadMember) return json({ error: "Failed to resolve lead membership" }, 500);
+
+      const updatePayload: any = {
+        member_id: leadMember.id,
+        reassigned_from: task.member_id,
+      };
+
+      if (auto_complete) {
+        updatePayload.status = "completed";
+        updatePayload.completed_at = new Date().toISOString();
+        updatePayload.lead_verified_at = new Date().toISOString();
+        updatePayload.lead_verified_by = user.id;
+      }
+
+      await supabase.from("team_task_assignments").update(updatePayload).eq("id", task_id);
+
+      // Notify original member that task was taken over
+      if (task.team_members.user_id !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: task.team_members.user_id,
+          title: "📋 Task Reassigned by Lead",
+          message: `"${task.milestone_label || task.milestone_key}" in "${ws.title}" has been ${auto_complete ? "completed" : "taken over"} by the team lead.`,
+          type: "info",
+          related_entity_type: "team_task",
+          related_entity_id: task_id,
+        });
+      }
+
+      // If auto-completed, notify next member
+      if (auto_complete) {
+        const { data: nextTasks } = await supabase
+          .from("team_task_assignments")
+          .select("id, member_id, milestone_label, milestone_key, sort_order, team_members!inner(user_id)")
+          .eq("workspace_id", task.team_members.workspace_id)
+          .eq("status", "pending")
+          .gt("sort_order", task.sort_order)
+          .order("sort_order", { ascending: true })
+          .limit(1);
+
+        if (nextTasks && nextTasks.length > 0) {
+          const next = nextTasks[0];
+          await supabase.from("notifications").insert({
+            user_id: next.team_members.user_id,
+            title: "🔔 Your Task Is Ready",
+            message: `"${next.milestone_label || next.milestone_key}" in "${ws.title}" is now unblocked.`,
+            type: "info",
+            is_action_required: true,
+            action_url: "/trustlock/vendor/teams",
+            related_entity_type: "team_task",
+            related_entity_id: next.id,
+          });
+        }
+      }
+
+      return json({ success: true, auto_completed: !!auto_complete });
     }
 
     return json({ error: "Unknown action" }, 400);

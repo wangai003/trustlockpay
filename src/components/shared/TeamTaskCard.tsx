@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Upload, Image, Globe, ShieldCheck, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, Upload, Image, Globe, ShieldCheck, RefreshCw, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type TaskAssignment = {
@@ -50,6 +50,7 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
   const [showReassign, setShowReassign] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [takingOver, setTakingOver] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [reassignTo, setReassignTo] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -101,6 +102,17 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
     toast.success("Task reassigned!");
     setShowReassign(false);
     setReassignTo("");
+    onRefresh();
+  };
+
+  const takeoverTask = async (autoComplete: boolean) => {
+    setTakingOver(true);
+    const { error } = await supabase.functions.invoke("manage-teams", {
+      body: { action: "takeover_task", task_id: task.id, auto_complete: autoComplete },
+    });
+    setTakingOver(false);
+    if (error) return toast.error("Failed to take over task");
+    toast.success(autoComplete ? "Task taken over and completed!" : "Task taken over!");
     onRefresh();
   };
 
@@ -175,6 +187,13 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
             {isOwner && task.status === "pending" && allMembers && allMembers.length > 1 && (
               <Button size="sm" variant="ghost" onClick={() => setShowReassign(true)} className="text-xs">
                 <RefreshCw className="w-3.5 h-3.5 mr-1" /> Reassign
+              </Button>
+            )}
+
+            {/* Owner: takeover button (claim task for yourself) */}
+            {isOwner && task.status === "pending" && !isMyTask && allPriorDone && (
+              <Button size="sm" variant="ghost" onClick={() => takeoverTask(true)} disabled={takingOver} className="text-xs text-primary">
+                <UserCheck className="w-3.5 h-3.5 mr-1" /> {takingOver ? "Taking over..." : "Take Over"}
               </Button>
             )}
 
