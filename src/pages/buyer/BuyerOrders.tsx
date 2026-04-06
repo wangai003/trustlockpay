@@ -520,29 +520,15 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <MilestoneProgress industry={order.industry} status={order.status} transactionId={order.dbId} />
             </details>
             {isMilestoneIndustry(order.industry) && order.status === "locked" && (
-              <>
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-xs">
-                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-destructive">⚠️ Milestone Agreement Required</p>
-                    <p className="text-muted-foreground mt-0.5">
-                      This is a milestone-based order. Both parties must agree on project stages before work can begin.
-                    </p>
-                  </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-foreground">Milestone Schedule Locked</p>
+                  <p className="text-muted-foreground mt-0.5">
+                    The milestone breakdown for this order was agreed upon during checkout. The work order below follows the locked schedule.
+                  </p>
                 </div>
-                <MilestoneNegotiation
-                  role="buyer"
-                  txId={order.id}
-                  industry={order.industry || undefined}
-                  orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
-                  buyerName="You"
-                  vendorName={order.vendor}
-                  status="drafting"
-                  onSubmitDraft={() => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
-                  onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
-                  onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
-                />
-              </>
+              </div>
             )}
             <MilestoneWorkOrderPanel
               role="buyer"
