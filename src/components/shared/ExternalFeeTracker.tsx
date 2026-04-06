@@ -27,6 +27,8 @@ interface ExternalFeeEntry {
   evidence_note: string;
   receipt_url: string | null;
   verified_by_counterparty: boolean;
+  logged_by_role?: string;
+  rejected?: boolean;
 }
 
 interface ExternalFeeTrackerProps {
