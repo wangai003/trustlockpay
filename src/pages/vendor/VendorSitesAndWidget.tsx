@@ -883,6 +883,26 @@ const VendorSitesAndWidget = () => {
                           </CardContent>
                         </Card>
 
+                        {/* Default Trade Scope */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Globe className="w-4 h-4" /> Default Trade Scope</CardTitle>
+                            <CardDescription>Pre-set the trade type for your checkout. Buyers can override.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <Select value={config.default_trade_scope || "international"} onValueChange={(v) => setConfig(prev => ({ ...prev, default_trade_scope: v }))}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="domestic">Domestic — same-country trades, minimal docs</SelectItem>
+                                <SelectItem value="regional">Regional / Corridor — within a trade bloc</SelectItem>
+                                <SelectItem value="international">International — full document gates</SelectItem>
+                                <SelectItem value="hybrid">Hybrid — domestic sale with imported inputs</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-2">This adjusts which document uploads are required vs. optional at checkout.</p>
+                          </CardContent>
+                        </Card>
+
                         {/* Buyer Requirements */}
                         <Card>
                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4" /> Buyer Requirements</CardTitle></CardHeader>
