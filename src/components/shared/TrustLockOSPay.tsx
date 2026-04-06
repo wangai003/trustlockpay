@@ -955,7 +955,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
-          {method === "bank_transfer" && (
+          {method === "bank_transfer" && payMode === "diaspora" && (
+            <div className="space-y-2 p-3 rounded-lg border border-border">
+              <p className="text-xs font-semibold text-foreground mb-1">🌍 International Bank Transfer</p>
+              <InternationalBankSelector
+                selectedBank={intlBankSelected}
+                onBankSelected={(bank, region) => {
+                  setIntlBankSelected(bank);
+                  setIntlBankRegion(region);
+                  setBankName(bank);
+                }}
+                onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); setBankName(""); }}
+              />
+            </div>
+          )}
+
+          {method === "bank_transfer" && payMode === "local" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               {!selectedCountry && (
                 <p className="text-[10px] text-destructive">↑ Please select your country above to see available banks</p>
