@@ -1,14 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CreditCard, Wallet, Copy, Check, ArrowLeft, CheckCircle,
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
-  Phone, Building2, Coins
+  Phone, Building2
 } from "lucide-react";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
-import { getProcessorForRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
 import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Step = "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
 
