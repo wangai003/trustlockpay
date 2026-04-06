@@ -131,7 +131,7 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                 <span className="text-[8px] text-muted-foreground leading-tight">{opt.docLevel}</span>
                 {suggestedScope === opt.value && (
                   <Badge className="absolute -top-1.5 -right-1.5 text-[7px] px-1 py-0 bg-accent text-accent-foreground">
-                    Auto
+                    {opt.value === "regional" && detectedBlocName ? detectedBlocName : "Auto"}
                   </Badge>
                 )}
               </button>
