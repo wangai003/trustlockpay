@@ -295,7 +295,7 @@ const AdminPlatformAnalytics = () => {
                     { label: "Widget Installed", value: vendorsWithWidget },
                     { label: "Standalone Created", value: vendorsWithStandalone },
                     { label: "Using Both", value: vendorsWithBoth },
-                    { label: "Active Standalone Links", value: standaloneLinks.filter(l => l.is_active).length },
+                    { label: "Active Standalone Links", value: standaloneLinks.filter(l => l.status === "active").length },
                   ].map(m => (
                     <div key={m.label} className="flex justify-between items-center border-b border-border pb-2 last:border-0">
                       <span className="text-sm text-muted-foreground">{m.label}</span>
