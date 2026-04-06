@@ -50,6 +50,7 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
   const [showReassign, setShowReassign] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [takingOver, setTakingOver] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [reassignTo, setReassignTo] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
