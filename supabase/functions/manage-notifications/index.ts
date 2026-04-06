@@ -207,7 +207,57 @@ Deno.serve(async (req) => {
       return json({ success: true, notification: data });
     }
 
-    if (action === "mark_read") {
+    if (action === "external_fee_logged") {
+      const { transaction_id, fee_label, amount, currency, logged_by_role, milestone_name } = params;
+      if (!transaction_id) return json({ success: false, error: "transaction_id required" }, 400);
+
+      // Look up the transaction to find the counterparty
+      const { data: tx } = await supabaseAdmin
+        .from("transactions")
+        .select("buyer_id, vendor_id, tx_id")
+        .eq("id", transaction_id)
+        .single();
+
+      if (!tx) return json({ success: false, error: "Transaction not found" }, 400);
+
+      // Notify the counterparty (if buyer logged → notify vendor, and vice versa)
+      const counterpartyId = logged_by_role === "buyer" ? tx.vendor_id : tx.buyer_id;
+      if (counterpartyId) {
+        await insertNotification(
+          counterpartyId,
+          "💰 External Fee Logged — Verification Needed",
+          `A ${fee_label} fee of ${currency || "USD"} ${amount?.toLocaleString() || "0"} was logged on milestone "${milestone_name || "N/A"}" for order ${tx.tx_id || "N/A"} by the ${logged_by_role}. Please review and verify.`,
+          "warning",
+          "transaction",
+          transaction_id,
+          { is_action_required: true, action_url: logged_by_role === "buyer" ? "/trustlock/vendor/transactions" : "/trustlock/buyer/orders" }
+        );
+      }
+
+      // Also notify admins
+      const { data: adminRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(5);
+
+      if (adminRoles) {
+        for (const ar of adminRoles) {
+          await insertNotification(
+            ar.user_id,
+            "📋 External Fee Audit",
+            `${logged_by_role} logged ${fee_label} (${currency || "USD"} ${amount?.toLocaleString() || "0"}) on order ${tx.tx_id || "N/A"}.`,
+            "info",
+            "transaction",
+            transaction_id
+          );
+        }
+      }
+
+      return json({ success: true });
+    }
+
+
       const { notification_id } = params;
       if (!notification_id) return json({ success: false, error: "notification_id required" }, 400);
 
