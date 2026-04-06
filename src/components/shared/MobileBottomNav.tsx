@@ -18,7 +18,7 @@ interface MobileBottomNavProps {
 
 const vendorPrimary: NavItem[] = [
   { label: "Home", icon: LayoutDashboard, to: "/trustlock/vendor", end: true },
-  { label: "Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions" },
+  { label: "Direct", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions" },
   { label: "Assist", icon: Bot, to: "/trustlock/vendor/assistant" },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages" },
 ];
