@@ -195,6 +195,7 @@ const App = () => (
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
                 <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="crm" element={<VendorCRM />} />
+                <Route path="widget-config" element={<VendorWidgetConfig />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 
