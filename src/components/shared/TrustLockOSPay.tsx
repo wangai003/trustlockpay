@@ -959,10 +959,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           {/* ─── METHOD-SPECIFIC FIELDS ─── */}
           {method === "card" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div><Label className="text-xs">Card Number</Label><Input placeholder="4242 4242 4242 4242" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="mt-1" /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Expiry</Label><Input placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="mt-1" /></div>
-                <div><Label className="text-xs">CVC</Label><Input placeholder="123" value={cardCvc} onChange={e => setCardCvc(e.target.value)} className="mt-1" /></div>
+              <p className="text-xs font-semibold text-foreground">💳 Card Payment</p>
+              <p className="text-[10px] text-muted-foreground">
+                You'll be securely redirected to our payment processor (Stripe) to enter your card details.
+                TrustLock never stores or handles your card information directly.
+              </p>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+                <p className="text-[10px] text-muted-foreground">PCI DSS compliant · End-to-end encrypted</p>
               </div>
             </div>
           )}
