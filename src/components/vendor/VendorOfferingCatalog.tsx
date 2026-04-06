@@ -212,10 +212,28 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
             }
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="w-3.5 h-3.5" /> Add Offering
-        </Button>
+        <div className="flex items-center gap-2">
+          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {importing ? "Importing…" : "CSV Import"}
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(!showAdd)}>
+            <Plus className="w-3.5 h-3.5" /> Add Offering
+          </Button>
+        </div>
       </div>
+
+      {/* CSV format hint */}
+      {offerings.length === 0 && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/30 border border-border text-xs text-muted-foreground">
+          <FileSpreadsheet className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-foreground">Bulk import available</p>
+            <p>Upload a CSV with columns: <code className="text-[10px] bg-muted px-1 rounded">name, offering_type, industry_key, category, base_price, currency, unit_label, description</code></p>
+          </div>
+        </div>
+      )}
 
       {/* How it works (empty state) */}
       {offerings.length === 0 && !showAdd && (
