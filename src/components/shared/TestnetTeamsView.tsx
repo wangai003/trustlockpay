@@ -904,6 +904,34 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Join Team Dialog (testnet simulation) */}
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Join a Team</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Enter the invite code shared by your team lead to join their workspace.</p>
+          <div className="space-y-4 py-2">
+            <div><Label>Invite Code</Label><Input value={testJoinCode} onChange={e => setTestJoinCode(e.target.value)} placeholder="e.g. TL-INV-MIN-7X4K" /></div>
+            <div><Label>Your Display Name</Label><Input value={testJoinName} onChange={e => setTestJoinName(e.target.value)} placeholder="e.g. John Doe" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowJoinDialog(false)}>Cancel</Button>
+            <Button disabled={!testJoinCode.trim()} onClick={() => {
+              const matchedWsId = Object.entries(inviteCodes).find(([, code]) => code === testJoinCode.trim())?.[0];
+              if (!matchedWsId) {
+                toast.error("Invalid or expired invite code");
+                return;
+              }
+              const ws = workspaces.find(w => w.id === matchedWsId);
+              if (!ws) { toast.error("Workspace not found"); return; }
+              const name = testJoinName.trim() || "New Member";
+              addMember(ws.id, name, "member", "en");
+              toast.success(`Joined "${ws.title}" as ${name}`);
+              setShowJoinDialog(false); setTestJoinCode(""); setTestJoinName("");
+            }}>Join Team</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
