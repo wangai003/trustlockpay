@@ -16,6 +16,7 @@ const WIDGET_JS = (baseUrl: string) => `
   var position = currentScript.getAttribute('data-position') || 'bottom-right';
   var platformFee = currentScript.getAttribute('data-platform-fee') || '';
   var platformName = currentScript.getAttribute('data-platform-name') || '';
+  var offeringId = currentScript.getAttribute('data-offering-id') || '';
 
   if (!siteId || !vendorId) {
     console.warn('[TrustLock] Missing data-site-id or data-vendor-id');
@@ -144,7 +145,8 @@ const WIDGET_JS = (baseUrl: string) => `
     + '&mode=' + encodeURIComponent(mode)
     + '&embed=true'
     + (platformFee ? '&platform_fee=' + encodeURIComponent(platformFee) : '')
-    + (platformName ? '&platform_name=' + encodeURIComponent(platformName) : '');
+    + (platformName ? '&platform_name=' + encodeURIComponent(platformName) : '')
+    + (offeringId ? '&offering_id=' + encodeURIComponent(offeringId) : '');
   iframe.src = 'about:blank';
   iframe.setAttribute('allow', 'payment');
   iframe.style.marginTop = '48px';

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type NetworkMode = "testnet" | "mainnet";
 type VendorType = "product" | "service" | null;
+type AccountType = "individual" | "business";
 
 interface VendorProfile {
   id: string;
@@ -16,6 +17,7 @@ interface VendorProfile {
   sites: { id: string; name: string; platform: string; url: string }[];
   kycTier: number;
   onboardingComplete: boolean;
+  accountType: AccountType;
 }
 
 interface VendorContextType {
@@ -40,6 +42,7 @@ const defaultTestnetVendor: VendorProfile = {
   ],
   kycTier: 2,
   onboardingComplete: true,
+  accountType: "individual",
 };
 
 const getInitialVendorMode = (): NetworkMode => {
@@ -88,7 +91,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name,email")
+        .select("full_name,email,account_type")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -109,6 +112,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
         ...prev,
         name: fullName || fallbackName,
         email: data.email || user.email || prev.email,
+        accountType: (data.account_type as AccountType) || prev.accountType,
       }));
     };
 
