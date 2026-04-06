@@ -1,14 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CreditCard, Wallet, Copy, Check, ArrowLeft, CheckCircle,
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
-  Phone, Building2, Coins
+  Phone, Building2
 } from "lucide-react";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
-import { getProcessorForRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
 import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Step = "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
 
@@ -41,7 +39,7 @@ const SandboxCheckout = () => {
   const [step, setStep] = useState<Step>("invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerCountry, setBuyerCountry] = useState("US");
+  const [buyerCountry] = useState("US"); // Hardcoded: USA buyer
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
@@ -71,6 +69,18 @@ const SandboxCheckout = () => {
   }
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+
+  // USA-Nigeria international corridor tax/tariff estimate
+  const SANDBOX_TAX_RATES: Record<string, number> = {
+    ecommerce: 0.075,      // 7.5% VAT
+    real_estate: 0.05,      // 5% property transfer tax
+    mining: 0.12,           // 12% royalty + export levy
+    energy: 0.10,           // 10% petroleum levy
+    freelance: 0.025,       // 2.5% withholding tax
+  };
+  const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
+  const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+  const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
   const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
@@ -82,11 +92,13 @@ const SandboxCheckout = () => {
   const selectedProcessor = PROCESSORS[selectedProcessorId];
 
   const platformFee = Math.round(subtotal * 0.005 * 100) / 100;
-  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const rawProcessorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const combinedProcessorFee = Math.round((platformFee + rawProcessorFee) * 100) / 100;
   const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100;
-  const totalFees = Math.round((platformFee + processorFee) * 100) / 100;
-  const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
-  const fee = totalFees;
+  const totalTaxes = Math.round((taxAmount + remittanceFee) * 100) / 100;
+  const totalFees = combinedProcessorFee;
+  const grandTotal = Math.round((subtotal + totalFees + totalTaxes) * 100) / 100;
+  const fee = totalFees + totalTaxes;
 
   const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
   const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
@@ -189,9 +201,8 @@ const SandboxCheckout = () => {
                     ))}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Duties ({(taxRate * 100).toFixed(1)}% + {remittanceFee > 0 ? `$${remittanceFee.toFixed(2)} remittance` : "remittance"})</span><span>${totalTaxes.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
                     <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
@@ -208,32 +219,12 @@ const SandboxCheckout = () => {
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
                   </div>
 
-                  {/* Buyer Country for dynamic fee calculation */}
-                  <div className="space-y-2">
-                    <Label>Your Country / Region</Label>
-                    <Select value={buyerCountry} onValueChange={setBuyerCountry}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="US">🇺🇸 United States</SelectItem>
-                        <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
-                        <SelectItem value="CA">🇨🇦 Canada</SelectItem>
-                        <SelectItem value="EU">🇪🇺 Europe</SelectItem>
-                        <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
-                        <SelectItem value="Kenya">🇰🇪 Kenya</SelectItem>
-                        <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
-                        <SelectItem value="South Africa">🇿🇦 South Africa</SelectItem>
-                        <SelectItem value="Egypt">🇪🇬 Egypt</SelectItem>
-                        <SelectItem value="Cameroon">🇨🇲 Cameroon</SelectItem>
-                        <SelectItem value="Uganda">🇺🇬 Uganda</SelectItem>
-                        <SelectItem value="Tanzania">🇹🇿 Tanzania</SelectItem>
-                        <SelectItem value="Rwanda">🇷🇼 Rwanda</SelectItem>
-                        <SelectItem value="IN">🇮🇳 India</SelectItem>
-                        <SelectItem value="CN">🇨🇳 China</SelectItem>
-                        <SelectItem value="JP">🇯🇵 Japan</SelectItem>
-                        <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
-                        <SelectItem value="AU">🇦🇺 Australia</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  {/* Hardcoded corridor info */}
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                    <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor (Sandbox Demo)</p>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Buyer Location</span><span>🇺🇸 United States</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Vendor Location</span><span>🇳🇬 Nigeria</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Trade Scope</span><Badge variant="outline" className="text-[9px]">International</Badge></div>
                   </div>
 
                   <div className="flex gap-2">
@@ -392,7 +383,7 @@ const SandboxCheckout = () => {
                     {config.items.map((item, i) => (
                       <p key={i}>• {item.qty} {item.unit} — {item.name} — ${(item.qty * item.unitPrice).toLocaleString()}</p>
                     ))}
-                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? ` + ${selectedProcessor.feeRate}% ${selectedProcessor.name} processor fee` : ""} + 1.0% escrow service fee at release)</p>
+                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. processor fee{!isCryptoPayment ? ` (${selectedProcessor.name})` : " (Direct)"} + 1.0% escrow service fee at release)</p>
                     <Separator className="my-1" />
                     <p><strong>Terms:</strong></p>
                     <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
@@ -585,9 +576,8 @@ const SandboxCheckout = () => {
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Duties ({(taxRate * 100).toFixed(1)}%)</span><span>${totalTaxes.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
                     <div className="flex justify-between font-bold"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>

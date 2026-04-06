@@ -49,23 +49,14 @@ const InvoiceFeeCalculator = ({
         </div>
 
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Platform Fee ({isCrypto ? "1.0%" : "1.5%"})</span>
-          <span className="text-muted-foreground">+{currency} {calc.platformFee.toFixed(2)}</span>
+          <span className="text-muted-foreground">Processor Fee{isDirect ? "" : ` (${processorName})`}</span>
+          <span className="text-muted-foreground">
+            {isDirect
+              ? <span className="text-primary font-medium">$0.00 — Direct On-Chain</span>
+              : `+${currency} ${(calc.platformFee + calc.processorFee).toFixed(2)}`
+            }
+          </span>
         </div>
-
-        {calc.processorFee > 0 && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Processor Fee ({processorName} {PROCESSORS[processorId]?.feeRate}%)</span>
-            <span className="text-muted-foreground">+{currency} {calc.processorFee.toFixed(2)}</span>
-          </div>
-        )}
-
-        {isDirect && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Processor Fee</span>
-            <span className="text-primary font-medium">$0.00 — Direct On-Chain</span>
-          </div>
-        )}
 
         <div className="flex justify-between">
           <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
