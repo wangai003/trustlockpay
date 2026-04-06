@@ -425,6 +425,11 @@ const AdminTransactions = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* External Fee Audit Panel */}
+      <div className="px-6 pb-6">
+        <AdminExternalFeeAudit />
+      </div>
     </div>
   );
 };
