@@ -567,6 +567,25 @@ export function useProcessPayment() {
       direction?: "onramp" | "offramp";
       currency?: string;
       walletAddress?: string;
+      // Payment detail payloads
+      buyer_country?: string;
+      bankTransferDetails?: {
+        bankName: string;
+        region?: string;
+        country?: string;
+        accountNumber?: string;
+        branchCode?: string;
+        bvn?: string;
+        iban?: string;
+        rib?: string;
+        sortCode?: string;
+        type: "international" | "local_africa";
+      };
+      mobileMoneyDetails?: {
+        provider: string;
+        phoneNumber: string;
+        country: string;
+      };
     }) => callEdgeFunction("process-payment", params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["os_payments"] });

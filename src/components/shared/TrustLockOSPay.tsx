@@ -146,6 +146,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [mobileProvider, setMobileProvider] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [localBranchCode, setLocalBranchCode] = useState("");
+  const [localBvn, setLocalBvn] = useState("");
+  const [localIban, setLocalIban] = useState("");
+  const [localRib, setLocalRib] = useState("");
+  const [localSortCode, setLocalSortCode] = useState("");
   const [processing, setProcessing] = useState(false);
   const [taxItems, setTaxItems] = useState<TaxLineItem[]>([]);
   const [seedToken, setSeedToken] = useState("");
@@ -194,9 +199,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       setService("AI Query Pack (50 queries)");
       setAmount("2.50");
       setMethod("card");
-      setCardNumber("4242 4242 4242 4242");
-      setCardExpiry("12/28");
-      setCardCvc("123");
     }
   }, [isTestnet, isAdmin]);
 
@@ -406,6 +408,40 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
       // For non-admin, non-crypto payments: route through processor API
       if (!isAdmin && !isCryptoPayment) {
+        // Build bank transfer details payload
+        const bankTransferPayload: Record<string, unknown> = {};
+        if (method === "bank_transfer") {
+          if (payMode === "diaspora" && intlBankSelected && intlBankRegion) {
+            bankTransferPayload.bankTransferDetails = {
+              bankName: intlBankSelected,
+              region: intlBankRegion,
+              type: "international",
+            };
+          } else if (payMode === "local" && bankName) {
+            bankTransferPayload.bankTransferDetails = {
+              bankName,
+              country: selectedCountry,
+              accountNumber,
+              branchCode: localBranchCode || undefined,
+              bvn: localBvn || undefined,
+              iban: localIban || undefined,
+              rib: localRib || undefined,
+              sortCode: localSortCode || undefined,
+              type: "local_africa",
+            };
+          }
+        }
+
+        // Mobile money details
+        const mobileMoneyPayload: Record<string, unknown> = {};
+        if (method === "mobile_money" && mobileProvider && mobileNumber) {
+          mobileMoneyPayload.mobileMoneyDetails = {
+            provider: mobileProvider,
+            phoneNumber: mobileNumber,
+            country: selectedCountry,
+          };
+        }
+
         const result = await processPayment.mutateAsync({
           action: "payment",
           service,
@@ -419,6 +455,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           direction: "onramp",
           currency: "USD",
           walletAddress: AZIX_WALLETS.transaction.publicKey,
+          buyer_country: selectedCountry || undefined,
+          ...bankTransferPayload,
+          ...mobileMoneyPayload,
         });
 
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
@@ -918,10 +957,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           {/* ─── METHOD-SPECIFIC FIELDS ─── */}
           {method === "card" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
-              <div><Label className="text-xs">Card Number</Label><Input placeholder="4242 4242 4242 4242" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="mt-1" /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Expiry</Label><Input placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="mt-1" /></div>
-                <div><Label className="text-xs">CVC</Label><Input placeholder="123" value={cardCvc} onChange={e => setCardCvc(e.target.value)} className="mt-1" /></div>
+              <p className="text-xs font-semibold text-foreground">💳 Card Payment</p>
+              <p className="text-[10px] text-muted-foreground">
+                You'll be securely redirected to our payment processor (Stripe) to enter your card details.
+                TrustLock never stores or handles your card information directly.
+              </p>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+                <p className="text-[10px] text-muted-foreground">PCI DSS compliant · End-to-end encrypted</p>
               </div>
             </div>
           )}
@@ -991,22 +1034,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
                 <Input placeholder={selectedCountry === "NG" ? "10-digit NUBAN" : selectedCountry === "KE" ? "Branch + Account" : "Account number"} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" />
               </div>
               {selectedCountry === "NG" && (
-                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" className="mt-1" /></div>
+                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" value={localBvn} onChange={e => setLocalBvn(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "ZA" || selectedCountry === "KE") && (
-                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
               )}
               {selectedCountry === "EG" && (
-                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" className="mt-1" /></div>
+                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" value={localIban} onChange={e => setLocalIban(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "SN" || selectedCountry === "CI" || selectedCountry === "ML" || selectedCountry === "BF" || selectedCountry === "BJ" || selectedCountry === "TG") && (
-                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" className="mt-1" /></div>
+                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" value={localRib} onChange={e => setLocalRib(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "UG" || selectedCountry === "TZ" || selectedCountry === "RW") && (
-                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" className="mt-1" /></div>
+                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
               )}
               {(selectedCountry === "ZM" || selectedCountry === "MW") && (
-                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" className="mt-1" /></div>
+                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" value={localSortCode} onChange={e => setLocalSortCode(e.target.value)} className="mt-1" /></div>
               )}
               {selectedCountry && (
                 <p className="text-[10px] text-muted-foreground">

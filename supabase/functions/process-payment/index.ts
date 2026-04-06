@@ -46,6 +46,23 @@ interface ProcessPaymentRequest {
   vendor_country?: string;
   item_category?: string;
   is_export?: boolean;
+  bankTransferDetails?: {
+    bankName: string;
+    region?: string;
+    country?: string;
+    accountNumber?: string;
+    branchCode?: string;
+    bvn?: string;
+    iban?: string;
+    rib?: string;
+    sortCode?: string;
+    type: "international" | "local_africa";
+  };
+  mobileMoneyDetails?: {
+    provider: string;
+    phoneNumber: string;
+    country: string;
+  };
 }
 
 // ─── Tax Rate Fallbacks ──────────────────────────────────
@@ -293,6 +310,7 @@ Deno.serve(async (req) => {
       processor, direction, currency, chain,
       walletAddress, receiverAddress, transactionId,
       buyer_country, vendor_country, item_category, is_export,
+      bankTransferDetails, mobileMoneyDetails,
     } = body;
 
     const supabase = createClient(
@@ -549,6 +567,12 @@ Deno.serve(async (req) => {
         seedTokenInfo = await ensurePaySeedToken(supabase, userId);
       }
 
+      // Build payment metadata with bank/mobile details
+      const paymentMetadata: Record<string, unknown> = {};
+      if (bankTransferDetails) paymentMetadata.bankTransferDetails = bankTransferDetails;
+      if (mobileMoneyDetails) paymentMetadata.mobileMoneyDetails = mobileMoneyDetails;
+      if (buyer_country) paymentMetadata.buyer_country = buyer_country;
+
       // Record payment
       const { data: payment, error } = await supabase
         .from("os_payments")
@@ -562,6 +586,7 @@ Deno.serve(async (req) => {
           total: effectiveTotal,
           method: processor,
           status: processorResult.status === "not_configured" ? "pending" : "processing",
+          metadata: Object.keys(paymentMetadata).length > 0 ? paymentMetadata : null,
         })
         .select()
         .single();
