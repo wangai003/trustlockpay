@@ -91,7 +91,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name,email")
+        .select("full_name,email,account_type")
         .eq("id", user.id)
         .maybeSingle();
 
