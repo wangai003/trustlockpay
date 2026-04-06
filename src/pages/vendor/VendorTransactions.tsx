@@ -28,6 +28,7 @@ import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import MilestoneNegotiation from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
@@ -247,6 +248,7 @@ const VendorTransactions = () => {
                     </div>
                     <span className="text-base font-bold">${tx.amount.toLocaleString()}</span>
                   </div>
+                  <ExternalFeeSummary transactionId={tx.dbId} escrowAmount={tx.amount} isTestnet={isTestnet} />
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     <span>{tx.date}</span>
                     {tx.industry && (
