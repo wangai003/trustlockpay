@@ -297,6 +297,15 @@ const WidgetCheckout = () => {
                 </div>
               </div>
 
+              {/* Trade Scope Selector — adjusts document requirements */}
+              {isMilestoneIndustry && (
+                <TradeScopeSelector
+                  value={tradeScope}
+                  onChange={setTradeScope}
+                  buyerCountry={form.buyerCountry}
+                />
+              )}
+
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
