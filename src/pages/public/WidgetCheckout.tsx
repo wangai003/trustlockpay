@@ -180,6 +180,16 @@ const WidgetCheckout = () => {
           orderType: "simple",
           buyerEntityType: form.buyerEntityType,
           buyerCompanyName: form.buyerEntityType !== "individual" ? form.buyerCompanyName : null,
+          ...(intlBankSelected && intlBankRegion ? {
+            bankTransferDetails: {
+              bankName: intlBankSelected,
+              region: intlBankRegion,
+              processor: (() => {
+                const { getProcessorForRegion } = require("@/lib/internationalBankData");
+                return getProcessorForRegion(intlBankRegion);
+              })(),
+            },
+          } : {}),
           ...(isExternalPlatform ? {
             marketplaceMetadata: {
               platform: platformName,
