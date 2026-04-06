@@ -45,6 +45,12 @@ interface CheckoutSession {
   marketplaceMetadata?: Record<string, unknown> | null;
   buyerEntityType?: string;
   buyerCompanyName?: string;
+  bankTransferDetails?: {
+    bankName?: string;
+    region?: string;
+    processor?: string;
+    accountFields?: Record<string, string>;
+  } | null;
 }
 
 interface ProcessorResult {
