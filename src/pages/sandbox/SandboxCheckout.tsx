@@ -44,6 +44,8 @@ const SandboxCheckout = () => {
   const [buyerCountry, setBuyerCountry] = useState("US");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
