@@ -85,15 +85,16 @@ Deno.serve(async (req) => {
 
       // Notify workspace owner (team lead)
       const { data: ws } = await supabase
-        .from("team_workspaces").select("owner_id, title").eq("id", task.team_members.workspace_id).single();
+        .from("team_workspaces").select("owner_id, title, role").eq("id", task.team_members.workspace_id).single();
       if (ws) {
+        const roleRoute = ws.role === "buyer" ? "buyer" : "vendor";
         await supabase.from("notifications").insert({
           user_id: ws.owner_id,
           title: "✅ Team Task Completed",
           message: `${task.milestone_label || task.milestone_key} has been completed in "${ws.title}". Review and verify it.`,
           type: "info",
           is_action_required: true,
-          action_url: "/trustlock/vendor/teams",
+          action_url: `/trustlock/${roleRoute}/teams`,
           related_entity_type: "team_task",
           related_entity_id: task_id,
         });
@@ -121,13 +122,14 @@ Deno.serve(async (req) => {
 
         if (!priorIncomplete || priorIncomplete.length === 0) {
           const wsTitle = ws?.title || "your team workspace";
+          const roleRoute = ws?.role === "buyer" ? "buyer" : "vendor";
           await supabase.from("notifications").insert({
             user_id: nextTask.team_members.user_id,
             title: "🔔 Your Task Is Ready",
             message: `"${nextTask.milestone_label || nextTask.milestone_key}" in "${wsTitle}" is now unblocked. Complete it before the next step can proceed.`,
             type: "info",
             is_action_required: true,
-            action_url: "/trustlock/vendor/teams",
+            action_url: `/trustlock/${roleRoute}/teams`,
             related_entity_type: "team_task",
             related_entity_id: nextTask.id,
           });
@@ -222,13 +224,16 @@ Deno.serve(async (req) => {
       const { data: newMember } = await supabase
         .from("team_members").select("user_id").eq("id", new_member_id).single();
       if (newMember) {
+        const { data: wsRole } = await supabase
+          .from("team_workspaces").select("role").eq("id", task.team_members.workspace_id).single();
+        const roleRoute = wsRole?.role === "buyer" ? "buyer" : "vendor";
         await supabase.from("notifications").insert({
           user_id: newMember.user_id,
           title: "📌 Task Reassigned to You",
           message: `You've been assigned: "${task.milestone_label || task.milestone_key}". Check your Teams tab.`,
           type: "info",
           is_action_required: true,
-          action_url: "/trustlock/vendor/teams",
+          action_url: `/trustlock/${roleRoute}/teams`,
         });
       }
 
@@ -485,13 +490,16 @@ Deno.serve(async (req) => {
 
         if (nextTasks && nextTasks.length > 0) {
           const next = nextTasks[0];
+          const { data: wsRole } = await supabase
+            .from("team_workspaces").select("role").eq("id", task.team_members.workspace_id).single();
+          const roleRoute = wsRole?.role === "buyer" ? "buyer" : "vendor";
           await supabase.from("notifications").insert({
             user_id: next.team_members.user_id,
             title: "🔔 Your Task Is Ready",
             message: `"${next.milestone_label || next.milestone_key}" in "${ws.title}" is now unblocked.`,
             type: "info",
             is_action_required: true,
-            action_url: "/trustlock/vendor/teams",
+            action_url: `/trustlock/${roleRoute}/teams`,
             related_entity_type: "team_task",
             related_entity_id: next.id,
           });
