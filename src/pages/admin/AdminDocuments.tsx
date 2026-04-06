@@ -66,8 +66,8 @@ const documents = [
     category: "Platform Disclosures",
     icon: Shield,
     items: [
-      { title: "Buyer Auto-Release Disclosure", desc: "If a buyer does not confirm or dispute within 48 hours of delivery confirmation, funds auto-release to vendor.", updated: "Mar 2026", type: "Notice" },
-      { title: "Dispute Window Policy", desc: "Buyers have a 14-day window from delivery to open a dispute. After this window, escrow is considered final.", updated: "Mar 2026", type: "Notice" },
+      { title: "Buyer Auto-Release Disclosure", desc: "If a buyer does not confirm or dispute within the industry-adaptive auto-release window (14–90 days), funds auto-release to vendor. Buyers may request up to 3 extensions.", updated: "Apr 2026", type: "Notice" },
+      { title: "Dispute Window Policy", desc: "Buyers have an industry-specific window from shipment to open a dispute (e.g., 14 days for E-commerce, 90 days for Construction). After this window, escrow is considered final.", updated: "Apr 2026", type: "Notice" },
       { title: "Smart Contract Transparency Notice", desc: "All escrow funds are held in auditable smart contracts on Polygon. Contract addresses are visible per transaction.", updated: "Mar 2026", type: "Notice" },
       { title: "Fee Schedule Disclosure", desc: "Platform fee structure: 2.5% for product transactions, 3% for service transactions. Volume discounts available.", updated: "Mar 2026", type: "Notice" },
     ],

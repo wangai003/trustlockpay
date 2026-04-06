@@ -95,26 +95,26 @@ const DisputePolicy = () => {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">14</span>
+                  <span className="text-[10px] font-bold text-primary leading-tight text-center">14–90</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">14-Day Dispute Window</p>
+                  <p className="text-sm font-medium text-foreground">Industry-Adaptive Dispute Window</p>
                   <p className="text-xs text-muted-foreground">
-                    Once a vendor marks an order as delivered, the buyer has <strong>14 calendar days</strong> to confirm
-                    receipt or open a dispute. This window applies to all transaction types (simple and milestone-based).
+                    Once a vendor marks an order as shipped, the buyer has an <strong>industry-specific window</strong> to confirm
+                    receipt or open a dispute. Examples: E-commerce (14 days), Logistics (45 days), Manufacturing (60 days), Construction (90 days).
+                    The exact deadline is displayed on each order.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-accent-foreground">48h</span>
+                  <span className="text-[10px] font-bold text-accent-foreground leading-tight text-center">+14d</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">48-Hour Auto-Release</p>
+                  <p className="text-sm font-medium text-foreground">Extension Requests</p>
                   <p className="text-xs text-muted-foreground">
-                    If the buyer does not confirm delivery or file a dispute within <strong>48 hours</strong> after
-                    delivery confirmation, funds are automatically released to the vendor. This protects vendors
-                    from indefinite fund holds.
+                    If goods haven't arrived before the auto-release deadline, buyers can request up to <strong>3 extensions</strong> of
+                    14 days each. Reminder notifications are sent at 7 days, 3 days, and 1 day before auto-release.
                   </p>
                 </div>
               </div>

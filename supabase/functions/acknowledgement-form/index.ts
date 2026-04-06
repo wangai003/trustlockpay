@@ -134,7 +134,7 @@ By signing below, ${vendorName} ("Vendor") confirms that:
 
 PLATFORM TERMS:
 - Funds will be released within 24 hours of dual signature.
-- If the Buyer does not sign within 14 days of delivery, an automatic release will be triggered per the TrustLock Auto-Release Mandate.
+- If the Buyer does not sign within the industry-adaptive auto-release window (14–90 days from shipment, depending on industry), an automatic release will be triggered per the TrustLock Auto-Release Mandate. Buyers may request up to 3 extensions of 14 days each.
 - This document is compliant with UNCITRAL Model Law on Electronic Commerce and eIDAS/ESIGN Act requirements for electronic signatures.
 - Disputes must be raised before signing this form. Once signed, arbitration rights for this milestone are waived.`,
 
@@ -154,7 +154,7 @@ By signing below, ${vendorName} ("Vendor") confirms that:
 
 PLATFORM TERMS:
 - This acknowledgement serves as the final sign-off for the service engagement.
-- A 14-day dispute window applies from the date of service completion.
+- An industry-adaptive dispute window applies from the date of service completion (typically 14–30 days for services). Buyers may request extensions if needed.
 - Compliant with ICC Incoterms 2020 for international service transactions.`,
 
     inspection_passed: `${baseHeader}
@@ -203,7 +203,7 @@ ${vendorName} ("Vendor") specifically confirms:
 PLATFORM TERMS:
 - Milestone payment will be released within 24 hours of dual signature.
 - Remaining milestones in the transaction are unaffected by this sign-off.
-- The 14-day auto-release mandate applies per-milestone from the date the Vendor marks it as fulfilled.`,
+- The industry-adaptive auto-release mandate applies per-milestone from the date the Vendor marks it as fulfilled. Window length varies by industry (14–90 days). Buyers may request extensions.`,
 
     final_release: `${baseHeader}
 
