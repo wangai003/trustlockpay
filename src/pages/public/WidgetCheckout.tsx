@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake } from "lucide-react";
+import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake, Globe, MapPin, Phone, Wallet, Coins } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
@@ -14,6 +15,7 @@ import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
+import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 
 interface VendorInfo {
   name: string;
@@ -35,11 +37,14 @@ const WidgetCheckout = () => {
   const [form, setForm] = useState({
     buyerName: "",
     buyerEmail: "",
-    item: "Sample Product",
-    amount: "25.00",
+    item: params.get("product_name") || "Sample Product",
+    amount: params.get("product_price") || "25.00",
     buyerEntityType: "individual" as "individual" | "company" | "sole_proprietor",
     buyerCompanyName: "",
+    buyerCountry: "US",
+    paymentMethod: "card" as string,
   });
+  const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
@@ -165,12 +170,20 @@ const WidgetCheckout = () => {
           item: form.item,
           buyerEmail: form.buyerEmail,
           buyerName: form.buyerName,
-          buyerLocation: "Unknown",
-          paymentMethod: "card",
+          buyerLocation: form.buyerCountry,
+          paymentMethod: form.paymentMethod,
           industry: vendor.industry,
           orderType: "simple",
           buyerEntityType: form.buyerEntityType,
           buyerCompanyName: form.buyerEntityType !== "individual" ? form.buyerCompanyName : null,
+          ...(isExternalPlatform ? {
+            marketplaceMetadata: {
+              platform: platformName,
+              product_id: productId,
+              vendor_ref: vendorRef,
+              category: productCategory,
+            },
+          } : {}),
         },
       });
 
@@ -189,10 +202,25 @@ const WidgetCheckout = () => {
   };
 
   const baseAmount = parseFloat(form.amount || "0");
-  const platformFeeAmount = baseAmount * 0.005;      // 0.5% TrustLock platform fee
-  const processorFeeAmount = baseAmount * 0.029;      // Stripe 2.9% (default fiat)
-  const feeAmount = platformFeeAmount + processorFeeAmount;  // Total upfront fees
-  const totalAmount = baseAmount + feeAmount;
+  const isCryptoPayment = form.paymentMethod === "usdc" || form.paymentMethod === "usdt";
+  const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
+    : form.paymentMethod === "mobile_money" ? "mobile_money"
+    : form.paymentMethod === "bank_transfer" ? "bank_transfer"
+    : "card";
+  const selectedProcessorId = selectProcessor(form.buyerCountry, isCryptoPayment, undefined, feeMethod);
+  const selectedProcessor = PROCESSORS[selectedProcessorId];
+
+  const platformFeeAmount = Math.round(baseAmount * 0.005 * 100) / 100;
+  const processorFeeAmount = isCryptoPayment ? 0 : Math.round(baseAmount * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const feeAmount = Math.round((platformFeeAmount + processorFeeAmount) * 100) / 100;
+  const totalAmount = Math.round((baseAmount + feeAmount) * 100) / 100;
+
+  // Read multi-vendor platform params
+  const productId = params.get("product_id") || "";
+  const vendorRef = params.get("vendor_ref") || "";
+  const productCategory = params.get("category") || "";
+  const isExternalPlatform = !!params.get("platform");
+  const platformName = params.get("platform") || "";
 
   const closeWidget = () => {
     if (isEmbed && window.parent !== window) {
@@ -223,6 +251,18 @@ const WidgetCheckout = () => {
 
         {/* Returning buyer sign-in prompt */}
         <ReturningBuyerBanner />
+
+        {/* External platform integration banner */}
+        {isExternalPlatform && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary shrink-0" />
+            <p className="text-[11px] text-muted-foreground">
+              Order from <strong className="text-foreground">{platformName}</strong>
+              {productId && <> · Product #{productId}</>}
+              {vendorRef && <> · Vendor: {vendorRef}</>}
+            </p>
+          </div>
+        )}
 
         {step === "form" && (
           <Card className="border-primary/20">
@@ -402,6 +442,7 @@ const WidgetCheckout = () => {
                     value={form.item}
                     onChange={(e) => setForm((p) => ({ ...p, item: e.target.value }))}
                     required
+                    readOnly={isExternalPlatform}
                     className="h-9 text-sm"
                   />
                 </div>
@@ -416,9 +457,98 @@ const WidgetCheckout = () => {
                     value={form.amount}
                     onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
                     required
+                    readOnly={isExternalPlatform}
                     className="h-9 text-sm"
                   />
                 </div>
+
+                {/* Buyer Country for dynamic fee calculation */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Your Country / Region</Label>
+                  <Select value={form.buyerCountry} onValueChange={(v) => setForm(p => ({ ...p, buyerCountry: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 United States</SelectItem>
+                      <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+                      <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                      <SelectItem value="EU">🇪🇺 Europe</SelectItem>
+                      <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
+                      <SelectItem value="Kenya">🇰🇪 Kenya</SelectItem>
+                      <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
+                      <SelectItem value="South Africa">🇿🇦 South Africa</SelectItem>
+                      <SelectItem value="Egypt">🇪🇬 Egypt</SelectItem>
+                      <SelectItem value="Cameroon">🇨🇲 Cameroon</SelectItem>
+                      <SelectItem value="Uganda">🇺🇬 Uganda</SelectItem>
+                      <SelectItem value="Tanzania">🇹🇿 Tanzania</SelectItem>
+                      <SelectItem value="Rwanda">🇷🇼 Rwanda</SelectItem>
+                      <SelectItem value="IN">🇮🇳 India</SelectItem>
+                      <SelectItem value="CN">🇨🇳 China</SelectItem>
+                      <SelectItem value="JP">🇯🇵 Japan</SelectItem>
+                      <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
+                      <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Dual-Mode Payment Toggle: Africa / International */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPayMode("africa"); setForm(p => ({ ...p, paymentMethod: "mobile_money" })); }}
+                    className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                  >
+                    <MapPin className="w-3.5 h-3.5" /> Africa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPayMode("international"); setForm(p => ({ ...p, paymentMethod: "card" })); }}
+                    className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                  >
+                    <Globe className="w-3.5 h-3.5" /> International
+                  </button>
+                </div>
+
+                {/* Payment methods based on mode */}
+                {payMode === "africa" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
+                      { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
+                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                    ].map(pm => (
+                      <button
+                        key={pm.key}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
+                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                      >
+                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="text-[11px] font-medium">{pm.label}</span>
+                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: "card", label: "Card", icon: CreditCard, sub: "Visa / MC" },
+                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                    ].map(pm => (
+                      <button
+                        key={pm.key}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
+                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                      >
+                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="text-[11px] font-medium">{pm.label}</span>
+                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Fee breakdown */}
                 <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 text-xs">
@@ -431,8 +561,12 @@ const WidgetCheckout = () => {
                     <span>${platformFeeAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Processor Fee (Stripe 2.9%)</span>
-                    <span>${processorFeeAmount.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span>
+                    <span>{isCryptoPayment ? "$0.00" : `$${processorFeeAmount.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Taxes & Tariffs</span>
+                    <span className="text-muted-foreground italic">Varies by corridor</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
@@ -608,8 +742,12 @@ const WidgetCheckout = () => {
                     <span>${(parseFloat(form.amount) * 0.005).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Processor Fee (2.9%)</span>
-                    <span>${(parseFloat(form.amount) * 0.029).toFixed(2)}</span>
+                    <span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span>
+                    <span>{isCryptoPayment ? "$0.00" : `$${processorFeeAmount.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Taxes & Tariffs</span>
+                    <span className="text-muted-foreground italic">Varies by corridor</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
@@ -617,7 +755,7 @@ const WidgetCheckout = () => {
                   </div>
                   <div className="border-t border-border pt-2 flex justify-between text-xs font-bold">
                     <span>Total Charged</span>
-                    <span>${(parseFloat(form.amount) * 1.034).toFixed(2)}</span>
+                    <span>${totalAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Status</span>

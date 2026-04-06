@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CreditCard, Wallet, Copy, Check, ArrowLeft, CheckCircle,
-  FileText, AlertTriangle, PenTool, BookOpen, Loader2
+  FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
+  Phone, Building2, Coins
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
+import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Step = "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
 
@@ -35,7 +38,9 @@ const SandboxCheckout = () => {
   const [step, setStep] = useState<Step>("invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerCountry, setBuyerCountry] = useState("US");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
+  const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -62,12 +67,20 @@ const SandboxCheckout = () => {
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
   const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
-  const platformFee = Math.round(subtotal * 0.005 * 100) / 100;  // 0.5% TrustLock
-  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * 0.029 * 100) / 100;  // Stripe 2.9% for card
-  const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100; // 1.0% at release
+
+  // Dynamic processor selection based on buyer country and payment method
+  const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
+    : paymentMethod === "mobile_money" ? "mobile_money"
+    : paymentMethod === "bank_transfer" ? "bank_transfer"
+    : "card";
+  const selectedProcessorId = selectProcessor(buyerCountry, isCryptoPayment, undefined, feeMethod);
+  const selectedProcessor = PROCESSORS[selectedProcessorId];
+
+  const platformFee = Math.round(subtotal * 0.005 * 100) / 100;
+  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100;
   const totalFees = Math.round((platformFee + processorFee) * 100) / 100;
   const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
-  // Legacy alias kept for contract text
   const fee = totalFees;
 
   const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
@@ -172,7 +185,8 @@ const SandboxCheckout = () => {
                     <Separator className="my-2" />
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
                     <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
@@ -187,6 +201,34 @@ const SandboxCheckout = () => {
                   <div className="space-y-2">
                     <Label>Email</Label>
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
+                  </div>
+
+                  {/* Buyer Country for dynamic fee calculation */}
+                  <div className="space-y-2">
+                    <Label>Your Country / Region</Label>
+                    <Select value={buyerCountry} onValueChange={setBuyerCountry}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="US">🇺🇸 United States</SelectItem>
+                        <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+                        <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                        <SelectItem value="EU">🇪🇺 Europe</SelectItem>
+                        <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
+                        <SelectItem value="Kenya">🇰🇪 Kenya</SelectItem>
+                        <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
+                        <SelectItem value="South Africa">🇿🇦 South Africa</SelectItem>
+                        <SelectItem value="Egypt">🇪🇬 Egypt</SelectItem>
+                        <SelectItem value="Cameroon">🇨🇲 Cameroon</SelectItem>
+                        <SelectItem value="Uganda">🇺🇬 Uganda</SelectItem>
+                        <SelectItem value="Tanzania">🇹🇿 Tanzania</SelectItem>
+                        <SelectItem value="Rwanda">🇷🇼 Rwanda</SelectItem>
+                        <SelectItem value="IN">🇮🇳 India</SelectItem>
+                        <SelectItem value="CN">🇨🇳 China</SelectItem>
+                        <SelectItem value="JP">🇯🇵 Japan</SelectItem>
+                        <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
+                        <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="flex gap-2">
@@ -345,7 +387,7 @@ const SandboxCheckout = () => {
                     {config.items.map((item, i) => (
                       <p key={i}>• {item.qty} {item.unit} — {item.name} — ${(item.qty * item.unitPrice).toLocaleString()}</p>
                     ))}
-                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? " + 2.9% processor fee" : ""} + 1.0% escrow service fee at release)</p>
+                    <p><strong>Total: ${grandTotal.toLocaleString()}</strong> (incl. 0.5% platform fee{!isCryptoPayment ? ` + ${selectedProcessor.feeRate}% ${selectedProcessor.name} processor fee` : ""} + 1.0% escrow service fee at release)</p>
                     <Separator className="my-1" />
                     <p><strong>Terms:</strong></p>
                     <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
@@ -465,28 +507,67 @@ const SandboxCheckout = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
-                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
-                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
-                    ].map(pm => (
-                      <button
-                        key={pm.key}
-                        onClick={() => setPaymentMethod(pm.key)}
-                        className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                      >
-                        <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-xs font-medium">{pm.label}</span>
-                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                      </button>
-                    ))}
+                  {/* Dual-Mode Toggle: Africa / International */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setPayMode("africa"); setPaymentMethod("mobile_money"); }}
+                      className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <MapPin className="w-4 h-4" /> Africa
+                    </button>
+                    <button
+                      onClick={() => { setPayMode("international"); setPaymentMethod("card"); }}
+                      className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <Globe className="w-4 h-4" /> International
+                    </button>
                   </div>
+
+                  {/* Payment methods based on mode */}
+                  {payMode === "africa" ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
+                        { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
+                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                      ].map(pm => (
+                        <button
+                          key={pm.key}
+                          onClick={() => setPaymentMethod(pm.key)}
+                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                        >
+                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-xs font-medium">{pm.label}</span>
+                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
+                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
+                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
+                      ].map(pm => (
+                        <button
+                          key={pm.key}
+                          onClick={() => setPaymentMethod(pm.key)}
+                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                        >
+                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-xs font-medium">{pm.label}</span>
+                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
                     <div className="flex justify-between font-bold"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
