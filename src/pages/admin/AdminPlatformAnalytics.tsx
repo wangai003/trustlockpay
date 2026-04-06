@@ -44,7 +44,7 @@ const AdminPlatformAnalytics = () => {
   const { data: siteConfigs = [] } = useQuery({
     queryKey: ["admin-site-configs"],
     queryFn: async () => {
-      const { data } = await supabase.from("vendor_site_configs").select("id, vendor_id, site_url, created_at");
+      const { data } = await supabase.from("vendor_site_configs").select("id, vendor_id, site_id, created_at");
       return data || [];
     },
   });
