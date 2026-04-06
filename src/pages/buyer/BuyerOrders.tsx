@@ -284,24 +284,83 @@ const BuyerOrders = () => {
               </CardContent>
             </Card>
           )}
-          {filtered.map((order, rowIdx) => {
-            const cfg = statusConfig[order.status] || statusConfig.locked;
-            const row = rowIdx + 1;
+
+          {/* Cart-grouped orders (marketplace multi-vendor) */}
+          {cartGroups.map(([cartId, cartOrders]) => {
+            const totalAmount = cartOrders.reduce((sum, o) => sum + parseFloat(o.amount.replace(/[$,]/g, "")), 0);
+            const vendorCount = new Set(cartOrders.map(o => o.vendor)).size;
+            const isCartExpanded = expandedCart === cartId;
             return (
-              <Card key={order.id} className={order.status === "delivered" ? "border-accent/30" : ""}>
-                <CardContent className="p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <TLId code={dynTLId("B", "BO", row, "LBL-TXID")} inline>
-                          <span className="font-mono text-sm font-bold">{order.id}</span>
-                        </TLId>
-                        <TLId code={dynTLId("B", "BO", row, "STS")} inline>
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                            <cfg.icon className="w-3 h-3" /> {cfg.label}
-                          </span>
-                        </TLId>
+              <Card key={cartId} className="border-secondary/40 bg-secondary/5">
+                <CardContent className="p-4">
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setExpandedCart(isCartExpanded ? null : cartId)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center">
+                        <ShoppingCart className="w-4 h-4 text-secondary-foreground" />
                       </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">Multi-Vendor Order</span>
+                          <Badge variant="secondary" className="text-[9px]">
+                            <Store className="w-3 h-3 mr-1" /> Marketplace
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {vendorCount} vendor{vendorCount > 1 ? "s" : ""} · {cartOrders.length} item{cartOrders.length > 1 ? "s" : ""} · ${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      {isCartExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  {isCartExpanded && (
+                    <div className="mt-3 space-y-3 border-t border-border pt-3">
+                      {cartOrders.map((order, rowIdx) => (
+                        <OrderRow
+                          key={order.id}
+                          order={order}
+                          rowIdx={rowIdx}
+                          expandedOrder={expandedOrder}
+                          setExpandedOrder={setExpandedOrder}
+                          releaseOrderId={releaseOrderId}
+                          setReleaseOrderId={setReleaseOrderId}
+                          isTestnet={isTestnet}
+                          testnet={testnet}
+                          confirmDeliveryHook={confirmDeliveryHook}
+                          openDisputeHook={openDisputeHook}
+                          queryClient={queryClient}
+                          getSourceBadge={getSourceBadge}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {/* Standalone (non-cart) orders */}
+          {standaloneOrders.map((order, rowIdx) => (
+            <OrderRow
+              key={order.id}
+              order={order}
+              rowIdx={rowIdx}
+              expandedOrder={expandedOrder}
+              setExpandedOrder={setExpandedOrder}
+              releaseOrderId={releaseOrderId}
+              setReleaseOrderId={setReleaseOrderId}
+              isTestnet={isTestnet}
+              testnet={testnet}
+              confirmDeliveryHook={confirmDeliveryHook}
+              openDisputeHook={openDisputeHook}
+              queryClient={queryClient}
+              getSourceBadge={getSourceBadge}
+            />
+          ))}
                       <p className="text-sm">
                         <TLId code={dynTLId("B", "BO", row, "LBL-ITEM")} inline><strong>{order.item}</strong></TLId>
                         {" "}from{" "}
