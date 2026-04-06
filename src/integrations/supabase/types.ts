@@ -533,6 +533,42 @@ export type Database = {
           },
         ]
       }
+      bulk_import_jobs: {
+        Row: {
+          created_at: string
+          error_log: Json | null
+          file_url: string | null
+          id: string
+          processed_rows: number | null
+          status: string
+          total_rows: number | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_log?: Json | null
+          file_url?: string | null
+          id?: string
+          processed_rows?: number | null
+          status?: string
+          total_rows?: number | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          error_log?: Json | null
+          file_url?: string | null
+          id?: string
+          processed_rows?: number | null
+          status?: string
+          total_rows?: number | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       business_kyc_profiles: {
         Row: {
           admin_notes: string | null
@@ -4031,6 +4067,7 @@ export type Database = {
           is_active: boolean
           metadata: Json | null
           name: string
+          network_mode: string
           offering_type: string
           site_id: string | null
           unit_label: string | null
@@ -4048,6 +4085,7 @@ export type Database = {
           is_active?: boolean
           metadata?: Json | null
           name: string
+          network_mode?: string
           offering_type?: string
           site_id?: string | null
           unit_label?: string | null
@@ -4065,6 +4103,7 @@ export type Database = {
           is_active?: boolean
           metadata?: Json | null
           name?: string
+          network_mode?: string
           offering_type?: string
           site_id?: string | null
           unit_label?: string | null
@@ -4236,6 +4275,7 @@ export type Database = {
           custom_settings: Json | null
           display_name: string | null
           id: string
+          network_mode: string
           payment_methods: string[] | null
           site_id: string
           updated_at: string
@@ -4246,6 +4286,7 @@ export type Database = {
           custom_settings?: Json | null
           display_name?: string | null
           id?: string
+          network_mode?: string
           payment_methods?: string[] | null
           site_id: string
           updated_at?: string
@@ -4256,6 +4297,7 @@ export type Database = {
           custom_settings?: Json | null
           display_name?: string | null
           id?: string
+          network_mode?: string
           payment_methods?: string[] | null
           site_id?: string
           updated_at?: string
@@ -4419,6 +4461,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      widget_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          offering_id: string | null
+          referrer_url: string | null
+          site_id: string | null
+          user_agent: string | null
+          vendor_id: string
+          visitor_fingerprint: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          offering_id?: string | null
+          referrer_url?: string | null
+          site_id?: string | null
+          user_agent?: string | null
+          vendor_id: string
+          visitor_fingerprint?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          offering_id?: string | null
+          referrer_url?: string | null
+          site_id?: string | null
+          user_agent?: string | null
+          vendor_id?: string
+          visitor_fingerprint?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
