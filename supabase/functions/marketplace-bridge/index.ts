@@ -377,14 +377,6 @@ Deno.serve(async (req) => {
             industry: "ecommerce",
             cart_id: cartId,
             platform_id: platformId,
-            metadata: {
-              marketplace_order_id,
-              platform: platform || "custom",
-              vendor_ref: vendorKey,
-              line_items: vendorItems,
-              platform_fee_percent: platformFeePercent,
-              buyer_email,
-            },
           })
           .select("id, tx_id")
           .single();
