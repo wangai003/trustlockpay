@@ -72,14 +72,51 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "add_tracking": {
+        // Look up industry to determine adaptive release window
+        const { data: txLookup } = await supabase
+          .from("transactions")
+          .select("industry")
+          .eq("tx_id", txId)
+          .single();
+
+        // Get industry-adaptive release days via DB function
+        let releaseDays = 14;
+        if (txLookup?.industry) {
+          const { data: daysRow } = await supabase.rpc("get_industry_release_days", { p_industry: txLookup.industry });
+          if (daysRow) releaseDays = daysRow;
+        }
+
+        const shippedDate = new Date().toISOString();
+        const autoReleaseDate = new Date(Date.now() + releaseDays * 86400000).toISOString();
+
         const { data, error } = await supabase
           .from("transactions")
-          .update({ tracking, status: "shipped", shipped_date: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .update({
+            tracking,
+            status: "shipped",
+            shipped_date: shippedDate,
+            auto_release_days: releaseDays,
+            auto_release_date: autoReleaseDate,
+            updated_at: shippedDate,
+          })
           .eq("tx_id", txId)
           .select()
           .single();
         if (error) throw error;
         result = data;
+
+        // Notify buyer about auto-release window
+        if (data.buyer_id) {
+          await supabase.from("notifications").insert({
+            user_id: data.buyer_id,
+            title: "Order Shipped — Action Required",
+            message: `Order #${data.order_number || txId} has been shipped. You have ${releaseDays} days to confirm delivery or file a dispute. If no action is taken, funds will auto-release to the vendor on ${new Date(autoReleaseDate).toLocaleDateString()}.`,
+            type: "warning",
+            is_action_required: true,
+            related_entity_type: "transaction",
+            related_entity_id: data.id,
+          });
+        }
 
         // Anchor: shipping milestone
         await anchorProof(supabase, data.id, "milestone", {
@@ -87,7 +124,9 @@ Deno.serve(async (req) => {
           tx_id: txId,
           tracking_number: tracking,
           status: "shipped",
-          shipped_date: data.shipped_date,
+          shipped_date: shippedDate,
+          auto_release_days: releaseDays,
+          auto_release_date: autoReleaseDate,
           order_number: data.order_number,
         });
         break;
