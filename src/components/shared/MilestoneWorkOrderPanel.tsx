@@ -937,7 +937,18 @@ const MilestoneWorkOrderPanel = ({
                       </div>
                     )}
 
-                    {/* ── Admin Status Summary ── */}
+                    {/* External / Third-Party Fee Tracker */}
+                    {!isAdmin && !isDone && (
+                      <ExternalFeeTracker
+                        transactionId={transactionId}
+                        milestoneIndex={idx}
+                        milestoneName={ms.title}
+                        role={role}
+                        tradeScope={(ms as any).trade_scope || "international"}
+                        industrySuggestions={getExternalFeeSuggestions(industry || "")}
+                        isTestnet={isTestnet}
+                      />
+                    )}
                     {isAdmin && (
                       <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-1.5">
                         <p className="text-[10px] font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Admin View</p>
