@@ -567,6 +567,12 @@ Deno.serve(async (req) => {
         seedTokenInfo = await ensurePaySeedToken(supabase, userId);
       }
 
+      // Build payment metadata with bank/mobile details
+      const paymentMetadata: Record<string, unknown> = {};
+      if (bankTransferDetails) paymentMetadata.bankTransferDetails = bankTransferDetails;
+      if (mobileMoneyDetails) paymentMetadata.mobileMoneyDetails = mobileMoneyDetails;
+      if (buyer_country) paymentMetadata.buyer_country = buyer_country;
+
       // Record payment
       const { data: payment, error } = await supabase
         .from("os_payments")
@@ -580,6 +586,7 @@ Deno.serve(async (req) => {
           total: effectiveTotal,
           method: processor,
           status: processorResult.status === "not_configured" ? "pending" : "processing",
+          metadata: Object.keys(paymentMetadata).length > 0 ? paymentMetadata : null,
         })
         .select()
         .single();
