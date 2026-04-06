@@ -393,11 +393,9 @@ const BuyerTeams = () => {
             <TabsTrigger value="tasks" className="flex-1 sm:flex-none gap-1.5 text-xs">
               <ClipboardList className="w-3.5 h-3.5" /> Tasks
             </TabsTrigger>
-            {isOwner && (
-              <TabsTrigger value="team" className="flex-1 sm:flex-none gap-1.5 text-xs">
-                <Users className="w-3.5 h-3.5" /> Team ({members.length})
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="team" className="flex-1 sm:flex-none gap-1.5 text-xs">
+              <Users className="w-3.5 h-3.5" /> Team ({members.length})
+            </TabsTrigger>
             <TabsTrigger value="chat" className="flex-1 sm:flex-none gap-1.5 text-xs">
               <MessageSquare className="w-3.5 h-3.5" /> Chat
             </TabsTrigger>
