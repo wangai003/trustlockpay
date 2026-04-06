@@ -99,6 +99,41 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Notify next member in sequence that their task is now ready
+      const { data: nextTasks } = await supabase
+        .from("team_task_assignments")
+        .select("id, member_id, milestone_label, milestone_key, status, sort_order, team_members!inner(user_id, workspace_id)")
+        .eq("workspace_id", task.team_members.workspace_id)
+        .eq("status", "pending")
+        .gt("sort_order", task.sort_order)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+
+      if (nextTasks && nextTasks.length > 0) {
+        const nextTask = nextTasks[0];
+        // Check all prior tasks are completed
+        const { data: priorIncomplete } = await supabase
+          .from("team_task_assignments")
+          .select("id")
+          .eq("workspace_id", task.team_members.workspace_id)
+          .lt("sort_order", nextTask.sort_order)
+          .neq("status", "completed");
+
+        if (!priorIncomplete || priorIncomplete.length === 0) {
+          const wsTitle = ws?.title || "your team workspace";
+          await supabase.from("notifications").insert({
+            user_id: nextTask.team_members.user_id,
+            title: "🔔 Your Task Is Ready",
+            message: `"${nextTask.milestone_label || nextTask.milestone_key}" in "${wsTitle}" is now unblocked. Complete it before the next step can proceed.`,
+            type: "info",
+            is_action_required: true,
+            action_url: "/trustlock/vendor/teams",
+            related_entity_type: "team_task",
+            related_entity_id: nextTask.id,
+          });
+        }
+      }
+
       return json({ success: true });
     }
 
