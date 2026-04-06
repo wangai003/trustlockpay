@@ -422,6 +422,7 @@ const WidgetCheckout = () => {
                     value={form.item}
                     onChange={(e) => setForm((p) => ({ ...p, item: e.target.value }))}
                     required
+                    readOnly={isExternalPlatform}
                     className="h-9 text-sm"
                   />
                 </div>
@@ -436,9 +437,98 @@ const WidgetCheckout = () => {
                     value={form.amount}
                     onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
                     required
+                    readOnly={isExternalPlatform}
                     className="h-9 text-sm"
                   />
                 </div>
+
+                {/* Buyer Country for dynamic fee calculation */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Your Country / Region</Label>
+                  <Select value={form.buyerCountry} onValueChange={(v) => setForm(p => ({ ...p, buyerCountry: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 United States</SelectItem>
+                      <SelectItem value="UK">🇬🇧 United Kingdom</SelectItem>
+                      <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                      <SelectItem value="EU">🇪🇺 Europe</SelectItem>
+                      <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
+                      <SelectItem value="Kenya">🇰🇪 Kenya</SelectItem>
+                      <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
+                      <SelectItem value="South Africa">🇿🇦 South Africa</SelectItem>
+                      <SelectItem value="Egypt">🇪🇬 Egypt</SelectItem>
+                      <SelectItem value="Cameroon">🇨🇲 Cameroon</SelectItem>
+                      <SelectItem value="Uganda">🇺🇬 Uganda</SelectItem>
+                      <SelectItem value="Tanzania">🇹🇿 Tanzania</SelectItem>
+                      <SelectItem value="Rwanda">🇷🇼 Rwanda</SelectItem>
+                      <SelectItem value="IN">🇮🇳 India</SelectItem>
+                      <SelectItem value="CN">🇨🇳 China</SelectItem>
+                      <SelectItem value="JP">🇯🇵 Japan</SelectItem>
+                      <SelectItem value="BR">🇧🇷 Brazil</SelectItem>
+                      <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Dual-Mode Payment Toggle: Africa / International */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPayMode("africa"); setForm(p => ({ ...p, paymentMethod: "mobile_money" })); }}
+                    className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                  >
+                    <MapPin className="w-3.5 h-3.5" /> Africa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPayMode("international"); setForm(p => ({ ...p, paymentMethod: "card" })); }}
+                    className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                  >
+                    <Globe className="w-3.5 h-3.5" /> International
+                  </button>
+                </div>
+
+                {/* Payment methods based on mode */}
+                {payMode === "africa" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
+                      { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
+                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                    ].map(pm => (
+                      <button
+                        key={pm.key}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
+                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                      >
+                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="text-[11px] font-medium">{pm.label}</span>
+                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: "card", label: "Card", icon: CreditCard, sub: "Visa / MC" },
+                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                    ].map(pm => (
+                      <button
+                        key={pm.key}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
+                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                      >
+                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="text-[11px] font-medium">{pm.label}</span>
+                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Fee breakdown */}
                 <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 text-xs">
@@ -451,8 +541,12 @@ const WidgetCheckout = () => {
                     <span>${platformFeeAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Processor Fee (Stripe 2.9%)</span>
-                    <span>${processorFeeAmount.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span>
+                    <span>{isCryptoPayment ? "$0.00" : `$${processorFeeAmount.toFixed(2)}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Taxes & Tariffs</span>
+                    <span className="text-muted-foreground italic">Varies by corridor</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
