@@ -576,6 +576,16 @@ const MilestoneWorkOrderPanel = ({
           {/* Blueprint summary stats */}
           <BlueprintSummary industry={industry} layoutMode={layoutMode} />
 
+          {/* Trade Scope — compact in header */}
+          {!isAdmin && layoutMode !== "single" && (
+            <TradeScopeSelector
+              value={tradeScope}
+              onChange={setTradeScope}
+              compact
+              autoSet={false}
+            />
+          )}
+
           {/* Progress stepper */}
           {milestones.length > 1 && (
             <ProgressStepper
