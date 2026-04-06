@@ -567,15 +567,27 @@ const VendorTeams = () => {
                 <Card><CardContent className="py-8 text-center text-muted-foreground">No {status} work orders.</CardContent></Card>
               ) : (
                 <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-                  {list.map((ws) => (
+                  {list.map((ws) => {
+                    const st = wsStats[ws.id];
+                    return (
                     <Card key={ws.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => openWorkspace(ws)}>
                       <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-base">{ws.title}</CardTitle><Badge variant="outline">{ws.industry}</Badge></div></CardHeader>
                       <CardContent>
+                        {ws.transaction_id && <Badge variant="secondary" className="text-[10px] mb-2 font-mono"># {ws.transaction_id.slice(0, 20)}</Badge>}
                         {ws.description && <p className="text-sm text-muted-foreground line-clamp-2">{ws.description}</p>}
-                        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground"><Users className="w-3 h-3" /><span>Created {new Date(ws.created_at).toLocaleDateString()}</span></div>
+                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3" />{st?.members ?? 0} members</span>
+                          <span className="flex items-center gap-1"><ClipboardList className="w-3 h-3" />{st?.completed ?? 0}/{st?.tasks ?? 0} tasks</span>
+                        </div>
+                        {st && st.tasks > 0 && (
+                          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.round((st.completed / st.tasks) * 100)}%` }} />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
