@@ -90,6 +90,7 @@ const BuyerTeams = () => {
   const [taskInstructions, setTaskInstructions] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("");
   const [taskSlaHours, setTaskSlaHours] = useState("");
+  const [milestoneOptions, setMilestoneOptions] = useState<{ key: string; title: string; description: string; required_documents: string[]; assigned_to: string }[]>([]);
 
   useEffect(() => {
     const goOnline = async () => {
@@ -173,6 +174,44 @@ const BuyerTeams = () => {
     setRolePresets((data as any[]) || []);
   };
 
+  const fetchMilestoneOptions = async (ws: Workspace) => {
+    if (ws.transaction_id) {
+      const { data: txMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id, title, description, required_documents, assigned_to, position")
+        .eq("transaction_id", ws.transaction_id)
+        .order("position", { ascending: true });
+      if (txMilestones && txMilestones.length > 0) {
+        setMilestoneOptions(txMilestones.map((m: any) => ({
+          key: m.id,
+          title: m.title,
+          description: m.description || "",
+          required_documents: m.required_documents || [],
+          assigned_to: m.assigned_to || "buyer",
+        })));
+        return;
+      }
+    }
+    const { data: template } = await supabase
+      .from("industry_templates")
+      .select("default_milestones")
+      .eq("industry_key", ws.industry)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (template?.default_milestones) {
+      const milestones = template.default_milestones as any[];
+      setMilestoneOptions(milestones.map((m: any, i: number) => ({
+        key: `${ws.industry}_milestone_${i}`,
+        title: m.title,
+        description: m.description || "",
+        required_documents: m.required_documents || [],
+        assigned_to: m.assigned_to || "buyer",
+      })));
+    } else {
+      setMilestoneOptions([]);
+    }
+  };
+
   const openWorkspace = async (ws: Workspace) => {
     setSelectedWs(ws);
     const owner = ws.owner_id === user!.id;
@@ -183,6 +222,7 @@ const BuyerTeams = () => {
     setMyMembership(mems.find((m: Member) => m.user_id === user!.id) || null);
     fetchTasks(ws.id);
     fetchRolePresets(ws.industry);
+    fetchMilestoneOptions(ws);
   };
 
   const createWorkspace = async () => {
@@ -487,10 +527,56 @@ const BuyerTeams = () => {
         <Dialog open={showAssignTask} onOpenChange={setShowAssignTask}>
           <DialogContent>
             <DialogHeader><DialogTitle>Assign Task</DialogTitle></DialogHeader>
+            {selectedWs?.transaction_id && (
+              <p className="text-xs text-muted-foreground">Order: <span className="font-mono font-semibold text-primary">{selectedWs.transaction_id.slice(0, 20)}</span> — tasks are scoped to this order only.</p>
+            )}
             <div className="space-y-4">
               <div><Label>Assign To</Label><Select value={taskMemberId} onValueChange={setTaskMemberId}><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger><SelectContent>{members.map((m) => (<SelectItem key={m.id} value={m.id}>{m.display_name || m.user_id.slice(0, 8)}</SelectItem>))}</SelectContent></Select></div>
-              <div><Label>Milestone Key</Label><Input value={taskKey} onChange={(e) => setTaskKey(e.target.value)} placeholder="e.g. quality_inspection" /></div>
-              <div><Label>Task Label</Label><Input value={taskLabel} onChange={(e) => setTaskLabel(e.target.value)} placeholder="e.g. Quality Inspection" /></div>
+
+              {milestoneOptions.length > 0 ? (
+                <div>
+                  <Label>Milestone</Label>
+                  <Select value={taskKey} onValueChange={(val) => {
+                    setTaskKey(val);
+                    const ms = milestoneOptions.find(m => m.key === val);
+                    if (ms) {
+                      setTaskLabel(ms.title);
+                      const docs = ms.required_documents.length > 0 ? `Required documents: ${ms.required_documents.join(", ")}` : "";
+                      setTaskInstructions(ms.description + (docs ? `\n${docs}` : ""));
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select milestone" /></SelectTrigger>
+                    <SelectContent>
+                      {milestoneOptions.map((ms) => (
+                        <SelectItem key={ms.key} value={ms.key}>
+                          <div className="flex items-center gap-2">
+                            <span>{ms.title}</span>
+                            {ms.required_documents.length > 0 && <Badge variant="outline" className="text-[10px] ml-1">{ms.required_documents.length} docs</Badge>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {taskKey && (() => {
+                    const ms = milestoneOptions.find(m => m.key === taskKey);
+                    return ms ? (
+                      <div className="mt-2 p-2 rounded border border-border bg-muted/50 text-xs space-y-1">
+                        <p className="text-muted-foreground">{ms.description}</p>
+                        {ms.required_documents.length > 0 && (
+                          <p className="font-medium">📎 Required: {ms.required_documents.map(d => d.replace(/_/g, " ")).join(", ")}</p>
+                        )}
+                        <Badge variant="outline" className="text-[10px]">Assigned to: {ms.assigned_to}</Badge>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              ) : (
+                <>
+                  <div><Label>Milestone Key</Label><Input value={taskKey} onChange={(e) => setTaskKey(e.target.value)} placeholder="e.g. quality_inspection" /></div>
+                  <div><Label>Task Label</Label><Input value={taskLabel} onChange={(e) => setTaskLabel(e.target.value)} placeholder="e.g. Quality Inspection" /></div>
+                </>
+              )}
+
               <div><Label>Instructions</Label><Textarea value={taskInstructions} onChange={(e) => setTaskInstructions(e.target.value)} placeholder="What should this member do?" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Deadline</Label><Input type="datetime-local" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} /></div>
