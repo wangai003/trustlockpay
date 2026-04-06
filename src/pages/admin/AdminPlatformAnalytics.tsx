@@ -53,7 +53,7 @@ const AdminPlatformAnalytics = () => {
   const { data: standaloneLinks = [] } = useQuery({
     queryKey: ["admin-standalone-links"],
     queryFn: async () => {
-      const { data } = await supabase.from("standalone_links").select("id, vendor_id, created_at, is_active");
+      const { data } = await supabase.from("standalone_links").select("id, vendor_id, created_at, status");
       return data || [];
     },
   });
