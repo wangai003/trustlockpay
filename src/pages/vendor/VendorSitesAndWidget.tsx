@@ -928,6 +928,30 @@ const VendorSitesAndWidget = () => {
                           </CardContent>
                         </Card>
 
+                        {/* Widget Preview */}
+                        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Eye className="w-4 h-4 text-primary" /> Widget Checkout Preview</CardTitle>
+                            <CardDescription>How your checkout adapts based on offering type and industry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                { type: "Product", icon: "🛒", flow: "Instant delivery → Confirm receipt → Release", color: "bg-primary/10 border-primary/20" },
+                                { type: "Service", icon: "💼", flow: "Milestone negotiation → Progress tracking → Phased release", color: "bg-accent/10 border-accent/20" },
+                                { type: "Project", icon: "🏗️", flow: "Multi-stage milestones → Document gates → Negotiated release", color: "bg-secondary/50 border-secondary" },
+                              ].map(item => (
+                                <div key={item.type} className={`rounded-xl border p-4 ${item.color}`}>
+                                  <div className="text-2xl mb-2">{item.icon}</div>
+                                  <p className="font-semibold text-sm">{item.type}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">{item.flow}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-3">Define offerings in the <strong>Offerings</strong> tab. The checkout widget auto-selects the correct flow based on the buyer's selection.</p>
+                          </CardContent>
+                        </Card>
+
                         {/* Upgrade hint */}
                         <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
                           <Building2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
