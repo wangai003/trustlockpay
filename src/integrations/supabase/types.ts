@@ -2063,6 +2063,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string | null
+          account_type_confirmed: boolean | null
           avatar_url: string | null
           business_email: string | null
           business_phone: string | null
@@ -2086,6 +2088,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_type?: string | null
+          account_type_confirmed?: boolean | null
           avatar_url?: string | null
           business_email?: string | null
           business_phone?: string | null
@@ -2109,6 +2113,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_type?: string | null
+          account_type_confirmed?: boolean | null
           avatar_url?: string | null
           business_email?: string | null
           business_phone?: string | null
@@ -4221,6 +4227,39 @@ export type Database = {
           vendor_id?: string | null
           widget_mode?: string | null
           widget_theme?: Json | null
+        }
+        Relationships: []
+      }
+      vendor_site_configs: {
+        Row: {
+          created_at: string
+          custom_settings: Json | null
+          display_name: string | null
+          id: string
+          payment_methods: string[] | null
+          site_id: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_settings?: Json | null
+          display_name?: string | null
+          id?: string
+          payment_methods?: string[] | null
+          site_id: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_settings?: Json | null
+          display_name?: string | null
+          id?: string
+          payment_methods?: string[] | null
+          site_id?: string
+          updated_at?: string
+          vendor_id?: string
         }
         Relationships: []
       }
