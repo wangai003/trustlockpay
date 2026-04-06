@@ -52,6 +52,8 @@ const WidgetCheckout = () => {
   const rfqTerms = getRFQTerms(vendor.industry);
   const [scheduleAccepted, setScheduleAccepted] = useState(false);
   const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
 
   // Resolve milestone templates for this industry
   const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
