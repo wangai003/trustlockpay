@@ -263,46 +263,111 @@ const ExternalFeeTracker = ({
         </Card>
       )}
 
-      {entries.map((entry, idx) => (
-        <div
-          key={entry.id || idx}
-          className="flex items-start gap-2 p-2 rounded-lg border border-border bg-background"
-        >
-          <Receipt className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-medium">{entry.fee_label}</span>
-              <Badge variant="outline" className="text-[8px]">
-                {entry.currency} {parseFloat(entry.amount).toLocaleString()}
-              </Badge>
-              {entry.paid_to && (
-                <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                  <Building2 className="w-2.5 h-2.5" /> {entry.paid_to}
-                </span>
-              )}
-            </div>
-            {entry.evidence_note && (
-              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{entry.evidence_note}</p>
-            )}
-            <div className="flex items-center gap-1.5 mt-1">
-              {entry.receipt_url ? (
-                <Badge className="bg-primary/15 text-primary text-[7px]">Receipt ✓</Badge>
-              ) : (
-                <Badge variant="outline" className="text-[7px] text-destructive">No receipt</Badge>
-              )}
-              {entry.verified_by_counterparty ? (
-                <Badge className="bg-green-500/15 text-green-700 text-[7px] gap-0.5">
-                  <CheckCircle2 className="w-2 h-2" /> Verified
+      {entries.map((entry, idx) => {
+        const isCounterpartyEntry = entry.logged_by_role && entry.logged_by_role !== role;
+        const canVerify = isCounterpartyEntry && !entry.verified_by_counterparty && !entry.rejected;
+
+        const handleVerify = async () => {
+          if (isTestnet) {
+            setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, verified_by_counterparty: true } : e));
+            toast.success("Fee verified (testnet)");
+            return;
+          }
+          try {
+            const { error } = await (supabase as any)
+              .from("external_fee_entries")
+              .update({ verified_by_counterparty: true, verified_at: new Date().toISOString() })
+              .eq("id", entry.id);
+            if (error) throw error;
+            setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, verified_by_counterparty: true } : e));
+            toast.success("Fee verified — counterparty confirmation recorded");
+          } catch (err: any) {
+            toast.error(err.message || "Failed to verify");
+          }
+        };
+
+        const handleReject = () => {
+          setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, rejected: true } : e));
+          toast.info("Fee rejected — counterparty will be notified");
+        };
+
+        return (
+          <div
+            key={entry.id || idx}
+            className={`flex items-start gap-2 p-2 rounded-lg border bg-background ${
+              entry.rejected ? "border-destructive/30 opacity-60" :
+              canVerify ? "border-accent/30 bg-accent/[0.02]" :
+              "border-border"
+            }`}
+          >
+            <Receipt className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-medium">{entry.fee_label}</span>
+                <Badge variant="outline" className="text-[8px]">
+                  {entry.currency} {parseFloat(entry.amount).toLocaleString()}
                 </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[7px] text-amber-600 gap-0.5">
-                  <Clock className="w-2 h-2" /> Pending verification
-                </Badge>
+                {entry.paid_to && (
+                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                    <Building2 className="w-2.5 h-2.5" /> {entry.paid_to}
+                  </span>
+                )}
+                {entry.logged_by_role && (
+                  <Badge variant="outline" className="text-[7px]">
+                    by {entry.logged_by_role}
+                  </Badge>
+                )}
+              </div>
+              {entry.evidence_note && (
+                <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{entry.evidence_note}</p>
+              )}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                {entry.receipt_url ? (
+                  <Badge className="bg-primary/15 text-primary text-[7px]">Receipt ✓</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[7px] text-destructive">No receipt</Badge>
+                )}
+                {entry.rejected ? (
+                  <Badge variant="outline" className="text-[7px] text-destructive gap-0.5">
+                    <XCircle className="w-2 h-2" /> Rejected
+                  </Badge>
+                ) : entry.verified_by_counterparty ? (
+                  <Badge className="bg-primary/10 text-primary text-[7px] gap-0.5">
+                    <ShieldCheck className="w-2 h-2" /> Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[7px] text-muted-foreground gap-0.5">
+                    <Clock className="w-2 h-2" /> Pending verification
+                  </Badge>
+                )}
+              </div>
+
+              {/* Counterparty verification actions */}
+              {canVerify && (
+                <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-border/50">
+                  <span className="text-[9px] text-accent font-medium">Action required:</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-[9px] h-5 gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={handleVerify}
+                  >
+                    <ShieldCheck className="w-2.5 h-2.5" /> Verify
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-[9px] h-5 gap-1 border-destructive/30 text-destructive hover:bg-destructive/10"
+                    onClick={handleReject}
+                  >
+                    <XCircle className="w-2.5 h-2.5" /> Reject
+                  </Button>
+                </div>
               )}
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {entries.length === 0 && !showForm && (
         <p className="text-[10px] text-muted-foreground italic">
