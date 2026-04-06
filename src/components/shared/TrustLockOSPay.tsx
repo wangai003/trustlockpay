@@ -410,6 +410,40 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
 
       // For non-admin, non-crypto payments: route through processor API
       if (!isAdmin && !isCryptoPayment) {
+        // Build bank transfer details payload
+        const bankTransferPayload: Record<string, unknown> = {};
+        if (method === "bank_transfer") {
+          if (payMode === "diaspora" && intlBankSelected && intlBankRegion) {
+            bankTransferPayload.bankTransferDetails = {
+              bankName: intlBankSelected,
+              region: intlBankRegion,
+              type: "international",
+            };
+          } else if (payMode === "local" && bankName) {
+            bankTransferPayload.bankTransferDetails = {
+              bankName,
+              country: selectedCountry,
+              accountNumber,
+              branchCode: localBranchCode || undefined,
+              bvn: localBvn || undefined,
+              iban: localIban || undefined,
+              rib: localRib || undefined,
+              sortCode: localSortCode || undefined,
+              type: "local_africa",
+            };
+          }
+        }
+
+        // Mobile money details
+        const mobileMoneyPayload: Record<string, unknown> = {};
+        if (method === "mobile_money" && mobileProvider && mobileNumber) {
+          mobileMoneyPayload.mobileMoneyDetails = {
+            provider: mobileProvider,
+            phoneNumber: mobileNumber,
+            country: selectedCountry,
+          };
+        }
+
         const result = await processPayment.mutateAsync({
           action: "payment",
           service,
@@ -423,6 +457,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
           direction: "onramp",
           currency: "USD",
           walletAddress: AZIX_WALLETS.transaction.publicKey,
+          buyer_country: selectedCountry || undefined,
+          ...bankTransferPayload,
+          ...mobileMoneyPayload,
         });
 
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
