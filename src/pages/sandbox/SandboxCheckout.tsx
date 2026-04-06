@@ -41,7 +41,7 @@ const SandboxCheckout = () => {
   const [step, setStep] = useState<Step>("invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerCountry, setBuyerCountry] = useState("US");
+  const [buyerCountry] = useState("US"); // Hardcoded: USA buyer
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
