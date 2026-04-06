@@ -585,8 +585,7 @@ const SandboxCheckout = () => {
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
