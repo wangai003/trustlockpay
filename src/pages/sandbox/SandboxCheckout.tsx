@@ -507,28 +507,67 @@ const SandboxCheckout = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
-                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
-                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
-                    ].map(pm => (
-                      <button
-                        key={pm.key}
-                        onClick={() => setPaymentMethod(pm.key)}
-                        className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                      >
-                        <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-xs font-medium">{pm.label}</span>
-                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                      </button>
-                    ))}
+                  {/* Dual-Mode Toggle: Africa / International */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setPayMode("africa"); setPaymentMethod("mobile_money"); }}
+                      className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <MapPin className="w-4 h-4" /> Africa
+                    </button>
+                    <button
+                      onClick={() => { setPayMode("international"); setPaymentMethod("card"); }}
+                      className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
+                    >
+                      <Globe className="w-4 h-4" /> International
+                    </button>
                   </div>
+
+                  {/* Payment methods based on mode */}
+                  {payMode === "africa" ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
+                        { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
+                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
+                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
+                      ].map(pm => (
+                        <button
+                          key={pm.key}
+                          onClick={() => setPaymentMethod(pm.key)}
+                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                        >
+                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-xs font-medium">{pm.label}</span>
+                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
+                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
+                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
+                      ].map(pm => (
+                        <button
+                          key={pm.key}
+                          onClick={() => setPaymentMethod(pm.key)}
+                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                        >
+                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className="text-xs font-medium">{pm.label}</span>
+                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Tariffs</span><span className="text-muted-foreground italic">Varies by corridor</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
                     <div className="flex justify-between font-bold"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
