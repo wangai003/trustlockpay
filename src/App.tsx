@@ -72,7 +72,7 @@ const VendorLayout = lazy(() => import("./pages/vendor/VendorLayout"));
 const VendorOverview = lazy(() => import("./pages/vendor/VendorOverview"));
 const VendorTransactions = lazy(() => import("./pages/vendor/VendorTransactions"));
 
-const VendorSites = lazy(() => import("./pages/vendor/VendorSites"));
+const VendorSitesAndWidget = lazy(() => import("./pages/vendor/VendorSitesAndWidget"));
 const VendorKYC = lazy(() => import("./pages/vendor/VendorKYC"));
 const VendorDocuments = lazy(() => import("./pages/vendor/VendorDocuments"));
 const VendorSettings = lazy(() => import("./pages/vendor/VendorSettings"));
@@ -90,7 +90,7 @@ const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
 const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketplaceOrders"));
 const VendorCRM = lazy(() => import("./pages/vendor/VendorCRM"));
-const VendorWidgetConfig = lazy(() => import("./pages/vendor/VendorWidgetConfig"));
+
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
 const WidgetCheckout = lazy(() => import("./pages/public/WidgetCheckout"));
@@ -179,7 +179,7 @@ const App = () => (
                 <Route path="bill-payments" element={<VendorBillPayments />} />
                 <Route path="transactions" element={<VendorTransactions />} />
                 
-                <Route path="sites" element={<VendorSites />} />
+                <Route path="sites" element={<VendorSitesAndWidget />} />
                 <Route path="kyc" element={<VendorKYC />} />
                 <Route path="assistant" element={<VendorAssistant />} />
                 <Route path="documents" element={<VendorDocuments />} />
@@ -195,7 +195,7 @@ const App = () => (
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
                 <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="crm" element={<VendorCRM />} />
-                <Route path="widget-config" element={<VendorWidgetConfig />} />
+                <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 
