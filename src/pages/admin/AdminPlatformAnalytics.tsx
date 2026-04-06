@@ -115,7 +115,7 @@ const AdminPlatformAnalytics = () => {
       map[country].vendors.add(p.id);
     });
     transactions.forEach(t => {
-      const country = t.buyer_country || "Unknown";
+      const country = t.buyer_location || "Unknown";
       if (!map[country]) map[country] = { vendors: new Set(), txCount: 0, volume: 0 };
       map[country].txCount++;
       map[country].volume += Number(t.amount || 0);
