@@ -17,7 +17,7 @@ const AdminPlatformAnalytics = () => {
   const { data: transactions = [] } = useQuery({
     queryKey: ["admin-platform-tx"],
     queryFn: async () => {
-      const { data } = await supabase.from("transactions").select("id, amount, status, transaction_source, vendor_id, buyer_id, industry, created_at, buyer_country");
+      const { data } = await supabase.from("transactions").select("id, amount, status, transaction_source, vendor_id, buyer_id, industry, created_at, buyer_location");
       return data || [];
     },
   });
