@@ -383,19 +383,44 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
   // ── 3-Way Fee Calculation ──
   const fees = calculateCheckoutFees(numAmount, processor.feeRate, isCrypto, taxTotal);
 
-  // ── Determine order_type from vendor widget config ──
+  // ── Determine order_type from vendor_offerings or vendor_settings ──
   let orderType: "simple" | "milestone" | "hybrid" = "simple";
   try {
-    const { data: vendorSettings } = await supabase
-      .from("vendor_settings")
-      .select("supported_order_types, default_order_type")
-      .eq("vendor_id", String(vendorId))
-      .single();
+    // First: check if there's a matching vendor offering for this item/industry
+    if (params.offering_id) {
+      const { data: offering } = await supabase
+        .from("vendor_offerings")
+        .select("offering_type, industry_key, custom_category")
+        .eq("id", String(params.offering_id))
+        .eq("vendor_id", String(vendorId))
+        .eq("is_active", true)
+        .maybeSingle();
 
-    if (vendorSettings?.default_order_type) {
-      const dt = String(vendorSettings.default_order_type);
-      if (dt === "milestone" || dt === "hybrid") orderType = dt;
+      if (offering) {
+        if (offering.offering_type === "service" || offering.offering_type === "project") {
+          orderType = "milestone";
+        }
+        // Override industry from offering if not explicitly provided
+        if (!params.industry && offering.industry_key) {
+          params.industry = offering.industry_key;
+        }
+      }
     }
+
+    // Fallback: check vendor_settings
+    if (orderType === "simple") {
+      const { data: vendorSettings } = await supabase
+        .from("vendor_settings")
+        .select("supported_order_types, default_order_type")
+        .eq("vendor_id", String(vendorId))
+        .single();
+
+      if (vendorSettings?.default_order_type) {
+        const dt = String(vendorSettings.default_order_type);
+        if (dt === "milestone" || dt === "hybrid") orderType = dt;
+      }
+    }
+
     // Allow override from params
     if (params.order_type) {
       const ot = String(params.order_type);
