@@ -37,11 +37,14 @@ const WidgetCheckout = () => {
   const [form, setForm] = useState({
     buyerName: "",
     buyerEmail: "",
-    item: "Sample Product",
-    amount: "25.00",
+    item: params.get("product_name") || "Sample Product",
+    amount: params.get("product_price") || "25.00",
     buyerEntityType: "individual" as "individual" | "company" | "sole_proprietor",
     buyerCompanyName: "",
+    buyerCountry: "US",
+    paymentMethod: "card" as string,
   });
+  const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
