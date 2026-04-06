@@ -122,6 +122,8 @@ const BuyerTeams = () => {
     }
   }, [searchParams, user?.id]);
 
+  const [wsStats, setWsStats] = useState<Record<string, { members: number; tasks: number; completed: number }>>({});
+
   const fetchWorkspaces = async () => {
     setLoading(true);
     const { data: owned } = await supabase.from("team_workspaces").select("*").eq("owner_id", user!.id).eq("role", "buyer").order("created_at", { ascending: false });
@@ -135,6 +137,24 @@ const BuyerTeams = () => {
       allWorkspaces = [...allWorkspaces, ...((extra || []) as Workspace[])];
     }
     setWorkspaces(allWorkspaces);
+
+    const allIds = allWorkspaces.map(w => w.id);
+    if (allIds.length > 0) {
+      const [{ data: memberCounts }, { data: taskCounts }] = await Promise.all([
+        supabase.from("team_members").select("workspace_id").in("workspace_id", allIds).is("removed_at", null),
+        supabase.from("team_task_assignments").select("workspace_id, status").in("workspace_id", allIds),
+      ]);
+      const stats: Record<string, { members: number; tasks: number; completed: number }> = {};
+      allIds.forEach(id => { stats[id] = { members: 0, tasks: 0, completed: 0 }; });
+      (memberCounts || []).forEach((m: any) => { if (stats[m.workspace_id]) stats[m.workspace_id].members++; });
+      (taskCounts || []).forEach((t: any) => {
+        if (stats[t.workspace_id]) {
+          stats[t.workspace_id].tasks++;
+          if (t.status === "completed") stats[t.workspace_id].completed++;
+        }
+      });
+      setWsStats(stats);
+    }
     setLoading(false);
   };
 
