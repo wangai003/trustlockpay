@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,11 +35,14 @@ interface ExternalFeeTrackerProps {
   transactionId?: string | null;
   milestoneIndex: number;
   milestoneName: string;
-  role: "buyer" | "vendor";
+  role: "buyer" | "vendor" | "admin";
   tradeScope: TradeScope;
   industrySuggestions?: ExternalFeeTemplate[];
   isTestnet?: boolean;
   existingEntries?: ExternalFeeEntry[];
+  readOnly?: boolean;
+  /** Called when entries change — parent can use for fee rollup */
+  onTotalChange?: (total: number, currency: string) => void;
 }
 
 const CURRENCIES = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "GHS", "XOF", "CNY", "INR"];
@@ -53,6 +56,8 @@ const ExternalFeeTracker = ({
   industrySuggestions = [],
   isTestnet = false,
   existingEntries = [],
+  readOnly = false,
+  onTotalChange,
 }: ExternalFeeTrackerProps) => {
   const [entries, setEntries] = useState<ExternalFeeEntry[]>(existingEntries);
   const [showForm, setShowForm] = useState(false);
@@ -67,29 +72,54 @@ const ExternalFeeTracker = ({
     verified_by_counterparty: false,
   });
 
+  // Load entries from DB on mount
+  useEffect(() => {
+    if (!transactionId || isTestnet || existingEntries.length > 0) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("external_fee_entries")
+        .select("*")
+        .eq("transaction_id", transactionId)
+        .eq("milestone_index", milestoneIndex);
+      if (data && data.length > 0) {
+        setEntries(data.map(d => ({
+          id: d.id,
+          fee_label: d.fee_label,
+          amount: String(d.amount),
+          currency: d.currency,
+          paid_to: d.paid_to || "",
+          evidence_note: d.evidence_note || "",
+          receipt_url: d.receipt_url,
+          verified_by_counterparty: d.verified_by_counterparty ?? false,
+          logged_by_role: d.logged_by_role,
+        })));
+      }
+    };
+    load();
+  }, [transactionId, milestoneIndex, isTestnet, existingEntries.length]);
+
   const applicableSuggestions = industrySuggestions.filter(
     (s) => s.required_scope.includes(tradeScope) || s.required_scope.includes("domestic")
   );
 
+  // Notify parent of total changes
+  const totalExternal = entries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const primaryCurrency = entries[0]?.currency || newEntry.currency;
+
+  useEffect(() => {
+    onTotalChange?.(totalExternal, primaryCurrency);
+  }, [totalExternal, primaryCurrency, onTotalChange]);
+
   const handleAddEntry = async () => {
-    if (!newEntry.fee_label.trim()) {
-      toast.error("Enter a fee label");
-      return;
-    }
-    if (!newEntry.amount || parseFloat(newEntry.amount) <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-    if (!newEntry.evidence_note.trim() && !newEntry.receipt_url) {
-      toast.error("Provide a note or receipt as evidence");
-      return;
-    }
+    if (!newEntry.fee_label.trim()) { toast.error("Enter a fee label"); return; }
+    if (!newEntry.amount || parseFloat(newEntry.amount) <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!newEntry.evidence_note.trim() && !newEntry.receipt_url) { toast.error("Provide a note or receipt as evidence"); return; }
 
     setSaving(true);
 
     if (isTestnet) {
       await new Promise((r) => setTimeout(r, 400));
-      setEntries((prev) => [...prev, { ...newEntry, id: `testnet-${Date.now()}` }]);
+      setEntries((prev) => [...prev, { ...newEntry, id: `testnet-${Date.now()}`, logged_by_role: role }]);
       toast.success("External fee logged (testnet)");
       resetForm();
       setSaving(false);
@@ -100,8 +130,8 @@ const ExternalFeeTracker = ({
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user?.id) throw new Error("Not authenticated");
 
-      const { error } = await (supabase as any).from("external_fee_entries").insert({
-        transaction_id: transactionId,
+      const { error } = await supabase.from("external_fee_entries").insert({
+        transaction_id: transactionId!,
         milestone_index: milestoneIndex,
         fee_label: newEntry.fee_label,
         amount: parseFloat(newEntry.amount),
@@ -116,7 +146,24 @@ const ExternalFeeTracker = ({
 
       if (error) throw error;
 
-      setEntries((prev) => [...prev, { ...newEntry, id: `new-${Date.now()}` }]);
+      // Send notification to counterparty
+      try {
+        await supabase.functions.invoke("manage-notifications", {
+          body: {
+            action: "external_fee_logged",
+            transaction_id: transactionId,
+            fee_label: newEntry.fee_label,
+            amount: parseFloat(newEntry.amount),
+            currency: newEntry.currency,
+            logged_by_role: role,
+            milestone_name: milestoneName,
+          },
+        });
+      } catch {
+        // Non-blocking — notification failure shouldn't block fee logging
+      }
+
+      setEntries((prev) => [...prev, { ...newEntry, id: `new-${Date.now()}`, logged_by_role: role }]);
       toast.success("External fee logged — awaiting counterparty verification");
       resetForm();
     } catch (err: any) {
@@ -128,18 +175,13 @@ const ExternalFeeTracker = ({
 
   const resetForm = () => {
     setNewEntry({
-      fee_label: "",
-      amount: "",
-      currency: "USD",
-      paid_to: "",
-      evidence_note: "",
-      receipt_url: null,
-      verified_by_counterparty: false,
+      fee_label: "", amount: "", currency: "USD", paid_to: "",
+      evidence_note: "", receipt_url: null, verified_by_counterparty: false,
     });
     setShowForm(false);
   };
 
-  const totalExternal = entries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const isAdmin = role === "admin";
 
   return (
     <div className="space-y-2">
@@ -151,23 +193,18 @@ const ExternalFeeTracker = ({
           </span>
           {entries.length > 0 && (
             <Badge variant="outline" className="text-[8px]">
-              {entries.length} logged • {newEntry.currency} {totalExternal.toLocaleString()}
+              {entries.length} logged • {primaryCurrency} {totalExternal.toLocaleString()}
             </Badge>
           )}
         </div>
-        {!showForm && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-[9px] h-5 gap-1"
-            onClick={() => setShowForm(true)}
-          >
+        {!showForm && !readOnly && !isAdmin && (
+          <Button variant="outline" size="sm" className="text-[9px] h-5 gap-1" onClick={() => setShowForm(true)}>
             <Plus className="w-2.5 h-2.5" /> Log Payment
           </Button>
         )}
       </div>
 
-      {showForm && applicableSuggestions.length > 0 && (
+      {showForm && !readOnly && applicableSuggestions.length > 0 && (
         <div className="flex flex-wrap gap-1">
           <span className="text-[9px] text-muted-foreground">Quick add:</span>
           {applicableSuggestions.map((s) => (
@@ -184,7 +221,7 @@ const ExternalFeeTracker = ({
         </div>
       )}
 
-      {showForm && (
+      {showForm && !readOnly && (
         <Card className="border-accent/20">
           <CardContent className="p-2 space-y-2">
             <div className="flex gap-1.5">
@@ -199,17 +236,10 @@ const ExternalFeeTracker = ({
               </Button>
             </div>
             <div className="flex gap-1.5">
-              <Select
-                value={newEntry.currency}
-                onValueChange={(v) => setNewEntry((p) => ({ ...p, currency: v }))}
-              >
-                <SelectTrigger className="w-20 h-7 text-[10px]">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={newEntry.currency} onValueChange={(v) => setNewEntry((p) => ({ ...p, currency: v }))}>
+                <SelectTrigger className="w-20 h-7 text-[10px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
-                  ))}
+                  {CURRENCIES.map((c) => (<SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>))}
                 </SelectContent>
               </Select>
               <Input
@@ -250,12 +280,7 @@ const ExternalFeeTracker = ({
                 </Badge>
               )}
             </div>
-            <Button
-              size="sm"
-              className="w-full text-xs h-7 gap-1"
-              disabled={saving}
-              onClick={handleAddEntry}
-            >
+            <Button size="sm" className="w-full text-xs h-7 gap-1" disabled={saving} onClick={handleAddEntry}>
               {saving ? <Clock className="w-3 h-3 animate-spin" /> : <DollarSign className="w-3 h-3" />}
               Log External Payment
             </Button>
@@ -265,7 +290,7 @@ const ExternalFeeTracker = ({
 
       {entries.map((entry, idx) => {
         const isCounterpartyEntry = entry.logged_by_role && entry.logged_by_role !== role;
-        const canVerify = isCounterpartyEntry && !entry.verified_by_counterparty && !entry.rejected;
+        const canVerify = !readOnly && !isAdmin && isCounterpartyEntry && !entry.verified_by_counterparty && !entry.rejected;
 
         const handleVerify = async () => {
           if (isTestnet) {
@@ -274,10 +299,10 @@ const ExternalFeeTracker = ({
             return;
           }
           try {
-            const { error } = await (supabase as any)
+            const { error } = await supabase
               .from("external_fee_entries")
               .update({ verified_by_counterparty: true, verified_at: new Date().toISOString() })
-              .eq("id", entry.id);
+              .eq("id", entry.id!);
             if (error) throw error;
             setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, verified_by_counterparty: true } : e));
             toast.success("Fee verified — counterparty confirmation recorded");
@@ -342,7 +367,6 @@ const ExternalFeeTracker = ({
                 )}
               </div>
 
-              {/* Counterparty verification actions */}
               {canVerify && (
                 <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-border/50">
                   <span className="text-[9px] text-accent font-medium">Action required:</span>
@@ -374,6 +398,14 @@ const ExternalFeeTracker = ({
           No third-party fees logged for this milestone.
           {tradeScope === "domestic" && " Domestic trades typically have minimal external costs."}
         </p>
+      )}
+
+      {/* Fee rollup summary */}
+      {entries.length > 0 && (
+        <div className="flex items-center justify-between p-1.5 rounded bg-muted/30 border border-border">
+          <span className="text-[10px] text-muted-foreground font-medium">Total external costs (this milestone)</span>
+          <span className="text-[11px] font-semibold text-foreground">{primaryCurrency} {totalExternal.toLocaleString()}</span>
+        </div>
       )}
     </div>
   );
