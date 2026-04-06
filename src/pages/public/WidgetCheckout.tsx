@@ -55,6 +55,7 @@ const WidgetCheckout = () => {
   const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
+  const [tradeScope, setTradeScope] = useState<TradeScope>("international");
 
   // Resolve milestone templates for this industry
   const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
