@@ -45,6 +45,12 @@ interface CheckoutSession {
   marketplaceMetadata?: Record<string, unknown> | null;
   buyerEntityType?: string;
   buyerCompanyName?: string;
+  bankTransferDetails?: {
+    bankName?: string;
+    region?: string;
+    processor?: string;
+    accountFields?: Record<string, string>;
+  } | null;
 }
 
 interface ProcessorResult {
@@ -465,6 +471,7 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     marketplaceMetadata: (params.marketplace_metadata as Record<string, unknown>) || null,
     buyerEntityType: params.buyerEntityType ? String(params.buyerEntityType) : "individual",
     buyerCompanyName: params.buyerCompanyName ? String(params.buyerCompanyName) : undefined,
+    bankTransferDetails: params.bankTransferDetails ? (params.bankTransferDetails as CheckoutSession["bankTransferDetails"]) : null,
   };
 
   sessions.set(sessionId, session);

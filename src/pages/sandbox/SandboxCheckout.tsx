@@ -6,6 +6,9 @@ import {
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
   Phone, Building2, Coins
 } from "lucide-react";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
+import { getProcessorForRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +44,8 @@ const SandboxCheckout = () => {
   const [buyerCountry, setBuyerCountry] = useState("US");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -544,23 +549,38 @@ const SandboxCheckout = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
-                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
-                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
-                      ].map(pm => (
-                        <button
-                          key={pm.key}
-                          onClick={() => setPaymentMethod(pm.key)}
-                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                        >
-                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                          <span className="text-xs font-medium">{pm.label}</span>
-                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {[
+                          { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
+                          { key: "bank_transfer", label: "Bank", icon: Building2, sub: "Checking / Savings" },
+                          { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
+                          { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
+                        ].map(pm => (
+                          <button
+                            key={pm.key}
+                            onClick={() => { setPaymentMethod(pm.key); if (pm.key !== "bank_transfer") { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                            className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                          >
+                            <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className="text-xs font-medium">{pm.label}</span>
+                            <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* International Bank Selector */}
+                      {paymentMethod === "bank_transfer" && (
+                        <InternationalBankSelector
+                          selectedBank={intlBankSelected}
+                          onBankSelected={(bank, region) => {
+                            setIntlBankSelected(bank);
+                            setIntlBankRegion(region);
+                          }}
+                          onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                        />
+                      )}
+                    </>
                   )}
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
