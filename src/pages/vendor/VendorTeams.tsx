@@ -178,6 +178,46 @@ const VendorTeams = () => {
     setRolePresets((data as any[]) || []);
   };
 
+  const fetchMilestoneOptions = async (ws: Workspace) => {
+    // Try transaction milestones first
+    if (ws.transaction_id) {
+      const { data: txMilestones } = await supabase
+        .from("transaction_milestones")
+        .select("id, title, description, required_documents, assigned_to, position")
+        .eq("transaction_id", ws.transaction_id)
+        .order("position", { ascending: true });
+      if (txMilestones && txMilestones.length > 0) {
+        setMilestoneOptions(txMilestones.map((m: any) => ({
+          key: m.id,
+          title: m.title,
+          description: m.description || "",
+          required_documents: m.required_documents || [],
+          assigned_to: m.assigned_to || "vendor",
+        })));
+        return;
+      }
+    }
+    // Fallback to industry template
+    const { data: template } = await supabase
+      .from("industry_templates")
+      .select("default_milestones")
+      .eq("industry_key", ws.industry)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (template?.default_milestones) {
+      const milestones = template.default_milestones as any[];
+      setMilestoneOptions(milestones.map((m: any, i: number) => ({
+        key: `${ws.industry}_milestone_${i}`,
+        title: m.title,
+        description: m.description || "",
+        required_documents: m.required_documents || [],
+        assigned_to: m.assigned_to || "vendor",
+      })));
+    } else {
+      setMilestoneOptions([]);
+    }
+  };
+
   const openWorkspace = async (ws: Workspace) => {
     setSelectedWs(ws);
     const owner = ws.owner_id === user!.id;
@@ -188,6 +228,7 @@ const VendorTeams = () => {
     setMyMembership(mems.find((m: Member) => m.user_id === user!.id) || null);
     fetchTasks(ws.id);
     fetchRolePresets(ws.industry);
+    fetchMilestoneOptions(ws);
   };
 
   const createWorkspace = async () => {
