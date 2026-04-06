@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import VendorOfferingCatalog from "@/components/vendor/VendorOfferingCatalog";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
