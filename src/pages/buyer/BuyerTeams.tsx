@@ -529,7 +529,7 @@ const BuyerTeams = () => {
               <p className="text-xs text-muted-foreground">Order: <span className="font-mono font-semibold text-primary">{selectedWs.transaction_id.slice(0, 20)}</span> — tasks are scoped to this order only.</p>
             )}
             <div className="space-y-4">
-              <div><Label>Assign To</Label><Select value={taskMemberId} onValueChange={setTaskMemberId}><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger><SelectContent>{members.map((m) => (<SelectItem key={m.id} value={m.id}>{m.display_name || m.user_id.slice(0, 8)}</SelectItem>))}</SelectContent></Select></div>
+              <div><Label>Assign To</Label><Select value={taskMemberId} onValueChange={setTaskMemberId}><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger><SelectContent>{members.map((m) => { const assigned = tasks.some(t => t.member_id === m.id); return (<SelectItem key={m.id} value={m.id} disabled={assigned}><span className={cn(assigned && "line-through text-muted-foreground")}>{m.display_name || m.user_id.slice(0, 8)}</span>{assigned && <span className="ml-2 text-[10px] text-muted-foreground">(assigned)</span>}</SelectItem>); })}</SelectContent></Select></div>
 
               {milestoneOptions.length > 0 ? (
                 <div>
@@ -575,7 +575,7 @@ const BuyerTeams = () => {
                 </>
               )}
 
-              <div><Label>Instructions</Label><Textarea value={taskInstructions} onChange={(e) => setTaskInstructions(e.target.value)} placeholder="What should this member do?" /></div>
+              <div><Label>Notes for Member</Label><Textarea value={taskInstructions} onChange={(e) => setTaskInstructions(e.target.value)} placeholder="Additional notes the member will see on their panel..." /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Deadline</Label><Input type="datetime-local" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} /></div>
                 <div><Label>SLA (hours)</Label><Input type="number" value={taskSlaHours} onChange={(e) => setTaskSlaHours(e.target.value)} placeholder="e.g. 48" /></div>
@@ -617,25 +617,6 @@ const BuyerTeams = () => {
         </div>
       </div>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="py-3 flex flex-col sm:flex-row items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <UserPlus className="w-4 h-4 text-primary" />
-            <span>Have an invite code?</span>
-          </div>
-          <div className="flex gap-2 flex-1 max-w-md">
-            <Input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Paste invite code here"
-              className="flex-1 h-9"
-            />
-            <Button size="sm" onClick={() => { if (joinCode.trim()) setShowJoin(true); else toast.error("Enter a code first"); }} disabled={!joinCode.trim()}>
-              Join
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full sm:w-auto">
