@@ -1,0 +1,1 @@
+ALTER TABLE public.os_payments ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT NULL;

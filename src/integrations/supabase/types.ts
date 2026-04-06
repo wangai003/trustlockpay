@@ -1645,6 +1645,7 @@ export type Database = {
           created_at: string
           fee: number | null
           id: string
+          metadata: Json | null
           method: string | null
           refund_email: string | null
           refund_reason: string | null
@@ -1662,6 +1663,7 @@ export type Database = {
           created_at?: string
           fee?: number | null
           id?: string
+          metadata?: Json | null
           method?: string | null
           refund_email?: string | null
           refund_reason?: string | null
@@ -1679,6 +1681,7 @@ export type Database = {
           created_at?: string
           fee?: number | null
           id?: string
+          metadata?: Json | null
           method?: string | null
           refund_email?: string | null
           refund_reason?: string | null
