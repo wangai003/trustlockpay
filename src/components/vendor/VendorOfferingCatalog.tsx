@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Trash2, Package, Briefcase, Wrench, FolderKanban,
-  ShoppingBag, Hammer, BookOpen, ChevronDown, ChevronUp, Tag, Loader2,
+  ShoppingBag, Hammer, BookOpen, ChevronDown, ChevronUp, Tag, Loader2, Upload, FileSpreadsheet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendor } from "@/contexts/VendorContext";
 import { toast } from "sonner";
 import { ALL_INDUSTRIES } from "@/lib/industryList";
 
@@ -79,10 +80,13 @@ interface VendorOfferingCatalogProps {
 
 const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps) => {
   const { user } = useAuth();
+  const { networkMode } = useVendor();
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -92,13 +96,16 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
 
   useEffect(() => {
     if (!user?.id) return;
-    const query = supabase.from("vendor_offerings").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false });
+    const query = supabase.from("vendor_offerings").select("*")
+      .eq("vendor_id", user.id)
+      .eq("network_mode", networkMode)
+      .order("created_at", { ascending: false });
     if (siteId) query.eq("site_id", siteId);
     query.then(({ data }) => {
       if (data) setOfferings(data as any);
       setLoading(false);
     });
-  }, [user?.id, siteId]);
+  }, [user?.id, siteId, networkMode]);
 
   const handleAdd = async () => {
     if (!user?.id || !form.name.trim()) return;
@@ -114,6 +121,7 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
       currency: form.currency,
       unit_label: form.unit_label.trim() || null,
       is_active: true,
+      network_mode: networkMode,
     };
     const { data, error } = await supabase.from("vendor_offerings").insert(payload).select().single();
     if (error) { toast.error(error.message); return; }
@@ -132,6 +140,47 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
   const handleToggle = async (id: string, active: boolean) => {
     await supabase.from("vendor_offerings").update({ is_active: active }).eq("id", id);
     setOfferings(prev => prev.map(o => o.id === id ? { ...o, is_active: active } : o));
+  };
+
+  // CSV bulk import
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      if (lines.length < 2) { toast.error("CSV must have a header row + at least 1 data row"); setImporting(false); return; }
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z_]/g, ""));
+      const nameIdx = headers.indexOf("name");
+      if (nameIdx === -1) { toast.error("CSV must include a 'name' column"); setImporting(false); return; }
+
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.trim());
+        const row: Record<string, string> = {};
+        headers.forEach((h, i) => { if (cols[i]) row[h] = cols[i]; });
+        return row;
+      }).filter(r => r.name);
+
+      const { data, error } = await supabase.functions.invoke("bulk-import-offerings", {
+        body: { rows, network_mode: networkMode, site_id: siteId },
+      });
+
+      if (error) { toast.error("Import failed"); setImporting(false); return; }
+      toast.success(`Imported ${data.inserted} of ${data.total} offerings${data.errors?.length ? ` (${data.errors.length} errors)` : ""}`);
+
+      // Refresh list
+      const q = supabase.from("vendor_offerings").select("*")
+        .eq("vendor_id", user.id).eq("network_mode", networkMode)
+        .order("created_at", { ascending: false });
+      if (siteId) q.eq("site_id", siteId);
+      const { data: refreshed } = await q;
+      if (refreshed) setOfferings(refreshed as any);
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // Group by category
@@ -163,10 +212,28 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
             }
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(!showAdd)}>
-          <Plus className="w-3.5 h-3.5" /> Add Offering
-        </Button>
+        <div className="flex items-center gap-2">
+          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {importing ? "Importing…" : "CSV Import"}
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(!showAdd)}>
+            <Plus className="w-3.5 h-3.5" /> Add Offering
+          </Button>
+        </div>
       </div>
+
+      {/* CSV format hint */}
+      {offerings.length === 0 && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/30 border border-border text-xs text-muted-foreground">
+          <FileSpreadsheet className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-foreground">Bulk import available</p>
+            <p>Upload a CSV with columns: <code className="text-[10px] bg-muted px-1 rounded">name, offering_type, industry_key, category, base_price, currency, unit_label, description</code></p>
+          </div>
+        </div>
+      )}
 
       {/* How it works (empty state) */}
       {offerings.length === 0 && !showAdd && (

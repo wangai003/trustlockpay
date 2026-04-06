@@ -1,7 +1,7 @@
 // Widget Embed — serves the TrustLock checkout widget JavaScript
 // External sites embed: <script src="https://<project>.supabase.co/functions/v1/widget-embed?v=1" data-site-id="..." data-vendor-id="..."></script>
 
-const WIDGET_JS = (baseUrl: string) => `
+const WIDGET_JS = (baseUrl: string, analyticsUrl: string) => `
 (function() {
   'use strict';
 
@@ -22,6 +22,27 @@ const WIDGET_JS = (baseUrl: string) => `
     console.warn('[TrustLock] Missing data-site-id or data-vendor-id');
     return;
   }
+
+  // ─── Analytics helper ───────────────────────────────────
+  var _fp = Math.random().toString(36).substr(2, 9);
+  function trackEvent(eventType, extra) {
+    try {
+      var payload = {
+        event_type: eventType,
+        vendor_id: vendorId,
+        site_id: siteId,
+        offering_id: offeringId || null,
+        visitor_fingerprint: _fp,
+        referrer_url: (document.referrer || '').substr(0, 500),
+        user_agent: (navigator.userAgent || '').substr(0, 300),
+        metadata: extra || {}
+      };
+      navigator.sendBeacon('${analyticsUrl}', JSON.stringify(payload));
+    } catch(e) {}
+  }
+
+  // Track impression on load
+  trackEvent('impression');
 
   // ─── Inject styles ──────────────────────────────────────
   var style = document.createElement('style');
@@ -161,12 +182,13 @@ const WIDGET_JS = (baseUrl: string) => `
     iframe.src = checkoutUrl;
     overlay.classList.add('tl-open');
     document.body.style.overflow = 'hidden';
+    trackEvent('widget_open');
   }
 
   function closeWidget() {
     overlay.classList.remove('tl-open');
     document.body.style.overflow = '';
-    // Reset iframe after animation
+    trackEvent('widget_close');
     setTimeout(function() { iframe.src = 'about:blank'; }, 300);
   }
 
@@ -180,8 +202,9 @@ const WIDGET_JS = (baseUrl: string) => `
   window.addEventListener('message', function(e) {
     if (!e.data || !e.data.type) return;
     if (e.data.type === 'tl:close') closeWidget();
+    if (e.data.type === 'tl:checkout_start') trackEvent('checkout_start', e.data.payload || {});
     if (e.data.type === 'tl:payment_complete') {
-      // Dispatch custom event for the host page
+      trackEvent('payment_complete', e.data.payload || {});
       var evt = new CustomEvent('trustlock:payment', { detail: e.data.payload });
       window.dispatchEvent(evt);
     }
@@ -195,24 +218,51 @@ Deno.serve(async (req) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   };
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Determine base URL for the checkout iframe
-  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  // POST = analytics beacon
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await supabase.from("widget_analytics").insert({
+        event_type: String(body.event_type || "unknown").slice(0, 50),
+        vendor_id: String(body.vendor_id || ""),
+        site_id: body.site_id || null,
+        offering_id: body.offering_id || null,
+        visitor_fingerprint: body.visitor_fingerprint || null,
+        referrer_url: (body.referrer_url || "").slice(0, 500),
+        user_agent: (body.user_agent || "").slice(0, 300),
+        metadata: body.metadata || {},
+      });
+      return new Response("ok", { headers: corsHeaders });
+    } catch {
+      return new Response("err", { status: 400, headers: corsHeaders });
+    }
+  }
 
-  const js = WIDGET_JS(baseUrl);
+  // GET = serve widget JS
+  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const analyticsUrl = `${supabaseUrl}/functions/v1/widget-embed`;
+
+  const js = WIDGET_JS(baseUrl, analyticsUrl);
 
   return new Response(js, {
     headers: {
       ...corsHeaders,
       "Content-Type": "application/javascript; charset=utf-8",
       "Cache-Control": "public, max-age=300",
-      "X-TrustLock-Version": "1.0.0",
+      "X-TrustLock-Version": "1.1.0",
     },
   });
 });
