@@ -527,6 +527,7 @@ const VendorSitesAndWidget = () => {
     allowed_payment_methods: ["card", "bank_transfer", "mobile_money", "crypto"],
     max_order_amount: "", min_order_amount: "1.00", auto_refund_window_hours: 72,
     custom_checkout_message: "", require_buyer_account: false, enable_bulk_onboarding: false,
+    default_trade_scope: "international",
   });
 
   useEffect(() => {
