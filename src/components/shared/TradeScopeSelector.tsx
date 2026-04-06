@@ -71,7 +71,9 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                     <Icon className="w-3 h-3" />
                     {opt.label}
                     {suggestedScope === opt.value && !isSelected && (
-                      <Badge className="text-[7px] px-1 py-0 bg-accent/20 text-accent">suggested</Badge>
+                      <Badge className="text-[7px] px-1 py-0 bg-accent/20 text-accent">
+                        {opt.value === "regional" && detectedBlocName ? detectedBlocName : "suggested"}
+                      </Badge>
                     )}
                   </button>
                 </TooltipTrigger>
