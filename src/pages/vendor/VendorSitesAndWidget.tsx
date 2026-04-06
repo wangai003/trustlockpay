@@ -266,21 +266,52 @@ interface SiteConfigOverrideProps {
 }
 
 const SiteConfigOverride = ({ siteId, siteName, onClose }: SiteConfigOverrideProps) => {
-  const [overrides, setOverrides] = useState(() => {
-    const stored = localStorage.getItem(`tl_site_override_${siteId}`);
-    return stored ? JSON.parse(stored) : {
-      payment_methods: null as string[] | null,
-      max_order_amount: "",
-      custom_checkout_message: "",
-      brand_name_override: "",
-    };
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [overrides, setOverrides] = useState({
+    payment_methods: null as string[] | null,
+    max_order_amount: "",
+    custom_checkout_message: "",
+    brand_name_override: "",
   });
 
-  const handleSave = () => {
-    localStorage.setItem(`tl_site_override_${siteId}`, JSON.stringify(overrides));
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("vendor_site_configs").select("*").eq("site_id", siteId).eq("vendor_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setOverrides({
+            payment_methods: data.payment_methods || null,
+            max_order_amount: (data.custom_settings as any)?.max_order_amount || "",
+            custom_checkout_message: (data.custom_settings as any)?.custom_checkout_message || "",
+            brand_name_override: data.display_name || "",
+          });
+        }
+        setLoading(false);
+      });
+  }, [siteId, user?.id]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    const payload = {
+      site_id: siteId,
+      vendor_id: user.id,
+      payment_methods: overrides.payment_methods,
+      display_name: overrides.brand_name_override || null,
+      custom_settings: {
+        max_order_amount: overrides.max_order_amount,
+        custom_checkout_message: overrides.custom_checkout_message,
+      },
+    };
+    await supabase.from("vendor_site_configs").upsert(payload, { onConflict: "site_id,vendor_id" });
+    setSaving(false);
     sonnerToast.success(`Site-specific settings saved for ${siteName}`);
     onClose();
   };
+
+  if (loading) return <div className="p-4 text-center"><Loader2 className="w-4 h-4 animate-spin mx-auto" /></div>;
 
   return (
     <Card className="border-primary/20 mt-3">
@@ -324,7 +355,9 @@ const SiteConfigOverride = ({ siteId, siteName, onClose }: SiteConfigOverridePro
           <Label className="text-xs">Custom Checkout Message</Label>
           <Textarea className="text-xs" rows={2} value={overrides.custom_checkout_message} onChange={(e) => setOverrides((prev: any) => ({ ...prev, custom_checkout_message: e.target.value }))} placeholder="Use global message" />
         </div>
-        <Button size="sm" onClick={handleSave}>Save Site Overrides</Button>
+        <Button size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Saving...</> : "Save Site Overrides"}
+        </Button>
       </CardContent>
     </Card>
   );
@@ -338,11 +371,27 @@ const VendorSitesAndWidget = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  /* ── Account type ── */
-  const [accountType, setAccountType] = useState<AccountType>(() =>
-    (localStorage.getItem("tl_vendor_account_type") as AccountType) || "individual"
-  );
-  useEffect(() => { localStorage.setItem("tl_vendor_account_type", accountType); }, [accountType]);
+  /* ── Account type (persisted to DB) ── */
+  const [accountType, setAccountTypeState] = useState<AccountType>("individual");
+  const [accountTypeLoaded, setAccountTypeLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("account_type, account_type_confirmed").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.account_type_confirmed && data.account_type) {
+          setAccountTypeState(data.account_type as AccountType);
+        }
+        setAccountTypeLoaded(true);
+      });
+  }, [user?.id]);
+
+  const setAccountType = (type: AccountType) => {
+    setAccountTypeState(type);
+    if (user?.id) {
+      supabase.from("profiles").update({ account_type: type, account_type_confirmed: true }).eq("id", user.id).then(() => {});
+    }
+  };
 
   const isBusiness = accountType === "business";
 
@@ -403,7 +452,6 @@ const VendorSitesAndWidget = () => {
 
   const handleWizardComplete = async (data: { accountType: AccountType; siteName: string; sitePlatform: string; siteUrl: string; siteIndustry: string; hasCheckout: boolean }) => {
     setAccountType(data.accountType);
-    localStorage.setItem("tl_vendor_account_type", data.accountType);
     if (data.siteName) {
       await addSite.mutateAsync({ name: data.siteName, platform: data.sitePlatform, url: data.siteUrl, industry: data.siteIndustry || undefined });
     }
@@ -877,6 +925,30 @@ const VendorSitesAndWidget = () => {
                           </CardHeader>
                           <CardContent>
                             <VendorOfferingCatalog />
+                          </CardContent>
+                        </Card>
+
+                        {/* Widget Preview */}
+                        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Eye className="w-4 h-4 text-primary" /> Widget Checkout Preview</CardTitle>
+                            <CardDescription>How your checkout adapts based on offering type and industry.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-3 gap-3">
+                              {[
+                                { type: "Product", icon: "🛒", flow: "Instant delivery → Confirm receipt → Release", color: "bg-primary/10 border-primary/20" },
+                                { type: "Service", icon: "💼", flow: "Milestone negotiation → Progress tracking → Phased release", color: "bg-accent/10 border-accent/20" },
+                                { type: "Project", icon: "🏗️", flow: "Multi-stage milestones → Document gates → Negotiated release", color: "bg-secondary/50 border-secondary" },
+                              ].map(item => (
+                                <div key={item.type} className={`rounded-xl border p-4 ${item.color}`}>
+                                  <div className="text-2xl mb-2">{item.icon}</div>
+                                  <p className="font-semibold text-sm">{item.type}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">{item.flow}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-3">Define offerings in the <strong>Offerings</strong> tab. The checkout widget auto-selects the correct flow based on the buyer's selection.</p>
                           </CardContent>
                         </Card>
 
