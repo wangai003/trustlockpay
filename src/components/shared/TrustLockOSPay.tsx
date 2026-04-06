@@ -36,6 +36,8 @@ import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, t
 import { supabase } from "@/integrations/supabase/client";
 import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMethodUnavailable";
 import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
