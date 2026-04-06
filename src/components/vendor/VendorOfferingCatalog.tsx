@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Trash2, Package, Briefcase, Wrench, FolderKanban,
-  ShoppingBag, Hammer, BookOpen, ChevronDown, ChevronUp, Tag, Loader2,
+  ShoppingBag, Hammer, BookOpen, ChevronDown, ChevronUp, Tag, Loader2, Upload, FileSpreadsheet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendor } from "@/contexts/VendorContext";
 import { toast } from "sonner";
 import { ALL_INDUSTRIES } from "@/lib/industryList";
 
