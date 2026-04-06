@@ -555,6 +555,7 @@ const VendorSitesAndWidget = () => {
             custom_checkout_message: data.custom_checkout_message || "",
             require_buyer_account: data.require_buyer_account,
             enable_bulk_onboarding: data.enable_bulk_onboarding,
+            default_trade_scope: (data as any).default_trade_scope || "international",
           });
         }
         setConfigLoading(false);
