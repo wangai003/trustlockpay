@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Globe, MapPin, Building2, Info } from "lucide-react";
+import { Globe, MapPin, Building2, Info, Shuffle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { detectTradeScope } from "@/lib/tradeBlocs";
 
-export type TradeScope = "domestic" | "regional" | "international";
+export type TradeScope = "domestic" | "regional" | "international" | "hybrid";
 
 interface TradeScopeSelectorProps {
   value: TradeScope;
@@ -13,6 +13,8 @@ interface TradeScopeSelectorProps {
   buyerCountry?: string;
   vendorCountry?: string;
   compact?: boolean;
+  /** When true, auto-sets scope on country detection (user can override) */
+  autoSet?: boolean;
 }
 
 const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; description: string; docLevel: string }[] = [
@@ -37,16 +39,34 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
     description: "Cross-border trade across continents. Full document gates apply.",
     docLevel: "Full customs, BoL, certificates",
   },
+  {
+    value: "hybrid",
+    label: "Hybrid",
+    icon: Shuffle,
+    description: "Domestic sale with imported inputs (e.g., local manufacturer importing parts). External fee tracker enabled for import milestones.",
+    docLevel: "Delivery + import docs for inputs",
+  },
 ];
 
-const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false }: TradeScopeSelectorProps) => {
-  // Auto-detect suggestion using global trade bloc mapping
+const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false, autoSet = true }: TradeScopeSelectorProps) => {
   const detected = useMemo(
     () => detectTradeScope(buyerCountry || "", vendorCountry || ""),
     [buyerCountry, vendorCountry]
   );
   const suggestedScope = buyerCountry && vendorCountry ? detected.scope : undefined;
   const detectedBlocName = detected.bloc?.shortName;
+
+  // Auto-set scope when countries are detected (only once per detection change)
+  const lastAutoSet = useRef<string>("");
+  useEffect(() => {
+    if (!autoSet || !suggestedScope) return;
+    const key = `${buyerCountry}-${vendorCountry}`;
+    if (lastAutoSet.current === key) return;
+    lastAutoSet.current = key;
+    onChange(suggestedScope);
+  }, [autoSet, suggestedScope, buyerCountry, vendorCountry, onChange]);
+
+  const isOverridden = suggestedScope && value !== suggestedScope;
 
   if (compact) {
     return (
@@ -95,6 +115,11 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
         <div className="flex items-center gap-1.5">
           <Globe className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold">Trade Scope</span>
+          {isOverridden && (
+            <Badge variant="outline" className="text-[7px] border-accent/30 text-accent">
+              Overridden
+            </Badge>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
@@ -102,14 +127,14 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
               </TooltipTrigger>
               <TooltipContent className="max-w-[240px]">
                 <p className="text-xs">
-                  Select your trade type. This adjusts which document uploads are required vs optional. Domestic trades need fewer docs.
+                  Auto-detected from buyer &amp; vendor locations. Override if needed. This adjusts which document uploads are required vs optional.
                 </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5">
           {SCOPE_OPTIONS.map((opt) => {
             const Icon = opt.icon;
             const isSelected = value === opt.value;
@@ -125,10 +150,10 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                <span className={`text-[10px] font-medium ${isSelected ? "text-primary" : "text-foreground"}`}>
+                <span className={`text-[9px] font-medium ${isSelected ? "text-primary" : "text-foreground"}`}>
                   {opt.label}
                 </span>
-                <span className="text-[8px] text-muted-foreground leading-tight">{opt.docLevel}</span>
+                <span className="text-[7px] text-muted-foreground leading-tight">{opt.docLevel}</span>
                 {suggestedScope === opt.value && (
                   <Badge className="absolute -top-1.5 -right-1.5 text-[7px] px-1 py-0 bg-accent text-accent-foreground">
                     {opt.value === "regional" && detectedBlocName ? detectedBlocName : "Auto"}
@@ -138,6 +163,12 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
             );
           })}
         </div>
+
+        {detectedBlocName && value === "regional" && (
+          <p className="text-[10px] text-muted-foreground">
+            Detected trade bloc: <strong>{detectedBlocName}</strong> ({detected.bloc?.name})
+          </p>
+        )}
       </CardContent>
     </Card>
   );
