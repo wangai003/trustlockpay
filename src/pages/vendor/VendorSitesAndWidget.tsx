@@ -938,6 +938,11 @@ const VendorSitesAndWidget = () => {
                           </Card>
                         </TabsContent>
 
+                        {/* Offerings Tab (injected into business view after marketplace) */}
+                        <TabsContent value="offerings" className="space-y-4 mt-4">
+                          <VendorOfferingCatalog />
+                        </TabsContent>
+
                         {/* Payments */}
                         <TabsContent value="payments" className="space-y-4 mt-4">
                           <Card>
