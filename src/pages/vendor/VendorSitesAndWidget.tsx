@@ -452,7 +452,6 @@ const VendorSitesAndWidget = () => {
 
   const handleWizardComplete = async (data: { accountType: AccountType; siteName: string; sitePlatform: string; siteUrl: string; siteIndustry: string; hasCheckout: boolean }) => {
     setAccountType(data.accountType);
-    localStorage.setItem("tl_vendor_account_type", data.accountType);
     if (data.siteName) {
       await addSite.mutateAsync({ name: data.siteName, platform: data.sitePlatform, url: data.siteUrl, industry: data.siteIndustry || undefined });
     }
