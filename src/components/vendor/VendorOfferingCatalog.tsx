@@ -80,10 +80,13 @@ interface VendorOfferingCatalogProps {
 
 const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps) => {
   const { user } = useAuth();
+  const { networkMode } = useVendor();
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -93,13 +96,16 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
 
   useEffect(() => {
     if (!user?.id) return;
-    const query = supabase.from("vendor_offerings").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false });
+    const query = supabase.from("vendor_offerings").select("*")
+      .eq("vendor_id", user.id)
+      .eq("network_mode", networkMode)
+      .order("created_at", { ascending: false });
     if (siteId) query.eq("site_id", siteId);
     query.then(({ data }) => {
       if (data) setOfferings(data as any);
       setLoading(false);
     });
-  }, [user?.id, siteId]);
+  }, [user?.id, siteId, networkMode]);
 
   const handleAdd = async () => {
     if (!user?.id || !form.name.trim()) return;
