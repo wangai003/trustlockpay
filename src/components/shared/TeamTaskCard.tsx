@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Upload, Image, Globe, ShieldCheck, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, Upload, Image, Globe, ShieldCheck, RefreshCw, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type TaskAssignment = {
