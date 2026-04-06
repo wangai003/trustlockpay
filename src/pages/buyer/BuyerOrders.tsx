@@ -11,7 +11,7 @@ import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
-import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
