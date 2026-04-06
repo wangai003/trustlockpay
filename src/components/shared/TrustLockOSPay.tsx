@@ -36,6 +36,8 @@ import { AZIX_WALLETS, selectProcessor, calculateFeesV2, type TransactionType, t
 import { supabase } from "@/integrations/supabase/client";
 import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMethodUnavailable";
 import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
@@ -83,6 +85,7 @@ const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string
 /* ── Diaspora payment methods ── */
 const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
   { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
+  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Checking / Savings · Region-based" },
   { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
   { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
   { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
@@ -157,6 +160,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
 
   // ── Rate Lock State ──
@@ -950,7 +955,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
             </div>
           )}
 
-          {method === "bank_transfer" && (
+          {method === "bank_transfer" && payMode === "diaspora" && (
+            <div className="space-y-2 p-3 rounded-lg border border-border">
+              <p className="text-xs font-semibold text-foreground mb-1">🌍 International Bank Transfer</p>
+              <InternationalBankSelector
+                selectedBank={intlBankSelected}
+                onBankSelected={(bank, region) => {
+                  setIntlBankSelected(bank);
+                  setIntlBankRegion(region);
+                  setBankName(bank);
+                }}
+                onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); setBankName(""); }}
+              />
+            </div>
+          )}
+
+          {method === "bank_transfer" && payMode === "local" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               {!selectedCountry && (
                 <p className="text-[10px] text-destructive">↑ Please select your country above to see available banks</p>
