@@ -121,6 +121,7 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
       currency: form.currency,
       unit_label: form.unit_label.trim() || null,
       is_active: true,
+      network_mode: networkMode,
     };
     const { data, error } = await supabase.from("vendor_offerings").insert(payload).select().single();
     if (error) { toast.error(error.message); return; }
@@ -139,6 +140,47 @@ const VendorOfferingCatalog = ({ siteId, siteName }: VendorOfferingCatalogProps)
   const handleToggle = async (id: string, active: boolean) => {
     await supabase.from("vendor_offerings").update({ is_active: active }).eq("id", id);
     setOfferings(prev => prev.map(o => o.id === id ? { ...o, is_active: active } : o));
+  };
+
+  // CSV bulk import
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      if (lines.length < 2) { toast.error("CSV must have a header row + at least 1 data row"); setImporting(false); return; }
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z_]/g, ""));
+      const nameIdx = headers.indexOf("name");
+      if (nameIdx === -1) { toast.error("CSV must include a 'name' column"); setImporting(false); return; }
+
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.trim());
+        const row: Record<string, string> = {};
+        headers.forEach((h, i) => { if (cols[i]) row[h] = cols[i]; });
+        return row;
+      }).filter(r => r.name);
+
+      const { data, error } = await supabase.functions.invoke("bulk-import-offerings", {
+        body: { rows, network_mode: networkMode, site_id: siteId },
+      });
+
+      if (error) { toast.error("Import failed"); setImporting(false); return; }
+      toast.success(`Imported ${data.inserted} of ${data.total} offerings${data.errors?.length ? ` (${data.errors.length} errors)` : ""}`);
+
+      // Refresh list
+      const q = supabase.from("vendor_offerings").select("*")
+        .eq("vendor_id", user.id).eq("network_mode", networkMode)
+        .order("created_at", { ascending: false });
+      if (siteId) q.eq("site_id", siteId);
+      const { data: refreshed } = await q;
+      if (refreshed) setOfferings(refreshed as any);
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    }
+    setImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // Group by category
