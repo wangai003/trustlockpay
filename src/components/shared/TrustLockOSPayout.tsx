@@ -226,6 +226,9 @@ const TrustLockOSPayout = ({
   // ─── Split payout state (admin only) ────────────────────
   const [splitBuyerPercent, setSplitBuyerPercent] = useState("");
   const [splitVendorPercent, setSplitVendorPercent] = useState("");
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
+  const [useIntlBank, setUseIntlBank] = useState(false);
 
   // OS Payout token → hardwired to Escrow Wallet (escrow disbursement)
   const getSeedToken = useGetOrCreateSeedToken("os_payout");
