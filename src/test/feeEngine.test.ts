@@ -1,11 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateFeesV2,
+  calculateBuyerFeeDisplay,
+  calculateInvoiceFees,
   selectProcessor,
   getEligibleProcessors,
   PROCESSORS,
   AZIX_WALLETS,
   getFeeRangeForType,
+  BUYER_FEE_LINES,
   type TransactionType,
   type ProcessorId,
 } from "@/lib/feeEngine";
@@ -72,23 +75,23 @@ describe("Fee Engine V2", () => {
   describe("calculateFeesV2", () => {
     it("calculates checkout_fiat fees correctly (0.5% TrustLock tx fee, no escrow deposit)", () => {
       const result = calculateFeesV2(100, "checkout_fiat", "stripe");
-      expect(result.trustlockFee).toBe(0.5);        // 0.5% TrustLock transaction fee
-      expect(result.processorFee).toBe(2.9);         // Stripe 2.9%
-      expect(result.escrowFee).toBe(0);              // No escrow fee at checkout
-      expect(result.totalFees).toBeCloseTo(3.4, 2);  // 0.5 + 2.9
+      expect(result.trustlockFee).toBe(0.5);
+      expect(result.processorFee).toBe(2.9);
+      expect(result.escrowFee).toBe(0);
+      expect(result.totalFees).toBeCloseTo(3.4, 2);
       expect(result.netAmount).toBeCloseTo(96.6, 2);
-      expect(result.transactionWalletReceives).toBe(0.5);  // TrustLock keeps 0.5%
-      expect(result.escrowWalletReceives).toBe(100);       // principal only (no deposit)
-      expect(result.feeTrickleToTransactionWallet).toBe(0); // No trickle at checkout
+      expect(result.transactionWalletReceives).toBe(0.5);
+      expect(result.escrowWalletReceives).toBe(100);
+      expect(result.feeTrickleToTransactionWallet).toBe(0);
     });
 
     it("calculates checkout_crypto with direct (no processor fee)", () => {
       const result = calculateFeesV2(100, "checkout_crypto", "direct");
       expect(result.processorFee).toBe(0);
-      expect(result.trustlockFee).toBe(0.5);         // 0.5% TrustLock transaction fee
-      expect(result.escrowFee).toBe(0);               // No escrow fee at checkout
+      expect(result.trustlockFee).toBe(0.5);
+      expect(result.escrowFee).toBe(0);
       expect(result.totalFees).toBeCloseTo(0.5, 2);
-      expect(result.escrowWalletReceives).toBe(100);  // principal only
+      expect(result.escrowWalletReceives).toBe(100);
     });
 
     it("charges zero escrow fee on refunds", () => {
@@ -106,7 +109,6 @@ describe("Fee Engine V2", () => {
       const result = calculateFeesV2(1000, "split_payout", "coinbase", {
         splitVendorShare: 0.6,
       });
-      // Halved rate: 0.5% on vendor share (600) = $3
       expect(result.escrowFee).toBe(3);
       expect(result.escrowWalletReceives).toBe(0);
       expect(result.feeTrickleToTransactionWallet).toBe(3);
@@ -122,16 +124,75 @@ describe("Fee Engine V2", () => {
     it("os_payment has no escrow fee", () => {
       const result = calculateFeesV2(50, "os_payment", "stripe");
       expect(result.escrowFee).toBe(0);
-      expect(result.trustlockFee).toBe(0.75); // 1.5% of 50
+      expect(result.trustlockFee).toBe(0.75);
     });
 
     it("release_to_vendor charges 1% escrow service fee (extracted from principal)", () => {
       const result = calculateFeesV2(500, "release_to_vendor", "direct");
       expect(result.trustlockFee).toBe(0);
       expect(result.processorFee).toBe(0);
-      expect(result.escrowFee).toBe(5);             // 1% escrow service fee
+      expect(result.escrowFee).toBe(5);
       expect(result.totalFees).toBe(5);
-      expect(result.feeTrickleToTransactionWallet).toBe(5); // Trickles to Transaction Wallet
+      expect(result.feeTrickleToTransactionWallet).toBe(5);
+    });
+  });
+
+  describe("calculateBuyerFeeDisplay (3-line model)", () => {
+    it("combines processor + TrustLock into single Transaction Fee line", () => {
+      const display = calculateBuyerFeeDisplay(1000, "stripe", 50);
+      // Transaction Fee = 0.5% TrustLock ($5) + 2.9% Stripe ($29) = $34
+      expect(display.transactionFee).toBe(34);
+      expect(display.transactionFeeLabel).toBe("Transaction Fee");
+    });
+
+    it("shows Taxes & Duties as a single combined line", () => {
+      const display = calculateBuyerFeeDisplay(1000, "stripe", 75);
+      expect(display.taxesAndDuties).toBe(75);
+      expect(display.taxesAndDutiesLabel).toBe("Taxes & Duties");
+    });
+
+    it("shows Escrow Service Fee as informational (1%)", () => {
+      const display = calculateBuyerFeeDisplay(1000, "stripe");
+      expect(display.escrowServiceFee).toBe(10);
+      expect(display.escrowServiceFeeNote).toContain("not charged to you upfront");
+    });
+
+    it("totalBuyerCharge = principal + transaction fee + taxes (excludes escrow)", () => {
+      const display = calculateBuyerFeeDisplay(1000, "stripe", 50);
+      // 1000 + 34 + 50 = 1084
+      expect(display.totalBuyerCharge).toBe(1084);
+    });
+
+    it("crypto direct has minimal transaction fee", () => {
+      const display = calculateBuyerFeeDisplay(1000, "direct");
+      expect(display.transactionFee).toBe(5); // only 0.5% TrustLock
+    });
+  });
+
+  describe("calculateInvoiceFees with remittance", () => {
+    it("includes remittance fee in transactionWalletReceives", () => {
+      const result = calculateInvoiceFees(1000, "stripe", false, 50, 1);
+      expect(result.remittanceFee).toBe(1);
+      // Transaction wallet gets: 0.5% ($5) + taxes ($50) + remittance ($1) = $56
+      expect(result.transactionWalletReceives).toBe(56);
+    });
+
+    it("buyerDisplay bundles taxes + remittance into Taxes & Duties", () => {
+      const result = calculateInvoiceFees(1000, "stripe", false, 50, 1);
+      expect(result.buyerDisplay.taxesAndDuties).toBe(51); // 50 + 1
+    });
+  });
+
+  describe("BUYER_FEE_LINES constants", () => {
+    it("has exactly 3 buyer-facing lines", () => {
+      expect(Object.keys(BUYER_FEE_LINES)).toHaveLength(3);
+      expect(BUYER_FEE_LINES.transactionFee).toBeDefined();
+      expect(BUYER_FEE_LINES.taxesAndDuties).toBeDefined();
+      expect(BUYER_FEE_LINES.escrowServiceFee).toBeDefined();
+    });
+
+    it("escrow service fee note mentions vendor payout", () => {
+      expect(BUYER_FEE_LINES.escrowServiceFee.description).toContain("vendor");
     });
   });
 
