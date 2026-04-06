@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-
+    if (action === "mark_read") {
       const { notification_id } = params;
       if (!notification_id) return json({ success: false, error: "notification_id required" }, 400);
 
