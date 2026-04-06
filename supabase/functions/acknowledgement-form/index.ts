@@ -154,7 +154,7 @@ By signing below, ${vendorName} ("Vendor") confirms that:
 
 PLATFORM TERMS:
 - This acknowledgement serves as the final sign-off for the service engagement.
-- A 14-day dispute window applies from the date of service completion.
+- An industry-adaptive dispute window applies from the date of service completion (typically 14–30 days for services). Buyers may request extensions if needed.
 - Compliant with ICC Incoterms 2020 for international service transactions.`,
 
     inspection_passed: `${baseHeader}
