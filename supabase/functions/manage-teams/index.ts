@@ -122,13 +122,14 @@ Deno.serve(async (req) => {
 
         if (!priorIncomplete || priorIncomplete.length === 0) {
           const wsTitle = ws?.title || "your team workspace";
+          const roleRoute = ws?.role === "buyer" ? "buyer" : "vendor";
           await supabase.from("notifications").insert({
             user_id: nextTask.team_members.user_id,
             title: "🔔 Your Task Is Ready",
             message: `"${nextTask.milestone_label || nextTask.milestone_key}" in "${wsTitle}" is now unblocked. Complete it before the next step can proceed.`,
             type: "info",
             is_action_required: true,
-            action_url: "/trustlock/vendor/teams",
+            action_url: `/trustlock/${roleRoute}/teams`,
             related_entity_type: "team_task",
             related_entity_id: nextTask.id,
           });
