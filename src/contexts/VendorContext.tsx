@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type NetworkMode = "testnet" | "mainnet";
 type VendorType = "product" | "service" | null;
+type AccountType = "individual" | "business";
 
 interface VendorProfile {
   id: string;
@@ -16,6 +17,7 @@ interface VendorProfile {
   sites: { id: string; name: string; platform: string; url: string }[];
   kycTier: number;
   onboardingComplete: boolean;
+  accountType: AccountType;
 }
 
 interface VendorContextType {
