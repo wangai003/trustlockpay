@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake, Globe, MapPin, Phone, Wallet, Coins } from "lucide-react";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
-import type { InternationalRegion } from "@/lib/internationalBankData";
+import { type InternationalRegion, getProcessorForRegion } from "@/lib/internationalBankData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
