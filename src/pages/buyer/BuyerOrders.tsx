@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store } from "lucide-react";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
