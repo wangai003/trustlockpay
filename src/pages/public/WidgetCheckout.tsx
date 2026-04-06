@@ -591,6 +591,12 @@ const WidgetCheckout = () => {
                     <span className="text-muted-foreground">Platform Fee (0.5%)</span>
                     <span>${platformFeeAmount.toFixed(2)}</span>
                   </div>
+                  {externalPlatformFeeAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{platformName || "Marketplace"} Fee ({externalPlatformFeePercent}%)</span>
+                      <span>${externalPlatformFeeAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : `${selectedProcessor.name} ${selectedProcessor.feeRate}%`})</span>
                     <span>{isCryptoPayment ? "$0.00" : `$${processorFeeAmount.toFixed(2)}`}</span>
