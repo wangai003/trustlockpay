@@ -190,6 +190,13 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
               </Button>
             )}
 
+            {/* Owner: takeover button (claim task for yourself) */}
+            {isOwner && task.status === "pending" && !isMyTask && allPriorDone && (
+              <Button size="sm" variant="ghost" onClick={() => takeoverTask(true)} disabled={takingOver} className="text-xs text-primary">
+                <UserCheck className="w-3.5 h-3.5 mr-1" /> {takingOver ? "Taking over..." : "Take Over"}
+              </Button>
+            )}
+
             <Badge
               variant={isVerified ? "default" : task.status === "completed" ? "secondary" : task.status === "in_progress" ? "secondary" : "outline"}
               className={cn("text-xs",
