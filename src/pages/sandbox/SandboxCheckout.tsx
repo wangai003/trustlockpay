@@ -61,7 +61,14 @@ const SandboxCheckout = () => {
   }
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
-  const fee = Math.round(subtotal * 0.015 * 100) / 100;
+  const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
+  const platformFee = Math.round(subtotal * 0.005 * 100) / 100;  // 0.5% TrustLock
+  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * 0.029 * 100) / 100;  // Stripe 2.9% for card
+  const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100; // 1.0% at release
+  const totalFees = Math.round((platformFee + processorFee) * 100) / 100;
+  const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
+  // Legacy alias kept for contract text
+  const fee = totalFees;
 
   const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
   const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
