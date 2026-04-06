@@ -171,8 +171,10 @@ const SandboxCheckout = () => {
                     ))}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Escrow Fee (1.5%)</span><span>${fee.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-sm font-bold pt-1"><span>Total</span><span>${(subtotal + fee).toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
+                    <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic">{config.invoiceNote}</p>
 
