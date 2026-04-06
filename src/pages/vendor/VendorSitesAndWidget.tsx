@@ -371,11 +371,27 @@ const VendorSitesAndWidget = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  /* ── Account type ── */
-  const [accountType, setAccountType] = useState<AccountType>(() =>
-    (localStorage.getItem("tl_vendor_account_type") as AccountType) || "individual"
-  );
-  useEffect(() => { localStorage.setItem("tl_vendor_account_type", accountType); }, [accountType]);
+  /* ── Account type (persisted to DB) ── */
+  const [accountType, setAccountTypeState] = useState<AccountType>("individual");
+  const [accountTypeLoaded, setAccountTypeLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("account_type, account_type_confirmed").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.account_type_confirmed && data.account_type) {
+          setAccountTypeState(data.account_type as AccountType);
+        }
+        setAccountTypeLoaded(true);
+      });
+  }, [user?.id]);
+
+  const setAccountType = (type: AccountType) => {
+    setAccountTypeState(type);
+    if (user?.id) {
+      supabase.from("profiles").update({ account_type: type, account_type_confirmed: true }).eq("id", user.id).then(() => {});
+    }
+  };
 
   const isBusiness = accountType === "business";
 
