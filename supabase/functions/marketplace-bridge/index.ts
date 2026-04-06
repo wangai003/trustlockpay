@@ -371,7 +371,6 @@ Deno.serve(async (req) => {
             vendor_id: vendorId,
             buyer_id: resolvedBuyerId,
             buyer_name: buyer_name || "Marketplace Buyer",
-            buyer_email,
             item: itemNames,
             amount: totalAmount,
             status: "pending",
@@ -384,6 +383,7 @@ Deno.serve(async (req) => {
               vendor_ref: vendorKey,
               line_items: vendorItems,
               platform_fee_percent: platformFeePercent,
+              buyer_email,
             },
           })
           .select("id, tx_id")
