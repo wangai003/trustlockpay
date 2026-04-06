@@ -632,8 +632,14 @@ const MilestoneWorkOrderPanel = ({
             const expanded = isExpanded(idx);
             const isDeleted = ms.status === "deleted";
             const uploadedDocs: any[] = ms.uploaded_documents || [];
-            const requiredDocs: string[] = ms.required_documents || [];
-            const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+            const rawRequiredDocs: string[] = ms.required_documents || [];
+            const rawOptionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+
+            // Filter documents by trade scope
+            const scopeFiltered = filterDocumentsByScope(rawRequiredDocs, rawOptionalDocs, tradeScope);
+            const requiredDocs = scopeFiltered.required;
+            const optionalDocs = scopeFiltered.optional;
+            const scopeDowngraded = scopeFiltered.scopeDowngraded;
 
             return (
               <div
