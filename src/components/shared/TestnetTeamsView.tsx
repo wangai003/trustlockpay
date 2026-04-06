@@ -40,6 +40,61 @@ const LANGUAGES = [
   { code: "ar", label: "العربية" }, { code: "es", label: "Español" },
 ];
 
+type IndustryMilestone = { key: string; label: string; action: string; instructions: string };
+
+const INDUSTRY_MILESTONES: Record<string, IndustryMilestone[]> = {
+  mining: [
+    { key: "geological_survey", label: "Complete Geological Survey", action: "Upload survey report", instructions: "Submit survey report with GPS coordinates and mineral composition data." },
+    { key: "assay_report", label: "Submit Assay Report", action: "Upload lab analysis", instructions: "Lab analysis of ore samples — include grade percentages for gold, copper." },
+    { key: "environmental_clearance", label: "Environmental Compliance Check", action: "Upload EPA clearance", instructions: "Verify EPA clearance and water table impact assessment." },
+    { key: "transport_logistics", label: "Arrange Ore Transport", action: "Confirm logistics", instructions: "Coordinate trucking from mine to port. Insure cargo." },
+    { key: "export_docs", label: "Prepare Export Documentation", action: "Upload customs docs", instructions: "Certificate of origin, ECOWAS transit docs, customs clearance." },
+  ],
+  agriculture: [
+    { key: "harvest_prep", label: "Confirm Harvest Schedule", action: "Confirm dates", instructions: "Coordinate harvest dates and labor allocation." },
+    { key: "quality_inspection", label: "Quality & Grade Inspection", action: "Upload phytosanitary cert", instructions: "Test moisture, aflatoxin levels. Issue phytosanitary certificate." },
+    { key: "export_booking", label: "Book Export Container", action: "Confirm shipping", instructions: "Arrange 20ft reefer container. Confirm shipping line and ETD." },
+    { key: "warehouse_receipt", label: "Issue Warehouse Receipt", action: "Upload receipt", instructions: "Generate warehouse receipt with lot number and weight." },
+  ],
+  construction: [
+    { key: "material_procurement", label: "Procure Building Materials", action: "Upload purchase orders", instructions: "Source cement, rebar, and aggregate per BOM. Get 3 quotes." },
+    { key: "foundation_pour", label: "Foundation Pour & Cure", action: "Upload photos + cube test", instructions: "Complete foundation pour. Upload photos + cube test results." },
+    { key: "structural_inspection", label: "Structural Integrity Report", action: "Upload engineer sign-off", instructions: "Inspect foundation + rebar placement. Submit engineer's sign-off." },
+    { key: "hse_clearance", label: "HSE Safety Clearance", action: "Upload HSE report", instructions: "Complete health, safety, and environmental clearance for site." },
+  ],
+  real_estate: [
+    { key: "title_search", label: "Title Search & Verification", action: "Upload title report", instructions: "Verify land title, check encumbrances, confirm ownership chain." },
+    { key: "property_inspection", label: "Property Condition Inspection", action: "Upload inspection report", instructions: "Full inspection report with photos — structural, plumbing, electrical." },
+    { key: "contract_draft", label: "Draft Purchase Agreement", action: "Upload draft agreement", instructions: "Prepare sale agreement with agreed terms and escrow references." },
+    { key: "valuation_report", label: "Property Valuation", action: "Upload valuation", instructions: "Independent property valuation by certified surveyor." },
+  ],
+  tourism: [
+    { key: "itinerary_plan", label: "Create Tour Itinerary", action: "Upload itinerary", instructions: "Plan day-by-day tour schedule with accommodations." },
+    { key: "safety_briefing", label: "Safety Briefing & Waivers", action: "Upload signed waivers", instructions: "Conduct safety briefing and collect signed liability waivers." },
+  ],
+  retail: [
+    { key: "inventory_check", label: "Verify Inventory Availability", action: "Confirm stock", instructions: "Check stock levels and confirm availability for order." },
+    { key: "shipping_arrange", label: "Arrange Shipping", action: "Upload tracking info", instructions: "Book courier and provide tracking number." },
+  ],
+  freelance: [
+    { key: "project_kickoff", label: "Project Kickoff", action: "Confirm scope", instructions: "Confirm project scope, deliverables, and timeline." },
+    { key: "deliverable_review", label: "Submit Deliverable for Review", action: "Upload deliverable", instructions: "Submit completed work for client review and approval." },
+  ],
+  logistics: [
+    { key: "dispatch_plan", label: "Create Dispatch Plan", action: "Upload dispatch schedule", instructions: "Plan route, driver assignment, and dispatch timing." },
+    { key: "customs_clearance", label: "Customs Clearance", action: "Upload customs docs", instructions: "Submit customs declaration and obtain clearance." },
+    { key: "delivery_confirmation", label: "Confirm Delivery", action: "Upload POD", instructions: "Obtain proof of delivery signature and photos." },
+  ],
+  education: [
+    { key: "course_setup", label: "Set Up Course Materials", action: "Upload materials", instructions: "Prepare and upload course content, syllabus, and assessments." },
+    { key: "content_review", label: "Content Quality Review", action: "Submit review", instructions: "Review course content for accuracy and pedagogical quality." },
+  ],
+  project_management: [
+    { key: "sprint_planning", label: "Sprint Planning", action: "Upload sprint backlog", instructions: "Define sprint goals, assign stories, and set capacity." },
+    { key: "delivery_report", label: "Delivery Report", action: "Upload report", instructions: "Submit sprint delivery report with metrics and blockers." },
+  ],
+};
+
 interface TestnetTeamsViewProps {
   testnet: ReturnType<typeof useTestnetTeams>;
   role: "vendor" | "buyer";
