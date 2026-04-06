@@ -17,6 +17,7 @@ import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
+import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 
 interface VendorInfo {
