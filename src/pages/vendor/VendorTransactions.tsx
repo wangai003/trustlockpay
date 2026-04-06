@@ -248,6 +248,7 @@ const VendorTransactions = () => {
                     </div>
                     <span className="text-base font-bold">${tx.amount.toLocaleString()}</span>
                   </div>
+                  <ExternalFeeSummary transactionId={tx.dbId} escrowAmount={tx.amount} isTestnet={isTestnet} />
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     <span>{tx.date}</span>
                     {tx.industry && (

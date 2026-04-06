@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
       "create", "mark_read", "mark_all_read", "get_unread_count",
       "contract_auto_signed", "contract_manual_required", "contract_buyer_signed",
       "contract_fully_signed", "contract_declined", "check_stale_contracts",
+      "external_fee_logged",
     ];
     if (!validActions.includes(action)) {
       return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {

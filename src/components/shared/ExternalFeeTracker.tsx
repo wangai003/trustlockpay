@@ -286,11 +286,8 @@ const ExternalFeeTracker = ({
                       .upload(path, file, { upsert: false });
                     if (upErr) { toast.error("Upload failed: " + upErr.message); return; }
 
-                    const { data: urlData } = supabase.storage
-                      .from("milestone-documents")
-                      .getPublicUrl(path);
-
-                    setNewEntry((p) => ({ ...p, receipt_url: urlData.publicUrl || path }));
+                    // Store just the path — use signed URLs when viewing
+                    setNewEntry((p) => ({ ...p, receipt_url: path }));
                     toast.success("Receipt uploaded");
                   }}
                 />
