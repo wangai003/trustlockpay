@@ -565,4 +565,240 @@ const BuyerOrders = () => {
   );
 };
 
+/* ═══ ORDER ROW COMPONENT ═══ */
+interface OrderRowProps {
+  order: any;
+  rowIdx: number;
+  expandedOrder: string | null;
+  setExpandedOrder: (id: string | null) => void;
+  releaseOrderId: string | null;
+  setReleaseOrderId: (id: string | null) => void;
+  isTestnet: boolean;
+  testnet: any;
+  confirmDeliveryHook: any;
+  openDisputeHook: any;
+  queryClient: any;
+  getSourceBadge: (source: string | null, platformId: string | null) => { label: string; icon: any; variant: "secondary" | "outline" } | null;
+}
+
+function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, queryClient, getSourceBadge }: OrderRowProps) {
+  const cfg = statusConfig[order.status] || statusConfig.locked;
+  const row = rowIdx + 1;
+  const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
+
+  return (
+    <Card className={order.status === "delivered" ? "border-accent/30" : ""}>
+      <CardContent className="p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <TLId code={dynTLId("B", "BO", row, "LBL-TXID")} inline>
+                <span className="font-mono text-sm font-bold">{order.id}</span>
+              </TLId>
+              <TLId code={dynTLId("B", "BO", row, "STS")} inline>
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                  <cfg.icon className="w-3 h-3" /> {cfg.label}
+                </span>
+              </TLId>
+              {sourceBadge && (
+                <Badge variant={sourceBadge.variant} className="text-[9px] gap-1">
+                  <sourceBadge.icon className="w-3 h-3" /> {sourceBadge.label}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm">
+              <TLId code={dynTLId("B", "BO", row, "LBL-ITEM")} inline><strong>{order.item}</strong></TLId>
+              {" "}from{" "}
+              <TLId code={dynTLId("B", "BO", row, "LBL-VENDOR")} inline><span className="text-muted-foreground">{order.vendor}</span></TLId>
+            </p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <TLId code={dynTLId("B", "BO", row, "LBL-AMOUNT")} inline><span>Amount: {order.amount}</span></TLId>
+              <span>Date: {order.date}</span>
+              {order.tracking && (
+                <TLId code={dynTLId("B", "BO", row, "LBL-TRACKING")} inline>
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
+                </TLId>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:w-64">
+            <TLId code={dynTLId("B", "BO", row, "STEP-PROGRESS")}>
+              <div className="flex items-center gap-1">
+                {["Paid", "Shipped", "Delivered", "Released"].map((step, i) => {
+                  const stepIndex = { locked: 0, shipped: 1, delivered: 2, released: 3, disputed: -1 }[order.status] ?? -1;
+                  const isComplete = i <= stepIndex;
+                  const isCurrent = i === stepIndex;
+                  return (
+                    <div key={step} className="flex items-center gap-1 flex-1">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                        isComplete ? "bg-primary text-primary-foreground" : isCurrent ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {isComplete ? "✓" : i + 1}
+                      </div>
+                      {i < 3 && <div className={`flex-1 h-0.5 ${isComplete && i < stepIndex ? "bg-primary" : "bg-muted"}`} />}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+                <span>Paid</span><span>Shipped</span><span>Delivered</span><span>Released</span>
+              </div>
+            </TLId>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            {order.status === "delivered" && (
+              <>
+                <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
+                  <Button size="sm" onClick={() => {
+                    if (isTestnet) { testnet.confirmDelivery(order.id); }
+                    else { confirmDeliveryHook.mutate(order.id); }
+                  }}>Confirm Delivery</Button>
+                </TLId>
+                <TLId code={dynTLId("B", "BO", row, "BTN-RELEASE")} inline>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="gap-1"
+                    onClick={() => {
+                      setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
+                      if (expandedOrder !== order.id) setExpandedOrder(order.id);
+                    }}
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    Release Funds
+                  </Button>
+                </TLId>
+              </>
+            )}
+            {order.status === "shipped" && (
+              <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
+                <Button variant="outline" size="sm">Track</Button>
+              </TLId>
+            )}
+            {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
+              <TLId code={dynTLId("B", "BO", row, "BTN-DISPUTE")} inline>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/30"
+                  onClick={() => {
+                    const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
+                    const description = window.prompt("Add note/details for dispute (optional):", "") || "";
+                    if (isTestnet) { testnet.openDispute(order.id, reason); }
+                    else { openDisputeHook.mutate({ txId: order.id, reason, description }); }
+                  }}
+                >
+                  Dispute
+                </Button>
+              </TLId>
+            )}
+            <TLId code={dynTLId("B", "BO", row, "BTN-VIEW")} inline>
+              <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+            </TLId>
+            <TLId code={dynTLId("B", "BO", row, "BTN-EXPAND")} inline>
+              <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </TLId>
+          </div>
+        </div>
+        {expandedOrder === order.id && (
+          <div className="mt-3 border-t border-border pt-3 space-y-3">
+            <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
+            <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
+              <MilestoneProgress industry={order.industry} status={order.status} transactionId={order.dbId} />
+            </details>
+            {isMilestoneIndustry(order.industry) && order.status === "locked" && (
+              <>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-xs">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-destructive">⚠️ Milestone Agreement Required</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      This is a milestone-based order. Both parties must agree on project stages before work can begin.
+                    </p>
+                  </div>
+                </div>
+                <MilestoneNegotiation
+                  role="buyer"
+                  txId={order.id}
+                  industry={order.industry || undefined}
+                  orderAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+                  buyerName="You"
+                  vendorName={order.vendor}
+                  status="drafting"
+                  onSubmitDraft={() => toast.success(`Milestone proposal sent to ${order.vendor} for review`)}
+                  onApproveDraft={() => toast.success("Milestones agreed — work may begin!")}
+                  onRequestChanges={(note) => toast.info(`Change request sent: ${note}`)}
+                />
+              </>
+            )}
+            <MilestoneWorkOrderPanel
+              role="buyer"
+              txId={order.id}
+              transactionId={order.dbId}
+              industry={order.industry}
+              transactionStatus={order.status}
+              isTestnet={isTestnet}
+              testnetMilestones={isTestnet ? testnet.getMilestones(order.dbId) : undefined}
+              onTestnetUpdateStatus={testnet.updateMilestoneStatus}
+              onTestnetSaveNote={testnet.updateMilestoneNote}
+              onTestnetAddDocument={testnet.addMilestoneDocument}
+              onTestnetInviteObserver={testnet.inviteObserver}
+              onTestnetRelease={testnet.releaseMilestonePayment}
+              onTestnetAddGps={testnet.addGpsToMilestone}
+            />
+            <div className="pt-2 border-t border-border">
+              <TransactionDocuments
+                tx={{
+                  txId: order.id,
+                  vendorName: order.vendor,
+                  buyerName: "You",
+                  item: order.item,
+                  amount: parseFloat(order.amount.replace(/[$,]/g, "")),
+                  date: order.date,
+                  status: order.status,
+                  tracking: order.tracking || undefined,
+                  industry: order.industry || undefined,
+                }}
+                compact
+              />
+            </div>
+
+            {releaseOrderId === order.id && order.status === "delivered" && (
+              <div className="pt-3 border-t-2 border-primary/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <Unlock className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
+                  <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setReleaseOrderId(null)}>Cancel</Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  By releasing funds, you confirm that you have received the goods/services as described and authorize TrustLock to transfer the escrowed amount to the vendor's account.
+                </p>
+                <TrustLockOSPayout
+                  role="buyer"
+                  payoutType="release"
+                  prefillOrderNumber={order.id}
+                  prefillAmount={order.amount.replace(/[$,]/g, "")}
+                  transactionId={order.dbId}
+                  isTestnet={isTestnet}
+                  onComplete={(code) => {
+                    toast.success(`Funds released! Confirmation: ${code}`);
+                    setReleaseOrderId(null);
+                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default BuyerOrders;
