@@ -105,6 +105,17 @@ const TeamTaskCard = ({ task, index, isOwner, isMyTask, canComplete, allPriorDon
     onRefresh();
   };
 
+  const takeoverTask = async (autoComplete: boolean) => {
+    setTakingOver(true);
+    const { error } = await supabase.functions.invoke("manage-teams", {
+      body: { action: "takeover_task", task_id: task.id, auto_complete: autoComplete },
+    });
+    setTakingOver(false);
+    if (error) return toast.error("Failed to take over task");
+    toast.success(autoComplete ? "Task taken over and completed!" : "Task taken over!");
+    onRefresh();
+  };
+
   return (
     <>
       <div className={cn(
