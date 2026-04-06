@@ -766,7 +766,7 @@ const MilestoneWorkOrderPanel = ({
                             <Globe className="w-3 h-3 shrink-0" />
                             <span><strong>{scopeDowngraded.length}</strong> doc(s) moved to optional — not required for <span className="capitalize font-medium">{tradeScope}</span> trades</span>
                           </div>
-                        )
+                        )}
                         {requiredDocs.length > 0 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-semibold flex items-center gap-1">
