@@ -529,7 +529,7 @@ const BuyerTeams = () => {
               <p className="text-xs text-muted-foreground">Order: <span className="font-mono font-semibold text-primary">{selectedWs.transaction_id.slice(0, 20)}</span> — tasks are scoped to this order only.</p>
             )}
             <div className="space-y-4">
-              <div><Label>Assign To</Label><Select value={taskMemberId} onValueChange={setTaskMemberId}><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger><SelectContent>{members.map((m) => (<SelectItem key={m.id} value={m.id}>{m.display_name || m.user_id.slice(0, 8)}</SelectItem>))}</SelectContent></Select></div>
+              <div><Label>Assign To</Label><Select value={taskMemberId} onValueChange={setTaskMemberId}><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger><SelectContent>{members.map((m) => { const assigned = tasks.some(t => t.member_id === m.id); return (<SelectItem key={m.id} value={m.id} disabled={assigned}><span className={cn(assigned && "line-through text-muted-foreground")}>{m.display_name || m.user_id.slice(0, 8)}</span>{assigned && <span className="ml-2 text-[10px] text-muted-foreground">(assigned)</span>}</SelectItem>); })}</SelectContent></Select></div>
 
               {milestoneOptions.length > 0 ? (
                 <div>
