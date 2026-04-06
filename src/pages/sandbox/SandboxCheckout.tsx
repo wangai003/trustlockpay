@@ -82,9 +82,10 @@ const SandboxCheckout = () => {
   const selectedProcessor = PROCESSORS[selectedProcessorId];
 
   const platformFee = Math.round(subtotal * 0.005 * 100) / 100;
-  const processorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const rawProcessorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
+  const combinedProcessorFee = Math.round((platformFee + rawProcessorFee) * 100) / 100;
   const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100;
-  const totalFees = Math.round((platformFee + processorFee) * 100) / 100;
+  const totalFees = combinedProcessorFee;
   const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
   const fee = totalFees;
 
