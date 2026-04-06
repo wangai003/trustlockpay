@@ -575,7 +575,7 @@ const BuyerTeams = () => {
                 </>
               )}
 
-              <div><Label>Instructions</Label><Textarea value={taskInstructions} onChange={(e) => setTaskInstructions(e.target.value)} placeholder="What should this member do?" /></div>
+              <div><Label>Notes for Member</Label><Textarea value={taskInstructions} onChange={(e) => setTaskInstructions(e.target.value)} placeholder="Additional notes the member will see on their panel..." /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Deadline</Label><Input type="datetime-local" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} /></div>
                 <div><Label>SLA (hours)</Label><Input type="number" value={taskSlaHours} onChange={(e) => setTaskSlaHours(e.target.value)} placeholder="e.g. 48" /></div>
