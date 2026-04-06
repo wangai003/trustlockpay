@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store } from "lucide-react";
+import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -421,6 +422,11 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 </TLId>
               )}
             </div>
+            <ExternalFeeSummary
+              transactionId={order.dbId}
+              escrowAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+              isTestnet={isTestnet}
+            />
           </div>
 
           <div className="lg:w-64">

@@ -263,17 +263,41 @@ const ExternalFeeTracker = ({
               onChange={(e) => setNewEntry((p) => ({ ...p, evidence_note: e.target.value }))}
             />
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-[9px] h-6 gap-1"
-                onClick={() => {
-                  setNewEntry((p) => ({ ...p, receipt_url: `receipt-${Date.now()}` }));
-                  toast.success("Receipt attached");
-                }}
-              >
-                <Upload className="w-3 h-3" /> Attach Receipt
-              </Button>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 10 * 1024 * 1024) { toast.error("File must be under 10 MB"); return; }
+
+                    if (isTestnet) {
+                      setNewEntry((p) => ({ ...p, receipt_url: `testnet-receipt-${Date.now()}` }));
+                      toast.success("Receipt attached (testnet)");
+                      return;
+                    }
+
+                    const ext = file.name.split(".").pop() || "bin";
+                    const path = `${transactionId || "unlinked"}/${milestoneIndex}/receipt-${Date.now()}.${ext}`;
+                    const { error: upErr } = await supabase.storage
+                      .from("milestone-documents")
+                      .upload(path, file, { upsert: false });
+                    if (upErr) { toast.error("Upload failed: " + upErr.message); return; }
+
+                    const { data: urlData } = supabase.storage
+                      .from("milestone-documents")
+                      .getPublicUrl(path);
+
+                    setNewEntry((p) => ({ ...p, receipt_url: urlData.publicUrl || path }));
+                    toast.success("Receipt uploaded");
+                  }}
+                />
+                <Button variant="outline" size="sm" className="text-[9px] h-6 gap-1" asChild>
+                  <span><Upload className="w-3 h-3" /> Attach Receipt</span>
+                </Button>
+              </label>
               {newEntry.receipt_url && (
                 <Badge className="bg-primary/15 text-primary text-[8px] gap-1">
                   <CheckCircle2 className="w-2.5 h-2.5" /> Receipt attached
