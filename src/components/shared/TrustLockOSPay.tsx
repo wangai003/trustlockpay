@@ -199,9 +199,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
       setService("AI Query Pack (50 queries)");
       setAmount("2.50");
       setMethod("card");
-      setCardNumber("4242 4242 4242 4242");
-      setCardExpiry("12/28");
-      setCardCvc("123");
     }
   }, [isTestnet, isAdmin]);
 
