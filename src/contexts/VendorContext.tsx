@@ -112,6 +112,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
         ...prev,
         name: fullName || fallbackName,
         email: data.email || user.email || prev.email,
+        accountType: (data.account_type as AccountType) || prev.accountType,
       }));
     };
 
