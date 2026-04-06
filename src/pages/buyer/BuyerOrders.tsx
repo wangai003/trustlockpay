@@ -13,7 +13,6 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
-import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import TrustLockOSPayout from "@/components/shared/TrustLockOSPayout";
