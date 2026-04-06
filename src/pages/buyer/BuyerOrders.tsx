@@ -422,6 +422,11 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 </TLId>
               )}
             </div>
+            <ExternalFeeSummary
+              transactionId={order.dbId}
+              escrowAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
+              isTestnet={isTestnet}
+            />
           </div>
 
           <div className="lg:w-64">
