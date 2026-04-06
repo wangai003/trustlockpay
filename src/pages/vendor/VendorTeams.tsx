@@ -639,25 +639,6 @@ const VendorTeams = () => {
         </div>
       </div>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="py-3 flex flex-col sm:flex-row items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <UserPlus className="w-4 h-4 text-primary" />
-            <span>Have an invite code?</span>
-          </div>
-          <div className="flex gap-2 flex-1 max-w-md">
-            <Input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Paste invite code here"
-              className="flex-1 h-9"
-            />
-            <Button size="sm" onClick={() => { if (joinCode.trim()) setShowJoin(true); else toast.error("Enter a code first"); }} disabled={!joinCode.trim()}>
-              Join
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full sm:w-auto">
