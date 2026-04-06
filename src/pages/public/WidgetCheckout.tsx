@@ -735,7 +735,7 @@ const WidgetCheckout = () => {
                   </div>
                   <div className="border-t border-border pt-2 flex justify-between text-xs font-bold">
                     <span>Total Charged</span>
-                    <span>${(parseFloat(form.amount) * 1.034).toFixed(2)}</span>
+                    <span>${totalAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Status</span>
