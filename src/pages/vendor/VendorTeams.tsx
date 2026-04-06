@@ -383,11 +383,11 @@ const VendorTeams = () => {
             <div className="flex items-center gap-2 pt-1 border-t border-primary/10">
               <Input
                 readOnly
-                value={`${window.location.origin}/vendor/teams?join=${selectedWs.invite_code}`}
+                value={`${window.location.origin}/trustlock/vendor/teams?join=${selectedWs.invite_code}`}
                 className="h-7 text-[11px] font-mono bg-background flex-1"
               />
               <Button size="sm" variant="secondary" className="shrink-0 text-xs h-7 px-2" onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/vendor/teams?join=${selectedWs.invite_code}`);
+                navigator.clipboard.writeText(`${window.location.origin}/trustlock/vendor/teams?join=${selectedWs.invite_code}`);
                 toast.success("Invite link copied!");
               }}>
                 Copy Link
