@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2,
   UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning,
-  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon,
+  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
 import ExternalFeeTracker from "@/components/shared/ExternalFeeTracker";
 import { getExternalFeeSuggestions } from "@/lib/externalFeeTemplates";
+import { filterDocumentsByScope } from "@/lib/documentScopeFilter";
+import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
@@ -367,6 +369,7 @@ const MilestoneWorkOrderPanel = ({
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
   const [reconciliationComplete, setReconciliationComplete] = useState(false);
   const [skippedMilestoneIndices, setSkippedMilestoneIndices] = useState<number[]>([]);
+  const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
@@ -573,6 +576,16 @@ const MilestoneWorkOrderPanel = ({
           {/* Blueprint summary stats */}
           <BlueprintSummary industry={industry} layoutMode={layoutMode} />
 
+          {/* Trade Scope — compact in header */}
+          {!isAdmin && layoutMode !== "single" && (
+            <TradeScopeSelector
+              value={tradeScope}
+              onChange={setTradeScope}
+              compact
+              autoSet={false}
+            />
+          )}
+
           {/* Progress stepper */}
           {milestones.length > 1 && (
             <ProgressStepper
@@ -619,8 +632,14 @@ const MilestoneWorkOrderPanel = ({
             const expanded = isExpanded(idx);
             const isDeleted = ms.status === "deleted";
             const uploadedDocs: any[] = ms.uploaded_documents || [];
-            const requiredDocs: string[] = ms.required_documents || [];
-            const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+            const rawRequiredDocs: string[] = ms.required_documents || [];
+            const rawOptionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
+
+            // Filter documents by trade scope
+            const scopeFiltered = filterDocumentsByScope(rawRequiredDocs, rawOptionalDocs, tradeScope);
+            const requiredDocs = scopeFiltered.required;
+            const optionalDocs = scopeFiltered.optional;
+            const scopeDowngraded = scopeFiltered.scopeDowngraded;
 
             return (
               <div
@@ -739,6 +758,13 @@ const MilestoneWorkOrderPanel = ({
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
                             <Unlock className="w-3 h-3 shrink-0" />
                             <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved — escrow already funded</span>
+                          </div>
+                        )}
+                        {/* Scope-downgraded notice */}
+                        {scopeDowngraded.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                            <Globe className="w-3 h-3 shrink-0" />
+                            <span><strong>{scopeDowngraded.length}</strong> doc(s) moved to optional — not required for <span className="capitalize font-medium">{tradeScope}</span> trades</span>
                           </div>
                         )}
                         {requiredDocs.length > 0 && (

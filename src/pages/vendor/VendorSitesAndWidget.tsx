@@ -527,6 +527,7 @@ const VendorSitesAndWidget = () => {
     allowed_payment_methods: ["card", "bank_transfer", "mobile_money", "crypto"],
     max_order_amount: "", min_order_amount: "1.00", auto_refund_window_hours: 72,
     custom_checkout_message: "", require_buyer_account: false, enable_bulk_onboarding: false,
+    default_trade_scope: "international",
   });
 
   useEffect(() => {
@@ -554,6 +555,7 @@ const VendorSitesAndWidget = () => {
             custom_checkout_message: data.custom_checkout_message || "",
             require_buyer_account: data.require_buyer_account,
             enable_bulk_onboarding: data.enable_bulk_onboarding,
+            default_trade_scope: (data as any).default_trade_scope || "international",
           });
         }
         setConfigLoading(false);
@@ -880,6 +882,26 @@ const VendorSitesAndWidget = () => {
                               <Input type="number" min={1} max={720} value={config.auto_refund_window_hours} onChange={(e) => setConfig(prev => ({ ...prev, auto_refund_window_hours: parseInt(e.target.value) || 72 }))} />
                               <p className="text-xs text-muted-foreground">Unclaimed orders auto-refund after this period.</p>
                             </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Default Trade Scope */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2"><Globe className="w-4 h-4" /> Default Trade Scope</CardTitle>
+                            <CardDescription>Pre-set the trade type for your checkout. Buyers can override.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <Select value={config.default_trade_scope || "international"} onValueChange={(v) => setConfig(prev => ({ ...prev, default_trade_scope: v }))}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="domestic">Domestic — same-country trades, minimal docs</SelectItem>
+                                <SelectItem value="regional">Regional / Corridor — within a trade bloc</SelectItem>
+                                <SelectItem value="international">International — full document gates</SelectItem>
+                                <SelectItem value="hybrid">Hybrid — domestic sale with imported inputs</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-2">This adjusts which document uploads are required vs. optional at checkout.</p>
                           </CardContent>
                         </Card>
 
