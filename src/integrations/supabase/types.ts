@@ -1903,6 +1903,84 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_widget_configs: {
+        Row: {
+          allowed_payment_methods: string[] | null
+          auto_kyc_passthrough: boolean
+          auto_refund_window_hours: number | null
+          brand_logo_url: string | null
+          brand_name: string | null
+          brand_primary_color: string | null
+          created_at: string
+          custom_checkout_message: string | null
+          default_industry_override: string | null
+          enable_bulk_onboarding: boolean
+          id: string
+          max_order_amount: number | null
+          min_order_amount: number | null
+          multi_vendor_enabled: boolean
+          platform_commission_percent: number | null
+          product_api_url: string | null
+          require_buyer_account: boolean
+          sandbox_mode: boolean
+          updated_at: string
+          vendor_id: string
+          webhook_secret: string | null
+          webhook_url: string | null
+          white_label_enabled: boolean
+        }
+        Insert: {
+          allowed_payment_methods?: string[] | null
+          auto_kyc_passthrough?: boolean
+          auto_refund_window_hours?: number | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_primary_color?: string | null
+          created_at?: string
+          custom_checkout_message?: string | null
+          default_industry_override?: string | null
+          enable_bulk_onboarding?: boolean
+          id?: string
+          max_order_amount?: number | null
+          min_order_amount?: number | null
+          multi_vendor_enabled?: boolean
+          platform_commission_percent?: number | null
+          product_api_url?: string | null
+          require_buyer_account?: boolean
+          sandbox_mode?: boolean
+          updated_at?: string
+          vendor_id: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+          white_label_enabled?: boolean
+        }
+        Update: {
+          allowed_payment_methods?: string[] | null
+          auto_kyc_passthrough?: boolean
+          auto_refund_window_hours?: number | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
+          brand_primary_color?: string | null
+          created_at?: string
+          custom_checkout_message?: string | null
+          default_industry_override?: string | null
+          enable_bulk_onboarding?: boolean
+          id?: string
+          max_order_amount?: number | null
+          min_order_amount?: number | null
+          multi_vendor_enabled?: boolean
+          platform_commission_percent?: number | null
+          product_api_url?: string | null
+          require_buyer_account?: boolean
+          sandbox_mode?: boolean
+          updated_at?: string
+          vendor_id?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+          white_label_enabled?: boolean
+        }
+        Relationships: []
+      }
       pre_order_contracts: {
         Row: {
           buyer_id: string | null
