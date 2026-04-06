@@ -19,6 +19,7 @@ import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import AdminExternalFeeAudit from "@/components/admin/AdminExternalFeeAudit";
 
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import { supabase } from "@/integrations/supabase/client";
