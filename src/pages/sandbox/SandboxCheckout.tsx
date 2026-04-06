@@ -485,9 +485,11 @@ const SandboxCheckout = () => {
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Escrow Fee (1.5%)</span><span>${fee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Platform Fee (0.5%)</span><span>${platformFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee ({isCryptoPayment ? "Direct — $0" : "Stripe 2.9%"})</span><span>{isCryptoPayment ? "$0.00" : `$${processorFee.toLocaleString()}`}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">At release</span></div>
                     <Separator className="my-1" />
-                    <div className="flex justify-between font-bold"><span>Total</span><span>${(subtotal + fee).toLocaleString()}</span></div>
+                    <div className="flex justify-between font-bold"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
                   </div>
 
                   <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-[10px] text-green-700 space-y-0.5">
