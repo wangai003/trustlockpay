@@ -1,34 +1,28 @@
-## Sandbox Overhaul Plan
 
-### 1. Dummy Vendor Website Hub (`/sandbox/store`)
-- Landing page with 5 industry cards: E-Commerce, Real Estate, Mining, Energy, Freelance
-- Each card links to `/sandbox/store/:industry` with a mock vendor website page
-- Each page has a TrustLock Pay widget button that opens the checkout flow
+## 1. Dynamic Processor Fee Display
+Both SandboxCheckout and WidgetCheckout hardcode "Stripe 2.9%". Fix:
+- Import `selectProcessor`, `PROCESSORS` from feeEngine
+- Determine processor based on buyer's region (use geolocation or a country selector)
+- Display actual processor name and rate dynamically
+- Add a buyer country/region selector to both checkouts
 
-### 2. Industry Checkout Flow (`/sandbox/checkout/:industry`)
-- Pre-filled invoice based on industry (item, price, milestones, documents)
-- RFQ bypass — goes straight to invoice review
-- Industry-specific document gates shown (view-only)
-- Payment method selector (simulated — auto-completes on click)
-- Generates confirmation code + order number, shows instructions to copy and go to buyer dashboard
+## 2. Dual-Mode Payment UI (Africa / International)
+Add Africa/International toggle before payment method selection:
+- **Africa**: Shows Mobile Money, Bank Transfer, USDC, USDT
+- **International**: Shows Card (Stripe), Bank Transfer, USDC, USDT
+- Processor auto-adjusts based on mode selection
+- Add to both SandboxCheckout (Step 6) and WidgetCheckout (form step)
 
-### 3. Shared Order Storage
-- Orders stored in `localStorage` keyed by sandbox session
-- Both vendor and buyer views read from same store
-- Vendor sees ALL orders across 5 industries
-- Buyer enters order number to "claim" and track it
+## 3. Crypto + Taxes/Tariffs
+Even when crypto direct (0% processor), taxes & tariffs still apply:
+- Both checkouts should show a "Taxes & Tariffs" line item
+- In sandbox: show placeholder "Varies by corridor"
+- In widget: call `tax-resolve` when buyer country is known
+- Add remittance tax note when applicable
 
-### 4. Updated Sandbox Layout
-- Remove 24h expiry → show countdown to Dec 31, 2026
-- Add "Browse Store" link in sidebar for discovering the dummy websites
-- Buyer orders page: add "Enter Order #" field to pull up orders
-- Vendor orders page: show all sandbox orders with industry badges
-
-### 5. Milestone Collaboration Flow
-- After buyer claims order, both can advance milestones
-- Industry-specific milestone steps with document placeholders
-- Final stage marks order complete
-
-### Files to create/modify:
-- **Create**: `SandboxStore.tsx` (hub), `SandboxStorePage.tsx` (per-industry mock site), `SandboxCheckout.tsx` (checkout flow), `sandboxIndustryData.ts` (invoices/milestones per industry)
-- **Modify**: `SandboxLayout.tsx` (sidebar + countdown), `SandboxOrders.tsx` (order lookup), `sandboxData.ts` (shared storage utils), `App.tsx` (routes)
+## 4. Multi-Vendor Platform API (Widget SDK)
+Add support for URL params that platforms like Amazon can pass:
+- `product_name`, `product_price`, `product_id`, `vendor_ref`, `category`
+- Widget auto-fills from these params, making fields read-only
+- Document this in a new `WidgetSDKDocs` section
+- Update `checkout-widget` edge function to accept marketplace metadata
