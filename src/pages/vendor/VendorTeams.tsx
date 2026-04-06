@@ -451,33 +451,33 @@ const VendorTeams = () => {
             />
           </TabsContent>
 
-          {isOwner && (
-            <TabsContent value="team">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-                  <CardTitle className="text-lg">Team Members</CardTitle>
-                  {selectedWs.status === "active" && (
-                    <div className="flex gap-2 flex-wrap">
-                      <TeamBulkImport workspaceId={selectedWs.id} onImported={() => fetchMembers(selectedWs.id)} disabled={selectedWs.status !== "active"} />
-                      <Button size="sm" onClick={() => { setShowAddMember(true); fetchRolePresets(selectedWs.industry); }}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {members.length === 0 ? <p className="text-sm text-muted-foreground">No members added yet. Share the invite code above, use "Add Member", or "Bulk Import" to get started.</p> : (
-                    <div className="space-y-2">
-                      {members.map((m, mIdx) => {
-                        const row = mIdx + 1;
-                        return (
-                        <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
-                          <div>
-                            <TLId code={dynTLId("V", "TM", row, "LBL-NAME")} inline>
-                              <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                            </TLId>
-                            <TLId code={dynTLId("V", "TM", row, "LBL-USERID")} inline>
-                              <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
-                            </TLId>
-                          </div>
+          <TabsContent value="team">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-lg">Team Members</CardTitle>
+                {isOwner && selectedWs.status === "active" && (
+                  <div className="flex gap-2 flex-wrap">
+                    <TeamBulkImport workspaceId={selectedWs.id} onImported={() => fetchMembers(selectedWs.id)} disabled={selectedWs.status !== "active"} />
+                    <Button size="sm" onClick={() => { setShowAddMember(true); fetchRolePresets(selectedWs.industry); }}><UserPlus className="w-4 h-4 mr-1" /> Add Member</Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {members.length === 0 ? <p className="text-sm text-muted-foreground">{isOwner ? "No members added yet. Share the invite code above, use \"Add Member\", or \"Bulk Import\" to get started." : "No team members yet."}</p> : (
+                  <div className="space-y-2">
+                    {members.map((m, mIdx) => {
+                      const row = mIdx + 1;
+                      return (
+                      <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
+                        <div>
+                          <TLId code={dynTLId("V", "TM", row, "LBL-NAME")} inline>
+                            <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                          </TLId>
+                          <TLId code={dynTLId("V", "TM", row, "LBL-USERID")} inline>
+                            <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
+                          </TLId>
+                        </div>
+                        {isOwner && (
                           <div className="flex items-center gap-3 self-end sm:self-center">
                             <div className="flex items-center gap-2">
                               <Label className="text-xs">Finalizer</Label>
@@ -493,15 +493,15 @@ const VendorTeams = () => {
                               </TLId>
                             )}
                           </div>
-                        </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+                        )}
+                      </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="chat">
             <WorkspaceChat workspaceId={selectedWs.id} members={members.map((m) => ({ user_id: m.user_id, display_name: m.display_name }))} />
