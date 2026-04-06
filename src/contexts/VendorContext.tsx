@@ -42,6 +42,7 @@ const defaultTestnetVendor: VendorProfile = {
   ],
   kycTier: 2,
   onboardingComplete: true,
+  accountType: "individual",
 };
 
 const getInitialVendorMode = (): NetworkMode => {
