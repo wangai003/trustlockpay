@@ -92,6 +92,7 @@ const VendorTeams = () => {
   const [taskInstructions, setTaskInstructions] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("");
   const [taskSlaHours, setTaskSlaHours] = useState("");
+  const [milestoneOptions, setMilestoneOptions] = useState<{ key: string; title: string; description: string; required_documents: string[]; assigned_to: string }[]>([]);
 
   // Online/offline detection + sync
   useEffect(() => {
