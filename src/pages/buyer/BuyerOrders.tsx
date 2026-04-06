@@ -520,7 +520,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             </details>
             {isMilestoneIndustry(order.industry) && order.status === "locked" && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
-                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-foreground">Milestone Schedule Locked</p>
                   <p className="text-muted-foreground mt-0.5">
