@@ -188,8 +188,11 @@ const WidgetCheckout = () => {
     }
   };
 
-  const feeAmount = parseFloat(form.amount || "0") * 0.015;
-  const totalAmount = parseFloat(form.amount || "0") + feeAmount;
+  const baseAmount = parseFloat(form.amount || "0");
+  const platformFeeAmount = baseAmount * 0.005;      // 0.5% TrustLock platform fee
+  const processorFeeAmount = baseAmount * 0.029;      // Stripe 2.9% (default fiat)
+  const feeAmount = platformFeeAmount + processorFeeAmount;  // Total upfront fees
+  const totalAmount = baseAmount + feeAmount;
 
   const closeWidget = () => {
     if (isEmbed && window.parent !== window) {
