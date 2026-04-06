@@ -30,7 +30,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     uint256 public constant ESCROW_RELEASE_FEE_BPS = 100; // 1.0% trickle-down on release
     uint256 private constant BPS = 10000;
 
-    uint256 public autoReleasePeriod = 14 days;
+    uint256 public autoReleasePeriod = 14 days; // default fallback; actual period set per-order via setOrderReleasePeriod
 
     // ─── Operator Access ─────────────────────────────────────
     mapping(address => bool) public operators;
