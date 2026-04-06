@@ -908,9 +908,11 @@ const VendorSitesAndWidget = () => {
   data-site-id="YOUR_SITE_ID"
   data-vendor-id="${user?.id || "YOUR_VENDOR_ID"}"
   data-mode="${config.sandbox_mode ? "sandbox" : "live"}"
+  data-offering-id="OPTIONAL_OFFERING_ID"
 ></script>`}
                             </pre>
-                            <Button variant="outline" size="sm" className="mt-2" onClick={() => {
+                            <p className="text-[10px] text-muted-foreground mt-1 mb-2">Add <code className="bg-muted px-1 rounded">data-offering-id</code> to auto-select an offering and load its industry-specific checkout flow.</p>
+                            <Button variant="outline" size="sm" onClick={() => {
                               navigator.clipboard.writeText(`<script src="https://dbajucxswcgxllmwxnia.supabase.co/functions/v1/widget-embed" data-site-id="YOUR_SITE_ID" data-vendor-id="${user?.id}" data-mode="${config.sandbox_mode ? "sandbox" : "live"}"></script>`);
                               toast({ title: "Copied!" });
                             }}><Copy className="w-3 h-3 mr-1" /> Copy</Button>
