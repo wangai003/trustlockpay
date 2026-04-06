@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ const allNavItems = [
   { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", chiefOnly: true },
   { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", chiefOnly: false },
   { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", chiefOnly: true },
+  { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", chiefOnly: true },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", chiefOnly: true },
 ];
 

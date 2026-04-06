@@ -95,6 +95,18 @@ const MARKETPLACE_PLATFORMS: Record<string, {
   },
 };
 
+// ─── Platform API Key Verification ────────────────────────
+async function verifyPlatformApiKey(supabase: ReturnType<typeof getSupabase>, apiKey: string) {
+  // Simple hash-based lookup (in production use bcrypt)
+  const { data } = await supabase
+    .from("platform_api_keys")
+    .select("*")
+    .eq("api_key_hash", apiKey)
+    .eq("is_active", true)
+    .single();
+  return data;
+}
+
 // ─── Main Handler ─────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -122,7 +134,6 @@ Deno.serve(async (req) => {
       const platformConfig = MARKETPLACE_PLATFORMS[platform] || MARKETPLACE_PLATFORMS.custom;
       const supabase = getSupabase();
 
-      // Store marketplace integration in vendor_settings
       const { data: existing } = await supabase
         .from("vendor_settings")
         .select("id, marketplace_integrations")
@@ -190,7 +201,8 @@ Deno.serve(async (req) => {
         item, amount, currency,
         buyer_name, buyer_email, buyer_phone, buyer_location,
         payment_method, line_items,
-        sso_token, // Optional SSO passthrough token
+        sso_token,
+        platform_api_key,
       } = body;
 
       if (!vendor_id || !amount || !item || !buyer_email) {
@@ -203,12 +215,21 @@ Deno.serve(async (req) => {
       const supabase = getSupabase();
       const platformConfig = MARKETPLACE_PLATFORMS[platform] || MARKETPLACE_PLATFORMS.custom;
 
+      // Check for platform API key and resolve platform fee
+      let platformFeePercent = 0;
+      let platformId: string | null = null;
+      if (platform_api_key) {
+        const platformRecord = await verifyPlatformApiKey(supabase, platform_api_key);
+        if (platformRecord) {
+          platformFeePercent = Number(platformRecord.platform_fee_percent) || 0;
+          platformId = platformRecord.id;
+        }
+      }
+
       // ── Identity Bridge: resolve buyer ──
       let resolvedBuyerId: string | null = null;
 
       if (platformConfig.identityBridge === "sso_passthrough" && sso_token) {
-        // Verify SSO token from marketplace (JWT decode — trusted marketplace)
-        // For now, look up by email as fallback
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
@@ -223,9 +244,7 @@ Deno.serve(async (req) => {
           .single();
         resolvedBuyerId = profile?.id || null;
       }
-      // "guest" mode: resolvedBuyerId stays null
 
-      // ── Forward to checkout-widget as marketplace mode ──
       const checkoutPayload = {
         action: "init_session",
         vendorId: vendor_id,
@@ -238,7 +257,8 @@ Deno.serve(async (req) => {
         buyer_id: resolvedBuyerId,
         industry: platformConfig.industry,
         order_type: platformConfig.defaultOrderType,
-        // Marketplace metadata passed through
+        platform_id: platformId,
+        platform_fee_percent: platformFeePercent,
         marketplace_metadata: {
           platform,
           platform_name: platformConfig.name,
@@ -250,12 +270,12 @@ Deno.serve(async (req) => {
           identity_bridge: platformConfig.identityBridge,
           fee_layering: platformConfig.feeLayering,
           buyer_phone: buyer_phone || null,
+          platform_fee_percent: platformFeePercent,
         },
       };
 
       const checkoutResult = await callCheckoutWidget(checkoutPayload);
 
-      // ── Augment response with marketplace context ──
       return json({
         success: true,
         mode: "marketplace",
@@ -267,6 +287,7 @@ Deno.serve(async (req) => {
         checkout: checkoutResult,
         fee_disclosure: {
           escrow_fee: "1.5% (0.5% upfront + 1.0% at settlement)",
+          platform_fee: platformFeePercent > 0 ? `${platformFeePercent}% (${platformConfig.name} commission)` : "none",
           layering: platformConfig.feeLayering,
           note: platformConfig.feeLayering === "additive"
             ? "TrustLock's 1.5% escrow fee is shown separately from the marketplace's own fees."
@@ -276,7 +297,331 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: SETTLEMENT_CALLBACK — Notify marketplace of settlement
+    //  ACTION: INGEST_CART — Multi-vendor cart with items from different vendors
+    // ══════════════════════════════════════════════════
+    if (action === "ingest_cart") {
+      const {
+        platform, platform_api_key,
+        marketplace_order_id,
+        buyer_name, buyer_email, buyer_phone, buyer_location,
+        items, // Array of { vendor_id, vendor_ref, item, amount, product_id, category }
+      } = body;
+
+      if (!buyer_email || !items || !Array.isArray(items) || items.length === 0) {
+        return json({ error: "buyer_email and items[] array are required" }, 400);
+      }
+      if (items.length > 50) {
+        return json({ error: "Maximum 50 items per cart" }, 400);
+      }
+
+      const supabase = getSupabase();
+      const cartId = crypto.randomUUID();
+
+      // Resolve platform
+      let platformFeePercent = 0;
+      let platformId: string | null = null;
+      if (platform_api_key) {
+        const platformRecord = await verifyPlatformApiKey(supabase, platform_api_key);
+        if (platformRecord) {
+          platformFeePercent = Number(platformRecord.platform_fee_percent) || 0;
+          platformId = platformRecord.id;
+        }
+      }
+
+      // Group items by vendor
+      const vendorGroups: Record<string, typeof items> = {};
+      for (const item of items) {
+        const vendorKey = item.vendor_id || item.vendor_ref || "unknown";
+        if (!vendorGroups[vendorKey]) vendorGroups[vendorKey] = [];
+        vendorGroups[vendorKey].push(item);
+      }
+
+      // Resolve buyer
+      let resolvedBuyerId: string | null = null;
+      if (buyer_email) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", buyer_email)
+          .single();
+        resolvedBuyerId = profile?.id || null;
+      }
+
+      const results: Record<string, unknown>[] = [];
+
+      for (const [vendorKey, vendorItems] of Object.entries(vendorGroups)) {
+        const totalAmount = vendorItems.reduce((sum, i) => sum + Number(i.amount || 0), 0);
+        const itemNames = vendorItems.map(i => i.item || i.product_id || "Item").join(", ");
+
+        // Check if vendor exists
+        let vendorId: string | null = null;
+        const { data: vendorProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", vendorKey)
+          .single();
+        vendorId = vendorProfile?.id || null;
+
+        // Create a transaction for this vendor's items
+        const txId = `TL-CART-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        const { data: tx, error: txErr } = await supabase
+          .from("transactions")
+          .insert({
+            tx_id: txId,
+            vendor_id: vendorId,
+            buyer_id: resolvedBuyerId,
+            buyer_name: buyer_name || "Marketplace Buyer",
+            item: itemNames,
+            amount: totalAmount,
+            status: "pending",
+            industry: "ecommerce",
+            cart_id: cartId,
+            platform_id: platformId,
+          })
+          .select("id, tx_id")
+          .single();
+
+        if (txErr) {
+          results.push({ vendor_ref: vendorKey, error: txErr.message });
+          continue;
+        }
+
+        // Generate claim token if vendor not on platform
+        let claimInfo: Record<string, unknown> | null = null;
+        if (!vendorId) {
+          const vendorItem = vendorItems[0];
+          const { data: token } = await supabase
+            .from("vendor_claim_tokens")
+            .insert({
+              vendor_email: vendorItem.vendor_email || null,
+              vendor_name: vendorItem.vendor_name || vendorKey,
+              platform: platform || "custom",
+              marketplace_vendor_id: vendorKey,
+              transaction_id: tx?.id,
+              platform_id: platformId,
+              industry: vendorItem.category || "ecommerce",
+            })
+            .select("token")
+            .single();
+
+          if (token) {
+            const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+            claimInfo = {
+              claim_url: `${baseUrl}/vendor/claim?token=${token.token}`,
+              token: token.token,
+              expires_in_days: 30,
+            };
+          }
+        }
+
+        results.push({
+          vendor_ref: vendorKey,
+          vendor_registered: !!vendorId,
+          transaction_id: tx?.id,
+          tx_id: tx?.tx_id,
+          amount: totalAmount,
+          items_count: vendorItems.length,
+          claim: claimInfo,
+        });
+      }
+
+      return json({
+        success: true,
+        action: "ingest_cart",
+        cart_id: cartId,
+        vendor_count: Object.keys(vendorGroups).length,
+        total_amount: items.reduce((s, i) => s + Number(i.amount || 0), 0),
+        platform_fee_percent: platformFeePercent,
+        transactions: results,
+        buyer_resolved: !!resolvedBuyerId,
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: BULK_ONBOARD — Register many vendors at once
+    // ══════════════════════════════════════════════════
+    if (action === "bulk_onboard") {
+      const { platform_api_key, vendors } = body;
+      // vendors: Array of { vendor_name, vendor_email, external_ref, industry }
+
+      if (!platform_api_key) {
+        return json({ error: "platform_api_key is required for bulk operations" }, 400);
+      }
+      if (!vendors || !Array.isArray(vendors) || vendors.length === 0) {
+        return json({ error: "vendors[] array is required" }, 400);
+      }
+      if (vendors.length > 500) {
+        return json({ error: "Maximum 500 vendors per batch" }, 400);
+      }
+
+      const supabase = getSupabase();
+
+      // Verify platform API key
+      const platformRecord = await verifyPlatformApiKey(supabase, platform_api_key);
+      if (!platformRecord) {
+        return json({ error: "Invalid or inactive platform API key" }, 403);
+      }
+
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+      const results: Record<string, unknown>[] = [];
+      let created = 0;
+      let skipped = 0;
+      let existing = 0;
+
+      for (const v of vendors) {
+        const externalRef = v.external_ref || v.vendor_email || v.vendor_name;
+        if (!externalRef) {
+          results.push({ vendor: v, status: "skipped", reason: "No external_ref, email, or name" });
+          skipped++;
+          continue;
+        }
+
+        // Check if already exists by email
+        if (v.vendor_email) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", v.vendor_email)
+            .single();
+          if (profile) {
+            results.push({ external_ref: externalRef, status: "already_registered", vendor_id: profile.id });
+            existing++;
+            continue;
+          }
+        }
+
+        // Check if claim token already exists for this platform+ref
+        const { data: existingToken } = await supabase
+          .from("vendor_claim_tokens")
+          .select("token, status")
+          .eq("marketplace_vendor_id", externalRef)
+          .eq("platform", platformRecord.platform_name)
+          .single();
+
+        if (existingToken) {
+          results.push({
+            external_ref: externalRef,
+            status: existingToken.status === "pending" ? "token_exists" : existingToken.status,
+            claim_url: `${baseUrl}/vendor/claim?token=${existingToken.token}`,
+          });
+          skipped++;
+          continue;
+        }
+
+        // Create claim token
+        const { data: token, error: tokenErr } = await supabase
+          .from("vendor_claim_tokens")
+          .insert({
+            vendor_email: v.vendor_email || null,
+            vendor_name: v.vendor_name || externalRef,
+            platform: platformRecord.platform_name,
+            marketplace_vendor_id: externalRef,
+            platform_id: platformRecord.id,
+            industry: v.industry || "ecommerce",
+          })
+          .select("token")
+          .single();
+
+        if (tokenErr) {
+          results.push({ external_ref: externalRef, status: "error", reason: tokenErr.message });
+          continue;
+        }
+
+        results.push({
+          external_ref: externalRef,
+          status: "token_created",
+          claim_url: `${baseUrl}/vendor/claim?token=${token.token}`,
+          token: token.token,
+        });
+        created++;
+      }
+
+      return json({
+        success: true,
+        action: "bulk_onboard",
+        platform: platformRecord.platform_name,
+        summary: { total: vendors.length, created, skipped, already_registered: existing },
+        vendors: results,
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: PLATFORM_DASHBOARD — Aggregate stats for a platform
+    // ══════════════════════════════════════════════════
+    if (action === "platform_dashboard") {
+      const { platform_api_key } = body;
+      if (!platform_api_key) {
+        return json({ error: "platform_api_key is required" }, 400);
+      }
+
+      const supabase = getSupabase();
+      const platformRecord = await verifyPlatformApiKey(supabase, platform_api_key);
+      if (!platformRecord) {
+        return json({ error: "Invalid or inactive platform API key" }, 403);
+      }
+
+      // Count transactions for this platform
+      const { count: txCount } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("platform_id", platformRecord.id);
+
+      // Sum GMV
+      const { data: gmvData } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("platform_id", platformRecord.id);
+      const totalGmv = (gmvData || []).reduce((s, t) => s + Number(t.amount || 0), 0);
+
+      // Count claim tokens
+      const { count: totalTokens } = await supabase
+        .from("vendor_claim_tokens")
+        .select("*", { count: "exact", head: true })
+        .eq("platform_id", platformRecord.id);
+
+      const { count: claimedTokens } = await supabase
+        .from("vendor_claim_tokens")
+        .select("*", { count: "exact", head: true })
+        .eq("platform_id", platformRecord.id)
+        .eq("status", "claimed");
+
+      const { count: pendingTokens } = await supabase
+        .from("vendor_claim_tokens")
+        .select("*", { count: "exact", head: true })
+        .eq("platform_id", platformRecord.id)
+        .eq("status", "pending");
+
+      // Transaction status breakdown
+      const { data: statusData } = await supabase
+        .from("transactions")
+        .select("status")
+        .eq("platform_id", platformRecord.id);
+
+      const statusBreakdown: Record<string, number> = {};
+      for (const t of statusData || []) {
+        statusBreakdown[t.status] = (statusBreakdown[t.status] || 0) + 1;
+      }
+
+      return json({
+        success: true,
+        platform: platformRecord.platform_name,
+        platform_fee_percent: platformRecord.platform_fee_percent,
+        stats: {
+          total_transactions: txCount || 0,
+          total_gmv: totalGmv,
+          platform_revenue_estimate: totalGmv * (Number(platformRecord.platform_fee_percent) / 100),
+          vendors: {
+            total_tokens: totalTokens || 0,
+            claimed: claimedTokens || 0,
+            pending: pendingTokens || 0,
+          },
+          transaction_status: statusBreakdown,
+        },
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  ACTION: SETTLEMENT_CALLBACK
     // ══════════════════════════════════════════════════
     if (action === "settlement_callback") {
       const { transaction_id, integration_id, vendor_id } = body;
@@ -286,7 +631,6 @@ Deno.serve(async (req) => {
 
       const supabase = getSupabase();
 
-      // Fetch transaction
       const { data: tx } = await supabase
         .from("transactions")
         .select("*")
@@ -295,7 +639,6 @@ Deno.serve(async (req) => {
 
       if (!tx) return json({ error: "Transaction not found" }, 404);
 
-      // Look up integration callback URL
       let callbackUrl: string | null = null;
       if (vendor_id || tx.vendor_id) {
         const { data: settings } = await supabase
@@ -313,7 +656,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Build settlement payload
       const settlementPayload = {
         event: "trustlock.settlement",
         transaction_id: tx.id,
@@ -322,10 +664,10 @@ Deno.serve(async (req) => {
         amount: tx.amount,
         fee: tx.fee,
         settled_at: tx.released_date || new Date().toISOString(),
+        cart_id: tx.cart_id || null,
         marketplace_order_id: (tx.metadata as Record<string, unknown>)?.marketplace_order_id || null,
       };
 
-      // Fire callback if URL exists
       let callbackStatus = "no_callback_configured";
       if (callbackUrl) {
         try {
@@ -349,7 +691,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: LIST_PLATFORMS — Return supported marketplace platforms
+    //  ACTION: LIST_PLATFORMS
     // ══════════════════════════════════════════════════
     if (action === "list_platforms") {
       const platforms = Object.entries(MARKETPLACE_PLATFORMS).map(([key, config]) => ({
@@ -366,7 +708,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: LIST_INTEGRATIONS — Vendor's active integrations
+    //  ACTION: LIST_INTEGRATIONS
     // ══════════════════════════════════════════════════
     if (action === "list_integrations") {
       const { vendor_id } = body;
@@ -386,7 +728,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: GENERATE_VENDOR_INVITE — Create claim token for marketplace vendor
+    //  ACTION: GENERATE_VENDOR_INVITE
     // ══════════════════════════════════════════════════
     if (action === "generate_vendor_invite") {
       const { vendor_email, vendor_name, platform, integration_id, transaction_id, marketplace_vendor_id } = body;
@@ -395,7 +737,6 @@ Deno.serve(async (req) => {
       const supabase = getSupabase();
       const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
 
-      // Check if vendor already has a TrustLock account (by email)
       let existingVendorId: string | null = null;
       if (vendor_email) {
         const { data: profile } = await supabase
@@ -407,7 +748,6 @@ Deno.serve(async (req) => {
       }
 
       if (existingVendorId) {
-        // Vendor already exists — link transaction directly
         if (transaction_id) {
           await supabase
             .from("transactions")
@@ -422,7 +762,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Generate claim token
       const { data: token, error: tokenErr } = await supabase
         .from("vendor_claim_tokens")
         .insert({
@@ -442,9 +781,8 @@ Deno.serve(async (req) => {
 
       const claimUrl = `${baseUrl}/vendor/claim?token=${token.token}`;
 
-      // Notify admin about unclaimed marketplace vendor
       await supabase.from("notifications").insert({
-        user_id: "00000000-0000-0000-0000-000000000000", // system placeholder
+        user_id: "00000000-0000-0000-0000-000000000000",
         type: "marketplace_vendor_invite",
         title: "New Marketplace Vendor Awaiting Claim",
         message: `${vendor_name || vendor_email || "Unknown vendor"} on ${platform} needs to claim their TrustLock account. Claim link: ${claimUrl}`,
@@ -466,7 +804,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: CLAIM_VENDOR — Vendor claims their marketplace account
+    //  ACTION: CLAIM_VENDOR
     // ══════════════════════════════════════════════════
     if (action === "claim_vendor") {
       const { token: claimToken, user_id } = body;
@@ -476,7 +814,6 @@ Deno.serve(async (req) => {
 
       const supabase = getSupabase();
 
-      // Look up token
       const { data: claim } = await supabase
         .from("vendor_claim_tokens")
         .select("*")
@@ -493,7 +830,6 @@ Deno.serve(async (req) => {
         return json({ error: "Claim token has expired" }, 410);
       }
 
-      // Claim the token
       await supabase
         .from("vendor_claim_tokens")
         .update({
@@ -503,7 +839,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", claim.id);
 
-      // Link any associated transaction to this vendor
       if (claim.transaction_id) {
         await supabase
           .from("transactions")
@@ -511,8 +846,6 @@ Deno.serve(async (req) => {
           .eq("id", claim.transaction_id);
       }
 
-      // Link ALL pending transactions from this marketplace vendor
-      // Look for other unclaimed tokens from the same platform vendor
       const { data: otherTokens } = await supabase
         .from("vendor_claim_tokens")
         .select("id, transaction_id")
@@ -535,7 +868,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Notify the vendor
       await supabase.from("notifications").insert({
         user_id,
         type: "success",
@@ -555,7 +887,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: LOOKUP_TOKEN — Public token validation for claim page
+    //  ACTION: LOOKUP_TOKEN
     // ══════════════════════════════════════════════════
     if (action === "lookup_token") {
       const { token: lookupToken } = body;
@@ -582,7 +914,7 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════
-    //  ACTION: FAST_TRACK_CONNECT — API-key-based onboarding for verified platforms
+    //  ACTION: FAST_TRACK_CONNECT
     // ══════════════════════════════════════════════════
     if (action === "fast_track_connect") {
       const { platform, seller_id, api_key, store_url, seller_email, seller_name } = body;
@@ -600,7 +932,6 @@ Deno.serve(async (req) => {
       const supabase = getSupabase();
       const platformConfig = MARKETPLACE_PLATFORMS[platform];
 
-      // Check if seller already connected via email
       let existingVendorId: string | null = null;
       if (seller_email) {
         const { data: profile } = await supabase
@@ -611,7 +942,6 @@ Deno.serve(async (req) => {
         existingVendorId = profile?.id || null;
       }
 
-      // If vendor exists, register the marketplace integration directly
       if (existingVendorId) {
         const integrationId = `mkt_ft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -670,7 +1000,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Vendor doesn't exist yet — create a fast-track claim token with 90-day expiry
       const { data: token, error: tokenErr } = await supabase
         .from("vendor_claim_tokens")
         .insert({
@@ -678,7 +1007,6 @@ Deno.serve(async (req) => {
           vendor_name: seller_name || null,
           platform,
           marketplace_vendor_id: seller_id,
-          metadata: { fast_track: true, store_url, api_key_prefix: api_key?.slice(0, 6) },
         })
         .select("token")
         .single();
@@ -705,7 +1033,7 @@ Deno.serve(async (req) => {
     }
 
     return json({
-      error: `Unknown action: ${action}. Supported: register, ingest_order, settlement_callback, list_platforms, list_integrations, generate_vendor_invite, claim_vendor, lookup_token, fast_track_connect`,
+      error: `Unknown action: ${action}. Supported: register, ingest_order, ingest_cart, bulk_onboard, platform_dashboard, settlement_callback, list_platforms, list_integrations, generate_vendor_invite, claim_vendor, lookup_token, fast_track_connect`,
     }, 400);
   } catch (err) {
     console.error("marketplace-bridge error:", err);

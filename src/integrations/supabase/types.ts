@@ -1864,6 +1864,45 @@ export type Database = {
           },
         ]
       }
+      platform_api_keys: {
+        Row: {
+          api_key_hash: string
+          contact_email: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          payout_account: string | null
+          platform_fee_percent: number
+          platform_name: string
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          api_key_hash: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          payout_account?: string | null
+          platform_fee_percent?: number
+          platform_name: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          api_key_hash?: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          payout_account?: string | null
+          platform_fee_percent?: number
+          platform_name?: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pre_order_contracts: {
         Row: {
           buyer_id: string | null
@@ -3503,6 +3542,7 @@ export type Database = {
           buyer_id: string | null
           buyer_location: string | null
           buyer_name: string | null
+          cart_id: string | null
           commodity_quantity: number | null
           commodity_unit: string | null
           corridor_route: string | null
@@ -3517,6 +3557,7 @@ export type Database = {
           milestone_status: string | null
           order_number: number | null
           order_type: string
+          platform_id: string | null
           price_currency: string | null
           price_snapshot_at: string | null
           released_date: string | null
@@ -3542,6 +3583,7 @@ export type Database = {
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          cart_id?: string | null
           commodity_quantity?: number | null
           commodity_unit?: string | null
           corridor_route?: string | null
@@ -3556,6 +3598,7 @@ export type Database = {
           milestone_status?: string | null
           order_number?: number | null
           order_type?: string
+          platform_id?: string | null
           price_currency?: string | null
           price_snapshot_at?: string | null
           released_date?: string | null
@@ -3581,6 +3624,7 @@ export type Database = {
           buyer_id?: string | null
           buyer_location?: string | null
           buyer_name?: string | null
+          cart_id?: string | null
           commodity_quantity?: number | null
           commodity_unit?: string | null
           corridor_route?: string | null
@@ -3595,6 +3639,7 @@ export type Database = {
           milestone_status?: string | null
           order_number?: number | null
           order_type?: string
+          platform_id?: string | null
           price_currency?: string | null
           price_snapshot_at?: string | null
           released_date?: string | null
@@ -3612,7 +3657,15 @@ export type Database = {
           vendor_location?: string | null
           vendor_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platform_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ubo_declarations: {
         Row: {
@@ -3774,9 +3827,11 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          industry: string | null
           integration_id: string | null
           marketplace_vendor_id: string | null
           platform: string
+          platform_id: string | null
           status: string
           token: string
           transaction_id: string | null
@@ -3789,9 +3844,11 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          industry?: string | null
           integration_id?: string | null
           marketplace_vendor_id?: string | null
           platform: string
+          platform_id?: string | null
           status?: string
           token?: string
           transaction_id?: string | null
@@ -3804,9 +3861,11 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          industry?: string | null
           integration_id?: string | null
           marketplace_vendor_id?: string | null
           platform?: string
+          platform_id?: string | null
           status?: string
           token?: string
           transaction_id?: string | null
@@ -3815,6 +3874,13 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_claim_tokens_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platform_api_keys"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_claim_tokens_transaction_id_fkey"
             columns: ["transaction_id"]
