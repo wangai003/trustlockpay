@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, MapPin, Building2, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { detectTradeScope } from "@/lib/tradeBlocs";
 
 export type TradeScope = "domestic" | "regional" | "international";
 
@@ -26,7 +27,7 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
     value: "regional",
     label: "Regional / Corridor",
     icon: Building2,
-    description: "Within a trade bloc (AfCFTA, ECOWAS, EAC, EU, ASEAN). Simplified docs.",
+    description: "Within a trade bloc (AfCFTA, ECOWAS, EU, ASEAN, USMCA, Mercosur, RCEP, GCC, etc.). Simplified docs.",
     docLevel: "Waybill + basic customs",
   },
   {
@@ -39,12 +40,13 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
 ];
 
 const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false }: TradeScopeSelectorProps) => {
-  // Auto-detect suggestion
-  const suggestedScope = buyerCountry && vendorCountry
-    ? buyerCountry === vendorCountry
-      ? "domestic"
-      : undefined // could detect regional via trade bloc mapping in future
-    : undefined;
+  // Auto-detect suggestion using global trade bloc mapping
+  const detected = useMemo(
+    () => detectTradeScope(buyerCountry || "", vendorCountry || ""),
+    [buyerCountry, vendorCountry]
+  );
+  const suggestedScope = buyerCountry && vendorCountry ? detected.scope : undefined;
+  const detectedBlocName = detected.bloc?.shortName;
 
   if (compact) {
     return (
