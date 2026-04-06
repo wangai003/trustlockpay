@@ -3218,6 +3218,7 @@ export type Database = {
           industry_overrides: Json | null
           is_active: boolean | null
           rate_percentage: number
+          remittance_fee_percentage: number
           tariff_rate_percentage: number | null
           tax_type: string
           trade_bloc: string | null
@@ -3231,6 +3232,7 @@ export type Database = {
           industry_overrides?: Json | null
           is_active?: boolean | null
           rate_percentage?: number
+          remittance_fee_percentage?: number
           tariff_rate_percentage?: number | null
           tax_type?: string
           trade_bloc?: string | null
@@ -3244,6 +3246,7 @@ export type Database = {
           industry_overrides?: Json | null
           is_active?: boolean | null
           rate_percentage?: number
+          remittance_fee_percentage?: number
           tariff_rate_percentage?: number | null
           tax_type?: string
           trade_bloc?: string | null
