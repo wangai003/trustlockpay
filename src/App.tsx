@@ -41,6 +41,7 @@ const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability"));
 const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
+const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
