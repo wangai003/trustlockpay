@@ -104,6 +104,9 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [tab, setTab] = useState("active");
   const [showCreate, setShowCreate] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [testJoinCode, setTestJoinCode] = useState("");
+  const [testJoinName, setTestJoinName] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [showCompleteTask, setShowCompleteTask] = useState<string | null>(null);
