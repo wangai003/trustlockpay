@@ -62,7 +62,7 @@ const AdminPlatformAnalytics = () => {
   const { data: profiles = [] } = useQuery({
     queryKey: ["admin-profiles-geo"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("id, country, entity_type");
+      const { data } = await supabase.from("profiles").select("id, location, entity_type");
       return data || [];
     },
   });
