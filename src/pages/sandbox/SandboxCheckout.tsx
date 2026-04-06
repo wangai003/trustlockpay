@@ -97,9 +97,10 @@ const SandboxCheckout = () => {
   const rawProcessorFee = isCryptoPayment ? 0 : Math.round(subtotal * (selectedProcessor.feeRate / 100) * 100) / 100;
   const combinedProcessorFee = Math.round((platformFee + rawProcessorFee) * 100) / 100;
   const escrowServiceFee = Math.round(subtotal * 0.01 * 100) / 100;
+  const totalTaxes = Math.round((taxAmount + remittanceFee) * 100) / 100;
   const totalFees = combinedProcessorFee;
-  const grandTotal = Math.round((subtotal + totalFees) * 100) / 100;
-  const fee = totalFees;
+  const grandTotal = Math.round((subtotal + totalFees + totalTaxes) * 100) / 100;
+  const fee = totalFees + totalTaxes;
 
   const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
   const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
