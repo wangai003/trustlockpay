@@ -605,17 +605,64 @@ const TestnetTeamsView = ({ testnet, role }: TestnetTeamsViewProps) => {
                 <Label>Assign To</Label>
                 <Select value={taskMemberId} onValueChange={setTaskMemberId}>
                   <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
-                  <SelectContent>{members.map(m => <SelectItem key={m.id} value={m.id}>{m.display_name || m.user_id}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {members.map(m => {
+                      const alreadyAssigned = tasks.some(t => t.member_id === m.id);
+                      return (
+                        <SelectItem key={m.id} value={m.id} disabled={alreadyAssigned}>
+                          <span className={cn(alreadyAssigned && "line-through text-muted-foreground")}>
+                            {m.display_name || m.user_id}
+                          </span>
+                          {alreadyAssigned && <span className="ml-2 text-[10px] text-muted-foreground">(assigned)</span>}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
                 </Select>
               </div>
-              <div><Label>Task Key</Label><Input value={taskKey} onChange={e => setTaskKey(e.target.value)} placeholder="e.g. assay_report" /></div>
-              <div><Label>Task Label</Label><Input value={taskLabel} onChange={e => setTaskLabel(e.target.value)} placeholder="e.g. Submit Assay Report" /></div>
-              <div><Label>Instructions</Label><Textarea value={taskInstructions} onChange={e => setTaskInstructions(e.target.value)} placeholder="What should this member do?" /></div>
+              <div>
+                <Label>Milestone & Task</Label>
+                <Select value={taskKey} onValueChange={(val) => {
+                  setTaskKey(val);
+                  const ms = INDUSTRY_MILESTONES[selectedWs.industry]?.find(m => m.key === val);
+                  if (ms) {
+                    setTaskLabel(ms.label);
+                    setTaskInstructions(ms.instructions);
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select milestone task" /></SelectTrigger>
+                  <SelectContent>
+                    {(INDUSTRY_MILESTONES[selectedWs.industry] || []).map(ms => {
+                      const alreadyUsed = tasks.some(t => t.milestone_key === ms.key);
+                      return (
+                        <SelectItem key={ms.key} value={ms.key} disabled={alreadyUsed}>
+                          <div className="flex items-center gap-2">
+                            <span className={cn(alreadyUsed && "line-through text-muted-foreground")}>{ms.label}</span>
+                            {ms.action && <Badge variant="outline" className="text-[10px]">{ms.action}</Badge>}
+                            {alreadyUsed && <span className="text-[10px] text-muted-foreground">(assigned)</span>}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {taskKey && (() => {
+                  const ms = INDUSTRY_MILESTONES[selectedWs.industry]?.find(m => m.key === taskKey);
+                  return ms ? (
+                    <div className="mt-2 p-2 rounded border border-border bg-muted/50 text-xs space-y-1">
+                      <p className="font-medium">{ms.label}</p>
+                      <p className="text-muted-foreground">{ms.instructions}</p>
+                      {ms.action && <Badge variant="secondary" className="text-[10px]">Action: {ms.action}</Badge>}
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+              <div><Label>Notes for Member</Label><Textarea value={taskInstructions} onChange={e => setTaskInstructions(e.target.value)} placeholder="Additional notes the member will see on their panel..." /></div>
               <div><Label>SLA (hours)</Label><Input type="number" value={taskSlaHours} onChange={e => setTaskSlaHours(e.target.value)} placeholder="e.g. 48" /></div>
             </div>
             <DialogFooter>
               <Button onClick={() => {
-                if (!taskMemberId || !taskKey) return toast.error("Fill required fields");
+                if (!taskMemberId || !taskKey) return toast.error("Select a member and milestone task");
                 assignTask(selectedWs.id, taskMemberId, taskKey, taskLabel || taskKey, taskInstructions, taskSlaHours ? parseInt(taskSlaHours) : undefined);
                 setShowAssignTask(false); setTaskKey(""); setTaskLabel(""); setTaskInstructions(""); setTaskSlaHours(""); setTaskMemberId("");
               }}>Assign Task</Button>
