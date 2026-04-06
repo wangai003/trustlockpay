@@ -310,6 +310,7 @@ Deno.serve(async (req) => {
       processor, direction, currency, chain,
       walletAddress, receiverAddress, transactionId,
       buyer_country, vendor_country, item_category, is_export,
+      bankTransferDetails, mobileMoneyDetails,
     } = body;
 
     const supabase = createClient(
