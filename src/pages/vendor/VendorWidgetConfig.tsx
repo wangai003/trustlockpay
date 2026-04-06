@@ -272,7 +272,7 @@ const VendorWidgetConfig = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Let vendors choose (no override)</SelectItem>
-                  {INDUSTRY_LIST.map((ind) => (
+                  {ALL_INDUSTRIES.map((ind) => (
                     <SelectItem key={ind.value} value={ind.value}>{ind.label}</SelectItem>
                   ))}
                 </SelectContent>
