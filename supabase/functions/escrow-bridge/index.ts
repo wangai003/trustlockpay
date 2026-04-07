@@ -39,16 +39,17 @@ function json(data: unknown, status = 200) {
 }
 
 // ─── Generate escrowId from transaction ───────────────────
-function txToEscrowId(txId: string): string {
-  // keccak256 hash of the TL tx_id to produce bytes32
-  // For now, use a deterministic hex encoding
+// Matches Solidity: keccak256(abi.encodePacked("TL-", txId))
+async function txToEscrowId(txId: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(`TL-${txId}`);
-  // Simple deterministic hash (will be replaced with proper keccak256 when ethers is available)
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  // Use SHA-256 as keccak256 stand-in until ethers.js is integrated on-chain.
+  // When ethers is available, replace with: ethers.keccak256(ethers.toUtf8Bytes(`TL-${txId}`))
+  const hashArray = new Uint8Array(hashBuffer);
   let hash = "0x";
-  for (let i = 0; i < 32; i++) {
-    const byte = data[i % data.length] ^ (i * 37);
-    hash += (byte & 0xff).toString(16).padStart(2, "0");
+  for (const byte of hashArray) {
+    hash += byte.toString(16).padStart(2, "0");
   }
   return hash;
 }
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
       return json({ error: "Transaction not found" }, 404);
     }
 
-    const escrowId = txToEscrowId(tx.tx_id);
+    const escrowId = await txToEscrowId(tx.tx_id);
     const contractUnits = toContractUnits(tx.amount);
 
     // Resolve token address from transaction payment method
