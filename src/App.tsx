@@ -165,6 +165,8 @@ const App = () => (
                 <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
                 <Route path="gas-treasury" element={<AdminGasTreasury />} />
                 <Route path="messages" element={<AdminMessages />} />
+                <Route path="team-chat" element={<AdminTeamChat />} />
+                <Route path="staff-dms" element={<AdminStaffDMs />} />
                 <Route path="accountability" element={<AdminAccountability />} />
                 <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="departments" element={<AdminDepartments />} />
