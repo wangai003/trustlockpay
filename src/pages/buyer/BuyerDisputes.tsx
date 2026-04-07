@@ -237,7 +237,8 @@ const BuyerDisputes = () => {
           const cfg = statusConfig[dispute.status] || statusConfig.pending;
           const row = rowIdx + 1;
           return (
-            <Card key={dispute.id}>
+            <div key={dispute.id} className="space-y-2">
+            <Card>
               <CardContent className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex-1 space-y-2">
@@ -302,6 +303,9 @@ const BuyerDisputes = () => {
                 </div>
               </CardContent>
             </Card>
+            {/* Arbitrator selection panel — appears when dispute enters arbitration */}
+            <ArbitratorProposalPanel disputeId={dispute.dbId} role="buyer" disputeStatus={dispute.status} />
+            </div>
           );
         })}
 
