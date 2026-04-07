@@ -16,7 +16,7 @@ const WALLETS = {
   escrow: {
     address: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
     label: "Azix Escrow Wallet",
-    purpose: "Holds escrow principal + pre-paid escrow fee. Releases principal to vendor, trickles fee to Transaction Wallet.",
+    purpose: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion — never deducted upfront.",
   },
 };
 

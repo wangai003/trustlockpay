@@ -498,6 +498,7 @@ export function calculateInvoiceFees(
     totalBuyerCharge,
     escrowWalletReceives: escrowPrincipal,
     transactionWalletReceives: round(trustlockFee + taxesAndDuties),
+    escrowFeeDeferred: true,
     buyerDisplay,
   };
 }
