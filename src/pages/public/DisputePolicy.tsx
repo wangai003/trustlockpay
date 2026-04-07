@@ -238,19 +238,70 @@ const DisputePolicy = () => {
                 If both parties independently request arbitration, each pays their own filing fee.
               </p>
 
-              <h4 className="text-xs font-semibold text-foreground mt-3">6.2 Fees (Tiered Flat Rate)</h4>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li><strong>Arbitration Filing &amp; Case Management Fee</strong> — a flat, non-refundable fee paid by the requesting party via TrustLock OS Pay:
-                  <ul className="ml-4 mt-1 space-y-0.5 list-[circle]">
-                    <li>$10,000 – $50,000 escrow → <strong>$500</strong></li>
-                    <li>$50,000 – $250,000 escrow → <strong>$1,500</strong></li>
-                    <li>$250,000 – $1,000,000 escrow → <strong>$3,000</strong></li>
-                    <li>$1,000,000+ escrow → <strong>$5,000</strong></li>
-                  </ul>
-                </li>
-                <li><strong>Arbitrator's Professional Fees:</strong> The appointed arbitrator's compensation is separate and determined by the institution's published fee schedule (e.g., ICC, LCIA, KIAC) after appointment. These fees are not included in the filing fee above.</li>
-                <li><strong>Cost Award:</strong> The arbitrator may order the losing party to reimburse the winner's filing fee and/or arbitrator costs as part of the binding ruling.</li>
-              </ul>
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.2 Arbitration Cost Breakdown</h4>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
+                Initiating arbitration involves <strong>three separate cost categories</strong>. Only the first is collected by TrustLock via OS Pay.
+              </p>
+
+              {/* Three-column fee breakdown table */}
+              <div className="overflow-x-auto rounded-lg border border-border mt-2">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted">
+                      <th className="text-left p-2 font-semibold text-foreground border-b border-border">Escrow Amount</th>
+                      <th className="text-center p-2 font-semibold text-primary border-b border-border">
+                        TrustLock Fee<br />
+                        <span className="font-normal text-[10px] text-muted-foreground">(Paid via OS Pay)</span>
+                      </th>
+                      <th className="text-center p-2 font-semibold text-foreground border-b border-border">
+                        Institution Filing Fee<br />
+                        <span className="font-normal text-[10px] text-muted-foreground">(Paid to arbitration body)</span>
+                      </th>
+                      <th className="text-center p-2 font-semibold text-foreground border-b border-border">
+                        Arbitrator Fee<br />
+                        <span className="font-normal text-[10px] text-muted-foreground">(Set by arbitrator)</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border/50">
+                      <td className="p-2 text-muted-foreground">$10K – $50K</td>
+                      <td className="p-2 text-center font-semibold text-primary">$500</td>
+                      <td className="p-2 text-center text-muted-foreground">~$3,000 – $5,000+</td>
+                      <td className="p-2 text-center text-muted-foreground" rowSpan={4}>
+                        <span className="italic">Varies by institution, case complexity, and hours billed. Determined after appointment.</span>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="p-2 text-muted-foreground">$50K – $250K</td>
+                      <td className="p-2 text-center font-semibold text-primary">$1,500</td>
+                      <td className="p-2 text-center text-muted-foreground">~$5,000 – $10,000+</td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="p-2 text-muted-foreground">$250K – $1M</td>
+                      <td className="p-2 text-center font-semibold text-primary">$3,000</td>
+                      <td className="p-2 text-center text-muted-foreground">~$10,000 – $20,000+</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 text-muted-foreground">$1M+</td>
+                      <td className="p-2 text-center font-semibold text-primary">$5,000</td>
+                      <td className="p-2 text-center text-muted-foreground">~$15,000 – $30,000+</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                <div className="p-2 rounded bg-primary/5 border border-primary/20">
+                  <strong className="text-primary">💳 What you pay through OS Pay:</strong> Only the TrustLock Case Management Fee (column 2). This is a flat, non-refundable fee that covers case documentation, blockchain proof packaging, party coordination, and arbitrator onboarding facilitation.
+                </div>
+                <div className="p-2 rounded bg-muted/50 border border-border">
+                  <strong className="text-foreground">🏛️ Institution &amp; Arbitrator Fees:</strong> These are paid directly to the chosen arbitration institution (ICC, LCIA, SIAC, KIAC, etc.) and the appointed arbitrator per their published schedule. TrustLock does not collect or control these amounts — they vary by institution, jurisdiction, and case complexity.
+                </div>
+                <div className="p-2 rounded bg-muted/50 border border-border">
+                  <strong className="text-foreground">⚖️ Cost Award:</strong> The arbitrator may order the losing party to reimburse the winner's filing fees, institution fees, and/or arbitrator costs as part of the binding ruling.
+                </div>
+              </div>
 
               <h4 className="text-xs font-semibold text-foreground mt-3">6.3 Arbitrator Selection</h4>
               <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
