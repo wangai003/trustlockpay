@@ -53,12 +53,14 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         uint8   milestoneCount;
         bool    released;
         bool    refunded;
-        bool    buyerApproved;
+        bool    buyerApproved;  // global approval (atomic escrows)
     }
 
     struct Milestone {
         uint256 amount;
         bool    released;
+        bool    buyerApproved;  // per-milestone buyer approval
+        bool    vendorApproved; // per-milestone vendor approval
     }
 
     mapping(bytes32 => EscrowRecord) public escrows;
