@@ -500,13 +500,24 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     bankTransferDetails: params.bankTransferDetails ? (params.bankTransferDetails as CheckoutSession["bankTransferDetails"]) : null,
   };
 
-  sessions.set(sessionId, session);
-
-  // Auto-expire after 30 minutes
-  setTimeout(() => {
-    const s = sessions.get(sessionId);
-    if (s && s.status === "pending") sessions.delete(sessionId);
-  }, 30 * 60 * 1000);
+  // Persist session to database (replaces in-memory Map)
+  await supabase.from("checkout_sessions").insert({
+    id: sessionId,
+    vendor_id: String(vendorId),
+    buyer_email: String(buyerEmail),
+    buyer_name: String(buyerName),
+    buyer_location: country,
+    amount: numAmount,
+    fee: fees.totalFees,
+    total: session.total,
+    payment_method: String(paymentMethod),
+    processor_id: processor.processorId,
+    order_type: orderType,
+    industry: params.industry ? String(params.industry) : null,
+    status: "pending",
+    session_data: session as unknown as Record<string, unknown>,
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  });
 
   // ── Crypto verification protocol ──
   const cryptoVerification = isCrypto ? {
