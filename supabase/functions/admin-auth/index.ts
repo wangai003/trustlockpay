@@ -97,7 +97,26 @@ Deno.serve(async (req) => {
             .eq("is_active", true)
             .maybeSingle();
 
-          return json({ success: true, needsSetup: false, name: account.name, adminId: account.id, isChief: !!chiefRecord, chiefRank: chiefRecord?.rank || null });
+          // Get department slug
+          let departmentSlug: string | null = null;
+          if (account.department_id) {
+            const { data: dept } = await supabase
+              .from("admin_departments")
+              .select("slug")
+              .eq("id", account.department_id)
+              .maybeSingle();
+            departmentSlug = dept?.slug || null;
+          }
+
+          return json({
+            success: true,
+            needsSetup: false,
+            name: account.name,
+            adminId: account.id,
+            isChief: !!chiefRecord,
+            chiefRank: chiefRecord?.rank || null,
+            departmentSlug,
+          });
         }
       }
 

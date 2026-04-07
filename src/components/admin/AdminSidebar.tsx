@@ -8,47 +8,89 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
+import { Badge } from "@/components/ui/badge";
+import { DEPARTMENTS } from "@/lib/adminDepartments";
 
+// Each nav item now has a moduleKey for department access control
 const allNavItems = [
-  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts", chiefOnly: false },
-  { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow work orders", chiefOnly: true },
-  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations", chiefOnly: true },
-  { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders", chiefOnly: true },
-  { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support", chiefOnly: false },
-  { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors", tip: "Manage vendor accounts, KYC, and tiers", chiefOnly: true },
-  { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers", tip: "View buyer accounts and order history", chiefOnly: true },
-  { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance", tip: "AML/KYC flags and regulatory compliance", chiefOnly: true },
-  { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts", chiefOnly: true },
-  { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports", chiefOnly: true },
-  { label: "Platform Analytics", icon: Activity, to: "/trustlock/admin/platform-analytics", tip: "Fund flow, funnels, adoption, and geographic insights across all TrustLock Pay products", chiefOnly: true },
-  { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", chiefOnly: true },
-  { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", chiefOnly: true },
-  { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators", chiefOnly: true },
-  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview", chiefOnly: false },
-  { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support", chiefOnly: false },
-  { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance", chiefOnly: true },
-  { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon", chiefOnly: true },
-  { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs", chiefOnly: true },
-  { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages", tip: "View and respond to all vendor and buyer messages", chiefOnly: false },
-  { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", chiefOnly: true },
-  { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", chiefOnly: false },
-  { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", chiefOnly: true },
-  { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", chiefOnly: true },
-  { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", chiefOnly: true },
+  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts", moduleKey: "overview" },
+  { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow work orders", moduleKey: "transactions" },
+  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations", moduleKey: "disputes" },
+  { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders", moduleKey: "workflow" },
+  { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support", moduleKey: "emmanuel" },
+  { label: "Vendors", icon: Users, to: "/trustlock/admin/vendors", tip: "Manage vendor accounts, KYC, and tiers", moduleKey: "vendors" },
+  { label: "Buyers", icon: UserCheck, to: "/trustlock/admin/buyers", tip: "View buyer accounts and order history", moduleKey: "buyers" },
+  { label: "Compliance", icon: ShieldCheck, to: "/trustlock/admin/compliance", tip: "AML/KYC flags and regulatory compliance", moduleKey: "compliance" },
+  { label: "Analytics", icon: BarChart3, to: "/trustlock/admin/analytics", tip: "Revenue, volume, and platform performance charts", moduleKey: "analytics" },
+  { label: "Reports", icon: FileText, to: "/trustlock/admin/reports", tip: "Generate and export summary reports", moduleKey: "reports" },
+  { label: "Platform Analytics", icon: Activity, to: "/trustlock/admin/platform-analytics", tip: "Fund flow, funnels, adoption, and geographic insights", moduleKey: "analytics" },
+  { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", moduleKey: "documents" },
+  { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", moduleKey: "finance" },
+  { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators", moduleKey: "audit" },
+  { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview", moduleKey: "industry" },
+  { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support", moduleKey: "overview" },
+  { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance", moduleKey: "tax" },
+  { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon", moduleKey: "blockchain" },
+  { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs", moduleKey: "gas" },
+  { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages", tip: "View and respond to all vendor and buyer messages", moduleKey: "messages" },
+  { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", moduleKey: "accountability" },
+  { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", moduleKey: "training" },
+  { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", moduleKey: "sandbox" },
+  { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", moduleKey: "platforms" },
+  { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings" },
 ];
+
+function getAdminAuth() {
+  try {
+    return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
+  } catch { return {}; }
+}
+
+function getAccessibleModules(): string[] | null {
+  const auth = getAdminAuth();
+  const deptSlug = auth.departmentSlug;
+
+  // Chiefs and executive always get full access
+  if (auth.isChief === true) return null; // null = all access
+
+  // If department is set, use its access modules
+  if (deptSlug) {
+    const dept = DEPARTMENTS.find(d => d.slug === deptSlug);
+    // Always include overview, emmanuel, training, industry for all staff
+    const base = ["overview", "emmanuel", "training", "industry"];
+    const deptModules = dept ? ([] as string[]) : base;
+    // We need the actual modules from the department — stored in DB but we mirror in DEPARTMENTS
+    // For now use the known access patterns
+    const ACCESS_MAP: Record<string, string[]> = {
+      executive: [], // null handled above
+      correspondence: ["overview", "messages", "vendors", "buyers", "training", "emmanuel"],
+      disputes: ["overview", "disputes", "documents", "training", "emmanuel"],
+      finance: ["overview", "transactions", "finance", "payout", "tax", "gas", "analytics", "training", "emmanuel"],
+      compliance: ["overview", "compliance", "documents", "training", "emmanuel"],
+      operations: ["overview", "transactions", "workflow", "vendors", "buyers", "platforms", "blockchain", "industry", "documents", "training", "emmanuel"],
+    };
+    return ACCESS_MAP[deptSlug] || base;
+  }
+
+  // Legacy: use chief-only check (backwards compat)
+  if (auth.isChief === true) return null;
+  return ["overview", "emmanuel", "messages", "training", "industry"];
+}
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const isChief = (() => {
-    try {
-      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
-      return auth.isChief === true;
-    } catch { return false; }
-  })();
+  const auth = getAdminAuth();
+  const isChief = auth.isChief === true;
+  const deptSlug = auth.departmentSlug;
+  const deptName = deptSlug ? DEPARTMENTS.find(d => d.slug === deptSlug)?.name : null;
 
-  const navItems = allNavItems.filter((item) => !item.chiefOnly || isChief);
+  const accessibleModules = getAccessibleModules();
+  const navItems = allNavItems.filter((item) => {
+    if (accessibleModules === null) return true; // full access
+    return accessibleModules.includes(item.moduleKey);
+  });
 
   useEffect(() => {
     const handler = () => setOpen(true);
@@ -96,6 +138,16 @@ const AdminSidebar = () => {
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Department Badge */}
+        {deptName && (
+          <div className="px-4 py-2 border-b border-sidebar-border">
+            <Badge variant="outline" className="text-[10px] gap-1 w-full justify-center">
+              <Building2 className="w-3 h-3" />
+              {deptName}
+            </Badge>
+          </div>
+        )}
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => (

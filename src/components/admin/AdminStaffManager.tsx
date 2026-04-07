@@ -8,7 +8,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DEPARTMENTS } from "@/lib/adminDepartments";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -48,15 +50,16 @@ interface AdminAccount {
   deleted_at: string | null;
   reinstated_at: string | null;
   created_at: string;
+  department_slug?: string;
 }
 
 // Testnet mock staff for simulation
 const TESTNET_MOCK_STAFF: AdminAccount[] = [
-  { id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", username: "michael.tl", name: "Michael", email: "michael@trustlock.co", is_setup: true, is_deleted: false, is_chief: true, chief_rank: 1, deleted_at: null, reinstated_at: null, created_at: "2025-01-15T00:00:00Z" },
-  { id: "staff-david-001", username: "david.tl", name: "David", email: "david@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-01T00:00:00Z" },
-  { id: "staff-emmanuel-001", username: "emmanuel.tl", name: "Emmanuel", email: "emmanuel@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-10T00:00:00Z" },
-  { id: "staff-sarah-001", username: "sarah.tl", name: "Sarah", email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2026-03-20T00:00:00Z" },
-  { id: "staff-kwame-001", username: "kwame.tl", name: "Kwame", email: "kwame@trustlock.co", is_setup: true, is_deleted: true, is_chief: false, chief_rank: null, deleted_at: "2026-03-01T00:00:00Z", reinstated_at: null, created_at: "2025-06-01T00:00:00Z" },
+  { id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", username: "michael.tl", name: "Michael", email: "michael@trustlock.co", is_setup: true, is_deleted: false, is_chief: true, chief_rank: 1, deleted_at: null, reinstated_at: null, created_at: "2025-01-15T00:00:00Z", department_slug: "executive" },
+  { id: "staff-david-001", username: "david.tl", name: "David", email: "david@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-01T00:00:00Z", department_slug: "correspondence" },
+  { id: "staff-emmanuel-001", username: "emmanuel.tl", name: "Emmanuel", email: "emmanuel@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-10T00:00:00Z", department_slug: "operations" },
+  { id: "staff-sarah-001", username: "sarah.tl", name: "Sarah", email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2026-03-20T00:00:00Z", department_slug: "compliance" },
+  { id: "staff-kwame-001", username: "kwame.tl", name: "Kwame", email: "kwame@trustlock.co", is_setup: true, is_deleted: true, is_chief: false, chief_rank: null, deleted_at: "2026-03-01T00:00:00Z", reinstated_at: null, created_at: "2025-06-01T00:00:00Z", department_slug: "finance" },
 ];
 
 function isTestnetMode(): boolean {
@@ -71,6 +74,7 @@ export default function AdminStaffManager() {
 
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
+  const [newDepartment, setNewDepartment] = useState("operations");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [tempPwResult, setTempPwResult] = useState<{ username: string; temp_password: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -135,12 +139,13 @@ export default function AdminStaffManager() {
           id: `staff-${Date.now()}`, username, name,
           email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
+          department_slug: newDepartment,
         };
         const updated = [...testnetStaff, newAccount];
         saveTestnetStaff(updated);
         return Promise.resolve({ account: { username: newAccount.username, temp_password: tempPw } });
       }
-      return callStaffApi({ action: "add", chiefAdminId, username, name });
+      return callStaffApi({ action: "add", chiefAdminId, username, name, departmentSlug: newDepartment });
     },
     onSuccess: (res) => {
       if (res.error) { toast.error(res.error); return; }
@@ -311,13 +316,19 @@ export default function AdminStaffManager() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{a.username}{a.email ? ` · ${a.email}` : ""}</p>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 flex-wrap">
                   {a.is_setup ? (
                     <Badge variant="secondary" className="text-[10px]">Setup Complete</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Awaiting Setup</Badge>
                   )}
                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
+                  {a.department_slug && (
+                    <Badge variant="outline" className="text-[10px] gap-1">
+                      <Building2 className="w-2.5 h-2.5" />
+                      {DEPARTMENTS.find(d => d.slug === a.department_slug)?.name || a.department_slug}
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap justify-end">
@@ -382,6 +393,24 @@ export default function AdminStaffManager() {
                 <p className="font-mono text-sm font-bold">{generatedUsername}</p>
               </div>
             )}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Department Assignment</p>
+              <Select value={newDepartment} onValueChange={setNewDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map(d => (
+                    <SelectItem key={d.slug} value={d.slug}>
+                      <div className="flex flex-col">
+                        <span className="text-sm">{d.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{d.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAddDialog(false)}>Cancel</Button>

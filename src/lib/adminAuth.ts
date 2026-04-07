@@ -23,6 +23,7 @@ export interface AdminLoginResult {
   adminId?: string;
   isChief?: boolean;
   chiefRank?: number | null;
+  departmentSlug?: string | null;
   locked?: boolean;
   remaining?: number;
   error?: string;

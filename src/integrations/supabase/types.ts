@@ -88,6 +88,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
+          department_id: string | null
           email: string | null
           failed_attempts: number
           id: string
@@ -105,6 +106,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          department_id?: string | null
           email?: string | null
           failed_attempts?: number
           id?: string
@@ -122,6 +124,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          department_id?: string | null
           email?: string | null
           failed_attempts?: number
           id?: string
@@ -141,6 +144,13 @@ export type Database = {
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_accounts_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "admin_departments"
             referencedColumns: ["id"]
           },
         ]
@@ -232,6 +242,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      admin_departments: {
+        Row: {
+          access_modules: string[]
+          can_message_clients: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          access_modules?: string[]
+          can_message_clients?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          access_modules?: string[]
+          can_message_clients?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       admin_direct_messages: {
         Row: {

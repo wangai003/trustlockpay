@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     // ── ADD NEW ADMIN (any chief can add) ──────────────────
     if (action === "add") {
-      const { username, name } = params;
+      const { username, name, departmentSlug } = params;
       if (!username || !name) return json({ error: "Username and name required." }, 400);
 
       const { data: existing } = await supabase
@@ -57,13 +57,33 @@ Deno.serve(async (req) => {
         return json({ error: "This username belongs to a deleted account. Use reinstate instead." }, 409);
       }
 
+      // Resolve department ID from slug
+      let deptId: string | null = null;
+      if (departmentSlug) {
+        const { data: dept } = await supabase
+          .from("admin_departments")
+          .select("id")
+          .eq("slug", departmentSlug)
+          .maybeSingle();
+        deptId = dept?.id || null;
+      }
+
       const { data: result, error } = await supabase.rpc("add_admin_account", {
         _username: username,
         _name: name,
       });
 
       if (error) return json({ error: error.message }, 500);
-      return json({ success: true, account: result });
+
+      // Set department if resolved
+      if (deptId && result?.id) {
+        await supabase
+          .from("admin_accounts")
+          .update({ department_id: deptId })
+          .eq("id", result.id);
+      }
+
+      return json({ success: true, account: { ...result, department_slug: departmentSlug } });
     }
 
     // ── DELETE (SOFT) — original chief only ────────────────
@@ -223,7 +243,7 @@ Deno.serve(async (req) => {
     if (action === "list") {
       const { data: accounts, error } = await supabase
         .from("admin_accounts")
-        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at")
+        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at, department_id")
         .order("created_at", { ascending: true });
 
       if (error) return json({ error: error.message }, 500);
@@ -233,12 +253,18 @@ Deno.serve(async (req) => {
         .select("admin_id, rank")
         .eq("is_active", true);
 
+      const { data: departments } = await supabase
+        .from("admin_departments")
+        .select("id, slug, name");
+
       const chiefMap = new Map((chiefs || []).map((c: any) => [c.admin_id, c.rank]));
+      const deptMap = new Map((departments || []).map((d: any) => [d.id, d.slug]));
 
       const enriched = (accounts || []).map((a: any) => ({
         ...a,
         is_chief: chiefMap.has(a.id),
         chief_rank: chiefMap.get(a.id) || null,
+        department_slug: deptMap.get(a.department_id) || null,
       }));
 
       return json({ accounts: enriched, callerRank });
