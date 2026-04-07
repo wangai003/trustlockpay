@@ -346,23 +346,27 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  4. SPLIT PAYOUT — 1.0% fee on VENDOR share ONLY
+    //  4. SPLIT PAYOUT — Pre-calculated amounts, 1.0% fee on vendor share
     // ═══════════════════════════════════════════════════════════
+    /**
+     * @notice Split escrowed funds (dispute resolution). Backend pre-calculates amounts.
+     * @param orderId       The escrow order
+     * @param buyerAmount   Exact amount to return to buyer (0 fees)
+     * @param vendorAmount  Gross amount for vendor (1% escrow fee deducted from this)
+     */
     function splitPayout(
         bytes32 orderId,
-        uint256 vendorShareBps
+        uint256 buyerAmount,
+        uint256 vendorAmount
     ) external onlyOperator nonReentrant escrowExists(orderId) notSettled(orderId) {
-        require(vendorShareBps <= BPS, "Invalid bps");
-
         EscrowRecord storage e = escrows[orderId];
+        require(buyerAmount + vendorAmount == e.lockedAmount, "Amounts must equal locked total");
+
         IERC20 stablecoin = IERC20(e.token);
-        uint256 locked = e.lockedAmount;
 
-        uint256 vendorGross = (locked * vendorShareBps) / BPS;
-        uint256 buyerAmount = locked - vendorGross;
-
-        uint256 vendorFee = (vendorGross * ESCROW_RELEASE_FEE_BPS) / BPS;
-        uint256 vendorNet = vendorGross - vendorFee;
+        // 1% escrow fee on vendor share only
+        uint256 vendorFee = (vendorAmount * ESCROW_RELEASE_FEE_BPS) / BPS;
+        uint256 vendorNet = vendorAmount - vendorFee;
 
         stablecoin.safeTransfer(TRANSACTION_WALLET, vendorFee);
         stablecoin.safeTransfer(e.vendor, vendorNet);
