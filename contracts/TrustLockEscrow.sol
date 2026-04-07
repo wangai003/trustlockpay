@@ -19,9 +19,9 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract TrustLockEscrow is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // ─── Hardcoded Azix Wallet Addresses ─────────────────────
-    address public constant TRANSACTION_WALLET = 0x7A3b000000000000000000000000000000F92d00;
-    address public constant ESCROW_WALLET      = 0x4E1c000000000000000000000000000000A83b00;
+    // ─── Azix Wallet Addresses (set at deployment) ─────────────
+    address public immutable TRANSACTION_WALLET;
+    address public immutable ESCROW_WALLET;
 
     // ─── Supported Tokens (Polygon Mainnet) ──────────────────
     address public constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
@@ -131,7 +131,16 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ─── Constructor ─────────────────────────────────────────
-    constructor() Ownable(msg.sender) {
+    constructor(
+        address _transactionWallet,
+        address _escrowWallet
+    ) Ownable(msg.sender) {
+        require(_transactionWallet != address(0), "Invalid transaction wallet");
+        require(_escrowWallet != address(0), "Invalid escrow wallet");
+
+        TRANSACTION_WALLET = _transactionWallet;
+        ESCROW_WALLET = _escrowWallet;
+
         allowedTokens[USDC] = true;
         allowedTokens[USDT] = true;
         operators[msg.sender] = true;
