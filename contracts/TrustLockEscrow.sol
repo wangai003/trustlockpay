@@ -352,7 +352,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             e.buyerApproved = true;
         }
 
-        emit BuyerApproval(orderId, msg.sender);
+        emit BuyerApproval(orderId, _msgSender());
     }
 
     // ═══════════════════════════════════════════════════════════
