@@ -40,6 +40,7 @@ const BuyerDisputes = () => {
 
   const disputes = isTestnet
     ? testnet.disputes.map(d => ({
+        dbId: d.id || d.dispute_id,
         id: d.dispute_id,
         txId: d.tx_id,
         vendor: d.vendor_name,
