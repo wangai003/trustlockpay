@@ -18,8 +18,8 @@ const ESCROW_ABI = {
   lockFundsWithMilestones: "function lockFundsWithMilestones(bytes32 orderId, address token, address buyer, address vendor, uint256 amount, uint256[] milestoneAmounts)",
   releaseFunds: "function releaseFunds(bytes32 orderId)",
   refundBuyer: "function refundBuyer(bytes32 orderId)",
-  splitPayout: "function splitPayout(bytes32 orderId, uint256 vendorShareBps)",
-  approveMilestone: "function approveMilestone(bytes32 orderId)",
+  splitPayout: "function splitPayout(bytes32 orderId, uint256 buyerAmount, uint256 vendorAmount)",
+  approveMilestone: "function approveMilestone(bytes32 orderId, uint256 milestoneIndex, bool isBuyer)",
   releaseMilestone: "function releaseMilestone(bytes32 orderId, uint256 milestoneIndex)",
   refundMilestone: "function refundMilestone(bytes32 orderId, uint256 milestoneIndex)",
 };
