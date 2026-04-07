@@ -106,6 +106,16 @@ const BuyerDisputes = () => {
     input.click();
   };
 
+  const handleRequestArbitrator = (dispute: typeof disputes[0]) => {
+    const fee = (dispute.rawAmount * 0.02).toFixed(2);
+    const confirmed = window.confirm(
+      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable. You will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
+    );
+    if (!confirmed) return;
+    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${dispute.txId}`)}&amount=${fee}`);
+    toast.info("Complete the arbitration fee payment to initiate professional review.");
+  };
+
   return (
     <div>
       <BuyerHeader title="Disputes" />
