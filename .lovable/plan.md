@@ -1,93 +1,65 @@
 
-## Part 1: Training Manual Update
-Add comprehensive arbitration section covering:
-- Case management fee tiers ($500–$5,000)
-- 7-phase arbitration procedure
-- OS Pay integration for fee collection
-- Arbitrator portal system (AMS)
-- Case file packaging automation
-- 7-day auto-assignment countdown
-- Ruling distribution & blockchain anchoring
-- Compliance recordkeeping
 
----
+# Fund Flow Alignment: Subtotal-Only Escrow Routing
 
-## Part 2: Admin Department Division Strategy
+## Current State — Already Correct
 
-### Proposed Departments (based on current system responsibilities)
+After reviewing the full stack (feeEngine.ts, wallet-routing-bridge, escrow-bridge, TrustLockEscrow.sol), the system **already implements** the exact model you described:
 
-#### 1. **Executive Office** (Chief Admin / Rank 1)
-- Full access to ALL modules
-- Can enter any department team chat
-- Staff management (hire, promote, demote, delete)
-- Override authority (48-hour window)
-- Final escalation point
-- Platform analytics & reporting
+```text
+CHECKOUT FLOW:
+  Buyer pays: Subtotal + 0.5% platform fee + processor fee + taxes
+                    ↓
+  Processor takes their cut (before funds reach TrustLock)
+                    ↓
+  ALL remaining funds → Transaction Fee Wallet
+                    ↓
+  TX Wallet keeps: 0.5% platform fee + taxes
+  TX Wallet routes: EXACT SUBTOTAL → Escrow Wallet (smart contract)
+                    ↓
+  Contract locks: EXACT SUBTOTAL (no fees baked in upfront)
 
-#### 2. **Correspondence & Client Relations**
-- Anonymous messaging (TL-Agent-XXXX) with buyers/vendors
-- Shared inbox thread management
-- Notification triage
-- Client onboarding support
-- Help center escalations
-- **Only department (alongside Executive) with direct client messaging access**
+RELEASE FLOW (Atomic):
+  Contract extracts 1% from locked subtotal → TX Wallet (fee loop)
+  Vendor receives: subtotal - 1% = net payout
 
-#### 3. **Disputes & Arbitration**
-- Dispute case management
-- Arbitration fee verification
-- Case file packaging & arbitrator portal management
-- Ruling distribution & enforcement
-- Evidence review
-- Arbitrator directory management
+RELEASE FLOW (Milestone):
+  Each milestone release: fractional fee = 1% ÷ total milestones
+  Final milestone absorbs rounding remainder
+  All fractional fees route back to TX Wallet (fee loop)
+```
 
-#### 4. **Finance & Payouts**
-- OS Pay oversight
-- Payout processing & reconciliation
-- Fee auditing (external fee tracker)
-- Gas treasury management
-- Tax remittance ledger
-- Revenue analytics
+### What is already wired correctly
 
-#### 5. **Compliance & Risk**
-- KYC/KYB review queue
-- Sanctions screening oversight
-- Document scanning & verification
-- Compliance flag management
-- Anti-structuring monitoring
-- Travel rule enforcement
+1. **feeEngine.ts** — `escrowWalletReceives: escrowPrincipal` (the agreed subtotal, nothing more)
+2. **wallet-routing-bridge** — Routes only `escrowPrincipal` from TX Wallet to Escrow Wallet
+3. **escrow-bridge** — Calculates `escrowFee = amount * 1%` at release, `vendorPayout = amount - escrowFee`
+4. **TrustLockEscrow.sol** — `ESCROW_RELEASE_FEE_BPS = 100` (1%), extracted at `releaseFunds` and `releaseMilestone`, sent to `TRANSACTION_WALLET`
+5. **Milestone fractionalization** — `fractionalFee = totalEscrowFee / milestoneCount`, remainder absorption on last milestone
+6. **Refunds** — $0 fees, full principal returned
+7. **Split payouts** — 1% on vendor share only, buyer gets full amount
 
-#### 6. **Operations & Workflow**
-- Transaction monitoring & status updates
-- Milestone verification
-- Vendor/buyer account management
-- Platform configuration
-- Industry template management
-- Blockchain proof oversight
+### Minor Cleanup Items (3 small fixes)
 
-### Implementation Plan
+These are comment/documentation clarifications, not logic bugs:
 
-**Phase 1: Database Schema**
-- Add `admin_departments` table (id, name, slug, description, access_modules)
-- Add `department_id` column to `admin_accounts`
-- Add `admin_department_access` table for module-level permissions
+1. **feeEngine.ts line 5-8**: Comments say "1% escrow fee baked in" — misleading. The escrow fee is NOT baked into the principal sent to the escrow wallet. It is extracted at release. Update comments to say: "Escrow Wallet holds vendor principal. On release, 1% is extracted and trickled back to Transaction Fee Wallet."
 
-**Phase 2: Staff Management UI Updates**
-- Department selector in "Add New Admin" form
-- Department badge on staff list
-- Department filter/grouping
+2. **wallet-routing-bridge line 19**: Same misleading comment about "pre-paid escrow fee." Update to: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion."
 
-**Phase 3: Access Control (RBAC by Department)**
-- Sidebar modules filtered by department
-- API-level access checks
-- Cross-department isolation
+3. **InvoiceFeeCalculator.tsx**: The `Escrow Service Fee (1.0%)` line should include a note like: "Deducted from vendor payout only when the deal is completed — never deducted upfront." (This is partially done but could be more explicit.)
 
-**Phase 4: Team Chat Isolation**
-- Department-scoped chat channels
-- Executive transcendence (can join any channel)
-- No cross-department messaging (hard rule)
-- Client messaging restricted to Correspondence + Executive only
+### No structural changes needed
 
-**Phase 5: Dashboard Personalization**
-- Department-specific overview widgets
-- Relevant quick actions per department
-- Scoped notification routing
+The architecture already ensures:
+- Only the exact subtotal leaves the TX Wallet to the Escrow Wallet
+- The 1% is never deducted until a deal is complete (release or milestone completion)
+- The fee loops back to the TX Wallet (circular revenue model)
+- Milestone fees are fractionalized per the formula you described
+
+### Implementation steps
+
+1. Update misleading comments in `feeEngine.ts`, `wallet-routing-bridge`, and `InvoiceFeeCalculator.tsx` to clearly state: escrow fee is deferred until deal completion
+2. Add an explicit `escrowFeeDeferred: true` flag to the `InvoiceFeeCalculation` interface for frontend clarity
+3. Update the invoice UI note to read: "This fee is only collected when the deal is marked complete — never upfront"
+
