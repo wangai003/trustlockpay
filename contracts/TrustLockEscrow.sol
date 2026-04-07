@@ -89,7 +89,8 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address indexed token,
         address buyer,
         address vendor,
-        uint256 lockedAmount
+        uint256 lockedAmount,
+        uint8   milestoneCount
     );
 
     event FundsReleased(
@@ -127,6 +128,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         uint256 releaseFee
     );
 
+    event MilestoneRefunded(
+        bytes32 indexed orderId,
+        uint256 milestoneIndex,
+        uint256 refundAmount
+    );
     event BuyerApproval(bytes32 indexed orderId, address indexed buyer);
     event OperatorUpdated(address indexed operator, bool status);
     event AllowedTokenUpdated(address indexed token, bool status);
@@ -248,7 +254,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             buyerApproved: false
         });
 
-        emit FundsLocked(orderId, token, buyer, vendor, amount);
+        emit FundsLocked(orderId, token, buyer, vendor, amount, 0);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -299,7 +305,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             });
         }
 
-        emit FundsLocked(orderId, token, buyer, vendor, amount);
+        emit FundsLocked(orderId, token, buyer, vendor, amount, milestoneCount);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -503,7 +509,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             m.refunded = true;
             e.milestonesResolved++;
             _checkAllResolved(orderId, e);
-            emit FundsRefunded(orderId, e.buyer, 0);
+            emit MilestoneRefunded(orderId, milestoneIndex, 0);
             return;
         }
 
@@ -515,7 +521,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         _checkAllResolved(orderId, e);
 
-        emit FundsRefunded(orderId, e.buyer, m.amount);
+        emit MilestoneRefunded(orderId, milestoneIndex, m.amount);
     }
 
     // ─── Internal: auto-settle when all milestones resolved ──────
