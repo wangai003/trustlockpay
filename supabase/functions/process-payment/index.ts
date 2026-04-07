@@ -13,8 +13,9 @@ const AZIX_WALLETS = {
 };
 
 // ─── Fee Constants (basis points) ────────────────────────
-const PLATFORM_FEE_CRYPTO_BPS = 100; // 1.0%
-const PLATFORM_FEE_FIAT_BPS = 150;   // 1.5%
+// ALIGNED with wallet-routing-bridge: TrustLock transaction fee is 0.5% for all methods
+const PLATFORM_FEE_CRYPTO_BPS = 50;  // 0.5% (aligned with checkout-widget & wallet-routing-bridge)
+const PLATFORM_FEE_FIAT_BPS = 50;    // 0.5% (TrustLock transaction fee — processor fee is separate)
 
 // ─── Types ────────────────────────────────────────────────
 interface ProcessPaymentRequest {
