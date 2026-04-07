@@ -172,7 +172,7 @@ const VendorFeeSimulator = () => {
                   <Badge variant="outline" className="ml-2 text-[10px]">Domestic</Badge>
                 )}
                 {result.taxData?.summary?.de_minimis_applied && (
-                  <Badge variant="outline" className="ml-2 text-[10px] text-green-600 border-green-300">De Minimis — Duties Waived</Badge>
+                  <Badge variant="outline" className="ml-2 text-[10px] text-primary border-primary/30">De Minimis — Duties Waived</Badge>
                 )}
               </div>
               {result.taxData?.notes && (
