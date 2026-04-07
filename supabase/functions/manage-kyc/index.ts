@@ -236,6 +236,34 @@ Deno.serve(async (req) => {
             rejected_at: new Date().toISOString(),
           });
         }
+
+        // ─── Cross-Department Alert Routing ─────────────────────
+        if (isApproved) {
+          // Route to Finance: unblock payouts
+          await supabaseAdmin.rpc("route_department_alert", {
+            _source_dept: "compliance",
+            _target_dept: "finance",
+            _alert_type: "kyc_cleared",
+            _title: "KYC Approved — Unblock Payouts",
+            _message: `Compliance has approved KYC for vendor ${vendorId?.slice(0, 8)}. Review and release any held payouts for orders above $5,000 threshold.`,
+            _priority: "high",
+            _entity_type: "kyc",
+            _entity_id: queue_id || vendorId || null,
+            _admin_id: user.id,
+          });
+          // Route to Operations: update transaction statuses
+          await supabaseAdmin.rpc("route_department_alert", {
+            _source_dept: "compliance",
+            _target_dept: "operations",
+            _alert_type: "kyc_cleared",
+            _title: "KYC Cleared — Verify Transaction Statuses",
+            _message: `KYC approved for vendor ${vendorId?.slice(0, 8)}. Verify all previously held transactions are now active.`,
+            _priority: "normal",
+            _entity_type: "kyc",
+            _entity_id: queue_id || vendorId || null,
+            _admin_id: user.id,
+          });
+        }
       }
 
       return json({ success: true, decision });
