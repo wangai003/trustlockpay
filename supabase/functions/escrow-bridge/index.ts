@@ -66,6 +66,19 @@ function resolveTokenAddress(tx: Record<string, unknown>): string {
   return USDC_ADDRESS; // Default to USDC
 }
 
+// ─── Resolve user's Polygon wallet address from profiles ──
+async function resolveWalletAddress(
+  supabase: ReturnType<typeof getSupabase>,
+  userId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("wallet_address")
+    .eq("id", userId)
+    .single();
+  return (data as Record<string, unknown>)?.wallet_address as string | null;
+}
+
 // ─── Send transaction via Polygon RPC (eth_sendRawTransaction) ───
 async function sendContractCall(
   functionSig: string,
