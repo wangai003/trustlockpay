@@ -191,6 +191,7 @@ const docTypeLabel: Record<string, string> = {
   ack_form: "Legal",
   account_pause_record: "Audit",
   account_deletion_archive: "Compliance",
+  arbitrator_ruling: "Arbitration",
 };
 
 function ProtectionDocsSection({ role }: { role: string }) {

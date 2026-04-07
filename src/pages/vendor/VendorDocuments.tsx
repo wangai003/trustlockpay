@@ -212,6 +212,7 @@ const docTypeLabel: Record<string, string> = {
   dispute_evidence_package: "Evidence",
   vendor_consent: "Legal",
   ack_form: "Legal",
+  arbitrator_ruling: "Arbitration",
 };
 
 function VendorProtectionDocsSection() {
