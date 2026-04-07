@@ -291,10 +291,10 @@ const DisputePolicy = () => {
                       <td className="py-2 pr-4">No fee (100% refund)</td>
                       <td className="py-2">N/A</td>
                     </tr>
-                    <tr className="border-b border-border/50">
-                      <td className="py-2 pr-4">External arbitration (≥$10K)</td>
-                      <td className="py-2 pr-4">2% of transaction</td>
-                      <td className="py-2">Losing party</td>
+                     <tr className="border-b border-border/50">
+                       <td className="py-2 pr-4">Arbitration filing &amp; case management (≥$10K)</td>
+                       <td className="py-2 pr-4">2% of escrow principal</td>
+                       <td className="py-2">Requesting party (non-refundable)</td>
                     </tr>
                     <tr className="border-b border-border/50">
                       <td className="py-2 pr-4">Buyer wins — refund</td>
