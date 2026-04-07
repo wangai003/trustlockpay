@@ -246,6 +246,97 @@ export type Database = {
           },
         ]
       }
+      admin_cross_department_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          completed_at: string | null
+          created_at: string
+          created_by_admin_id: string | null
+          dependency_chain: Json | null
+          id: string
+          message: string | null
+          override_at: string | null
+          override_by: string | null
+          override_note: string | null
+          priority: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          source_department: string
+          status: string
+          target_department: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_admin_id?: string | null
+          dependency_chain?: Json | null
+          id?: string
+          message?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_note?: string | null
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          source_department: string
+          status?: string
+          target_department: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_admin_id?: string | null
+          dependency_chain?: Json | null
+          id?: string
+          message?: string | null
+          override_at?: string | null
+          override_by?: string | null
+          override_note?: string | null
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          source_department?: string
+          status?: string
+          target_department?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_cross_department_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_cross_department_alerts_created_by_admin_id_fkey"
+            columns: ["created_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_cross_department_alerts_override_by_fkey"
+            columns: ["override_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_department_rr_pointer: {
         Row: {
           department_slug: string
@@ -5177,6 +5268,20 @@ export type Database = {
       }
       hash_arbitrator_password: { Args: { _password: string }; Returns: string }
       hash_password: { Args: { _password: string }; Returns: string }
+      route_department_alert: {
+        Args: {
+          _admin_id?: string
+          _alert_type: string
+          _entity_id?: string
+          _entity_type?: string
+          _message: string
+          _priority?: string
+          _source_dept: string
+          _target_dept: string
+          _title: string
+        }
+        Returns: string
+      }
       verify_admin_password: {
         Args: { _account_id: string; _password: string }
         Returns: boolean
