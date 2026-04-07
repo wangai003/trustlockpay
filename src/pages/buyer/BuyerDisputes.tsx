@@ -15,6 +15,7 @@ import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getArbitrationFee } from "@/lib/arbitrationFees";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -110,9 +111,10 @@ const BuyerDisputes = () => {
   };
 
   const handleRequestArbitrator = async (dispute: typeof disputes[0]) => {
-    const fee = (dispute.rawAmount * 0.02).toFixed(2);
+    const feeAmount = getArbitrationFee(dispute.rawAmount);
+    const fee = feeAmount.toFixed(2);
     const confirmed = window.confirm(
-      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Filing & Case Management Fee (2%): $${fee}\n\nThis non-refundable fee covers TrustLock's case management and coordination. The appointed arbitrator's professional fees are separate and determined by their institution after appointment.\n\nYou will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
+      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Filing & Case Management Fee: $${feeAmount.toLocaleString()}\n\nThis non-refundable flat fee covers TrustLock's case management and coordination. The appointed arbitrator's professional fees are separate and determined by their institution after appointment.\n\nYou will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
     );
     if (!confirmed) return;
 
@@ -322,7 +324,7 @@ const BuyerDisputes = () => {
         <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
-          <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, either party may request a professional arbitrator. A non-refundable 2% Arbitration Filing & Case Management Fee (based on the escrowed principal) is required via TrustLock OS Pay. This covers case coordination — the arbitrator's professional fees are separate, determined by their institution after appointment. Arbitration follows ICC/UNCITRAL rules.</p>
+          <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, either party may request a professional arbitrator. A non-refundable flat Arbitration Filing & Case Management Fee is required via TrustLock OS Pay ($500 for $10K–$50K · $1,500 for $50K–$250K · $3,000 for $250K–$1M · $5,000 for $1M+). This covers case coordination — the arbitrator's professional fees are separate, determined by their institution after appointment. Arbitration follows ICC/UNCITRAL rules.</p>
         </div>
       </div>
     </div>

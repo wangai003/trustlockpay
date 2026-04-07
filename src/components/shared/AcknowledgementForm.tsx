@@ -412,7 +412,7 @@ const AcknowledgementForm = ({
                      id="arbitration-consent"
                      checked={!!checkedClauses["arbitration-consent"]}
                      onToggle={() => toggle("arbitration-consent")}
-                     label="I acknowledge the professional arbitration process, the 2% filing fee payable by the requesting party, and that the arbitrator's professional fees are determined separately."
+                     label="I acknowledge the professional arbitration process, the tiered flat filing fee ($500–$5,000 based on escrow amount) payable by the requesting party, and that the arbitrator's professional fees are determined separately."
                    />
                  </section>
               </>

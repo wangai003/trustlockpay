@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
             description,
             status: "under_review",
             priority: amount >= 10000 ? "critical" : "medium",
-            arbitration_fee: amount >= 10000 ? Math.round(amount * 0.02 * 100) / 100 : 0,
+            arbitration_fee: 0,
           })
           .select()
           .single();
@@ -339,7 +339,11 @@ Deno.serve(async (req) => {
           throw new Error("Arbitration is only available for disputes on transactions >= $10,000");
         }
 
-        const arbFee = Math.round(txAmount * 0.02 * 100) / 100; // 2%
+        // Tiered flat fee: $500/$1500/$3000/$5000
+        const arbFee = txAmount >= 1_000_000 ? 5000
+          : txAmount >= 250_000 ? 3000
+          : txAmount >= 50_000 ? 1500
+          : 500;
 
         const { data, error } = await supabase
           .from("disputes")

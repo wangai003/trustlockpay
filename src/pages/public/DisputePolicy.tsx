@@ -238,10 +238,17 @@ const DisputePolicy = () => {
                 If both parties independently request arbitration, each pays their own filing fee.
               </p>
 
-              <h4 className="text-xs font-semibold text-foreground mt-3">6.2 Fees</h4>
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.2 Fees (Tiered Flat Rate)</h4>
               <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li><strong>Arbitration Filing &amp; Case Management Fee:</strong> 2% of the escrowed principal, paid by the requesting party via TrustLock OS Pay. This fee covers TrustLock's case management, document packaging, and coordination services. It is <strong>non-refundable</strong> regardless of outcome.</li>
-                <li><strong>Arbitrator's Professional Fees:</strong> The appointed arbitrator's compensation is separate and determined by the institution's published fee schedule (e.g., ICC, LCIA, KIAC) after appointment. These fees are not included in the 2% filing fee.</li>
+                <li><strong>Arbitration Filing &amp; Case Management Fee</strong> — a flat, non-refundable fee paid by the requesting party via TrustLock OS Pay:
+                  <ul className="ml-4 mt-1 space-y-0.5 list-[circle]">
+                    <li>$10,000 – $50,000 escrow → <strong>$500</strong></li>
+                    <li>$50,000 – $250,000 escrow → <strong>$1,500</strong></li>
+                    <li>$250,000 – $1,000,000 escrow → <strong>$3,000</strong></li>
+                    <li>$1,000,000+ escrow → <strong>$5,000</strong></li>
+                  </ul>
+                </li>
+                <li><strong>Arbitrator's Professional Fees:</strong> The appointed arbitrator's compensation is separate and determined by the institution's published fee schedule (e.g., ICC, LCIA, KIAC) after appointment. These fees are not included in the filing fee above.</li>
                 <li><strong>Cost Award:</strong> The arbitrator may order the losing party to reimburse the winner's filing fee and/or arbitrator costs as part of the binding ruling.</li>
               </ul>
 
@@ -293,9 +300,9 @@ const DisputePolicy = () => {
                     </tr>
                      <tr className="border-b border-border/50">
                        <td className="py-2 pr-4">Arbitration filing &amp; case management (≥$10K)</td>
-                       <td className="py-2 pr-4">2% of escrow principal</td>
-                       <td className="py-2">Requesting party (non-refundable)</td>
-                    </tr>
+                        <td className="py-2 pr-4">$500 – $5,000 flat (tiered by escrow amount)</td>
+                        <td className="py-2">Requesting party (non-refundable)</td>
+                     </tr>
                     <tr className="border-b border-border/50">
                       <td className="py-2 pr-4">Buyer wins — refund</td>
                       <td className="py-2 pr-4">0.5% transaction fee (non-refundable)</td>
