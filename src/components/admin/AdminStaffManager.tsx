@@ -139,12 +139,13 @@ export default function AdminStaffManager() {
           id: `staff-${Date.now()}`, username, name,
           email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
+          department_slug: newDepartment,
         };
         const updated = [...testnetStaff, newAccount];
         saveTestnetStaff(updated);
         return Promise.resolve({ account: { username: newAccount.username, temp_password: tempPw } });
       }
-      return callStaffApi({ action: "add", chiefAdminId, username, name });
+      return callStaffApi({ action: "add", chiefAdminId, username, name, departmentSlug: newDepartment });
     },
     onSuccess: (res) => {
       if (res.error) { toast.error(res.error); return; }
