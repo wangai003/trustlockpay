@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal, DollarSign } from "lucide-react";
+import ArbitratorManagementPanel from "@/components/admin/ArbitratorManagementPanel";
 import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence, useResolveDisputeVendorWins, useResolveDisputeBuyerWins, useResolveDisputeCompromise } from "@/hooks/useSupabaseData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -262,6 +263,16 @@ const AdminDisputes = () => {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Arbitrator Management Panel — shown for arb-eligible or active arbitration cases */}
+                  {(dispute.amount >= 10000 || ["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status)) && (
+                    <ArbitratorManagementPanel
+                      disputeId={dispute.dbId}
+                      disputeLabel={dispute.id}
+                      txId={dispute.txId}
+                      amount={dispute.amount}
+                    />
                   )}
                 </CardContent>
               </Card>

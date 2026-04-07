@@ -100,6 +100,7 @@ const DisputePolicy = lazy(() => import("./pages/public/DisputePolicy"));
 const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
+const ArbitratorPortal = lazy(() => import("./pages/public/ArbitratorPortal"));
 
 // Sandbox
 const SandboxLogin = lazy(() => import("./pages/sandbox/SandboxLogin"));
@@ -237,6 +238,7 @@ const App = () => (
               <Route path="/data-rights" element={<DataRights />} />
               <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+              <Route path="/arbitrator/:token" element={<ArbitratorPortal />} />
 
               {/* Sandbox Demo */}
               <Route path="/sandbox/login" element={<SandboxLogin />} />
