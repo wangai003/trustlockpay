@@ -52,6 +52,7 @@ const BuyerDisputes = () => {
         lastUpdate: d.ai_recommendation,
       }))
     : rawDisputes.map(d => ({
+        dbId: d.id,
         id: d.dispute_id,
         txId: d.tx_id || "—",
         vendor: d.vendor_name || "Unknown",
