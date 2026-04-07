@@ -89,7 +89,8 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address indexed token,
         address buyer,
         address vendor,
-        uint256 lockedAmount
+        uint256 lockedAmount,
+        uint8   milestoneCount
     );
 
     event FundsReleased(
