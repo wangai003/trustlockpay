@@ -157,6 +157,7 @@ const App = () => (
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="documents" element={<AdminDocuments />} />
                 <Route path="workflow" element={<AdminWorkflow />} />
+                <Route path="staff-workflow" element={<AdminStaffWorkflow />} />
                 
                 <Route path="os-pay" element={<AdminOSPay />} />
                 <Route path="audit" element={<AdminAudit />} />
