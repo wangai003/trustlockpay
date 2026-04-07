@@ -276,7 +276,6 @@ const AdminDisputes = () => {
                   )}
                 </CardContent>
               </Card>
-              </Card>
             );
           })}
         </div>
