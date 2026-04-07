@@ -16,6 +16,7 @@ interface AdminStaff {
   username: string;
   alias?: string;
   is_chief?: boolean;
+  department_slug?: string;
 }
 
 interface DM {
