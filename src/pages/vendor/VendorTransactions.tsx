@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -438,6 +438,28 @@ const VendorTransactions = () => {
                                   <TLId code={dynTLId("V", "TX", row, "BTN-WORKORDER")} inline>
                                     <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => setExpandedRow(tx.id)} title="Open work-order panel">
                                       <FileText className="w-3 h-3" />
+                                    </Button>
+                                  </TLId>
+                                )}
+                                {tx.status === "disputed" && tx.amount >= 10000 && (
+                                  <TLId code={dynTLId("V", "TX", row, "BTN-ARBITRATE")} inline>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[10px] h-7 px-2 border-accent text-accent-foreground hover:bg-accent/10"
+                                      onClick={() => {
+                                        const fee = (tx.amount * 0.02).toFixed(2);
+                                        const confirmed = window.confirm(
+                                          `Request a professional arbitrator for order ${tx.id}?\n\nEscrow Amount: $${tx.amount.toLocaleString()}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable.\n\nProceed to payment?`
+                                        );
+                                        if (confirmed) {
+                                          navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${tx.id}`)}&amount=${fee}`);
+                                          toast.info("Complete the arbitration fee payment to initiate professional review.");
+                                        }
+                                      }}
+                                      title="Request professional arbitrator"
+                                    >
+                                      <Scale className="w-3 h-3 mr-1" /> Arbitrate
                                     </Button>
                                   </TLId>
                                 )}

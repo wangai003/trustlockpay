@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye, Scale } from "lucide-react";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -24,6 +25,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 const BuyerDisputes = () => {
   const { isTestnet } = useBuyer();
+  const navigate = useNavigate();
   const [showNewDispute, setShowNewDispute] = useState(false);
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Item not as described");
@@ -41,6 +43,7 @@ const BuyerDisputes = () => {
         txId: d.tx_id,
         vendor: d.vendor_name,
         amount: `$${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        rawAmount: d.amount,
         reason: d.reason,
         status: d.status,
         filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -51,6 +54,7 @@ const BuyerDisputes = () => {
         txId: d.tx_id || "—",
         vendor: d.vendor_name || "Unknown",
         amount: d.amount ? `$${Number(d.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        rawAmount: Number(d.amount) || 0,
         reason: d.reason || "—",
         status: d.status,
         filed: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -100,6 +104,16 @@ const BuyerDisputes = () => {
       if (uploaded > 0) toast.success(`${uploaded} evidence file(s) added to dispute`);
     };
     input.click();
+  };
+
+  const handleRequestArbitrator = (dispute: typeof disputes[0]) => {
+    const fee = (dispute.rawAmount * 0.02).toFixed(2);
+    const confirmed = window.confirm(
+      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable. You will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
+    );
+    if (!confirmed) return;
+    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${dispute.txId}`)}&amount=${fee}`);
+    toast.info("Complete the arbitration fee payment to initiate professional review.");
   };
 
   return (
@@ -234,11 +248,20 @@ const BuyerDisputes = () => {
                     <p className="text-[10px] text-muted-foreground">You will be notified when a decision is made</p>
                   </div>
 
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex flex-wrap gap-2 shrink-0">
                     {dispute.status !== "resolved" && dispute.status !== "resolved_buyer" && dispute.status !== "resolved_vendor" && (
-                      <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
-                        <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
-                      </TLId>
+                      <>
+                        <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
+                        </TLId>
+                        {dispute.rawAmount >= 10000 && (
+                          <TLId code={dynTLId("B", "DSP", row, "BTN-ARBITRATE")} inline>
+                            <Button variant="outline" size="sm" className="gap-1 border-accent text-accent-foreground hover:bg-accent/10" onClick={() => handleRequestArbitrator(dispute)}>
+                              <Scale className="w-3 h-3" /> Request Arbitrator
+                            </Button>
+                          </TLId>
+                        )}
+                      </>
                     )}
                     <TLId code={dynTLId("B", "DSP", row, "BTN-VIEW")} inline>
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
@@ -263,6 +286,7 @@ const BuyerDisputes = () => {
         <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
+          <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, you may request a licensed arbitrator. A non-refundable 2% fee (based on the escrowed principal) is required and routed through TrustLock OS Pay. Arbitration follows ICC-binding rules.</p>
         </div>
       </div>
     </div>

@@ -358,6 +358,73 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitration_fee_orders: {
+        Row: {
+          arbitration_fee: number
+          created_at: string
+          dispute_id: string
+          escrow_amount: number
+          id: string
+          os_payment_id: string | null
+          requested_by: string
+          requester_role: string
+          status: string
+          transaction_id: string
+          tx_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          arbitration_fee: number
+          created_at?: string
+          dispute_id: string
+          escrow_amount: number
+          id?: string
+          os_payment_id?: string | null
+          requested_by: string
+          requester_role: string
+          status?: string
+          transaction_id: string
+          tx_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arbitration_fee?: number
+          created_at?: string
+          dispute_id?: string
+          escrow_amount?: number
+          id?: string
+          os_payment_id?: string | null
+          requested_by?: string
+          requester_role?: string
+          status?: string
+          transaction_id?: string
+          tx_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arbitration_fee_orders_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arbitration_fee_orders_os_payment_id_fkey"
+            columns: ["os_payment_id"]
+            isOneToOne: false
+            referencedRelation: "os_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arbitration_fee_orders_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       archived_reports: {
         Row: {
           created_at: string
