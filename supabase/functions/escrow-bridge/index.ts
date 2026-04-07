@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
     if (action === "release") {
       const result = await sendContractCall(
         ESCROW_ABI.releaseFunds,
-        JSON.stringify({ escrowId })
+        JSON.stringify({ orderId: escrowId })
       );
 
       await supabase
