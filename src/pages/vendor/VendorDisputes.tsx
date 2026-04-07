@@ -64,6 +64,27 @@ const VendorDisputes = () => {
         lastUpdate: d.ai_recommendation || "Emmanuel AI is analyzing evidence",
       }));
 
+  const handleSubmitDispute = async () => {
+    if (!txIdInput) return;
+    setUploadingEvidence(true);
+    try {
+      await fileDispute.mutateAsync({ txId: txIdInput, reason: reasonInput, description: descInput });
+
+      if (evidenceFiles.length > 0) {
+        for (const file of evidenceFiles) {
+          const path = `${txIdInput}/${Date.now()}_${file.name}`;
+          const { error: uploadErr } = await supabase.storage.from("dispute-evidence").upload(path, file);
+          if (uploadErr) toast.error(`Failed to upload ${file.name}`);
+        }
+        if (evidenceFiles.length > 0) toast.success(`${evidenceFiles.length} evidence file(s) uploaded`);
+      }
+
+      setShowNewDispute(false);
+      setTxIdInput(""); setDescInput(""); setEvidenceFiles([]);
+    } catch { /* handled by hook */ }
+    setUploadingEvidence(false);
+  };
+
   const handleAddEvidence = async (disputeId: string) => {
     const input = document.createElement("input");
     input.type = "file";
