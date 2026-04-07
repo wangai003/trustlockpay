@@ -1140,6 +1140,75 @@ export type Database = {
         }
         Relationships: []
       }
+      checkout_sessions: {
+        Row: {
+          amount: number
+          buyer_email: string
+          buyer_location: string | null
+          buyer_name: string
+          confirmation_code: string | null
+          created_at: string
+          expires_at: string
+          fee: number
+          id: string
+          industry: string | null
+          order_type: string | null
+          payment_method: string
+          payment_proof: Json | null
+          processor_id: string | null
+          session_data: Json
+          status: string
+          total: number
+          transaction_id: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          buyer_email: string
+          buyer_location?: string | null
+          buyer_name: string
+          confirmation_code?: string | null
+          created_at?: string
+          expires_at?: string
+          fee?: number
+          id: string
+          industry?: string | null
+          order_type?: string | null
+          payment_method: string
+          payment_proof?: Json | null
+          processor_id?: string | null
+          session_data?: Json
+          status?: string
+          total: number
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_email?: string
+          buyer_location?: string | null
+          buyer_name?: string
+          confirmation_code?: string | null
+          created_at?: string
+          expires_at?: string
+          fee?: number
+          id?: string
+          industry?: string | null
+          order_type?: string | null
+          payment_method?: string
+          payment_proof?: Json | null
+          processor_id?: string | null
+          session_data?: Json
+          status?: string
+          total?: number
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       chief_admin_config: {
         Row: {
           admin_id: string
@@ -2801,6 +2870,8 @@ export type Database = {
           preferred_language: string | null
           status: string
           updated_at: string
+          wallet_address: string | null
+          wallet_verified: boolean | null
         }
         Insert: {
           account_type?: string | null
@@ -2826,6 +2897,8 @@ export type Database = {
           preferred_language?: string | null
           status?: string
           updated_at?: string
+          wallet_address?: string | null
+          wallet_verified?: boolean | null
         }
         Update: {
           account_type?: string | null
@@ -2851,6 +2924,8 @@ export type Database = {
           preferred_language?: string | null
           status?: string
           updated_at?: string
+          wallet_address?: string | null
+          wallet_verified?: boolean | null
         }
         Relationships: []
       }
