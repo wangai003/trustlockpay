@@ -87,6 +87,8 @@ export default function AdminStaffManager() {
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
+  const [transferTarget, setTransferTarget] = useState<AdminAccount | null>(null);
+  const [transferDept, setTransferDept] = useState("");
 
   // Testnet local state for mock staff
   const [testnetStaff, setTestnetStaff] = useState<AdminAccount[]>(() => {
