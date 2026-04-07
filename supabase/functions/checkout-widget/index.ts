@@ -642,8 +642,12 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     return errorResponse(String(lockResult.error || "Failed to lock funds"), 500);
   }
 
-  // Mark session confirmed
-  session.status = "confirmed";
+  // Mark session confirmed in database
+  await supabase.from("checkout_sessions").update({
+    status: "confirmed",
+    transaction_id: (lockResult.transaction as Record<string, unknown>)?.id || null,
+    confirmation_code: generateConfirmationCode(),
+  }).eq("id", String(sessionId));
 
   const tx = lockResult.transaction as Record<string, unknown>;
   const transactionId = tx?.id as string | undefined;
