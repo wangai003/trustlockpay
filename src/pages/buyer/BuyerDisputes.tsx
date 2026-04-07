@@ -15,6 +15,7 @@ import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getArbitrationFee } from "@/lib/arbitrationFees";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Under Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
