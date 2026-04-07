@@ -192,6 +192,15 @@ const AdminDepartments = () => {
         {isLoading && !isTestnet && (
           <p className="text-sm text-muted-foreground text-center py-8">Loading department data…</p>
         )}
+          </TabsContent>
+
+          {/* Department workflow tabs */}
+          {DEPARTMENTS.map(dept => (
+            <TabsContent key={dept.slug} value={dept.slug} className="mt-4">
+              <DepartmentWorkflow departmentSlug={dept.slug} departmentName={dept.name} />
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </div>
   );
