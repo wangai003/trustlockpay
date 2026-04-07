@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
             description,
             status: "under_review",
             priority: amount >= 10000 ? "critical" : "medium",
-            arbitration_fee: amount >= 10000 ? Math.round(amount * 0.02 * 100) / 100 : 0,
+            arbitration_fee: 0,
           })
           .select()
           .single();
