@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch } from "lucide-react";
+import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
