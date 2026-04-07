@@ -66,6 +66,19 @@ function resolveTokenAddress(tx: Record<string, unknown>): string {
   return USDC_ADDRESS; // Default to USDC
 }
 
+// ─── Resolve user's Polygon wallet address from profiles ──
+async function resolveWalletAddress(
+  supabase: ReturnType<typeof getSupabase>,
+  userId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("wallet_address")
+    .eq("id", userId)
+    .single();
+  return (data as Record<string, unknown>)?.wallet_address as string | null;
+}
+
 // ─── Send transaction via Polygon RPC (eth_sendRawTransaction) ───
 async function sendContractCall(
   functionSig: string,
@@ -151,6 +164,20 @@ Deno.serve(async (req) => {
     // Resolve token address from transaction payment method
     const tokenAddress = resolveTokenAddress(tx);
 
+    // ── Resolve Polygon wallet addresses from profiles ────
+    const buyerWallet = await resolveWalletAddress(supabase, tx.buyer_id);
+    const vendorWallet = await resolveWalletAddress(supabase, tx.vendor_id);
+
+    if (!buyerWallet || !vendorWallet) {
+      const missing = [];
+      if (!buyerWallet) missing.push("buyer");
+      if (!vendorWallet) missing.push("vendor");
+      console.warn(`Missing wallet addresses for ${missing.join(", ")} — contract call will use placeholder`);
+    }
+
+    const effectiveBuyerAddr = buyerWallet || `0x${"0".repeat(40)}`; // placeholder until wallet registered
+    const effectiveVendorAddr = vendorWallet || `0x${"0".repeat(40)}`;
+
     // ══════════════════════════════════════════════════
     //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
     // ══════════════════════════════════════════════════
@@ -174,8 +201,8 @@ Deno.serve(async (req) => {
           JSON.stringify({
             orderId: escrowId,
             token: tokenAddress,
-            buyer: tx.buyer_id,
-            vendor: tx.vendor_id,
+            buyer: effectiveBuyerAddr,
+            vendor: effectiveVendorAddr,
             amount: contractUnits.toString(),
             milestoneAmounts: milestoneAmounts.map(String),
           })
@@ -187,8 +214,8 @@ Deno.serve(async (req) => {
           JSON.stringify({
             orderId: escrowId,
             token: tokenAddress,
-            buyer: tx.buyer_id,
-            vendor: tx.vendor_id,
+            buyer: effectiveBuyerAddr,
+            vendor: effectiveVendorAddr,
             amount: contractUnits.toString(),
           })
         );

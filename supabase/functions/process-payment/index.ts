@@ -6,15 +6,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Azix Wallet Addresses ───────────────────────────────
+// ─── Azix Wallet Addresses (from env, fallback to placeholder) ─
 const AZIX_WALLETS = {
-  transaction: "0x7A3b1234567890abcdef1234567890abcdefF92d",
-  escrow: "0x4E1c234567890abcdef1234567890abcdefA83b",
+  transaction: Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d",
+  escrow: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
 };
 
 // ─── Fee Constants (basis points) ────────────────────────
-const PLATFORM_FEE_CRYPTO_BPS = 100; // 1.0%
-const PLATFORM_FEE_FIAT_BPS = 150;   // 1.5%
+// ALIGNED with wallet-routing-bridge: TrustLock transaction fee is 0.5% for all methods
+const PLATFORM_FEE_CRYPTO_BPS = 50;  // 0.5% (aligned with checkout-widget & wallet-routing-bridge)
+const PLATFORM_FEE_FIAT_BPS = 50;    // 0.5% (TrustLock transaction fee — processor fee is separate)
 
 // ─── Types ────────────────────────────────────────────────
 interface ProcessPaymentRequest {

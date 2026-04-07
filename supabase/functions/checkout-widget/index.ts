@@ -6,8 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, stripe-signature",
 };
 
-// ─── In-memory session store (production: use Redis/DB) ────
-const sessions = new Map<string, CheckoutSession>();
+// ─── Session persistence via checkout_sessions table ───────
+// REMOVED: const sessions = new Map<string, CheckoutSession>();
+// Sessions are now persisted to the checkout_sessions database table to survive cold starts.
 
 interface TaxLineResult {
   type: string;
@@ -86,8 +87,8 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d";
-const AZIX_ESCROW_WALLET = "0x4E1c...A83b";
+const AZIX_TRANSACTION_WALLET = Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d";
+const AZIX_ESCROW_WALLET = Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b";
 
 // ─── Auto-Processor Selection (cost-optimized) ────────────
 // Priority: direct (crypto, 0%) → thirdweb (1.0%) → coinbase/transak (1.5%) → yellow_card (2.0%) → stripe (2.9%)
@@ -499,13 +500,24 @@ async function initiateCheckout(params: Record<string, unknown>): Promise<Respon
     bankTransferDetails: params.bankTransferDetails ? (params.bankTransferDetails as CheckoutSession["bankTransferDetails"]) : null,
   };
 
-  sessions.set(sessionId, session);
-
-  // Auto-expire after 30 minutes
-  setTimeout(() => {
-    const s = sessions.get(sessionId);
-    if (s && s.status === "pending") sessions.delete(sessionId);
-  }, 30 * 60 * 1000);
+  // Persist session to database (replaces in-memory Map)
+  await supabase.from("checkout_sessions").insert({
+    id: sessionId,
+    vendor_id: String(vendorId),
+    buyer_email: String(buyerEmail),
+    buyer_name: String(buyerName),
+    buyer_location: country,
+    amount: numAmount,
+    fee: fees.totalFees,
+    total: session.total,
+    payment_method: String(paymentMethod),
+    processor_id: processor.processorId,
+    order_type: orderType,
+    industry: params.industry ? String(params.industry) : null,
+    status: "pending",
+    session_data: session as unknown as Record<string, unknown>,
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  });
 
   // ── Crypto verification protocol ──
   const cryptoVerification = isCrypto ? {
@@ -595,11 +607,20 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   const { sessionId, paymentProof } = params;
   if (!sessionId) return errorResponse("sessionId is required", 400);
 
-  const session = sessions.get(String(sessionId));
-  if (!session) return errorResponse("Session not found or expired", 404);
-  if (session.status === "confirmed") return errorResponse("Payment already confirmed", 400);
-
   const supabase = getSupabase();
+
+  // Retrieve session from database
+  const { data: sessionRow } = await supabase
+    .from("checkout_sessions")
+    .select("*")
+    .eq("id", String(sessionId))
+    .gt("expires_at", new Date().toISOString())
+    .single();
+
+  if (!sessionRow) return errorResponse("Session not found or expired", 404);
+  const session = sessionRow.session_data as unknown as CheckoutSession;
+  if (!session) return errorResponse("Session data corrupted", 500);
+  if (sessionRow.status === "confirmed") return errorResponse("Payment already confirmed", 400);
 
   // Create transaction via escrow-manager lock_funds with fee breakdown
   const lockResult = (await callEdgeFunction("escrow-manager", {
@@ -621,8 +642,12 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
     return errorResponse(String(lockResult.error || "Failed to lock funds"), 500);
   }
 
-  // Mark session confirmed
-  session.status = "confirmed";
+  // Mark session confirmed in database
+  await supabase.from("checkout_sessions").update({
+    status: "confirmed",
+    transaction_id: (lockResult.transaction as Record<string, unknown>)?.id || null,
+    confirmation_code: generateConfirmationCode(),
+  }).eq("id", String(sessionId));
 
   const tx = lockResult.transaction as Record<string, unknown>;
   const transactionId = tx?.id as string | undefined;
@@ -814,11 +839,8 @@ async function handleWebhook(req: Request, body: Record<string, unknown>): Promi
   ];
 
   if (failureEvents.includes(eventType) && sessionId) {
-    const session = sessions.get(sessionId);
-    if (session) {
-      session.status = "failed";
-      sessions.delete(sessionId);
-    }
+    const supabase = getSupabase();
+    await supabase.from("checkout_sessions").update({ status: "failed" }).eq("id", sessionId);
     return jsonResponse({ success: true, source, eventType, action: "session_cleaned" });
   }
 
