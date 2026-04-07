@@ -60,8 +60,11 @@ const InvoiceFeeCalculator = ({
 
         <div className="flex justify-between">
           <span className="text-muted-foreground">Escrow Service Fee (1.0%)</span>
-          <span className="text-muted-foreground">+{currency} {calc.escrowFee.toFixed(2)}</span>
+          <span className="text-muted-foreground italic">Deducted at settlement</span>
         </div>
+        <p className="text-[9px] text-muted-foreground -mt-1">
+          Collected from vendor payout only when the deal is completed — never charged upfront.
+        </p>
 
         {calc.taxAmount > 0 && (
           <div className="flex justify-between">

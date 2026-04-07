@@ -2,10 +2,10 @@
 // Two distinct custodian wallets:
 //   1. TRANSACTION FEE WALLET — receives ALL post-processor funds at checkout,
 //      keeps TrustLock 0.5% transaction fee + taxes + remittance, then routes
-//      vendor principal (with 1% escrow fee baked in) to Escrow Wallet.
-//   2. ESCROW WALLET — holds vendor principal (which includes TrustLock's 1%
-//      escrow service fee baked in). On release, 1% is extracted → trickled
-//      back to Transaction Fee Wallet, remainder → vendor.
+//      the EXACT vendor principal (subtotal) to Escrow Wallet. No fees baked in.
+//   2. ESCROW WALLET — holds vendor principal only. On release/milestone
+//      completion, 1% escrow service fee is extracted and trickled back to
+//      Transaction Fee Wallet. The fee is NEVER deducted upfront.
 
 export const AZIX_WALLETS = {
   transaction: {
@@ -16,7 +16,7 @@ export const AZIX_WALLETS = {
   escrow: {
     label: "Azix Escrow Wallet",
     publicKey: "0x4E1c...A83b",
-    purpose: "Holds vendor principal (with 1% escrow fee baked in). On release, 1% trickles back to Transaction Fee Wallet.",
+    purpose: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion — never deducted upfront.",
   },
 } as const;
 
@@ -457,6 +457,8 @@ export interface InvoiceFeeCalculation {
   escrowWalletReceives: number;
   transactionWalletReceives: number;
   combinedTransactionFee: number;
+  /** True = the 1% escrow fee is deferred until deal completion, not collected upfront */
+  escrowFeeDeferred: boolean;
   // Buyer display lines
   buyerDisplay: BuyerFeeDisplay;
   // Legacy aliases
@@ -496,6 +498,7 @@ export function calculateInvoiceFees(
     totalBuyerCharge,
     escrowWalletReceives: escrowPrincipal,
     transactionWalletReceives: round(trustlockFee + taxesAndDuties),
+    escrowFeeDeferred: true,
     buyerDisplay,
   };
 }
