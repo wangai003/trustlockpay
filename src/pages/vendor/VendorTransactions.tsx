@@ -461,7 +461,7 @@ const VendorTransactions = () => {
                                           // Find the dispute linked to this transaction
                                           const { data: dispute } = await supabase.from("disputes")
                                             .select("id, dispute_id")
-                                            .eq("transaction_id", tx.id)
+                                            .eq("transaction_id", tx.dbId)
                                             .limit(1)
                                             .maybeSingle();
 
@@ -469,17 +469,17 @@ const VendorTransactions = () => {
 
                                           const { data: arbOrder, error } = await supabase.from("arbitration_fee_orders").insert({
                                             dispute_id: dispute.id,
-                                            transaction_id: tx.id,
+                                            transaction_id: tx.dbId,
                                             requested_by: user.id,
                                             requester_role: "vendor",
                                             escrow_amount: tx.amount,
                                             arbitration_fee: parseFloat(fee),
-                                            tx_id: tx.txId,
+                                            tx_id: tx.id,
                                           }).select("id").single();
 
                                           if (error) { toast.error("Failed to create arbitration request"); return; }
 
-                                          navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${tx.txId}`)}&amount=${fee}&arbitration_order_id=${arbOrder.id}`);
+                                          navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${tx.id}`)}&amount=${fee}&arbitration_order_id=${arbOrder.id}`);
                                           toast.info("Complete the arbitration fee payment to initiate professional review.");
                                         } catch {
                                           toast.error("Something went wrong. Please try again.");
