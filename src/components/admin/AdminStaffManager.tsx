@@ -582,6 +582,43 @@ export default function AdminStaffManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Transfer Department Dialog */}
+      <Dialog open={!!transferTarget} onOpenChange={() => setTransferTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer to Department</DialogTitle>
+            <DialogDescription>
+              Move <strong>{transferTarget?.name}</strong> from{" "}
+              <strong>{DEPARTMENTS.find(d => d.slug === transferTarget?.department_slug)?.name || "Unassigned"}</strong>{" "}
+              to a new department.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select value={transferDept} onValueChange={setTransferDept}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select new department" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.filter(d => d.slug !== transferTarget?.department_slug).map(d => (
+                  <SelectItem key={d.slug} value={d.slug}>
+                    <span className="text-sm">{d.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTransferTarget(null)}>Cancel</Button>
+            <Button
+              onClick={() => transferTarget && transferDept && transferDeptMutation.mutate({ adminId: transferTarget.id, newDept: transferDept })}
+              disabled={!transferDept || transferDept === transferTarget?.department_slug || transferDeptMutation.isPending}
+            >
+              {transferDeptMutation.isPending ? "Transferring…" : "Confirm Transfer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
