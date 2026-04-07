@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch } from "lucide-react";
+import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
@@ -122,12 +122,17 @@ const AdminDepartments = () => {
                             <p className="text-[10px] text-muted-foreground">{s.username}</p>
                           </div>
                           <div className="flex gap-1">
-                            {s.is_chief && (
-                              <Badge variant="default" className="text-[9px] gap-0.5 px-1.5">
-                                <Crown className="w-2.5 h-2.5" />
-                                {s.chief_rank === 1 ? "Chief" : "Promoted"}
-                              </Badge>
-                            )}
+                             {s.is_chief && (
+                               <Badge variant="default" className="text-[9px] gap-0.5 px-1.5">
+                                 <Crown className="w-2.5 h-2.5" />
+                                 {s.chief_rank === 1 ? "Chief" : "Promoted"}
+                               </Badge>
+                             )}
+                             {s.is_team_lead && (
+                               <Badge variant="secondary" className="text-[9px] gap-0.5 px-1.5">
+                                 <Star className="w-2.5 h-2.5" /> Team Lead
+                               </Badge>
+                             )}
                           </div>
                         </div>
                       ))}

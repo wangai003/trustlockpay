@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2 } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2, Star, ArrowRightLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 
@@ -46,6 +46,7 @@ interface AdminAccount {
   is_setup: boolean;
   is_deleted: boolean;
   is_chief: boolean;
+  is_team_lead: boolean;
   chief_rank: number | null;
   deleted_at: string | null;
   reinstated_at: string | null;
@@ -55,11 +56,11 @@ interface AdminAccount {
 
 // Testnet mock staff for simulation
 const TESTNET_MOCK_STAFF: AdminAccount[] = [
-  { id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", username: "michael.tl", name: "Michael", email: "michael@trustlock.co", is_setup: true, is_deleted: false, is_chief: true, chief_rank: 1, deleted_at: null, reinstated_at: null, created_at: "2025-01-15T00:00:00Z", department_slug: "executive" },
-  { id: "staff-david-001", username: "david.tl", name: "David", email: "david@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-01T00:00:00Z", department_slug: "correspondence" },
-  { id: "staff-emmanuel-001", username: "emmanuel.tl", name: "Emmanuel", email: "emmanuel@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-10T00:00:00Z", department_slug: "operations" },
-  { id: "staff-sarah-001", username: "sarah.tl", name: "Sarah", email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2026-03-20T00:00:00Z", department_slug: "compliance" },
-  { id: "staff-kwame-001", username: "kwame.tl", name: "Kwame", email: "kwame@trustlock.co", is_setup: true, is_deleted: true, is_chief: false, chief_rank: null, deleted_at: "2026-03-01T00:00:00Z", reinstated_at: null, created_at: "2025-06-01T00:00:00Z", department_slug: "finance" },
+  { id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", username: "michael.tl", name: "Michael", email: "michael@trustlock.co", is_setup: true, is_deleted: false, is_chief: true, is_team_lead: false, chief_rank: 1, deleted_at: null, reinstated_at: null, created_at: "2025-01-15T00:00:00Z", department_slug: "executive" },
+  { id: "staff-david-001", username: "david.tl", name: "David", email: "david@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, is_team_lead: true, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-01T00:00:00Z", department_slug: "correspondence" },
+  { id: "staff-emmanuel-001", username: "emmanuel.tl", name: "Emmanuel", email: "emmanuel@trustlock.co", is_setup: true, is_deleted: false, is_chief: false, is_team_lead: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2025-02-10T00:00:00Z", department_slug: "operations" },
+  { id: "staff-sarah-001", username: "sarah.tl", name: "Sarah", email: null, is_setup: false, is_deleted: false, is_chief: false, is_team_lead: false, chief_rank: null, deleted_at: null, reinstated_at: null, created_at: "2026-03-20T00:00:00Z", department_slug: "compliance" },
+  { id: "staff-kwame-001", username: "kwame.tl", name: "Kwame", email: "kwame@trustlock.co", is_setup: true, is_deleted: true, is_chief: false, is_team_lead: false, chief_rank: null, deleted_at: "2026-03-01T00:00:00Z", reinstated_at: null, created_at: "2025-06-01T00:00:00Z", department_slug: "finance" },
 ];
 
 function isTestnetMode(): boolean {
@@ -86,6 +87,8 @@ export default function AdminStaffManager() {
   const [reinstateTarget, setReinstateTarget] = useState<AdminAccount | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<AdminAccount | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<AdminAccount | null>(null);
+  const [transferTarget, setTransferTarget] = useState<AdminAccount | null>(null);
+  const [transferDept, setTransferDept] = useState("");
 
   // Testnet local state for mock staff
   const [testnetStaff, setTestnetStaff] = useState<AdminAccount[]>(() => {
@@ -137,7 +140,7 @@ export default function AdminStaffManager() {
         const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
         const newAccount: AdminAccount = {
           id: `staff-${Date.now()}`, username, name,
-          email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
+          email: null, is_setup: false, is_deleted: false, is_chief: false, is_team_lead: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
           department_slug: newDepartment,
         };
@@ -230,6 +233,37 @@ export default function AdminStaffManager() {
     },
   });
 
+  const toggleTeamLeadMutation = useMutation({
+    mutationFn: (a: AdminAccount) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === a.id ? { ...s, is_team_lead: !s.is_team_lead } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "toggleTeamLead", chiefAdminId, adminId: a.id, isTeamLead: !a.is_team_lead });
+    },
+    onSuccess: () => {
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success("Team lead status updated");
+    },
+  });
+
+  const transferDeptMutation = useMutation({
+    mutationFn: ({ adminId, newDept }: { adminId: string; newDept: string }) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === adminId ? { ...s, department_slug: newDept } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "transferDepartment", chiefAdminId, adminId, departmentSlug: newDept });
+    },
+    onSuccess: () => {
+      setTransferTarget(null);
+      setTransferDept("");
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success("Staff transferred to new department");
+    },
+  });
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -322,14 +356,19 @@ export default function AdminStaffManager() {
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Awaiting Setup</Badge>
                   )}
-                  {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
-                  {a.department_slug && (
-                    <Badge variant="outline" className="text-[10px] gap-1">
-                      <Building2 className="w-2.5 h-2.5" />
-                      {DEPARTMENTS.find(d => d.slug === a.department_slug)?.name || a.department_slug}
-                    </Badge>
-                  )}
-                </div>
+                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
+                   {a.is_team_lead && (
+                     <Badge variant="default" className="text-[10px] gap-0.5 bg-emerald-600">
+                       <Star className="w-2.5 h-2.5" /> Team Lead
+                     </Badge>
+                   )}
+                   {a.department_slug && (
+                     <Badge variant="outline" className="text-[10px] gap-1">
+                       <Building2 className="w-2.5 h-2.5" />
+                       {DEPARTMENTS.find(d => d.slug === a.department_slug)?.name || a.department_slug}
+                     </Badge>
+                   )}
+                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap justify-end">
                 {a.id !== chiefAdminId && isOriginalChief && (
@@ -343,9 +382,15 @@ export default function AdminStaffManager() {
                         <ArrowDown className="w-3 h-3" /> Demote
                       </Button>
                     ) : null}
-                    <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </Button>
+                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => toggleTeamLeadMutation.mutate(a)}>
+                       <Star className="w-3 h-3" /> {a.is_team_lead ? "Remove Lead" : "Make Lead"}
+                     </Button>
+                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setTransferTarget(a); setTransferDept(a.department_slug || ""); }}>
+                       <ArrowRightLeft className="w-3 h-3" /> Transfer
+                     </Button>
+                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
+                       <Trash2 className="w-3 h-3" /> Delete
+                     </Button>
                   </>
                 )}
               </div>
@@ -532,6 +577,43 @@ export default function AdminStaffManager() {
             <Button variant="ghost" onClick={() => setDemoteTarget(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)} disabled={demoteMutation.isPending}>
               {demoteMutation.isPending ? "Demoting…" : "Demote"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Department Dialog */}
+      <Dialog open={!!transferTarget} onOpenChange={() => setTransferTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer to Department</DialogTitle>
+            <DialogDescription>
+              Move <strong>{transferTarget?.name}</strong> from{" "}
+              <strong>{DEPARTMENTS.find(d => d.slug === transferTarget?.department_slug)?.name || "Unassigned"}</strong>{" "}
+              to a new department.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select value={transferDept} onValueChange={setTransferDept}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select new department" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.filter(d => d.slug !== transferTarget?.department_slug).map(d => (
+                  <SelectItem key={d.slug} value={d.slug}>
+                    <span className="text-sm">{d.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTransferTarget(null)}>Cancel</Button>
+            <Button
+              onClick={() => transferTarget && transferDept && transferDeptMutation.mutate({ adminId: transferTarget.id, newDept: transferDept })}
+              disabled={!transferDept || transferDept === transferTarget?.department_slug || transferDeptMutation.isPending}
+            >
+              {transferDeptMutation.isPending ? "Transferring…" : "Confirm Transfer"}
             </Button>
           </DialogFooter>
         </DialogContent>

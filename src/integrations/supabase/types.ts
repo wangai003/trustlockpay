@@ -94,6 +94,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           is_setup: boolean
+          is_team_lead: boolean
           locked_at: string | null
           name: string
           password_hash: string | null
@@ -112,6 +113,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_setup?: boolean
+          is_team_lead?: boolean
           locked_at?: string | null
           name: string
           password_hash?: string | null
@@ -130,6 +132,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           is_setup?: boolean
+          is_team_lead?: boolean
           locked_at?: string | null
           name?: string
           password_hash?: string | null
@@ -243,6 +246,51 @@ export type Database = {
           },
         ]
       }
+      admin_department_transfers: {
+        Row: {
+          admin_id: string
+          created_at: string
+          from_department_slug: string
+          id: string
+          reason: string | null
+          to_department_slug: string
+          transferred_by: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          from_department_slug: string
+          id?: string
+          reason?: string | null
+          to_department_slug: string
+          transferred_by: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          from_department_slug?: string
+          id?: string
+          reason?: string | null
+          to_department_slug?: string
+          transferred_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_department_transfers_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_department_transfers_transferred_by_fkey"
+            columns: ["transferred_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_departments: {
         Row: {
           access_modules: string[]
@@ -275,6 +323,38 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      admin_dept_chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          department_slug: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          department_slug: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          department_slug?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_dept_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_direct_messages: {
         Row: {

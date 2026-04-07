@@ -38,6 +38,8 @@ const AdminTaxRemittance = lazy(() => import("./pages/admin/AdminTaxRemittance")
 const AdminBlockchainProofs = lazy(() => import("./pages/admin/AdminBlockchainProofs"));
 const AdminGasTreasury = lazy(() => import("./pages/admin/AdminGasTreasury"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminTeamChat = lazy(() => import("./pages/admin/AdminTeamChat"));
+const AdminStaffDMs = lazy(() => import("./pages/admin/AdminStaffDMs"));
 const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability"));
 const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
 const AdminDepartments = lazy(() => import("./pages/admin/AdminDepartments"));
@@ -163,6 +165,8 @@ const App = () => (
                 <Route path="blockchain-proofs" element={<AdminBlockchainProofs />} />
                 <Route path="gas-treasury" element={<AdminGasTreasury />} />
                 <Route path="messages" element={<AdminMessages />} />
+                <Route path="team-chat" element={<AdminTeamChat />} />
+                <Route path="staff-dms" element={<AdminStaffDMs />} />
                 <Route path="accountability" element={<AdminAccountability />} />
                 <Route path="training-manual" element={<AdminTrainingManual />} />
                 <Route path="departments" element={<AdminDepartments />} />
