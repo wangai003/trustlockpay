@@ -138,7 +138,7 @@ export default function AdminStaffManager() {
         const tempPw = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
         const newAccount: AdminAccount = {
           id: `staff-${Date.now()}`, username, name,
-          email: null, is_setup: false, is_deleted: false, is_chief: false, chief_rank: null,
+          email: null, is_setup: false, is_deleted: false, is_chief: false, is_team_lead: false, chief_rank: null,
           deleted_at: null, reinstated_at: null, created_at: new Date().toISOString(),
           department_slug: newDepartment,
         };
