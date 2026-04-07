@@ -79,6 +79,8 @@ const AdminDepartments = () => {
     }
   });
 
+  const [activeTab, setActiveTab] = useState("directory");
+
   return (
     <div>
       <AdminHeader title="Departments" />
@@ -92,6 +94,17 @@ const AdminDepartments = () => {
           </div>
         </div>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="directory">Directory</TabsTrigger>
+            {DEPARTMENTS.map(d => (
+              <TabsTrigger key={d.slug} value={d.slug} className="hidden sm:flex text-xs">
+                {d.name.split(" ")[0]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <TabsContent value="directory" className="mt-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {DEPARTMENTS.map((dept) => {
             const Icon = DEPT_ICONS[dept.slug] || Building2;
