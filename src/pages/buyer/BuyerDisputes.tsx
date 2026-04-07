@@ -235,9 +235,11 @@ const BuyerDisputes = () => {
                   </div>
 
                   <div className="flex gap-2 shrink-0">
-                    <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
-                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
-                    </TLId>
+                    {dispute.status !== "resolved" && dispute.status !== "resolved_buyer" && dispute.status !== "resolved_vendor" && (
+                      <TLId code={dynTLId("B", "DSP", row, "BTN-EVIDENCE")} inline>
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}><MessageSquare className="w-3 h-3" /> Add Evidence</Button>
+                      </TLId>
+                    )}
                     <TLId code={dynTLId("B", "DSP", row, "BTN-VIEW")} inline>
                       <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </TLId>

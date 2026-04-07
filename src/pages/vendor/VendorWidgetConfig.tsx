@@ -567,7 +567,11 @@ const VendorWidgetConfig = () => {
       </Tabs>
 
       <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button variant="outline" onClick={() => window.location.reload()}>Reset</Button>
+        <Button variant="outline" onClick={() => {
+          if (window.confirm("Are you sure you want to reset all unsaved changes?")) {
+            window.location.reload();
+          }
+        }}>Reset</Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : "Save Configuration"}
         </Button>

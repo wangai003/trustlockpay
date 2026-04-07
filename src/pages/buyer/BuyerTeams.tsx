@@ -175,6 +175,12 @@ const BuyerTeams = () => {
   };
 
   const fetchMilestoneOptions = async (ws: Workspace) => {
+    const filterBuyerRelevant = (milestones: any[]) =>
+      milestones.filter((m: any) => {
+        const assignedTo = (m.assigned_to || "buyer").toLowerCase();
+        return assignedTo === "buyer" || assignedTo === "both" || assignedTo === "shared";
+      });
+
     if (ws.transaction_id) {
       const { data: txMilestones } = await supabase
         .from("transaction_milestones")
@@ -182,13 +188,14 @@ const BuyerTeams = () => {
         .eq("transaction_id", ws.transaction_id)
         .order("position", { ascending: true });
       if (txMilestones && txMilestones.length > 0) {
-        setMilestoneOptions(txMilestones.map((m: any) => ({
+        const mapped = txMilestones.map((m: any) => ({
           key: m.id,
           title: m.title,
           description: m.description || "",
           required_documents: m.required_documents || [],
           assigned_to: m.assigned_to || "buyer",
-        })));
+        }));
+        setMilestoneOptions(filterBuyerRelevant(mapped));
         return;
       }
     }
@@ -200,13 +207,14 @@ const BuyerTeams = () => {
       .maybeSingle();
     if (template?.default_milestones) {
       const milestones = template.default_milestones as any[];
-      setMilestoneOptions(milestones.map((m: any, i: number) => ({
+      const mapped = milestones.map((m: any, i: number) => ({
         key: `${ws.industry}_milestone_${i}`,
         title: m.title,
         description: m.description || "",
         required_documents: m.required_documents || [],
         assigned_to: m.assigned_to || "buyer",
-      })));
+      }));
+      setMilestoneOptions(filterBuyerRelevant(mapped));
     } else {
       setMilestoneOptions([]);
     }
