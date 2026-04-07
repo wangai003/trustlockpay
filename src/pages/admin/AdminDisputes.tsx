@@ -264,7 +264,18 @@ const AdminDisputes = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Arbitrator Management Panel — shown for arb-eligible or active arbitration cases */}
+                  {(dispute.amount >= 10000 || ["arbitration_pending", "arbitration_in_progress", "ruling_issued"].includes(dispute.status)) && (
+                    <ArbitratorManagementPanel
+                      disputeId={dispute.dbId}
+                      disputeLabel={dispute.id}
+                      txId={dispute.txId}
+                      amount={dispute.amount}
+                    />
+                  )}
                 </CardContent>
+              </Card>
               </Card>
             );
           })}
