@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal } from "lucide-react";
+import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal, DollarSign } from "lucide-react";
 import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence, useResolveDisputeVendorWins, useResolveDisputeBuyerWins, useResolveDisputeCompromise } from "@/hooks/useSupabaseData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pending Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
