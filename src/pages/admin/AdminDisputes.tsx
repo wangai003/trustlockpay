@@ -54,6 +54,16 @@ const AdminDisputes = () => {
   const resolveBuyerWins = useResolveDisputeBuyerWins();
   const resolveCompromise = useResolveDisputeCompromise();
 
+  const { data: arbOrders = [] } = useQuery({
+    queryKey: ["arbitration-fee-orders"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("arbitration_fee_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
     dbId: d.id,
