@@ -140,8 +140,11 @@ Deno.serve(async (req) => {
     const escrowId = txToEscrowId(tx.tx_id);
     const contractUnits = toContractUnits(tx.amount);
 
+    // Resolve token address from transaction payment method
+    const tokenAddress = resolveTokenAddress(tx);
+
     // ══════════════════════════════════════════════════
-    //  ACTION: LOCK — Lock funds in escrow after payment
+    //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
     // ══════════════════════════════════════════════════
     if (action === "lock") {
       // Check if milestones exist
@@ -161,11 +164,11 @@ Deno.serve(async (req) => {
         result = await sendContractCall(
           ESCROW_ABI.lockFundsWithMilestones,
           JSON.stringify({
-            escrowId,
+            orderId: escrowId,
+            token: tokenAddress,
             buyer: tx.buyer_id,
             vendor: tx.vendor_id,
-            totalAmount: contractUnits.toString(),
-            milestoneCount: milestones.length,
+            amount: contractUnits.toString(),
             milestoneAmounts: milestoneAmounts.map(String),
           })
         );
@@ -174,10 +177,11 @@ Deno.serve(async (req) => {
         result = await sendContractCall(
           ESCROW_ABI.lockFunds,
           JSON.stringify({
-            escrowId,
+            orderId: escrowId,
+            token: tokenAddress,
             buyer: tx.buyer_id,
             vendor: tx.vendor_id,
-            totalAmount: contractUnits.toString(),
+            amount: contractUnits.toString(),
           })
         );
       }
