@@ -58,6 +58,13 @@ function toContractUnits(amount: number): bigint {
   return BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS)));
 }
 
+// ─── Resolve token address from transaction ───────────────
+function resolveTokenAddress(tx: Record<string, unknown>): string {
+  const token = ((tx.token as string) || "USDC").toUpperCase();
+  if (token === "USDT") return USDT_ADDRESS;
+  return USDC_ADDRESS; // Default to USDC
+}
+
 // ─── Send transaction via Polygon RPC (eth_sendRawTransaction) ───
 async function sendContractCall(
   functionSig: string,
