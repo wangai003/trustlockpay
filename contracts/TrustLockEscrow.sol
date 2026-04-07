@@ -53,12 +53,14 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         uint8   milestoneCount;
         bool    released;
         bool    refunded;
-        bool    buyerApproved;
+        bool    buyerApproved;  // global approval (atomic escrows)
     }
 
     struct Milestone {
         uint256 amount;
         bool    released;
+        bool    buyerApproved;  // per-milestone buyer approval
+        bool    vendorApproved; // per-milestone vendor approval
     }
 
     mapping(bytes32 => EscrowRecord) public escrows;
@@ -237,7 +239,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         for (uint256 i = 0; i < milestoneAmounts.length; i++) {
             milestones[orderId][i] = Milestone({
                 amount: milestoneAmounts[i],
-                released: false
+                released: false,
+                buyerApproved: false,
+                vendorApproved: false
             });
         }
 
@@ -245,11 +249,55 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  BUYER APPROVAL
+    //  APPROVAL — Per-milestone dual-party OR global (atomic escrows)
     // ═══════════════════════════════════════════════════════════
-    function approveMilestone(bytes32 orderId) external escrowExists(orderId) notSettled(orderId) {
-        require(msg.sender == escrows[orderId].buyer, "Only buyer can approve");
-        escrows[orderId].buyerApproved = true;
+    /**
+     * @notice Approve a specific milestone or the entire escrow.
+     * @param orderId       The escrow order
+     * @param milestoneIndex Which milestone to approve (ignored for atomic escrows)
+     * @param isBuyer       true = buyer approving, false = vendor approving
+     *
+     * For atomic (non-milestone) escrows: sets global buyerApproved.
+     * For milestone escrows: sets per-milestone buyer/vendor approval.
+     */
+    function approveMilestone(
+        bytes32 orderId,
+        uint256 milestoneIndex,
+        bool isBuyer
+    ) external escrowExists(orderId) notSettled(orderId) {
+        EscrowRecord storage e = escrows[orderId];
+
+        if (isBuyer) {
+            require(msg.sender == e.buyer, "Only buyer can approve");
+        } else {
+            require(msg.sender == e.vendor, "Only vendor can approve");
+        }
+
+        // Atomic escrow (no milestones) — set global approval
+        if (e.milestoneCount == 0) {
+            if (isBuyer) {
+                e.buyerApproved = true;
+            }
+            emit BuyerApproval(orderId, msg.sender);
+            return;
+        }
+
+        // Milestone escrow — per-milestone approval
+        require(milestoneIndex < e.milestoneCount, "Invalid milestone");
+        Milestone storage m = milestones[orderId][milestoneIndex];
+        require(!m.released, "Already released");
+
+        if (isBuyer) {
+            m.buyerApproved = true;
+        } else {
+            m.vendorApproved = true;
+        }
+
+        // If buyer approved this milestone, set global flag for release functions
+        if (m.buyerApproved) {
+            e.buyerApproved = true;
+        }
+
         emit BuyerApproval(orderId, msg.sender);
     }
 
@@ -298,23 +346,27 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  4. SPLIT PAYOUT — 1.0% fee on VENDOR share ONLY
+    //  4. SPLIT PAYOUT — Pre-calculated amounts, 1.0% fee on vendor share
     // ═══════════════════════════════════════════════════════════
+    /**
+     * @notice Split escrowed funds (dispute resolution). Backend pre-calculates amounts.
+     * @param orderId       The escrow order
+     * @param buyerAmount   Exact amount to return to buyer (0 fees)
+     * @param vendorAmount  Gross amount for vendor (1% escrow fee deducted from this)
+     */
     function splitPayout(
         bytes32 orderId,
-        uint256 vendorShareBps
+        uint256 buyerAmount,
+        uint256 vendorAmount
     ) external onlyOperator nonReentrant escrowExists(orderId) notSettled(orderId) {
-        require(vendorShareBps <= BPS, "Invalid bps");
-
         EscrowRecord storage e = escrows[orderId];
+        require(buyerAmount + vendorAmount == e.lockedAmount, "Amounts must equal locked total");
+
         IERC20 stablecoin = IERC20(e.token);
-        uint256 locked = e.lockedAmount;
 
-        uint256 vendorGross = (locked * vendorShareBps) / BPS;
-        uint256 buyerAmount = locked - vendorGross;
-
-        uint256 vendorFee = (vendorGross * ESCROW_RELEASE_FEE_BPS) / BPS;
-        uint256 vendorNet = vendorGross - vendorFee;
+        // 1% escrow fee on vendor share only
+        uint256 vendorFee = (vendorAmount * ESCROW_RELEASE_FEE_BPS) / BPS;
+        uint256 vendorNet = vendorAmount - vendorFee;
 
         stablecoin.safeTransfer(TRANSACTION_WALLET, vendorFee);
         stablecoin.safeTransfer(e.vendor, vendorNet);
