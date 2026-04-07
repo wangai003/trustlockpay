@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye, Scale } from "lucide-react";
 import ArbitratorProposalPanel from "@/components/shared/ArbitratorProposalPanel";
-import { useDisputes } from "@/hooks/useSupabaseData";
+import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useVendor } from "@/contexts/VendorContext";
 import TLId from "@/components/shared/TLId";
@@ -27,9 +27,15 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 const VendorDisputes = () => {
   const { isTestnet } = useVendor();
   const navigate = useNavigate();
+  const [showNewDispute, setShowNewDispute] = useState(false);
+  const [txIdInput, setTxIdInput] = useState("");
+  const [reasonInput, setReasonInput] = useState("Buyer refuses to confirm delivery");
+  const [descInput, setDescInput] = useState("");
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const evidenceInputRef = useRef<HTMLInputElement>(null);
   const { data: rawDisputes = [] } = useDisputes();
+  const fileDispute = useFileDispute();
   const testnet = useTestnetData();
 
   const disputes = isTestnet
