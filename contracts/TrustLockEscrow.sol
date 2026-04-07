@@ -254,7 +254,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             buyerApproved: false
         });
 
-        emit FundsLocked(orderId, token, buyer, vendor, amount);
+        emit FundsLocked(orderId, token, buyer, vendor, amount, 0);
     }
 
     // ═══════════════════════════════════════════════════════════
