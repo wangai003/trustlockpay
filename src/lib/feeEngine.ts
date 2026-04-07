@@ -457,6 +457,8 @@ export interface InvoiceFeeCalculation {
   escrowWalletReceives: number;
   transactionWalletReceives: number;
   combinedTransactionFee: number;
+  /** True = the 1% escrow fee is deferred until deal completion, not collected upfront */
+  escrowFeeDeferred: boolean;
   // Buyer display lines
   buyerDisplay: BuyerFeeDisplay;
   // Legacy aliases
