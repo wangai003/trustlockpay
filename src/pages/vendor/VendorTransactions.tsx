@@ -577,9 +577,8 @@ const VendorTransactions = () => {
                                   compact
                                 />
                               </div>
-                              {/* Arbitrator selection panel for disputed orders in arbitration */}
                               {tx.status === "disputed" && (
-                                <ArbitratorProposalPanel disputeId={tx.dbId} role="vendor" disputeStatus="arbitration_pending" />
+                                <ArbitratorProposalPanel transactionId={tx.dbId} role="vendor" />
                               )}
                             </div>
                           </td>
