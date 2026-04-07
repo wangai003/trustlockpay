@@ -49,8 +49,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address vendor;
         address token;
         uint256 lockedAmount;
+        uint256 totalPrincipal;    // original total locked (immutable after lock)
+        uint256 totalFeesCollected; // running sum of fees extracted across milestones
         uint256 lockTime;
         uint8   milestoneCount;
+        uint8   milestonesResolved; // count of completed + refunded milestones
         bool    released;
         bool    refunded;
         bool    buyerApproved;  // global approval (atomic escrows)
@@ -59,6 +62,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     struct Milestone {
         uint256 amount;
         bool    released;
+        bool    refunded;       // true if milestone was refunded to buyer
         bool    buyerApproved;  // per-milestone buyer approval
         bool    vendorApproved; // per-milestone vendor approval
     }
