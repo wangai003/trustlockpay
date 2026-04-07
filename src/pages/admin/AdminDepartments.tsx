@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 import DepartmentWorkflow from "@/components/admin/DepartmentWorkflow";
+import DepartmentAlertInbox from "@/components/admin/DepartmentAlertInbox";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -194,9 +195,10 @@ const AdminDepartments = () => {
         )}
           </TabsContent>
 
-          {/* Department workflow tabs */}
+          {/* Department workflow + alerts tabs */}
           {DEPARTMENTS.map(dept => (
-            <TabsContent key={dept.slug} value={dept.slug} className="mt-4">
+            <TabsContent key={dept.slug} value={dept.slug} className="mt-4 space-y-6">
+              <DepartmentAlertInbox departmentSlug={dept.slug} departmentName={dept.name} />
               <DepartmentWorkflow departmentSlug={dept.slug} departmentName={dept.name} />
             </TabsContent>
           ))}

@@ -391,6 +391,33 @@ Deno.serve(async (req) => {
           });
         } catch (_) { /* best-effort */ }
 
+        // Cross-department routing: Disputes → Finance for fee collection
+        try {
+          await supabase.rpc("route_department_alert", {
+            _source_dept: "disputes",
+            _target_dept: "finance",
+            _alert_type: "arbitration_fee",
+            _title: "Arbitration Fee Collection Required",
+            _message: `Dispute ${disputeId} escalated to arbitration. Fee: $${arbFee}. Verify OS Pay collection before arbitrator assignment.`,
+            _priority: "high",
+            _entity_type: "dispute",
+            _entity_id: disputeId,
+            _admin_id: null,
+          });
+          // Also notify Executive for critical oversight
+          await supabase.rpc("route_department_alert", {
+            _source_dept: "disputes",
+            _target_dept: "executive",
+            _alert_type: "dispute_escalation",
+            _title: "🚨 Dispute Escalated to Arbitration",
+            _message: `Dispute ${disputeId} ($${txAmount.toLocaleString()}) requires arbitrator. Executive oversight recommended.`,
+            _priority: "critical",
+            _entity_type: "dispute",
+            _entity_id: disputeId,
+            _admin_id: null,
+          });
+        } catch (_) { /* best-effort */ }
+
         result = data;
         break;
       }

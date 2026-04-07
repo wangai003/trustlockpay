@@ -41,7 +41,7 @@ const allNavItems = [
   { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", moduleKey: "accountability", badgeKey: null },
   { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", moduleKey: "training", badgeKey: null },
   { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", moduleKey: "sandbox", badgeKey: null },
-  { label: "Departments", icon: Network, to: "/trustlock/admin/departments", tip: "View department divisions and assigned staff", moduleKey: "staff", badgeKey: null },
+  { label: "Departments", icon: Network, to: "/trustlock/admin/departments", tip: "View department divisions, workflows, and cross-department alerts", moduleKey: "staff", badgeKey: "deptAlerts" },
   { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", moduleKey: "platforms", badgeKey: null },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings", badgeKey: null },
 ];
@@ -78,14 +78,14 @@ function getAccessibleModules(): string[] | null {
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { teamChat, chiefDMs } = useAdminUnreadBadges();
+  const { teamChat, chiefDMs, deptAlerts } = useAdminUnreadBadges();
 
   const auth = getAdminAuth();
   const isChief = auth.isChief === true;
   const deptSlug = auth.departmentSlug;
   const deptName = deptSlug ? DEPARTMENTS.find(d => d.slug === deptSlug)?.name : null;
 
-  const badgeCounts: Record<string, number> = { teamChat, chiefDMs };
+  const badgeCounts: Record<string, number> = { teamChat, chiefDMs, deptAlerts };
 
   const accessibleModules = getAccessibleModules();
   const navItems = allNavItems.filter((item) => {
