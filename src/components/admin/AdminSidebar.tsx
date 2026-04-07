@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Tag, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ const allNavItems = [
   { label: "Accountability", icon: ClipboardList, to: "/trustlock/admin/accountability", tip: "Shared inbox, action log, and chief admin override controls", moduleKey: "accountability" },
   { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for new and existing admin staff", moduleKey: "training" },
   { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", moduleKey: "sandbox" },
+  { label: "Departments", icon: Network, to: "/trustlock/admin/departments", tip: "View department divisions and assigned staff", moduleKey: "staff" },
   { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", moduleKey: "platforms" },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings" },
 ];

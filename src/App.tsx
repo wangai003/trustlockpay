@@ -40,6 +40,7 @@ const AdminGasTreasury = lazy(() => import("./pages/admin/AdminGasTreasury"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability"));
 const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
+const AdminDepartments = lazy(() => import("./pages/admin/AdminDepartments"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
@@ -164,6 +165,7 @@ const App = () => (
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="accountability" element={<AdminAccountability />} />
                 <Route path="training-manual" element={<AdminTrainingManual />} />
+                <Route path="departments" element={<AdminDepartments />} />
                 <Route path="sandbox-leads" element={<AdminSandboxLeads />} />
                 <Route path="platforms" element={<AdminPlatforms />} />
                 <Route path="platform-analytics" element={<AdminPlatformAnalytics />} />
