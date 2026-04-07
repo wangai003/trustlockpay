@@ -112,7 +112,7 @@ const BuyerDisputes = () => {
   const handleRequestArbitrator = async (dispute: typeof disputes[0]) => {
     const fee = (dispute.rawAmount * 0.02).toFixed(2);
     const confirmed = window.confirm(
-      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable. You will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
+      `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Filing & Case Management Fee (2%): $${fee}\n\nThis non-refundable fee covers TrustLock's case management and coordination. The appointed arbitrator's professional fees are separate and determined by their institution after appointment.\n\nYou will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
     );
     if (!confirmed) return;
 
