@@ -91,6 +91,7 @@ const VendorTeams = lazy(() => import("./pages/vendor/VendorTeams"));
 const VendorMessages = lazy(() => import("./pages/vendor/VendorMessages"));
 const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketplaceOrders"));
 const VendorCRM = lazy(() => import("./pages/vendor/VendorCRM"));
+const VendorDisputes = lazy(() => import("./pages/vendor/VendorDisputes"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
@@ -198,6 +199,7 @@ const App = () => (
                 <Route path="industry-playbook" element={<VendorIndustryPlaybook />} />
                 <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="crm" element={<VendorCRM />} />
+                <Route path="disputes" element={<VendorDisputes />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
