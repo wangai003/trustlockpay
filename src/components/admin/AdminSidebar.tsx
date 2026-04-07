@@ -78,14 +78,14 @@ function getAccessibleModules(): string[] | null {
 const AdminSidebar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { teamChat, chiefDMs } = useAdminUnreadBadges();
+  const { teamChat, chiefDMs, deptAlerts } = useAdminUnreadBadges();
 
   const auth = getAdminAuth();
   const isChief = auth.isChief === true;
   const deptSlug = auth.departmentSlug;
   const deptName = deptSlug ? DEPARTMENTS.find(d => d.slug === deptSlug)?.name : null;
 
-  const badgeCounts: Record<string, number> = { teamChat, chiefDMs };
+  const badgeCounts: Record<string, number> = { teamChat, chiefDMs, deptAlerts };
 
   const accessibleModules = getAccessibleModules();
   const navItems = allNavItems.filter((item) => {
