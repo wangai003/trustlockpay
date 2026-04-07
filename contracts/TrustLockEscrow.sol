@@ -322,9 +322,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         EscrowRecord storage e = escrows[orderId];
 
         if (isBuyer) {
-            require(msg.sender == e.buyer, "Only buyer can approve");
+            require(_msgSender() == e.buyer, "Only buyer can approve");
         } else {
-            require(msg.sender == e.vendor, "Only vendor can approve");
+            require(_msgSender() == e.vendor, "Only vendor can approve");
         }
 
         // Atomic escrow (no milestones) — set global approval
