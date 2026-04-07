@@ -30,7 +30,7 @@ const baseNavItems = [
   { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS" },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK" },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages", tip: "Direct messaging with buyers and admin support", tlId: "TL-V-SB-NAV-MESSAGES" },
-  
+  { label: "Disputes", icon: AlertTriangle, to: "/trustlock/vendor/disputes", tip: "View and respond to disputes filed by buyers", tlId: "TL-V-SB-NAV-DISPUTES" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS" },
 ];
 
