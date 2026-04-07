@@ -14,10 +14,12 @@ function getAdminAuth() {
 export function useAdminUnreadBadges() {
   const [teamChat, setTeamChat] = useState(0);
   const [chiefDMs, setChiefDMs] = useState(0);
+  const [deptAlerts, setDeptAlerts] = useState(0);
 
   const auth = getAdminAuth();
   const adminId = auth.adminId || auth.id || "";
   const myDept = auth.departmentSlug || "executive";
+  const isChief = auth.isChief === true;
 
   const fetchCounts = useCallback(async () => {
     if (!adminId) return;
@@ -30,8 +32,7 @@ export function useAdminUnreadBadges() {
       .eq("is_read", false);
     setChiefDMs(dmCount || 0);
 
-    // For team chat, we don't track read per-message — just use a simple approach:
-    // Count messages in last 24h in my dept that I didn't send
+    // Team chat: messages in last 24h in my dept that I didn't send
     const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
     const { count: chatCount } = await supabase
       .from("admin_dept_chat_messages")
@@ -40,7 +41,18 @@ export function useAdminUnreadBadges() {
       .neq("sender_id", adminId)
       .gte("created_at", oneDayAgo);
     setTeamChat(chatCount || 0);
-  }, [adminId, myDept]);
+
+    // Cross-department alerts: pending alerts for my department (or all if chief)
+    let alertQuery = supabase
+      .from("admin_cross_department_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    if (!isChief) {
+      alertQuery = alertQuery.eq("target_department", myDept);
+    }
+    const { count: alertCount } = await alertQuery;
+    setDeptAlerts(alertCount || 0);
+  }, [adminId, myDept, isChief]);
 
   useEffect(() => {
     fetchCounts();
@@ -57,12 +69,18 @@ export function useAdminUnreadBadges() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_dept_chat_messages" }, fetchCounts)
       .subscribe();
 
+    const ch3 = supabase
+      .channel("admin-badge-alerts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "admin_cross_department_alerts" }, fetchCounts)
+      .subscribe();
+
     return () => {
       clearInterval(interval);
       supabase.removeChannel(ch1);
       supabase.removeChannel(ch2);
+      supabase.removeChannel(ch3);
     };
   }, [fetchCounts]);
 
-  return { teamChat, chiefDMs };
+  return { teamChat, chiefDMs, deptAlerts };
 }
