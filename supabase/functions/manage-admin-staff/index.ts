@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
     if (action === "list") {
       const { data: accounts, error } = await supabase
         .from("admin_accounts")
-        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at")
+        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at, department_id")
         .order("created_at", { ascending: true });
 
       if (error) return json({ error: error.message }, 500);
@@ -253,12 +253,18 @@ Deno.serve(async (req) => {
         .select("admin_id, rank")
         .eq("is_active", true);
 
+      const { data: departments } = await supabase
+        .from("admin_departments")
+        .select("id, slug, name");
+
       const chiefMap = new Map((chiefs || []).map((c: any) => [c.admin_id, c.rank]));
+      const deptMap = new Map((departments || []).map((d: any) => [d.id, d.slug]));
 
       const enriched = (accounts || []).map((a: any) => ({
         ...a,
         is_chief: chiefMap.has(a.id),
         chief_rank: chiefMap.get(a.id) || null,
+        department_slug: deptMap.get(a.department_id) || null,
       }));
 
       return json({ accounts: enriched, callerRank });
