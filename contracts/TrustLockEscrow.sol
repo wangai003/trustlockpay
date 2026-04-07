@@ -9,12 +9,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 /**
  * @title TrustLockEscrow
  * @author TrustLock OS — Azix Holdings
- * @notice Dual-wallet escrow with circular revenue loop on Polygon (USDC, 6 decimals)
+ * @notice Dual-wallet escrow with circular revenue loop on Polygon (USDC + USDT, 6 decimals)
  *
  *  TRANSACTION_WALLET (0x7A3b...F92d) — receives platform fees at checkout + trickled escrow fees
  *  ESCROW_WALLET      (0x4E1c...A83b) — holds principal + escrow deposit, forwards fees on release
  *
- *  All amounts in USDC (6 decimals). All fee rates in basis points (10000 = 100%).
+ *  All amounts in stablecoin (6 decimals). All fee rates in basis points (10000 = 100%).
  */
 contract TrustLockEscrow is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -23,14 +23,17 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     address public constant TRANSACTION_WALLET = 0x7A3b000000000000000000000000000000F92d00;
     address public constant ESCROW_WALLET      = 0x4E1c000000000000000000000000000000A83b00;
 
-    // ─── USDC on Polygon Mainnet ─────────────────────────────
-    IERC20 public immutable usdc;
+    // ─── Supported Tokens (Polygon Mainnet) ──────────────────
+    address public constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
+    address public constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
+
+    mapping(address => bool) public allowedTokens;
 
     // ─── Fee Constants (basis points) ────────────────────────
     uint256 public constant ESCROW_RELEASE_FEE_BPS = 100; // 1.0% trickle-down on release
     uint256 private constant BPS = 10000;
 
-    uint256 public autoReleasePeriod = 14 days; // default fallback; actual period set per-order via setOrderReleasePeriod
+    uint256 public autoReleasePeriod = 14 days;
 
     // ─── Operator Access ─────────────────────────────────────
     mapping(address => bool) public operators;
@@ -39,6 +42,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     struct EscrowRecord {
         address buyer;
         address vendor;
+        address token;          // which stablecoin is locked
         uint256 lockedAmount;   // net amount held after platform + processor fees
         uint256 lockTime;
         uint8   milestoneCount;
@@ -58,6 +62,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ─── Events ──────────────────────────────────────────────
     event FundsLocked(
         bytes32 indexed orderId,
+        address indexed token,
         uint256 totalAmount,
         uint256 platformFee,
         uint256 escrowDeposit,
@@ -102,10 +107,16 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
     event BuyerApproval(bytes32 indexed orderId, address indexed buyer);
     event OperatorUpdated(address indexed operator, bool status);
+    event AllowedTokenUpdated(address indexed token, bool status);
 
     // ─── Modifiers ───────────────────────────────────────────
     modifier onlyOperator() {
         require(operators[msg.sender] || msg.sender == owner(), "Not authorized");
+        _;
+    }
+
+    modifier onlySupportedToken(address token) {
+        require(allowedTokens[token], "Token not supported");
         _;
     }
 
@@ -120,32 +131,30 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ─── Constructor ─────────────────────────────────────────
-    constructor(address _usdc) Ownable(msg.sender) {
-        require(_usdc != address(0), "Invalid USDC address");
-        usdc = IERC20(_usdc);
+    constructor() Ownable(msg.sender) {
+        allowedTokens[USDC] = true;
+        allowedTokens[USDT] = true;
         operators[msg.sender] = true;
+
+        emit AllowedTokenUpdated(USDC, true);
+        emit AllowedTokenUpdated(USDT, true);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  TOKEN MANAGEMENT
+    // ═══════════════════════════════════════════════════════════
+    function setAllowedToken(address token, bool status) external onlyOwner {
+        require(token != address(0), "Invalid token address");
+        allowedTokens[token] = status;
+        emit AllowedTokenUpdated(token, status);
     }
 
     // ═══════════════════════════════════════════════════════════
     //  1. LOCK FUNDS — At checkout
     // ═══════════════════════════════════════════════════════════
-    /**
-     * @notice Lock buyer funds in escrow at checkout.
-     *   - platformFee → TRANSACTION_WALLET (immediate)
-     *   - processorFee → processor address (immediate)
-     *   - remainder (amount - platformFee - processorFee) → held in contract (ESCROW_WALLET concept)
-     *
-     * @param orderId       Unique TrustLock order identifier
-     * @param amount        Total USDC amount (6 decimals)
-     * @param platformFee   Pre-calculated platform fee (e.g. 1.0% or 1.5%)
-     * @param escrowDeposit Pre-calculated escrow deposit (informational, included in locked amount)
-     * @param processorFee  Pre-calculated processor fee (sent to processor)
-     * @param processor     Payment processor address (address(0) if crypto-native, fee=0)
-     * @param buyer         Buyer wallet address
-     * @param vendor        Vendor wallet address
-     */
     function lockFunds(
         bytes32 orderId,
+        address token,
         uint256 amount,
         uint256 platformFee,
         uint256 escrowDeposit,
@@ -153,30 +162,33 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address processor,
         address buyer,
         address vendor
-    ) external onlyOperator nonReentrant {
+    ) external onlyOperator onlySupportedToken(token) nonReentrant {
         require(escrows[orderId].lockedAmount == 0, "Escrow already exists");
         require(amount > 0, "Amount must be > 0");
         require(buyer != address(0) && vendor != address(0), "Invalid addresses");
         require(platformFee + processorFee < amount, "Fees exceed amount");
 
+        IERC20 stablecoin = IERC20(token);
+
         // 1. Send platformFee → TRANSACTION_WALLET (immediate)
         if (platformFee > 0) {
-            usdc.safeTransferFrom(msg.sender, TRANSACTION_WALLET, platformFee);
+            stablecoin.safeTransferFrom(msg.sender, TRANSACTION_WALLET, platformFee);
         }
 
         // 2. Send processorFee → processor address (immediate)
         if (processorFee > 0 && processor != address(0)) {
-            usdc.safeTransferFrom(msg.sender, processor, processorFee);
+            stablecoin.safeTransferFrom(msg.sender, processor, processorFee);
         }
 
-        // 3. Lock remainder in this contract (acts as ESCROW_WALLET)
+        // 3. Lock remainder in this contract
         uint256 lockedAmount = amount - platformFee - processorFee;
-        usdc.safeTransferFrom(msg.sender, address(this), lockedAmount);
+        stablecoin.safeTransferFrom(msg.sender, address(this), lockedAmount);
 
         // 4. Store escrow record
         escrows[orderId] = EscrowRecord({
             buyer: buyer,
             vendor: vendor,
+            token: token,
             lockedAmount: lockedAmount,
             lockTime: block.timestamp,
             milestoneCount: 0,
@@ -185,7 +197,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             buyerApproved: false
         });
 
-        emit FundsLocked(orderId, amount, platformFee, escrowDeposit, processorFee, lockedAmount);
+        emit FundsLocked(orderId, token, amount, platformFee, escrowDeposit, processorFee, lockedAmount);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -193,6 +205,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════
     function lockFundsWithMilestones(
         bytes32 orderId,
+        address token,
         uint256 amount,
         uint256 platformFee,
         uint256 escrowDeposit,
@@ -201,33 +214,34 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address buyer,
         address vendor,
         uint256[] calldata milestoneAmounts
-    ) external onlyOperator nonReentrant {
+    ) external onlyOperator onlySupportedToken(token) nonReentrant {
         require(escrows[orderId].lockedAmount == 0, "Escrow already exists");
         require(amount > 0 && milestoneAmounts.length > 0, "Invalid params");
         require(platformFee + processorFee < amount, "Fees exceed amount");
 
-        // Send fees
+        IERC20 stablecoin = IERC20(token);
+
         if (platformFee > 0) {
-            usdc.safeTransferFrom(msg.sender, TRANSACTION_WALLET, platformFee);
+            stablecoin.safeTransferFrom(msg.sender, TRANSACTION_WALLET, platformFee);
         }
         if (processorFee > 0 && processor != address(0)) {
-            usdc.safeTransferFrom(msg.sender, processor, processorFee);
+            stablecoin.safeTransferFrom(msg.sender, processor, processorFee);
         }
 
         uint256 lockedAmount = amount - platformFee - processorFee;
 
-        // Validate milestone amounts sum to lockedAmount
         uint256 milestoneSum;
         for (uint256 i = 0; i < milestoneAmounts.length; i++) {
             milestoneSum += milestoneAmounts[i];
         }
         require(milestoneSum == lockedAmount, "Milestone amounts mismatch");
 
-        usdc.safeTransferFrom(msg.sender, address(this), lockedAmount);
+        stablecoin.safeTransferFrom(msg.sender, address(this), lockedAmount);
 
         escrows[orderId] = EscrowRecord({
             buyer: buyer,
             vendor: vendor,
+            token: token,
             lockedAmount: lockedAmount,
             lockTime: block.timestamp,
             milestoneCount: uint8(milestoneAmounts.length),
@@ -243,7 +257,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             });
         }
 
-        emit FundsLocked(orderId, amount, platformFee, escrowDeposit, processorFee, lockedAmount);
+        emit FundsLocked(orderId, token, amount, platformFee, escrowDeposit, processorFee, lockedAmount);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -258,11 +272,6 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════
     //  2. RELEASE FUNDS — Trickle-down 1.0% to TRANSACTION_WALLET
     // ═══════════════════════════════════════════════════════════
-    /**
-     * @notice Release escrowed funds to vendor.
-     *   - 1.0% escrow service fee (100 bps) → TRANSACTION_WALLET (trickle-down)
-     *   - Remainder → vendorAddress
-     */
     function releaseFunds(
         bytes32 orderId,
         address vendorAddress
@@ -271,14 +280,14 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         require(e.buyerApproved, "Buyer has not approved release");
         require(vendorAddress != address(0), "Invalid vendor address");
 
+        IERC20 stablecoin = IERC20(e.token);
         uint256 locked = e.lockedAmount;
 
-        // 1.0% escrow service fee → TRANSACTION_WALLET (trickle-down)
         uint256 releaseFee = (locked * ESCROW_RELEASE_FEE_BPS) / BPS;
         uint256 vendorPayout = locked - releaseFee;
 
-        usdc.safeTransfer(TRANSACTION_WALLET, releaseFee);
-        usdc.safeTransfer(vendorAddress, vendorPayout);
+        stablecoin.safeTransfer(TRANSACTION_WALLET, releaseFee);
+        stablecoin.safeTransfer(vendorAddress, vendorPayout);
 
         e.released = true;
         e.lockedAmount = 0;
@@ -288,7 +297,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  3. REFUND BUYER — FULL amount, ZERO fees, NO trickle-down
+    //  3. REFUND BUYER — FULL amount, ZERO fees
     // ═══════════════════════════════════════════════════════════
     function refundBuyer(
         bytes32 orderId,
@@ -297,10 +306,10 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         EscrowRecord storage e = escrows[orderId];
         require(buyerAddress != address(0), "Invalid buyer address");
 
+        IERC20 stablecoin = IERC20(e.token);
         uint256 refundAmount = e.lockedAmount;
 
-        // FULL locked amount → buyer. Zero fees. No trickle-down.
-        usdc.safeTransfer(buyerAddress, refundAmount);
+        stablecoin.safeTransfer(buyerAddress, refundAmount);
 
         e.refunded = true;
         e.lockedAmount = 0;
@@ -311,12 +320,6 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════
     //  4. SPLIT PAYOUT — 1.0% fee on VENDOR share ONLY
     // ═══════════════════════════════════════════════════════════
-    /**
-     * @notice Split escrowed funds between vendor and buyer (dispute resolution).
-     *   - 1.0% escrow fee deducted from vendor share ONLY
-     *   - Fee trickled to TRANSACTION_WALLET
-     *   - Buyer share sent with zero deduction
-     */
     function splitPayout(
         bytes32 orderId,
         address buyerAddress,
@@ -327,21 +330,19 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         require(buyerAddress != address(0) && vendorAddress != address(0), "Invalid addresses");
 
         EscrowRecord storage e = escrows[orderId];
+        IERC20 stablecoin = IERC20(e.token);
         uint256 locked = e.lockedAmount;
 
-        // Calculate shares
         uint256 vendorGross = (locked * vendorShareBps) / BPS;
         uint256 buyerAmount = locked - vendorGross;
 
-        // 1.0% escrow fee on vendor share ONLY
         uint256 vendorFee = (vendorGross * ESCROW_RELEASE_FEE_BPS) / BPS;
         uint256 vendorNet = vendorGross - vendorFee;
 
-        // Transfers (simultaneous atomic execution)
-        usdc.safeTransfer(TRANSACTION_WALLET, vendorFee);
-        usdc.safeTransfer(vendorAddress, vendorNet);
+        stablecoin.safeTransfer(TRANSACTION_WALLET, vendorFee);
+        stablecoin.safeTransfer(vendorAddress, vendorNet);
         if (buyerAmount > 0) {
-            usdc.safeTransfer(buyerAddress, buyerAmount);
+            stablecoin.safeTransfer(buyerAddress, buyerAmount);
         }
 
         e.released = true;
@@ -368,11 +369,13 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         require(!m.released, "Already released");
         require(m.amount > 0, "Zero milestone");
 
+        IERC20 stablecoin = IERC20(e.token);
+
         uint256 releaseFee = (m.amount * ESCROW_RELEASE_FEE_BPS) / BPS;
         uint256 vendorPayout = m.amount - releaseFee;
 
-        usdc.safeTransfer(TRANSACTION_WALLET, releaseFee);
-        usdc.safeTransfer(vendorAddress, vendorPayout);
+        stablecoin.safeTransfer(TRANSACTION_WALLET, releaseFee);
+        stablecoin.safeTransfer(vendorAddress, vendorPayout);
 
         m.released = true;
         e.lockedAmount -= m.amount;
@@ -383,6 +386,36 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         emit FeeTrickled(orderId, releaseFee, "milestone_release");
         emit MilestoneReleased(orderId, milestoneIndex, vendorPayout, releaseFee);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  REFUND MILESTONE — Return single milestone to buyer
+    // ═══════════════════════════════════════════════════════════
+    function refundMilestone(
+        bytes32 orderId,
+        uint256 milestoneIndex,
+        address buyerAddress
+    ) external onlyOperator nonReentrant escrowExists(orderId) notSettled(orderId) {
+        EscrowRecord storage e = escrows[orderId];
+        require(milestoneIndex < e.milestoneCount, "Invalid milestone");
+        require(buyerAddress != address(0), "Invalid buyer address");
+
+        Milestone storage m = milestones[orderId][milestoneIndex];
+        require(!m.released, "Already released");
+        require(m.amount > 0, "Zero milestone");
+
+        IERC20 stablecoin = IERC20(e.token);
+
+        stablecoin.safeTransfer(buyerAddress, m.amount);
+
+        m.released = true;
+        e.lockedAmount -= m.amount;
+
+        if (e.lockedAmount == 0) {
+            e.refunded = true;
+        }
+
+        emit FundsRefunded(orderId, buyerAddress, m.amount);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -400,12 +433,13 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
                 e.buyerApproved &&
                 block.timestamp >= e.lockTime + autoReleasePeriod
             ) {
+                IERC20 stablecoin = IERC20(e.token);
                 uint256 locked = e.lockedAmount;
                 uint256 releaseFee = (locked * ESCROW_RELEASE_FEE_BPS) / BPS;
                 uint256 vendorPayout = locked - releaseFee;
 
-                usdc.safeTransfer(TRANSACTION_WALLET, releaseFee);
-                usdc.safeTransfer(e.vendor, vendorPayout);
+                stablecoin.safeTransfer(TRANSACTION_WALLET, releaseFee);
+                stablecoin.safeTransfer(e.vendor, vendorPayout);
 
                 e.released = true;
                 e.lockedAmount = 0;
@@ -439,7 +473,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ─── Emergency Withdraw (owner only, for contract migration) ──
-    function emergencyWithdraw(uint256 amount) external onlyOwner {
-        usdc.safeTransfer(owner(), amount);
+    function emergencyWithdraw(address token, uint256 amount) external onlyOwner onlySupportedToken(token) {
+        IERC20(token).safeTransfer(owner(), amount);
     }
 }
