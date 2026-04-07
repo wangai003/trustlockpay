@@ -125,7 +125,7 @@ const ADMIN_SERVICES = [
   { label: "Custom Report Generation", amount: "" },
 ];
 
-const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
+const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitrationOrderId, onComplete, isTestnet = true }: TrustLockOSPayProps) => {
   const isAdmin = role === "admin";
   const serviceList = role === "vendor" ? VENDOR_SERVICES : role === "buyer" ? BUYER_SERVICES : ADMIN_SERVICES;
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
