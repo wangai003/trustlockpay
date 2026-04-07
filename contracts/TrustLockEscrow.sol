@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @title TrustLockEscrow
  * @author TrustLock OS — Azix Holdings
  * @notice Dual-wallet escrow with circular revenue loop on Polygon (USDC + USDT, 6 decimals)
+ *         Gasless via ERC-2771 meta-transactions — all MATIC gas paid by TrustLock Relayer.
  *
  *  Fee Architecture (off-chain → on-chain boundary):
  *    0.5% TrustLock Transaction Fee  → kept off-chain by Transaction Wallet BEFORE funds enter contract
@@ -20,6 +21,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  *
  *  The contract receives ONLY the net principal (after all off-chain deductions).
  *  It locks that principal and extracts 1% at release → TRANSACTION_WALLET.
+ *
+ *  ERC-2771 Meta-Transactions:
+ *    A trustedForwarder (TrustLock Relayer Wallet) can forward user calls.
+ *    The Relayer pays MATIC gas on behalf of users. The contract extracts the
+ *    original sender from the last 20 bytes of calldata when called by the forwarder.
+ *    NO stablecoin amounts are ever deducted for gas — gas is a separate MATIC concern.
  */
 contract TrustLockEscrow is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -32,6 +39,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     address public constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
 
+    // ─── ERC-2771 Trusted Forwarder (Gasless Meta-Transactions) ─
+    address public trustedForwarder;
+
     mapping(address => bool) public allowedTokens;
 
     // ─── Fee Constants (basis points) ────────────────────────
@@ -42,6 +52,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
     // ─── Operator Access ─────────────────────────────────────
     mapping(address => bool) public operators;
+
+    // ─── Events ──────────────────────────────────────────────
+    event TrustedForwarderUpdated(address indexed oldForwarder, address indexed newForwarder);
 
     // ─── Escrow State ────────────────────────────────────────
     struct EscrowRecord {
@@ -118,9 +131,34 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     event OperatorUpdated(address indexed operator, bool status);
     event AllowedTokenUpdated(address indexed token, bool status);
 
+    // ─── ERC-2771: Trusted Forwarder Check ─────────────────────
+    function isTrustedForwarder(address forwarder) public view returns (bool) {
+        return forwarder == trustedForwarder;
+    }
+
+    // ─── ERC-2771: Extract original sender from forwarded call ──
+    function _msgSender() internal view override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The original sender is appended as the last 20 bytes of calldata
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            sender = msg.sender;
+        }
+    }
+
+    // ─── ERC-2771: Extract original calldata from forwarded call ──
+    function _msgData() internal view override returns (bytes calldata) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            return msg.data[:msg.data.length - 20];
+        }
+        return msg.data;
+    }
+
     // ─── Modifiers ───────────────────────────────────────────
     modifier onlyOperator() {
-        require(operators[msg.sender] || msg.sender == owner(), "Not authorized");
+        require(operators[_msgSender()] || _msgSender() == owner(), "Not authorized");
         _;
     }
 
@@ -142,13 +180,15 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ─── Constructor ─────────────────────────────────────────
     constructor(
         address _transactionWallet,
-        address _escrowWallet
+        address _escrowWallet,
+        address _trustedForwarder
     ) Ownable(msg.sender) {
         require(_transactionWallet != address(0), "Invalid transaction wallet");
         require(_escrowWallet != address(0), "Invalid escrow wallet");
 
         TRANSACTION_WALLET = _transactionWallet;
         ESCROW_WALLET = _escrowWallet;
+        trustedForwarder = _trustedForwarder; // Can be address(0) initially
 
         allowedTokens[USDC] = true;
         allowedTokens[USDT] = true;
@@ -156,6 +196,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         emit AllowedTokenUpdated(USDC, true);
         emit AllowedTokenUpdated(USDT, true);
+        if (_trustedForwarder != address(0)) {
+            emit TrustedForwarderUpdated(address(0), _trustedForwarder);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -279,9 +322,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         EscrowRecord storage e = escrows[orderId];
 
         if (isBuyer) {
-            require(msg.sender == e.buyer, "Only buyer can approve");
+            require(_msgSender() == e.buyer, "Only buyer can approve");
         } else {
-            require(msg.sender == e.vendor, "Only vendor can approve");
+            require(_msgSender() == e.vendor, "Only vendor can approve");
         }
 
         // Atomic escrow (no milestones) — set global approval
@@ -289,7 +332,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             if (isBuyer) {
                 e.buyerApproved = true;
             }
-            emit BuyerApproval(orderId, msg.sender);
+        emit BuyerApproval(orderId, _msgSender());
             return;
         }
 
@@ -309,7 +352,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             e.buyerApproved = true;
         }
 
-        emit BuyerApproval(orderId, msg.sender);
+        emit BuyerApproval(orderId, _msgSender());
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -509,7 +552,6 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         }
         return count;
     }
-    }
 
     // ═══════════════════════════════════════════════════════════
     //  AUTO-RELEASE (batch — adaptive timeout)
@@ -554,6 +596,13 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     function setAutoReleasePeriod(uint256 period) external onlyOwner {
         require(period >= 1 days && period <= 90 days, "Invalid period");
         autoReleasePeriod = period;
+    }
+
+    /// @notice Update the trusted forwarder address for ERC-2771 key rotation
+    function setTrustedForwarder(address _newForwarder) external onlyOwner {
+        address old = trustedForwarder;
+        trustedForwarder = _newForwarder;
+        emit TrustedForwarderUpdated(old, _newForwarder);
     }
 
     // ─── View Helpers ────────────────────────────────────────
