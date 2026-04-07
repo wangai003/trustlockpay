@@ -26,6 +26,7 @@ const baseNavItems = [
   { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files", tlId: "TL-V-SB-NAV-DOCUMENTS", badgeKey: null },
   { label: "Help Center", icon: HelpCircle, to: "/trustlock/vendor/help", tip: "Guides, FAQs, and platform documentation", tlId: "TL-V-SB-NAV-HELP", badgeKey: null },
   { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan", tlId: "TL-V-SB-NAV-PRICING", badgeKey: null },
+  { label: "Fee Simulator", icon: DollarSign, to: "/trustlock/vendor/fee-simulator", tip: "Preview cross-border fees for any buyer/vendor corridor", tlId: "TL-V-SB-NAV-FEE-SIM", badgeKey: null },
   { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals", tlId: "TL-V-SB-NAV-LINKS", badgeKey: null },
   { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments", tlId: "TL-V-SB-NAV-OSPAY", badgeKey: null },
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails", tlId: "TL-V-SB-NAV-PAYOUT", badgeKey: null },
