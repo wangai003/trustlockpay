@@ -39,6 +39,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     address public constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
 
+    // ─── ERC-2771 Trusted Forwarder (Gasless Meta-Transactions) ─
+    address public trustedForwarder;
+
     mapping(address => bool) public allowedTokens;
 
     // ─── Fee Constants (basis points) ────────────────────────
@@ -49,6 +52,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
     // ─── Operator Access ─────────────────────────────────────
     mapping(address => bool) public operators;
+
+    // ─── Events ──────────────────────────────────────────────
+    event TrustedForwarderUpdated(address indexed oldForwarder, address indexed newForwarder);
 
     // ─── Escrow State ────────────────────────────────────────
     struct EscrowRecord {
