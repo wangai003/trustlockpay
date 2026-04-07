@@ -16,7 +16,7 @@ export const AZIX_WALLETS = {
   escrow: {
     label: "Azix Escrow Wallet",
     publicKey: "0x4E1c...A83b",
-    purpose: "Holds vendor principal (with 1% escrow fee baked in). On release, 1% trickles back to Transaction Fee Wallet.",
+    purpose: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion — never deducted upfront.",
   },
 } as const;
 
