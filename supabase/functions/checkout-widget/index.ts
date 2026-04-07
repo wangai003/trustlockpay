@@ -607,11 +607,20 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   const { sessionId, paymentProof } = params;
   if (!sessionId) return errorResponse("sessionId is required", 400);
 
-  const session = sessions.get(String(sessionId));
-  if (!session) return errorResponse("Session not found or expired", 404);
-  if (session.status === "confirmed") return errorResponse("Payment already confirmed", 400);
-
   const supabase = getSupabase();
+
+  // Retrieve session from database
+  const { data: sessionRow } = await supabase
+    .from("checkout_sessions")
+    .select("*")
+    .eq("id", String(sessionId))
+    .gt("expires_at", new Date().toISOString())
+    .single();
+
+  if (!sessionRow) return errorResponse("Session not found or expired", 404);
+  const session = sessionRow.session_data as unknown as CheckoutSession;
+  if (!session) return errorResponse("Session data corrupted", 500);
+  if (sessionRow.status === "confirmed") return errorResponse("Payment already confirmed", 400);
 
   // Create transaction via escrow-manager lock_funds with fee breakdown
   const lockResult = (await callEdgeFunction("escrow-manager", {
