@@ -440,10 +440,10 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         uint256 milestoneIndex
     ) external onlyOperator nonReentrant escrowExists(orderId) notSettled(orderId) {
         EscrowRecord storage e = escrows[orderId];
-        require(e.buyerApproved, "Buyer has not approved");
         require(milestoneIndex < e.milestoneCount, "Invalid milestone");
 
         Milestone storage m = milestones[orderId][milestoneIndex];
+        require(m.buyerApproved, "Buyer has not approved this milestone");
         require(!m.released && !m.refunded, "Already settled");
 
         // $0 checkpoint milestones — documentation only, skip financial routing
