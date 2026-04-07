@@ -839,11 +839,8 @@ async function handleWebhook(req: Request, body: Record<string, unknown>): Promi
   ];
 
   if (failureEvents.includes(eventType) && sessionId) {
-    const session = sessions.get(sessionId);
-    if (session) {
-      session.status = "failed";
-      sessions.delete(sessionId);
-    }
+    const supabase = getSupabase();
+    await supabase.from("checkout_sessions").update({ status: "failed" }).eq("id", sessionId);
     return jsonResponse({ success: true, source, eventType, action: "session_cleaned" });
   }
 
