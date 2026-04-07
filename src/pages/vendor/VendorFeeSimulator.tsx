@@ -91,7 +91,7 @@ const VendorFeeSimulator = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
-      <VendorHeader title="Fee Corridor Simulator" subtitle="Preview what your buyer will pay for any cross-border or domestic deal" />
+      <VendorHeader title="Fee Corridor Simulator" />
 
       <Card>
         <CardHeader className="pb-3">
