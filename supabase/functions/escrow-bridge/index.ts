@@ -164,6 +164,20 @@ Deno.serve(async (req) => {
     // Resolve token address from transaction payment method
     const tokenAddress = resolveTokenAddress(tx);
 
+    // ── Resolve Polygon wallet addresses from profiles ────
+    const buyerWallet = await resolveWalletAddress(supabase, tx.buyer_id);
+    const vendorWallet = await resolveWalletAddress(supabase, tx.vendor_id);
+
+    if (!buyerWallet || !vendorWallet) {
+      const missing = [];
+      if (!buyerWallet) missing.push("buyer");
+      if (!vendorWallet) missing.push("vendor");
+      console.warn(`Missing wallet addresses for ${missing.join(", ")} — contract call will use placeholder`);
+    }
+
+    const effectiveBuyerAddr = buyerWallet || `0x${"0".repeat(40)}`; // placeholder until wallet registered
+    const effectiveVendorAddr = vendorWallet || `0x${"0".repeat(40)}`;
+
     // ══════════════════════════════════════════════════
     //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
     // ══════════════════════════════════════════════════
@@ -187,8 +201,8 @@ Deno.serve(async (req) => {
           JSON.stringify({
             orderId: escrowId,
             token: tokenAddress,
-            buyer: tx.buyer_id,
-            vendor: tx.vendor_id,
+            buyer: effectiveBuyerAddr,
+            vendor: effectiveVendorAddr,
             amount: contractUnits.toString(),
             milestoneAmounts: milestoneAmounts.map(String),
           })
@@ -200,8 +214,8 @@ Deno.serve(async (req) => {
           JSON.stringify({
             orderId: escrowId,
             token: tokenAddress,
-            buyer: tx.buyer_id,
-            vendor: tx.vendor_id,
+            buyer: effectiveBuyerAddr,
+            vendor: effectiveVendorAddr,
             amount: contractUnits.toString(),
           })
         );
