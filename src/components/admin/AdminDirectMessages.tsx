@@ -57,13 +57,21 @@ const AdminDirectMessages = () => {
       body: JSON.stringify({ action: "list", chiefAdminId: currentAdminId }),
     });
     const json = await res.json();
-    if (json.staff) {
+    if (json.accounts) {
       // Also load aliases
       const { data: aliases } = await supabase.from("admin_aliases").select("*");
       const aliasMap = Object.fromEntries((aliases || []).map((a: any) => [a.admin_id, a.alias]));
-      const list: AdminStaff[] = json.staff
+      let list: AdminStaff[] = (json.accounts || [])
         .filter((s: any) => s.id !== currentAdminId && !s.is_deleted)
         .map((s: any) => ({ ...s, alias: aliasMap[s.id] }));
+
+      // Department isolation: non-executive staff can only see same-department + executive
+      if (!isChief && myDeptSlug && myDeptSlug !== "executive") {
+        list = list.filter((s: AdminStaff) =>
+          s.department_slug === myDeptSlug || s.department_slug === "executive" || s.is_chief
+        );
+      }
+
       setStaffList(list);
     }
   }, [currentAdminId]);
