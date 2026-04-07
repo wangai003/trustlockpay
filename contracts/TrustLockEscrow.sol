@@ -332,24 +332,19 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             if (isBuyer) {
                 e.buyerApproved = true;
             }
-        emit BuyerApproval(orderId, _msgSender());
+            emit BuyerApproval(orderId, _msgSender());
             return;
         }
 
         // Milestone escrow — per-milestone approval
         require(milestoneIndex < e.milestoneCount, "Invalid milestone");
         Milestone storage m = milestones[orderId][milestoneIndex];
-        require(!m.released, "Already released");
+        require(!m.released && !m.refunded, "Already settled");
 
         if (isBuyer) {
             m.buyerApproved = true;
         } else {
             m.vendorApproved = true;
-        }
-
-        // If buyer approved this milestone, set global flag for release functions
-        if (m.buyerApproved) {
-            e.buyerApproved = true;
         }
 
         emit BuyerApproval(orderId, _msgSender());
