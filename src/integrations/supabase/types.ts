@@ -425,6 +425,62 @@ export type Database = {
           },
         ]
       }
+      arbitrator_proposals: {
+        Row: {
+          arbitrator_credentials: string | null
+          arbitrator_email: string | null
+          arbitrator_institution: string | null
+          arbitrator_name: string
+          auto_assign_deadline: string
+          counterparty_responded_at: string | null
+          counterparty_response: string
+          created_at: string
+          dispute_id: string
+          id: string
+          proposed_by: string
+          proposer_role: string
+          updated_at: string
+        }
+        Insert: {
+          arbitrator_credentials?: string | null
+          arbitrator_email?: string | null
+          arbitrator_institution?: string | null
+          arbitrator_name: string
+          auto_assign_deadline?: string
+          counterparty_responded_at?: string | null
+          counterparty_response?: string
+          created_at?: string
+          dispute_id: string
+          id?: string
+          proposed_by: string
+          proposer_role: string
+          updated_at?: string
+        }
+        Update: {
+          arbitrator_credentials?: string | null
+          arbitrator_email?: string | null
+          arbitrator_institution?: string | null
+          arbitrator_name?: string
+          auto_assign_deadline?: string
+          counterparty_responded_at?: string | null
+          counterparty_response?: string
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          proposed_by?: string
+          proposer_role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arbitrator_proposals_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       archived_reports: {
         Row: {
           created_at: string

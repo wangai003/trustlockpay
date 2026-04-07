@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye, Scale } from "lucide-react";
+import ArbitratorProposalPanel from "@/components/shared/ArbitratorProposalPanel";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
@@ -39,6 +40,7 @@ const BuyerDisputes = () => {
 
   const disputes = isTestnet
     ? testnet.disputes.map(d => ({
+        dbId: d.id || d.dispute_id,
         id: d.dispute_id,
         txId: d.tx_id,
         vendor: d.vendor_name,
@@ -50,6 +52,7 @@ const BuyerDisputes = () => {
         lastUpdate: d.ai_recommendation,
       }))
     : rawDisputes.map(d => ({
+        dbId: d.id,
         id: d.dispute_id,
         txId: d.tx_id || "—",
         vendor: d.vendor_name || "Unknown",
@@ -234,7 +237,8 @@ const BuyerDisputes = () => {
           const cfg = statusConfig[dispute.status] || statusConfig.pending;
           const row = rowIdx + 1;
           return (
-            <Card key={dispute.id}>
+            <div key={dispute.id} className="space-y-2">
+            <Card>
               <CardContent className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex-1 space-y-2">
@@ -299,6 +303,9 @@ const BuyerDisputes = () => {
                 </div>
               </CardContent>
             </Card>
+            {/* Arbitrator selection panel — appears when dispute enters arbitration */}
+            <ArbitratorProposalPanel disputeId={dispute.dbId} role="buyer" disputeStatus={dispute.status} />
+            </div>
           );
         })}
 

@@ -33,6 +33,7 @@ import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
+import ArbitratorProposalPanel from "@/components/shared/ArbitratorProposalPanel";
 
 type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
 
@@ -576,6 +577,9 @@ const VendorTransactions = () => {
                                   compact
                                 />
                               </div>
+                              {tx.status === "disputed" && (
+                                <ArbitratorProposalPanel transactionId={tx.dbId} role="vendor" />
+                              )}
                             </div>
                           </td>
                         </tr>
