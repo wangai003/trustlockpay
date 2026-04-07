@@ -509,7 +509,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             m.refunded = true;
             e.milestonesResolved++;
             _checkAllResolved(orderId, e);
-            emit FundsRefunded(orderId, e.buyer, 0);
+            emit MilestoneRefunded(orderId, milestoneIndex, 0);
             return;
         }
 
@@ -521,7 +521,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         _checkAllResolved(orderId, e);
 
-        emit FundsRefunded(orderId, e.buyer, m.amount);
+        emit MilestoneRefunded(orderId, milestoneIndex, m.amount);
     }
 
     // ─── Internal: auto-settle when all milestones resolved ──────
