@@ -15,6 +15,7 @@ import {
   ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale
 } from "lucide-react";
 import { toast } from "sonner";
+import { getArbitrationFee } from "@/lib/arbitrationFees";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
