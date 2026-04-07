@@ -238,6 +238,7 @@ const App = () => (
               <Route path="/data-rights" element={<DataRights />} />
               <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
+              <Route path="/arbitrator/:token" element={<ArbitratorPortal />} />
 
               {/* Sandbox Demo */}
               <Route path="/sandbox/login" element={<SandboxLogin />} />
