@@ -2,10 +2,10 @@
 // Two distinct custodian wallets:
 //   1. TRANSACTION FEE WALLET — receives ALL post-processor funds at checkout,
 //      keeps TrustLock 0.5% transaction fee + taxes + remittance, then routes
-//      vendor principal (with 1% escrow fee baked in) to Escrow Wallet.
-//   2. ESCROW WALLET — holds vendor principal (which includes TrustLock's 1%
-//      escrow service fee baked in). On release, 1% is extracted → trickled
-//      back to Transaction Fee Wallet, remainder → vendor.
+//      the EXACT vendor principal (subtotal) to Escrow Wallet. No fees baked in.
+//   2. ESCROW WALLET — holds vendor principal only. On release/milestone
+//      completion, 1% escrow service fee is extracted and trickled back to
+//      Transaction Fee Wallet. The fee is NEVER deducted upfront.
 
 export const AZIX_WALLETS = {
   transaction: {
