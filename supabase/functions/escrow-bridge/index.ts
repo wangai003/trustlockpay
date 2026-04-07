@@ -12,16 +12,16 @@ const USDC_ADDRESS = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
-// ─── ABI fragments for TrustLockEscrow ────────────────────
+// ─── ABI fragments for TrustLockEscrow (aligned with contract) ──
 const ESCROW_ABI = {
-  lockFunds: "function lockFunds(bytes32 escrowId, address buyer, address vendor, uint256 totalAmount)",
-  lockFundsWithMilestones: "function lockFundsWithMilestones(bytes32 escrowId, address buyer, address vendor, uint256 totalAmount, uint8 milestoneCount, uint256[] milestoneAmounts)",
-  releaseFunds: "function releaseFunds(bytes32 escrowId)",
-  refundBuyer: "function refundBuyer(bytes32 escrowId)",
-  splitPayout: "function splitPayout(bytes32 escrowId, uint256 buyerAmount, uint256 vendorAmount)",
-  approveMilestone: "function approveMilestone(bytes32 escrowId, uint8 milestoneIndex, bool isBuyer)",
-  releaseMilestone: "function releaseMilestone(bytes32 escrowId, uint8 milestoneIndex)",
-  refundMilestone: "function refundMilestone(bytes32 escrowId, uint8 milestoneIndex)",
+  lockFunds: "function lockFunds(bytes32 orderId, address token, address buyer, address vendor, uint256 amount)",
+  lockFundsWithMilestones: "function lockFundsWithMilestones(bytes32 orderId, address token, address buyer, address vendor, uint256 amount, uint256[] milestoneAmounts)",
+  releaseFunds: "function releaseFunds(bytes32 orderId)",
+  refundBuyer: "function refundBuyer(bytes32 orderId)",
+  splitPayout: "function splitPayout(bytes32 orderId, uint256 vendorShareBps)",
+  approveMilestone: "function approveMilestone(bytes32 orderId)",
+  releaseMilestone: "function releaseMilestone(bytes32 orderId, uint256 milestoneIndex)",
+  refundMilestone: "function refundMilestone(bytes32 orderId, uint256 milestoneIndex)",
 };
 
 function getSupabase() {
