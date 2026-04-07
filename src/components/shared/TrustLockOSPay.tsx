@@ -70,6 +70,7 @@ interface TrustLockOSPayProps {
   role: "admin" | "vendor" | "buyer";
   prefillService?: string;
   prefillAmount?: string;
+  arbitrationOrderId?: string;
   onComplete?: () => void;
   isTestnet?: boolean;
 }
