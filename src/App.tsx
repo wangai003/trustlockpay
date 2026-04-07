@@ -209,6 +209,7 @@ const App = () => (
                 <Route path="marketplace-orders" element={<VendorMarketplaceOrders />} />
                 <Route path="crm" element={<VendorCRM />} />
                 <Route path="disputes" element={<VendorDisputes />} />
+                <Route path="fee-simulator" element={<VendorFeeSimulator />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
