@@ -46,6 +46,7 @@ interface AdminAccount {
   is_setup: boolean;
   is_deleted: boolean;
   is_chief: boolean;
+  is_team_lead: boolean;
   chief_rank: number | null;
   deleted_at: string | null;
   reinstated_at: string | null;
