@@ -6,10 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Azix Wallet Addresses ───────────────────────────────
+// ─── Azix Wallet Addresses (from env, fallback to placeholder) ─
 const AZIX_WALLETS = {
-  transaction: "0x7A3b1234567890abcdef1234567890abcdefF92d",
-  escrow: "0x4E1c234567890abcdef1234567890abcdefA83b",
+  transaction: Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d",
+  escrow: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
 };
 
 // ─── Fee Constants (basis points) ────────────────────────
