@@ -382,9 +382,15 @@ export default function AdminStaffManager() {
                         <ArrowDown className="w-3 h-3" /> Demote
                       </Button>
                     ) : null}
-                    <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </Button>
+                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => toggleTeamLeadMutation.mutate(a)}>
+                       <Star className="w-3 h-3" /> {a.is_team_lead ? "Remove Lead" : "Make Lead"}
+                     </Button>
+                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setTransferTarget(a); setTransferDept(a.department_slug || ""); }}>
+                       <ArrowRightLeft className="w-3 h-3" /> Transfer
+                     </Button>
+                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
+                       <Trash2 className="w-3 h-3" /> Delete
+                     </Button>
                   </>
                 )}
               </div>
