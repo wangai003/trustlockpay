@@ -55,14 +55,14 @@ export function useSaveProfile() {
     }) => {
       const session = (await supabase.auth.getSession()).data.session;
       if (!session?.user?.id) throw new Error("Not authenticated");
-      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const updates: Record<string, string> = { updated_at: new Date().toISOString() };
       if (params.fullName !== undefined) updates.full_name = params.fullName;
       if (params.location !== undefined) updates.location = params.location;
       if (params.phone !== undefined) updates.phone = params.phone;
       if (params.phoneCountryCode !== undefined) updates.phone_country_code = params.phoneCountryCode;
       if (params.companyName !== undefined) updates.company_name = params.companyName;
       if (params.entityType !== undefined) updates.entity_type = params.entityType;
-      const { error } = await supabase.from("profiles").update(updates).eq("id", session.user.id);
+      const { error } = await supabase.from("profiles").update(updates as any).eq("id", session.user.id);
       if (error) throw error;
       return { success: true };
     },
