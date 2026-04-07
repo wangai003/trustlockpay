@@ -286,6 +286,7 @@ const BuyerDisputes = () => {
         <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground space-y-1">
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
+          <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, you may request a licensed arbitrator. A non-refundable 2% fee (based on the escrowed principal) is required and routed through TrustLock OS Pay. Arbitration follows ICC-binding rules.</p>
         </div>
       </div>
     </div>
