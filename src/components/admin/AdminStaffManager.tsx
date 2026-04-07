@@ -316,13 +316,19 @@ export default function AdminStaffManager() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{a.username}{a.email ? ` · ${a.email}` : ""}</p>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 flex-wrap">
                   {a.is_setup ? (
                     <Badge variant="secondary" className="text-[10px]">Setup Complete</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Awaiting Setup</Badge>
                   )}
                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
+                  {a.department_slug && (
+                    <Badge variant="outline" className="text-[10px] gap-1">
+                      <Building2 className="w-2.5 h-2.5" />
+                      {DEPARTMENTS.find(d => d.slug === a.department_slug)?.name || a.department_slug}
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap justify-end">
