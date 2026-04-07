@@ -21,6 +21,7 @@ const BuyerOSPay = () => {
             isTestnet={isTestnet}
             prefillService={prefillService}
             prefillAmount={prefillAmount}
+            arbitrationOrderId={arbitrationOrderId}
           />
         </TLId>
       </div>
