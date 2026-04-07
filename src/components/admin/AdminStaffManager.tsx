@@ -233,6 +233,37 @@ export default function AdminStaffManager() {
     },
   });
 
+  const toggleTeamLeadMutation = useMutation({
+    mutationFn: (a: AdminAccount) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === a.id ? { ...s, is_team_lead: !s.is_team_lead } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "toggleTeamLead", chiefAdminId, adminId: a.id, isTeamLead: !a.is_team_lead });
+    },
+    onSuccess: () => {
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success("Team lead status updated");
+    },
+  });
+
+  const transferDeptMutation = useMutation({
+    mutationFn: ({ adminId, newDept }: { adminId: string; newDept: string }) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === adminId ? { ...s, department_slug: newDept } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "transferDepartment", chiefAdminId, adminId, departmentSlug: newDept });
+    },
+    onSuccess: () => {
+      setTransferTarget(null);
+      setTransferDept("");
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success("Staff transferred to new department");
+    },
+  });
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
