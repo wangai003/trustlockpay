@@ -195,9 +195,10 @@ const AdminDepartments = () => {
         )}
           </TabsContent>
 
-          {/* Department workflow tabs */}
+          {/* Department workflow + alerts tabs */}
           {DEPARTMENTS.map(dept => (
-            <TabsContent key={dept.slug} value={dept.slug} className="mt-4">
+            <TabsContent key={dept.slug} value={dept.slug} className="mt-4 space-y-6">
+              <DepartmentAlertInbox departmentSlug={dept.slug} departmentName={dept.name} />
               <DepartmentWorkflow departmentSlug={dept.slug} departmentName={dept.name} />
             </TabsContent>
           ))}
