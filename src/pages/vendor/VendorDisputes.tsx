@@ -148,10 +148,88 @@ const VendorDisputes = () => {
     <div>
       <VendorHeader title="Disputes" />
       <div className="p-6 space-y-6">
-        <div>
-          <h2 className="font-heading text-lg font-bold">Disputes Against You</h2>
-          <p className="text-sm text-muted-foreground">Track and respond to disputes filed by buyers</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
+            <p className="text-sm text-muted-foreground">Track disputes you've filed or that buyers filed against you</p>
+          </div>
+          <TLId code="TL-V-DSP-BTN-FILE" inline>
+            <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+              <AlertTriangle className="w-4 h-4" /> File Dispute
+            </Button>
+          </TLId>
         </div>
+
+        {showNewDispute && (
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="text-base">File a Dispute</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Transaction ID</Label>
+                <TLId code={dynTLId("V", "DSPF", 1, "INP-TXID")} inline>
+                  <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
+                </TLId>
+              </div>
+              <div className="space-y-2">
+                <Label>Reason</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={reasonInput} onChange={e => setReasonInput(e.target.value)}>
+                  <option>Buyer refuses to confirm delivery</option>
+                  <option>Unjustified chargeback</option>
+                  <option>Buyer breached milestone terms</option>
+                  <option>Payment not received despite escrow release</option>
+                  <option>False claims by buyer</option>
+                  <option>Buyer abandoned order without cause</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Describe the issue</Label>
+                <Textarea placeholder="Provide details about what went wrong..." rows={4} value={descInput} onChange={e => setDescInput(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Evidence (optional)</Label>
+                <input
+                  ref={evidenceInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                  }}
+                />
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => evidenceInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files) setEvidenceFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]); }}
+                >
+                  <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Drop photos, screenshots, or documents here</p>
+                  <Button variant="outline" size="sm" className="mt-2" type="button">Browse Files</Button>
+                </div>
+                {evidenceFiles.length > 0 && (
+                  <div className="space-y-1">
+                    {evidenceFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                        <span className="flex-1 truncate">{f.name}</span>
+                        <button className="text-destructive hover:underline" onClick={() => setEvidenceFiles(prev => prev.filter((_, idx) => idx !== i))}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button className="gap-2" onClick={handleSubmitDispute} disabled={uploadingEvidence}>
+                  {uploadingEvidence ? <><Upload className="w-4 h-4 animate-spin" /> Uploading...</> : <><AlertTriangle className="w-4 h-4" /> Submit Dispute</>}
+                </Button>
+                <Button variant="outline" onClick={() => setShowNewDispute(false)}>Cancel</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {disputes.map((dispute, rowIdx) => {
           const cfg = statusConfig[dispute.status] || statusConfig.pending;
