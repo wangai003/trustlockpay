@@ -127,6 +127,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         uint256 releaseFee
     );
 
+    event MilestoneRefunded(
+        bytes32 indexed orderId,
+        uint256 milestoneIndex,
+        uint256 refundAmount
+    );
     event BuyerApproval(bytes32 indexed orderId, address indexed buyer);
     event OperatorUpdated(address indexed operator, bool status);
     event AllowedTokenUpdated(address indexed token, bool status);
