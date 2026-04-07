@@ -285,9 +285,10 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
           </div>
         )}
 
-        <p className="text-[10px] text-muted-foreground">
-          Both parties have 7 days to agree on an arbitrator. If no agreement is reached, the platform will auto-assign from its curated panel. The flat filing fee ($500–$5,000 based on escrow tier) covers TrustLock's case management — the arbitrator's professional fees are determined separately by their institution. All arbitration follows ICC/UNCITRAL rules.
-        </p>
+        <div className="text-[10px] text-muted-foreground space-y-1">
+          <p>Both parties have 7 days to agree on an arbitrator. If no agreement is reached, the platform will auto-assign from its curated panel.</p>
+          <p><strong>You pay via OS Pay:</strong> TrustLock's flat case management fee only ($500–$5,000 by escrow tier). Institution filing fees and the arbitrator's professional fees are separate and paid directly to the chosen body (ICC, LCIA, SIAC, etc.).</p>
+        </div>
       </CardContent>
     </Card>
   );
