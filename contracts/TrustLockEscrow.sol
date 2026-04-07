@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @title TrustLockEscrow
  * @author TrustLock OS — Azix Holdings
  * @notice Dual-wallet escrow with circular revenue loop on Polygon (USDC + USDT, 6 decimals)
+ *         Gasless via ERC-2771 meta-transactions — all MATIC gas paid by TrustLock Relayer.
  *
  *  Fee Architecture (off-chain → on-chain boundary):
  *    0.5% TrustLock Transaction Fee  → kept off-chain by Transaction Wallet BEFORE funds enter contract
@@ -20,6 +21,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  *
  *  The contract receives ONLY the net principal (after all off-chain deductions).
  *  It locks that principal and extracts 1% at release → TRANSACTION_WALLET.
+ *
+ *  ERC-2771 Meta-Transactions:
+ *    A trustedForwarder (TrustLock Relayer Wallet) can forward user calls.
+ *    The Relayer pays MATIC gas on behalf of users. The contract extracts the
+ *    original sender from the last 20 bytes of calldata when called by the forwarder.
+ *    NO stablecoin amounts are ever deducted for gas — gas is a separate MATIC concern.
  */
 contract TrustLockEscrow is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
