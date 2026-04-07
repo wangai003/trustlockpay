@@ -612,7 +612,7 @@ Deno.serve(async (req) => {
 
       const result = await sendContractCall(
         ESCROW_ABI.approveMilestone,
-        JSON.stringify({ escrowId, milestoneIndex, isBuyer })
+        JSON.stringify({ orderId: escrowId, milestoneIndex, isBuyer })
       );
 
       return json({
