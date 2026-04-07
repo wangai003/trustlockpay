@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
     if (action === "refund") {
       const result = await sendContractCall(
         ESCROW_ABI.refundBuyer,
-        JSON.stringify({ escrowId })
+        JSON.stringify({ orderId: escrowId })
       );
 
       await supabase
