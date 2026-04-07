@@ -372,12 +372,15 @@ Deno.serve(async (req) => {
         return json({ error: "buyerAmount and vendorAmount are required for split" }, 400);
       }
 
+      // Contract now takes vendorShareBps — calculate from amounts
+      const totalAmount = buyerAmount + vendorAmount;
+      const vendorShareBps = Math.round((vendorAmount / totalAmount) * 10000);
+
       const result = await sendContractCall(
         ESCROW_ABI.splitPayout,
         JSON.stringify({
-          escrowId,
-          buyerAmount: toContractUnits(buyerAmount).toString(),
-          vendorAmount: toContractUnits(vendorAmount).toString(),
+          orderId: escrowId,
+          vendorShareBps,
         })
       );
 
