@@ -122,12 +122,17 @@ const AdminDepartments = () => {
                             <p className="text-[10px] text-muted-foreground">{s.username}</p>
                           </div>
                           <div className="flex gap-1">
-                            {s.is_chief && (
-                              <Badge variant="default" className="text-[9px] gap-0.5 px-1.5">
-                                <Crown className="w-2.5 h-2.5" />
-                                {s.chief_rank === 1 ? "Chief" : "Promoted"}
-                              </Badge>
-                            )}
+                             {s.is_chief && (
+                               <Badge variant="default" className="text-[9px] gap-0.5 px-1.5">
+                                 <Crown className="w-2.5 h-2.5" />
+                                 {s.chief_rank === 1 ? "Chief" : "Promoted"}
+                               </Badge>
+                             )}
+                             {s.is_team_lead && (
+                               <Badge variant="secondary" className="text-[9px] gap-0.5 px-1.5">
+                                 <Star className="w-2.5 h-2.5" /> Team Lead
+                               </Badge>
+                             )}
                           </div>
                         </div>
                       ))}
