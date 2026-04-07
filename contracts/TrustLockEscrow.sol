@@ -236,8 +236,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             vendor: vendor,
             token: token,
             lockedAmount: amount,
+            totalPrincipal: amount,
+            totalFeesCollected: 0,
             lockTime: block.timestamp,
             milestoneCount: uint8(milestoneAmounts.length),
+            milestonesResolved: 0,
             released: false,
             refunded: false,
             buyerApproved: false
@@ -247,6 +250,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             milestones[orderId][i] = Milestone({
                 amount: milestoneAmounts[i],
                 released: false,
+                refunded: false,
                 buyerApproved: false,
                 vendorApproved: false
             });
