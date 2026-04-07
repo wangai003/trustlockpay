@@ -454,6 +454,44 @@ Deno.serve(async (req) => {
           .eq("id", milestone.id);
       }
 
+      const milestoneAmount = Number(milestone?.amount) || 0;
+
+      // ── $0 checkpoint milestones — documentation only, no fee ──
+      if (milestoneAmount === 0) {
+        // Check if all milestones are now resolved
+        const { data: pendingMs } = await supabase
+          .from("transaction_milestones")
+          .select("id")
+          .eq("transaction_id", transactionId)
+          .not("status", "in", '("completed","refunded")');
+
+        const allDone = !pendingMs?.length;
+        if (allDone) {
+          await supabase
+            .from("transactions")
+            .update({
+              status: "released",
+              milestone_status: "all_completed",
+              released_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", transactionId);
+        }
+
+        return json({
+          success: true,
+          action: "release_milestone",
+          escrowId,
+          milestoneIndex,
+          contractTx: result,
+          checkpoint: true,
+          milestoneAmount: 0,
+          milestoneEscrowFee: 0,
+          vendorPayout: 0,
+          allCompleted: allDone,
+        });
+      }
+
       // ── Fractionalized escrow fee: 1% ÷ total milestones ──
       const { count: totalMilestoneCount } = await supabase
         .from("transaction_milestones")
@@ -469,11 +507,11 @@ Deno.serve(async (req) => {
         .from("transaction_milestones")
         .select("id")
         .eq("transaction_id", transactionId)
-        .neq("status", "completed");
+        .not("status", "in", '("completed","refunded")');
 
       const isLast = !remaining?.length;
 
-      // Last milestone absorbs rounding remainder so total fees = exactly 1%
+      // Count prior completed milestones (excluding this one, which was just updated)
       const { count: completedBefore } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -498,7 +536,6 @@ Deno.serve(async (req) => {
           .eq("id", transactionId);
       }
 
-      const milestoneAmount = Number(milestone?.amount) || (tx.amount / msCount);
       const vendorPayout = Math.round((milestoneAmount - milestoneEscrowFee) * 100) / 100;
 
       await notify(
@@ -518,6 +555,7 @@ Deno.serve(async (req) => {
         milestoneIndex,
         contractTx: result,
         allCompleted: isLast,
+        checkpoint: false,
         milestoneAmount,
         milestoneEscrowFee,
         vendorPayout,
