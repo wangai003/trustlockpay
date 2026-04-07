@@ -218,24 +218,47 @@ const DisputePolicy = () => {
         {/* Section 6: Arbitration */}
         <section className="space-y-3">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <Scale className="w-5 h-5 text-primary" /> 6. External Arbitration
+            <Scale className="w-5 h-5 text-primary" /> 6. Professional Arbitration
           </h2>
           <Card className="border-destructive/20">
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="destructive" className="text-[10px]">≥ $10,000</Badge>
+                <Badge variant="destructive" className="text-[10px]">&ge; $10,000</Badge>
                 <span className="text-sm font-medium text-foreground">High-Value Dispute Arbitration</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Disputes involving transactions of <strong>$10,000 or more</strong> are eligible for escalation to
-                external arbitration. An independent arbitrator is assigned to review all evidence, interview parties
-                if necessary, and issue a binding ruling.
+                professional arbitration. Either the buyer or the vendor may initiate this process as a last resort
+                if they are unsatisfied with the platform's internal resolution.
               </p>
+
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.1 Who Can Request</h4>
+              <p className="text-xs text-muted-foreground">
+                Either party (buyer or vendor) may request arbitration. The requesting party bears the filing cost.
+                If both parties independently request arbitration, each pays their own filing fee.
+              </p>
+
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.2 Fees</h4>
               <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li><strong>Arbitration fee:</strong> 2% of the disputed transaction amount, borne by the losing party.</li>
-                <li><strong>Timeline:</strong> Arbitrators are given 30 days to issue a ruling.</li>
-                <li><strong>Acceptance:</strong> Both parties must acknowledge the ruling. If both accept, the ruling is executed on-chain.</li>
-                <li><strong>Binding:</strong> Arbitration rulings are final and binding under ICC Arbitration Rules.</li>
+                <li><strong>Arbitration Filing &amp; Case Management Fee:</strong> 2% of the escrowed principal, paid by the requesting party via TrustLock OS Pay. This fee covers TrustLock's case management, document packaging, and coordination services. It is <strong>non-refundable</strong> regardless of outcome.</li>
+                <li><strong>Arbitrator's Professional Fees:</strong> The appointed arbitrator's compensation is separate and determined by the institution's published fee schedule (e.g., ICC, LCIA, KIAC) after appointment. These fees are not included in the 2% filing fee.</li>
+                <li><strong>Cost Award:</strong> The arbitrator may order the losing party to reimburse the winner's filing fee and/or arbitrator costs as part of the binding ruling.</li>
+              </ul>
+
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.3 Arbitrator Selection</h4>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
+                <li><strong>Party-Nominated:</strong> The requesting party proposes an arbitrator. The counterparty has 7 days to accept or reject the nomination and may counter-propose.</li>
+                <li><strong>Hybrid Directory:</strong> Parties may browse TrustLock's integrated directory linking to major international institutions (ICC, LCIA, SIAC, KIAC, RCICA, CRCICA, AAA/ICDR).</li>
+                <li><strong>Auto-Assignment:</strong> If parties fail to agree within 7 days, TrustLock will assign an arbitrator from its curated panel.</li>
+                <li><strong>Tribunal Size:</strong> All TrustLock arbitrations use a sole neutral arbitrator.</li>
+              </ul>
+
+              <h4 className="text-xs font-semibold text-foreground mt-3">6.4 Governing Rules &amp; Enforcement</h4>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
+                <li>Arbitration follows <strong>ICC Arbitration Rules</strong> and the <strong>UNCITRAL Model Law</strong>.</li>
+                <li>Arbitration rulings are <strong>final and binding</strong>, enforceable under the <strong>New York Convention</strong> (160+ signatory nations).</li>
+                <li>Cross-border credentials are determined by the "seat of arbitration," not the arbitrator's nationality.</li>
+                <li>Both parties must acknowledge the ruling. Once acknowledged, the ruling is executed on-chain.</li>
               </ul>
             </CardContent>
           </Card>
@@ -268,10 +291,10 @@ const DisputePolicy = () => {
                       <td className="py-2 pr-4">No fee (100% refund)</td>
                       <td className="py-2">N/A</td>
                     </tr>
-                    <tr className="border-b border-border/50">
-                      <td className="py-2 pr-4">External arbitration (≥$10K)</td>
-                      <td className="py-2 pr-4">2% of transaction</td>
-                      <td className="py-2">Losing party</td>
+                     <tr className="border-b border-border/50">
+                       <td className="py-2 pr-4">Arbitration filing &amp; case management (≥$10K)</td>
+                       <td className="py-2 pr-4">2% of escrow principal</td>
+                       <td className="py-2">Requesting party (non-refundable)</td>
                     </tr>
                     <tr className="border-b border-border/50">
                       <td className="py-2 pr-4">Buyer wins — refund</td>

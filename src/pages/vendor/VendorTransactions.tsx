@@ -451,9 +451,9 @@ const VendorTransactions = () => {
                                       className="text-[10px] h-7 px-2 border-accent text-accent-foreground hover:bg-accent/10"
                                       onClick={async () => {
                                         const fee = (tx.amount * 0.02).toFixed(2);
-                                        const confirmed = window.confirm(
-                                          `Request a professional arbitrator for order ${tx.id}?\n\nEscrow Amount: $${tx.amount.toLocaleString()}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable.\n\nProceed to payment?`
-                                        );
+                                         const confirmed = window.confirm(
+                                           `Request a professional arbitrator for order ${tx.id}?\n\nEscrow Amount: $${tx.amount.toLocaleString()}\nArbitration Filing & Case Management Fee (2%): $${fee}\n\nThis non-refundable fee covers TrustLock's case management and coordination. The appointed arbitrator's professional fees are separate and determined by their institution after appointment.\n\nProceed to payment?`
+                                         );
                                         if (!confirmed) return;
                                         try {
                                           const { data: { user } } = await supabase.auth.getUser();

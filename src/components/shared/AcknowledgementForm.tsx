@@ -393,23 +393,28 @@ const AcknowledgementForm = ({
             {orderAmount >= clauses.arbitrationThreshold && (
               <>
                 <Separator />
-                <section>
-                  <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                    <Scale className="h-4 w-4 text-purple-500" /> External Arbitration Clause
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
-                    This transaction exceeds ${clauses.arbitrationThreshold.toLocaleString()}. In the event of an
-                    unresolved dispute, either party may request escalation to a certified third-party
-                    arbitrator. Arbitration costs are borne by the requesting party unless the arbitrator
-                    rules otherwise. TrustLock's internal dispute resolution remains the first step.
-                  </p>
-                  <ClauseCheckbox
-                    id="arbitration-consent"
-                    checked={!!checkedClauses["arbitration-consent"]}
-                    onToggle={() => toggle("arbitration-consent")}
-                    label="I acknowledge the external arbitration escalation process for high-value transactions."
-                  />
-                </section>
+                 <section>
+                   <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                     <Scale className="h-4 w-4 text-purple-500" /> Professional Arbitration Clause
+                   </h3>
+                   <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                     This transaction exceeds ${clauses.arbitrationThreshold.toLocaleString()}. In the event of an
+                     unresolved dispute, either party (buyer or vendor) may request escalation to a professional
+                     arbitrator as a last resort. The requesting party pays a non-refundable <strong>Arbitration Filing
+                     &amp; Case Management Fee of 2%</strong> of the escrowed principal via TrustLock OS Pay, which covers
+                     case coordination and document packaging. The appointed arbitrator's professional fees are
+                     separate and determined by their institution's published schedule after appointment. The
+                     arbitrator may award costs to the prevailing party. TrustLock's internal dispute resolution
+                     remains the mandatory first step. All arbitration follows ICC/UNCITRAL rules and rulings are
+                     binding under the New York Convention.
+                   </p>
+                   <ClauseCheckbox
+                     id="arbitration-consent"
+                     checked={!!checkedClauses["arbitration-consent"]}
+                     onToggle={() => toggle("arbitration-consent")}
+                     label="I acknowledge the professional arbitration process, the 2% filing fee payable by the requesting party, and that the arbitrator's professional fees are determined separately."
+                   />
+                 </section>
               </>
             )}
 
