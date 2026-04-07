@@ -49,8 +49,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         address vendor;
         address token;
         uint256 lockedAmount;
+        uint256 totalPrincipal;    // original total locked (immutable after lock)
+        uint256 totalFeesCollected; // running sum of fees extracted across milestones
         uint256 lockTime;
         uint8   milestoneCount;
+        uint8   milestonesResolved; // count of completed + refunded milestones
         bool    released;
         bool    refunded;
         bool    buyerApproved;  // global approval (atomic escrows)
@@ -59,6 +62,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     struct Milestone {
         uint256 amount;
         bool    released;
+        bool    refunded;       // true if milestone was refunded to buyer
         bool    buyerApproved;  // per-milestone buyer approval
         bool    vendorApproved; // per-milestone vendor approval
     }
@@ -191,8 +195,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             vendor: vendor,
             token: token,
             lockedAmount: amount,
+            totalPrincipal: amount,
+            totalFeesCollected: 0,
             lockTime: block.timestamp,
             milestoneCount: 0,
+            milestonesResolved: 0,
             released: false,
             refunded: false,
             buyerApproved: false
@@ -229,8 +236,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             vendor: vendor,
             token: token,
             lockedAmount: amount,
+            totalPrincipal: amount,
+            totalFeesCollected: 0,
             lockTime: block.timestamp,
             milestoneCount: uint8(milestoneAmounts.length),
+            milestonesResolved: 0,
             released: false,
             refunded: false,
             buyerApproved: false
@@ -240,6 +250,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             milestones[orderId][i] = Milestone({
                 amount: milestoneAmounts[i],
                 released: false,
+                refunded: false,
                 buyerApproved: false,
                 vendorApproved: false
             });
@@ -382,7 +393,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  RELEASE MILESTONE — 1.0% fee on milestone amount
+    //  RELEASE MILESTONE — Fractionalized 1% fee across milestones
+    //  fractionalFee = (totalPrincipal × 100 bps) ÷ (BPS × milestoneCount)
+    //  Final financial milestone absorbs rounding remainder → total = exactly 1%
     // ═══════════════════════════════════════════════════════════
     function releaseMilestone(
         bytes32 orderId,
@@ -393,12 +406,31 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         require(milestoneIndex < e.milestoneCount, "Invalid milestone");
 
         Milestone storage m = milestones[orderId][milestoneIndex];
-        require(!m.released, "Already released");
-        require(m.amount > 0, "Zero milestone");
+        require(!m.released && !m.refunded, "Already settled");
+
+        // $0 checkpoint milestones — documentation only, skip financial routing
+        if (m.amount == 0) {
+            m.released = true;
+            e.milestonesResolved++;
+            _checkAllResolved(orderId, e);
+            emit MilestoneReleased(orderId, milestoneIndex, 0, 0);
+            return;
+        }
 
         IERC20 stablecoin = IERC20(e.token);
 
-        uint256 releaseFee = (m.amount * ESCROW_RELEASE_FEE_BPS) / BPS;
+        // Fractionalized fee: 1% of total principal ÷ milestone count
+        uint256 totalEscrowFee = (e.totalPrincipal * ESCROW_RELEASE_FEE_BPS) / BPS;
+        uint256 fractionalFee = totalEscrowFee / uint256(e.milestoneCount);
+
+        // Remainder absorption: if this is the last financial milestone, absorb remainder
+        uint256 releaseFee;
+        if (_countRemainingFinancial(orderId, e) == 1) {
+            releaseFee = totalEscrowFee - e.totalFeesCollected;
+        } else {
+            releaseFee = fractionalFee;
+        }
+
         uint256 vendorPayout = m.amount - releaseFee;
 
         stablecoin.safeTransfer(TRANSACTION_WALLET, releaseFee);
@@ -406,17 +438,17 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         m.released = true;
         e.lockedAmount -= m.amount;
+        e.totalFeesCollected += releaseFee;
+        e.milestonesResolved++;
 
-        if (e.lockedAmount == 0) {
-            e.released = true;
-        }
+        _checkAllResolved(orderId, e);
 
         emit FeeTrickled(orderId, releaseFee, "milestone_release");
         emit MilestoneReleased(orderId, milestoneIndex, vendorPayout, releaseFee);
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  REFUND MILESTONE — Full milestone amount to buyer, zero fees
+    //  REFUND MILESTONE — Full milestone amount to buyer, $0 fees, no trickle
     // ═══════════════════════════════════════════════════════════
     function refundMilestone(
         bytes32 orderId,
@@ -426,19 +458,57 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         require(milestoneIndex < e.milestoneCount, "Invalid milestone");
 
         Milestone storage m = milestones[orderId][milestoneIndex];
-        require(!m.released, "Already released");
-        require(m.amount > 0, "Zero milestone");
+        require(!m.released && !m.refunded, "Already settled");
+
+        // $0 checkpoint — just mark resolved
+        if (m.amount == 0) {
+            m.refunded = true;
+            e.milestonesResolved++;
+            _checkAllResolved(orderId, e);
+            emit FundsRefunded(orderId, e.buyer, 0);
+            return;
+        }
 
         IERC20(e.token).safeTransfer(e.buyer, m.amount);
 
-        m.released = true;
+        m.refunded = true;
         e.lockedAmount -= m.amount;
+        e.milestonesResolved++;
 
-        if (e.lockedAmount == 0) {
-            e.refunded = true;
-        }
+        _checkAllResolved(orderId, e);
 
         emit FundsRefunded(orderId, e.buyer, m.amount);
+    }
+
+    // ─── Internal: auto-settle when all milestones resolved ──────
+    function _checkAllResolved(bytes32 orderId, EscrowRecord storage e) internal {
+        if (e.milestonesResolved >= e.milestoneCount && e.lockedAmount == 0) {
+            bool anyReleased = false;
+            for (uint256 i = 0; i < e.milestoneCount; i++) {
+                if (milestones[orderId][i].released) {
+                    anyReleased = true;
+                    break;
+                }
+            }
+            if (anyReleased) {
+                e.released = true;
+            } else {
+                e.refunded = true;
+            }
+        }
+    }
+
+    // ─── Internal: count remaining financial milestones (amount > 0) ──
+    function _countRemainingFinancial(bytes32 orderId, EscrowRecord storage e) internal view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < e.milestoneCount; i++) {
+            Milestone storage m = milestones[orderId][i];
+            if (!m.released && !m.refunded && m.amount > 0) {
+                count++;
+            }
+        }
+        return count;
+    }
     }
 
     // ═══════════════════════════════════════════════════════════
