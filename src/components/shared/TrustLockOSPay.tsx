@@ -70,6 +70,7 @@ interface TrustLockOSPayProps {
   role: "admin" | "vendor" | "buyer";
   prefillService?: string;
   prefillAmount?: string;
+  arbitrationOrderId?: string;
   onComplete?: () => void;
   isTestnet?: boolean;
 }
@@ -124,7 +125,7 @@ const ADMIN_SERVICES = [
   { label: "Custom Report Generation", amount: "" },
 ];
 
-const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onComplete, isTestnet = true }: TrustLockOSPayProps) => {
+const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitrationOrderId, onComplete, isTestnet = true }: TrustLockOSPayProps) => {
   const isAdmin = role === "admin";
   const serviceList = role === "vendor" ? VENDOR_SERVICES : role === "buyer" ? BUYER_SERVICES : ADMIN_SERVICES;
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
@@ -489,6 +490,32 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", onCompl
         const label = isAdmin && adminAction === "refund" ? "Refund" : isAdmin && adminAction === "split" ? "Split payment" : "Payment";
         toast.success(`✅ ${label} of $${amount} processed via ${payMode} mode`);
       }
+
+      // ── Close the loop on arbitration fee payments ──
+      if (arbitrationOrderId) {
+        try {
+          await supabase.from("arbitration_fee_orders")
+            .update({ status: "paid" })
+            .eq("id", arbitrationOrderId);
+
+          // Get the dispute ID to update its status
+          const { data: arbOrder } = await supabase.from("arbitration_fee_orders")
+            .select("dispute_id")
+            .eq("id", arbitrationOrderId)
+            .single();
+
+          if (arbOrder?.dispute_id) {
+            await supabase.from("disputes")
+              .update({ status: "arbitration_pending" })
+              .eq("id", arbOrder.dispute_id);
+          }
+
+          toast.success("Arbitration fee confirmed — professional review will begin shortly.");
+        } catch (e) {
+          console.warn("Arbitration order update (non-blocking):", e);
+        }
+      }
+
       onComplete?.();
     } catch (err: any) {
       const msg = err?.message || "An unexpected error occurred while processing your payment.";

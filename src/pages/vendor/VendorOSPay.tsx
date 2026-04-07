@@ -9,6 +9,7 @@ const VendorOSPay = () => {
   const [params] = useSearchParams();
   const prefillService = params.get("service") || "";
   const prefillAmount = params.get("amount") || "";
+  const arbitrationOrderId = params.get("arbitration_order_id") || undefined;
 
   return (
     <div>
@@ -20,6 +21,7 @@ const VendorOSPay = () => {
             isTestnet={isTestnet}
             prefillService={prefillService}
             prefillAmount={prefillAmount}
+            arbitrationOrderId={arbitrationOrderId}
           />
         </TLId>
       </div>

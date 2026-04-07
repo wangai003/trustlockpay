@@ -106,14 +106,43 @@ const BuyerDisputes = () => {
     input.click();
   };
 
-  const handleRequestArbitrator = (dispute: typeof disputes[0]) => {
+  const handleRequestArbitrator = async (dispute: typeof disputes[0]) => {
     const fee = (dispute.rawAmount * 0.02).toFixed(2);
     const confirmed = window.confirm(
       `You are requesting a professional arbitrator for dispute ${dispute.id}.\n\nEscrow Amount: ${dispute.amount}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable. You will be routed to TrustLock OS Pay to complete payment.\n\nProceed?`
     );
     if (!confirmed) return;
-    navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${dispute.txId}`)}&amount=${fee}`);
-    toast.info("Complete the arbitration fee payment to initiate professional review.");
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("You must be logged in"); return; }
+
+      // Find the dispute's transaction_id from raw data
+      const matchingRaw = rawDisputes.find(d => d.dispute_id === dispute.id);
+      const transactionId = matchingRaw?.transaction_id;
+
+      if (!transactionId) {
+        toast.error("Cannot find the linked transaction for this dispute");
+        return;
+      }
+
+      const { data: arbOrder, error } = await supabase.from("arbitration_fee_orders").insert({
+        dispute_id: matchingRaw.id,
+        transaction_id: transactionId,
+        requested_by: user.id,
+        requester_role: "buyer",
+        escrow_amount: dispute.rawAmount,
+        arbitration_fee: parseFloat(fee),
+        tx_id: dispute.txId,
+      }).select("id").single();
+
+      if (error) { toast.error("Failed to create arbitration request"); return; }
+
+      navigate(`/trustlock/buyer/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${dispute.txId}`)}&amount=${fee}&arbitration_order_id=${arbOrder.id}`);
+      toast.info("Complete the arbitration fee payment to initiate professional review.");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   return (

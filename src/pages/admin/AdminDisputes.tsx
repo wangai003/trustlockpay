@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal } from "lucide-react";
+import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal, DollarSign } from "lucide-react";
 import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence, useResolveDisputeVendorWins, useResolveDisputeBuyerWins, useResolveDisputeCompromise } from "@/hooks/useSupabaseData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Pending Review", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -52,6 +54,16 @@ const AdminDisputes = () => {
   const resolveBuyerWins = useResolveDisputeBuyerWins();
   const resolveCompromise = useResolveDisputeCompromise();
 
+  const { data: arbOrders = [] } = useQuery({
+    queryKey: ["arbitration-fee-orders"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("arbitration_fee_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
   const disputes = rawDisputes.map((d: any) => ({
     id: d.dispute_id,
     dbId: d.id,
@@ -256,6 +268,53 @@ const AdminDisputes = () => {
             );
           })}
         </div>
+
+        {/* ── Arbitration Fee Orders ── */}
+        {arbOrders.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="font-heading text-sm font-bold flex items-center gap-2">
+              <DollarSign className="w-4 h-4" /> Arbitration Fee Payments
+            </h3>
+            {arbOrders.map((order: any) => {
+              const statusMap: Record<string, { label: string; color: string }> = {
+                pending_payment: { label: "Awaiting Payment", color: "bg-accent/15 text-accent-foreground" },
+                paid: { label: "Paid — Assign Arbitrator", color: "bg-primary/15 text-primary" },
+                arbitration_active: { label: "Arbitration Active", color: "bg-primary/20 text-primary" },
+                closed: { label: "Closed", color: "bg-muted text-muted-foreground" },
+              };
+              const s = statusMap[order.status] || statusMap.pending_payment;
+              return (
+                <Card key={order.id} className={order.status === "paid" ? "border-primary/30" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs">{order.tx_id || "—"}</span>
+                          <Badge className={`text-[10px] ${s.color}`}>{s.label}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{order.requester_role}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Escrow: ${Number(order.escrow_amount).toLocaleString()}</span>
+                          <span>Fee: ${Number(order.arbitration_fee).toLocaleString()}</span>
+                          <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      {order.status === "paid" && (
+                        <Button size="sm" variant="outline" className="gap-1" onClick={() => {
+                          // Find the matching dispute to open the assign dialog
+                          const matchingDispute = disputes.find((d: any) => d.dbId === order.dispute_id);
+                          if (matchingDispute) setAssignDialog(matchingDispute.dbId);
+                        }}>
+                          <Gavel className="w-3 h-3" /> Assign Arbitrator
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Assign Arbitrator Dialog */}
