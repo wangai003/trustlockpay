@@ -12,16 +12,16 @@ const USDC_ADDRESS = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
 
-// ─── ABI fragments for TrustLockEscrow ────────────────────
+// ─── ABI fragments for TrustLockEscrow (aligned with contract) ──
 const ESCROW_ABI = {
-  lockFunds: "function lockFunds(bytes32 escrowId, address buyer, address vendor, uint256 totalAmount)",
-  lockFundsWithMilestones: "function lockFundsWithMilestones(bytes32 escrowId, address buyer, address vendor, uint256 totalAmount, uint8 milestoneCount, uint256[] milestoneAmounts)",
-  releaseFunds: "function releaseFunds(bytes32 escrowId)",
-  refundBuyer: "function refundBuyer(bytes32 escrowId)",
-  splitPayout: "function splitPayout(bytes32 escrowId, uint256 buyerAmount, uint256 vendorAmount)",
-  approveMilestone: "function approveMilestone(bytes32 escrowId, uint8 milestoneIndex, bool isBuyer)",
-  releaseMilestone: "function releaseMilestone(bytes32 escrowId, uint8 milestoneIndex)",
-  refundMilestone: "function refundMilestone(bytes32 escrowId, uint8 milestoneIndex)",
+  lockFunds: "function lockFunds(bytes32 orderId, address token, address buyer, address vendor, uint256 amount)",
+  lockFundsWithMilestones: "function lockFundsWithMilestones(bytes32 orderId, address token, address buyer, address vendor, uint256 amount, uint256[] milestoneAmounts)",
+  releaseFunds: "function releaseFunds(bytes32 orderId)",
+  refundBuyer: "function refundBuyer(bytes32 orderId)",
+  splitPayout: "function splitPayout(bytes32 orderId, uint256 vendorShareBps)",
+  approveMilestone: "function approveMilestone(bytes32 orderId)",
+  releaseMilestone: "function releaseMilestone(bytes32 orderId, uint256 milestoneIndex)",
+  refundMilestone: "function refundMilestone(bytes32 orderId, uint256 milestoneIndex)",
 };
 
 function getSupabase() {
@@ -56,6 +56,13 @@ function txToEscrowId(txId: string): string {
 // ─── Convert amount to contract units (6 decimals) ────────
 function toContractUnits(amount: number): bigint {
   return BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS)));
+}
+
+// ─── Resolve token address from transaction ───────────────
+function resolveTokenAddress(tx: Record<string, unknown>): string {
+  const token = ((tx.token as string) || "USDC").toUpperCase();
+  if (token === "USDT") return USDT_ADDRESS;
+  return USDC_ADDRESS; // Default to USDC
 }
 
 // ─── Send transaction via Polygon RPC (eth_sendRawTransaction) ───
@@ -140,8 +147,11 @@ Deno.serve(async (req) => {
     const escrowId = txToEscrowId(tx.tx_id);
     const contractUnits = toContractUnits(tx.amount);
 
+    // Resolve token address from transaction payment method
+    const tokenAddress = resolveTokenAddress(tx);
+
     // ══════════════════════════════════════════════════
-    //  ACTION: LOCK — Lock funds in escrow after payment
+    //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
     // ══════════════════════════════════════════════════
     if (action === "lock") {
       // Check if milestones exist
@@ -161,11 +171,11 @@ Deno.serve(async (req) => {
         result = await sendContractCall(
           ESCROW_ABI.lockFundsWithMilestones,
           JSON.stringify({
-            escrowId,
+            orderId: escrowId,
+            token: tokenAddress,
             buyer: tx.buyer_id,
             vendor: tx.vendor_id,
-            totalAmount: contractUnits.toString(),
-            milestoneCount: milestones.length,
+            amount: contractUnits.toString(),
             milestoneAmounts: milestoneAmounts.map(String),
           })
         );
@@ -174,10 +184,11 @@ Deno.serve(async (req) => {
         result = await sendContractCall(
           ESCROW_ABI.lockFunds,
           JSON.stringify({
-            escrowId,
+            orderId: escrowId,
+            token: tokenAddress,
             buyer: tx.buyer_id,
             vendor: tx.vendor_id,
-            totalAmount: contractUnits.toString(),
+            amount: contractUnits.toString(),
           })
         );
       }
@@ -242,7 +253,7 @@ Deno.serve(async (req) => {
     if (action === "release") {
       const result = await sendContractCall(
         ESCROW_ABI.releaseFunds,
-        JSON.stringify({ escrowId })
+        JSON.stringify({ orderId: escrowId })
       );
 
       await supabase
@@ -324,7 +335,7 @@ Deno.serve(async (req) => {
     if (action === "refund") {
       const result = await sendContractCall(
         ESCROW_ABI.refundBuyer,
-        JSON.stringify({ escrowId })
+        JSON.stringify({ orderId: escrowId })
       );
 
       await supabase
@@ -361,12 +372,15 @@ Deno.serve(async (req) => {
         return json({ error: "buyerAmount and vendorAmount are required for split" }, 400);
       }
 
+      // Contract now takes vendorShareBps — calculate from amounts
+      const totalAmount = buyerAmount + vendorAmount;
+      const vendorShareBps = Math.round((vendorAmount / totalAmount) * 10000);
+
       const result = await sendContractCall(
         ESCROW_ABI.splitPayout,
         JSON.stringify({
-          escrowId,
-          buyerAmount: toContractUnits(buyerAmount).toString(),
-          vendorAmount: toContractUnits(vendorAmount).toString(),
+          orderId: escrowId,
+          vendorShareBps,
         })
       );
 
@@ -422,7 +436,7 @@ Deno.serve(async (req) => {
 
       const result = await sendContractCall(
         ESCROW_ABI.releaseMilestone,
-        JSON.stringify({ escrowId, milestoneIndex })
+        JSON.stringify({ orderId: escrowId, milestoneIndex })
       );
 
       // Update milestone in DB
@@ -527,7 +541,7 @@ Deno.serve(async (req) => {
 
       const result = await sendContractCall(
         ESCROW_ABI.refundMilestone,
-        JSON.stringify({ escrowId, milestoneIndex })
+        JSON.stringify({ orderId: escrowId, milestoneIndex })
       );
 
       const { data: milestone } = await supabase
