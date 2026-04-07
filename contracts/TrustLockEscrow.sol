@@ -195,8 +195,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             vendor: vendor,
             token: token,
             lockedAmount: amount,
+            totalPrincipal: amount,
+            totalFeesCollected: 0,
             lockTime: block.timestamp,
             milestoneCount: 0,
+            milestonesResolved: 0,
             released: false,
             refunded: false,
             buyerApproved: false
