@@ -44,6 +44,10 @@ const AdminDirectMessages = () => {
     try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").isChief === true; } catch { return false; }
   })();
 
+  const myDeptSlug = (() => {
+    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").departmentSlug || null; } catch { return null; }
+  })();
+
   // Load staff list
   const loadStaff = useCallback(async () => {
     if (!currentAdminId) return;
