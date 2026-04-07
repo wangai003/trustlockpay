@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
+import DepartmentWorkflow from "@/components/admin/DepartmentWorkflow";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
