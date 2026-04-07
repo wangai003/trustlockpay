@@ -552,7 +552,6 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         }
         return count;
     }
-    }
 
     // ═══════════════════════════════════════════════════════════
     //  AUTO-RELEASE (batch — adaptive timeout)
@@ -597,6 +596,13 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     function setAutoReleasePeriod(uint256 period) external onlyOwner {
         require(period >= 1 days && period <= 90 days, "Invalid period");
         autoReleasePeriod = period;
+    }
+
+    /// @notice Update the trusted forwarder address for ERC-2771 key rotation
+    function setTrustedForwarder(address _newForwarder) external onlyOwner {
+        address old = trustedForwarder;
+        trustedForwarder = _newForwarder;
+        emit TrustedForwarderUpdated(old, _newForwarder);
     }
 
     // ─── View Helpers ────────────────────────────────────────
