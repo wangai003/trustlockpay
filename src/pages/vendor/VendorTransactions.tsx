@@ -447,14 +447,41 @@ const VendorTransactions = () => {
                                       variant="outline"
                                       size="sm"
                                       className="text-[10px] h-7 px-2 border-accent text-accent-foreground hover:bg-accent/10"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const fee = (tx.amount * 0.02).toFixed(2);
                                         const confirmed = window.confirm(
                                           `Request a professional arbitrator for order ${tx.id}?\n\nEscrow Amount: $${tx.amount.toLocaleString()}\nArbitration Fee (2%): $${fee}\n\nThis fee is non-refundable.\n\nProceed to payment?`
                                         );
-                                        if (confirmed) {
-                                          navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${tx.id}`)}&amount=${fee}`);
+                                        if (!confirmed) return;
+                                        try {
+                                          const { data: { user } } = await supabase.auth.getUser();
+                                          if (!user) { toast.error("You must be logged in"); return; }
+
+                                          // Find the dispute linked to this transaction
+                                          const { data: dispute } = await supabase.from("disputes")
+                                            .select("id, dispute_id")
+                                            .eq("transaction_id", tx.id)
+                                            .limit(1)
+                                            .maybeSingle();
+
+                                          if (!dispute) { toast.error("No dispute found for this order"); return; }
+
+                                          const { data: arbOrder, error } = await supabase.from("arbitration_fee_orders").insert({
+                                            dispute_id: dispute.id,
+                                            transaction_id: tx.id,
+                                            requested_by: user.id,
+                                            requester_role: "vendor",
+                                            escrow_amount: tx.amount,
+                                            arbitration_fee: parseFloat(fee),
+                                            tx_id: tx.txId,
+                                          }).select("id").single();
+
+                                          if (error) { toast.error("Failed to create arbitration request"); return; }
+
+                                          navigate(`/trustlock/vendor/os-pay?service=${encodeURIComponent(`Arbitration Fee — ${tx.txId}`)}&amount=${fee}&arbitration_order_id=${arbOrder.id}`);
                                           toast.info("Complete the arbitration fee payment to initiate professional review.");
+                                        } catch {
+                                          toast.error("Something went wrong. Please try again.");
                                         }
                                       }}
                                       title="Request professional arbitrator"
