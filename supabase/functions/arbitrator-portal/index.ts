@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
       if (new Date(session.expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: "Access link has expired" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (session.access_password !== password) {
+      // Verify password using bcrypt via DB function
+      const { data: pwValid } = await supabase.rpc("verify_arbitrator_password", { _session_id: session.id, _password: password });
+      if (!pwValid) {
         return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
