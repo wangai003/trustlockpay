@@ -131,7 +131,16 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ─── Constructor ─────────────────────────────────────────
-    constructor() Ownable(msg.sender) {
+    constructor(
+        address _transactionWallet,
+        address _escrowWallet
+    ) Ownable(msg.sender) {
+        require(_transactionWallet != address(0), "Invalid transaction wallet");
+        require(_escrowWallet != address(0), "Invalid escrow wallet");
+
+        TRANSACTION_WALLET = _transactionWallet;
+        ESCROW_WALLET = _escrowWallet;
+
         allowedTokens[USDC] = true;
         allowedTokens[USDT] = true;
         operators[msg.sender] = true;
