@@ -308,7 +308,7 @@ const VendorDisputes = () => {
           );
         })}
 
-        {disputes.length === 0 && (
+        {disputes.length === 0 && !showNewDispute && (
           <Card>
             <CardContent className="p-8 text-center">
               <CheckCircle className="w-12 h-12 mx-auto text-primary mb-3" />
