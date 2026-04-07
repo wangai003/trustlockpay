@@ -2,30 +2,21 @@
  * ArbitratorProposalPanel — Shared component for buyer/vendor to propose
  * and respond to arbitrator nominations during dispute arbitration.
  *
- * Flow: Either party proposes → counterparty accepts/rejects → if no agreement
- * within 7 days, system auto-assigns from platform panel.
+ * Features:
+ * - Embedded searchable arbitrator directory (by region/industry)
+ * - Counter-proposal flow: rejecting auto-opens form to propose alternative
+ * - 7-day auto-assign deadline with countdown
  */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Scale, UserCheck, Clock, Check, X, ExternalLink, Send } from "lucide-react";
+import { Scale, UserCheck, Clock, Check, X, Send, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-const ARBITRATION_DIRECTORIES = [
-  { name: "ICC", region: "Global", url: "https://iccwbo.org/dispute-resolution/", focus: "Cross-border commercial disputes" },
-  { name: "LCIA", region: "UK / Europe", url: "https://www.lcia.org/", focus: "Financial, energy, construction" },
-  { name: "SIAC", region: "Asia-Pacific", url: "https://www.siac.org.sg/", focus: "Tech, manufacturing, trade" },
-  { name: "KIAC", region: "Africa", url: "https://kiac.org.rw/", focus: "AfCFTA, regional trade" },
-  { name: "Lagos RCICA", region: "West Africa", url: "https://rcica.org.ng/", focus: "Agriculture, commodities" },
-  { name: "Cairo CRCICA", region: "North / East Africa", url: "https://crcica.org/", focus: "Construction, energy" },
-  { name: "AAA / ICDR", region: "USA / International", url: "https://www.adr.org/", focus: "E-commerce, services" },
-];
+import ArbitratorDirectory from "./arbitrator/ArbitratorDirectory";
+import ArbitratorProposalForm from "./arbitrator/ArbitratorProposalForm";
 
 interface Props {
   disputeId?: string;
@@ -38,13 +29,13 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [showDirectory, setShowDirectory] = useState(false);
+  const [isCounterProposal, setIsCounterProposal] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [institution, setInstitution] = useState("");
   const [credentials, setCredentials] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // If we have a transactionId but no disputeId, look up the dispute
   const { data: resolvedDispute } = useQuery({
     queryKey: ["dispute-for-transaction", transactionId],
     queryFn: async () => {
@@ -62,7 +53,7 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
   const disputeId = propDisputeId || resolvedDispute?.id;
   const disputeStatus = propDisputeStatus || resolvedDispute?.status || "";
 
-  const { data: proposals = [], isLoading } = useQuery({
+  const { data: proposals = [] } = useQuery({
     queryKey: ["arbitrator-proposals", disputeId],
     queryFn: async () => {
       const { data } = await supabase
@@ -75,7 +66,6 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
     enabled: !!disputeId,
   });
 
-  // Only show for arbitration_pending status
   if (!disputeId || !["arbitration_pending", "arbitration_in_progress"].includes(disputeStatus)) {
     return null;
   }
@@ -84,6 +74,11 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
   const theirProposals = proposals.filter((p: any) => p.proposer_role !== role);
   const acceptedProposal = proposals.find((p: any) => p.counterparty_response === "accepted");
   const hasAutoDeadlinePassed = proposals.some((p: any) => new Date(p.auto_assign_deadline) < new Date());
+
+  const resetForm = () => {
+    setName(""); setEmail(""); setInstitution(""); setCredentials("");
+    setShowForm(false); setIsCounterProposal(false);
+  };
 
   const handleSubmitProposal = async () => {
     if (!name.trim()) { toast.error("Arbitrator name is required"); return; }
@@ -103,9 +98,10 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
       });
 
       if (error) throw error;
-      toast.success("Arbitrator proposal submitted. Waiting for counterparty response.");
-      setName(""); setEmail(""); setInstitution(""); setCredentials("");
-      setShowForm(false);
+      toast.success(isCounterProposal
+        ? "Counter-proposal submitted. Waiting for counterparty response."
+        : "Arbitrator proposal submitted. Waiting for counterparty response.");
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["arbitrator-proposals", disputeId] });
     } catch {
       toast.error("Failed to submit proposal");
@@ -122,18 +118,27 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
       if (error) throw error;
 
       if (response === "accepted") {
-        // Update dispute status
         await supabase.from("disputes")
           .update({ status: "arbitration_in_progress" })
           .eq("id", disputeId);
         toast.success("Arbitrator accepted! Arbitration proceedings will begin.");
       } else {
-        toast.info("Proposal rejected. You may propose your own arbitrator.");
+        toast.info("Proposal rejected. You can now submit a counter-proposal.");
+        // Auto-open counter-proposal form
+        setIsCounterProposal(true);
+        setShowForm(true);
+        setShowDirectory(true);
       }
       queryClient.invalidateQueries({ queryKey: ["arbitrator-proposals", disputeId] });
     } catch {
       toast.error("Failed to respond");
     }
+  };
+
+  const handleSelectInstitution = (institutionName: string) => {
+    setInstitution(institutionName);
+    setShowForm(true);
+    if (!isCounterProposal) setIsCounterProposal(false);
   };
 
   const getDaysRemaining = (deadline: string) => {
@@ -187,7 +192,7 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
                 <Check className="w-3 h-3" /> Accept
               </Button>
               <Button size="sm" variant="outline" className="gap-1" onClick={() => handleRespond(p.id, "rejected")}>
-                <X className="w-3 h-3" /> Reject
+                <X className="w-3 h-3" /> Reject & Counter-Propose
               </Button>
             </div>
           </div>
@@ -225,69 +230,40 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
         {/* Actions */}
         {!acceptedProposal && !hasAutoDeadlinePassed && (
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => setShowForm(!showForm)}>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowForm(!showForm); if (showForm) setIsCounterProposal(false); }}>
               <Scale className="w-3 h-3" /> {showForm ? "Cancel" : "Propose Arbitrator"}
             </Button>
             <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => setShowDirectory(!showDirectory)}>
-              <ExternalLink className="w-3 h-3" /> Browse Directories
+              <BookOpen className="w-3 h-3" /> {showDirectory ? "Hide Directory" : "Browse Directory"}
             </Button>
           </div>
+        )}
+
+        {/* Embedded directory */}
+        {showDirectory && !acceptedProposal && (
+          <ArbitratorDirectory onSelectInstitution={handleSelectInstitution} />
         )}
 
         {/* Proposal form */}
         {showForm && !acceptedProposal && (
-          <div className="space-y-3 p-3 rounded-lg border bg-background">
-            <div className="space-y-1">
-              <Label className="text-xs">Arbitrator Name *</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Jane Doe, Esq." className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Email</Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="arbitrator@example.com" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Institution</Label>
-              <Input value={institution} onChange={e => setInstitution(e.target.value)} placeholder="e.g. ICC, LCIA, KIAC" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Credentials / Qualifications</Label>
-              <Textarea value={credentials} onChange={e => setCredentials(e.target.value)} placeholder="Certified Arbitrator, 15yrs trade dispute experience..." rows={2} className="text-sm" />
-            </div>
-            <Button size="sm" className="gap-1" onClick={handleSubmitProposal} disabled={submitting}>
-              <Send className="w-3 h-3" /> Submit Proposal
-            </Button>
-          </div>
-        )}
-
-        {/* Directory links */}
-        {showDirectory && (
-          <div className="space-y-2 p-3 rounded-lg border bg-background">
-            <p className="text-xs font-semibold">International Arbitration Directories</p>
-            <p className="text-[10px] text-muted-foreground">Browse these registries to find qualified arbitrators for your dispute</p>
-            <div className="space-y-1.5">
-              {ARBITRATION_DIRECTORIES.map(dir => (
-                <a
-                  key={dir.name}
-                  href={dir.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors group"
-                >
-                  <div>
-                    <span className="text-sm font-medium group-hover:text-primary transition-colors">{dir.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{dir.region}</span>
-                    <p className="text-[10px] text-muted-foreground">{dir.focus}</p>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary" />
-                </a>
-              ))}
-            </div>
-          </div>
+          <ArbitratorProposalForm
+            name={name}
+            email={email}
+            institution={institution}
+            credentials={credentials}
+            submitting={submitting}
+            onNameChange={setName}
+            onEmailChange={setEmail}
+            onInstitutionChange={setInstitution}
+            onCredentialsChange={setCredentials}
+            onSubmit={handleSubmitProposal}
+            isCounterProposal={isCounterProposal}
+          />
         )}
 
         <div className="text-[10px] text-muted-foreground space-y-1">
           <p>Both parties have 7 days to agree on an arbitrator. If no agreement is reached, the platform will auto-assign from its curated panel.</p>
-          <p><strong>You pay via OS Pay:</strong> TrustLock's flat case management fee only ($500–$5,000 by escrow tier). Institution filing fees and the arbitrator's professional fees are separate and paid directly to the chosen body (ICC, LCIA, SIAC, etc.).</p>
+          <p><strong>You pay via OS Pay:</strong> TrustLock's flat case management fee only ($500–$5,000 by escrow tier). Institution filing fees and the arbitrator's professional fees are separate and paid directly to the chosen body.</p>
         </div>
       </CardContent>
     </Card>
