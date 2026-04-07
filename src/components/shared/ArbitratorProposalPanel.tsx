@@ -28,12 +28,13 @@ const ARBITRATION_DIRECTORIES = [
 ];
 
 interface Props {
-  disputeId: string;
+  disputeId?: string;
+  transactionId?: string;
   role: "buyer" | "vendor";
-  disputeStatus: string;
+  disputeStatus?: string;
 }
 
-const ArbitratorProposalPanel = ({ disputeId, role, disputeStatus }: Props) => {
+const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role, disputeStatus: propDisputeStatus }: Props) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [showDirectory, setShowDirectory] = useState(false);
@@ -43,13 +44,31 @@ const ArbitratorProposalPanel = ({ disputeId, role, disputeStatus }: Props) => {
   const [credentials, setCredentials] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // If we have a transactionId but no disputeId, look up the dispute
+  const { data: resolvedDispute } = useQuery({
+    queryKey: ["dispute-for-transaction", transactionId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("disputes")
+        .select("id, status")
+        .eq("transaction_id", transactionId!)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!transactionId && !propDisputeId,
+  });
+
+  const disputeId = propDisputeId || resolvedDispute?.id;
+  const disputeStatus = propDisputeStatus || resolvedDispute?.status || "";
+
   const { data: proposals = [], isLoading } = useQuery({
     queryKey: ["arbitrator-proposals", disputeId],
     queryFn: async () => {
       const { data } = await supabase
         .from("arbitrator_proposals")
         .select("*")
-        .eq("dispute_id", disputeId)
+        .eq("dispute_id", disputeId!)
         .order("created_at", { ascending: false });
       return data || [];
     },
@@ -57,7 +76,7 @@ const ArbitratorProposalPanel = ({ disputeId, role, disputeStatus }: Props) => {
   });
 
   // Only show for arbitration_pending status
-  if (!["arbitration_pending", "arbitration_in_progress"].includes(disputeStatus)) {
+  if (!disputeId || !["arbitration_pending", "arbitration_in_progress"].includes(disputeStatus)) {
     return null;
   }
 
