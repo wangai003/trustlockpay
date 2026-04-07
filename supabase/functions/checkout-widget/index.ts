@@ -6,8 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, stripe-signature",
 };
 
-// ─── In-memory session store (production: use Redis/DB) ────
-const sessions = new Map<string, CheckoutSession>();
+// ─── Session persistence via checkout_sessions table ───────
+// REMOVED: const sessions = new Map<string, CheckoutSession>();
+// Sessions are now persisted to the checkout_sessions database table to survive cold starts.
 
 interface TaxLineResult {
   type: string;
