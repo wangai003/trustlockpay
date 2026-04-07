@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale
 } from "lucide-react";
 import { toast } from "sonner";
 import {
