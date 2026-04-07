@@ -40,6 +40,7 @@ const AdminGasTreasury = lazy(() => import("./pages/admin/AdminGasTreasury"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminAccountability = lazy(() => import("./pages/admin/AdminAccountability"));
 const AdminTrainingManual = lazy(() => import("./pages/admin/AdminTrainingManual"));
+const AdminDepartments = lazy(() => import("./pages/admin/AdminDepartments"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
