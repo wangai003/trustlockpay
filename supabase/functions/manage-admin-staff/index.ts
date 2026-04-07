@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     // ── ADD NEW ADMIN (any chief can add) ──────────────────
     if (action === "add") {
-      const { username, name } = params;
+      const { username, name, departmentSlug } = params;
       if (!username || !name) return json({ error: "Username and name required." }, 400);
 
       const { data: existing } = await supabase
@@ -57,13 +57,33 @@ Deno.serve(async (req) => {
         return json({ error: "This username belongs to a deleted account. Use reinstate instead." }, 409);
       }
 
+      // Resolve department ID from slug
+      let deptId: string | null = null;
+      if (departmentSlug) {
+        const { data: dept } = await supabase
+          .from("admin_departments")
+          .select("id")
+          .eq("slug", departmentSlug)
+          .maybeSingle();
+        deptId = dept?.id || null;
+      }
+
       const { data: result, error } = await supabase.rpc("add_admin_account", {
         _username: username,
         _name: name,
       });
 
       if (error) return json({ error: error.message }, 500);
-      return json({ success: true, account: result });
+
+      // Set department if resolved
+      if (deptId && result?.id) {
+        await supabase
+          .from("admin_accounts")
+          .update({ department_id: deptId })
+          .eq("id", result.id);
+      }
+
+      return json({ success: true, account: { ...result, department_slug: departmentSlug } });
     }
 
     // ── DELETE (SOFT) — original chief only ────────────────
