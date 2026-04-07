@@ -161,9 +161,10 @@ const ArbitratorManagementPanel = ({ disputeId, disputeLabel, txId, amount }: Pr
                       <span className="text-xs font-semibold text-foreground">{s.arbitrator_name}</span>
                       <Badge variant="outline" className={`text-[9px] ${
                         s.status === "active" ? "border-primary/50 text-primary" :
+                        s.status === "ruling_submitted" ? "border-primary/50 text-primary" :
                         s.status === "revoked" ? "border-destructive/50 text-destructive" : "text-muted-foreground"
                       }`}>
-                        {s.status.toUpperCase()}
+                        {s.status === "ruling_submitted" ? "RULING SUBMITTED" : s.status.toUpperCase()}
                       </Badge>
                       {s.ruling_uploaded_at && (
                         <Badge className="text-[9px] bg-primary/15 text-primary">
