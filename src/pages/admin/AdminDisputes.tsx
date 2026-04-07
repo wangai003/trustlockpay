@@ -127,6 +127,9 @@ const AdminDisputes = () => {
           <Input placeholder="Search disputes..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
 
+        {/* Arbitration Procedure Guide for Chief Admins */}
+        {arbCount > 0 && <ArbitrationProcedureGuide />}
+
         <div className="space-y-4">
           {filtered.map((dispute: any) => {
             const cfg = statusConfig[dispute.status] || statusConfig.pending;
