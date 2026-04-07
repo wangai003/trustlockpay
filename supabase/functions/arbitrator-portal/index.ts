@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
       if (new Date(session.expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: "Access link has expired" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (session.access_password !== password) {
+      // Verify password using bcrypt via DB function
+      const { data: pwValid } = await supabase.rpc("verify_arbitrator_password", { _session_id: session.id, _password: password });
+      if (!pwValid) {
         return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
@@ -196,17 +198,20 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "Dispute not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Generate a simple readable password
+      // Generate a simple readable password, then hash it for storage
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
       let pwd = "";
       for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+
+      // Hash password using DB function
+      const { data: hashedPwd } = await supabase.rpc("hash_arbitrator_password", { _password: pwd });
 
       const { data: session, error } = await supabase.from("arbitrator_sessions").insert({
         dispute_id,
         transaction_id: dispute.transaction_id,
         arbitrator_name,
         arbitrator_email: arbitrator_email || null,
-        access_password: pwd,
+        access_password: hashedPwd,
       }).select().single();
 
       if (error) {

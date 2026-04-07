@@ -4965,6 +4965,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_arbitrator_password: { Args: { _password: string }; Returns: string }
       hash_password: { Args: { _password: string }; Returns: string }
       verify_admin_password: {
         Args: { _account_id: string; _password: string }
@@ -4972,6 +4973,10 @@ export type Database = {
       }
       verify_admin_temp_password: {
         Args: { _account_id: string; _password: string }
+        Returns: boolean
+      }
+      verify_arbitrator_password: {
+        Args: { _password: string; _session_id: string }
         Returns: boolean
       }
       verify_audit_password: {
