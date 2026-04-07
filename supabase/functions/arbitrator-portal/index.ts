@@ -238,11 +238,12 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "Session not active" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Update session with ruling
+      // Update session with ruling and auto-close
       await supabase.from("arbitrator_sessions").update({
         ruling_file_url,
         ruling_file_name,
         ruling_uploaded_at: new Date().toISOString(),
+        status: "ruling_submitted",
       }).eq("id", session_id);
 
       // Archive ruling to protection_documents for all parties
@@ -255,34 +256,83 @@ Deno.serve(async (req) => {
       const userIds = [null, dispute?.buyer_id, dispute?.vendor_id];
 
       for (let i = 0; i < roles.length; i++) {
-        await supabase.from("protection_documents").insert({
-          document_type: "arbitrator_ruling",
-          title: `Arbitrator Ruling — ${dispute?.dispute_id || "Unknown"}`,
-          transaction_id: session.transaction_id,
-          user_id: userIds[i],
-          role: roles[i],
-          industry: transaction?.industry || "general",
-          retention_years: 7,
-          file_url: ruling_file_url,
-          metadata: {
-            arbitrator_name: session.arbitrator_name,
-            dispute_id: session.dispute_id,
-            ruling_file_name,
-            uploaded_at: new Date().toISOString(),
-            auto_distributed: true,
-          },
-        });
+        if (userIds[i] || roles[i] === "admin") {
+          await supabase.from("protection_documents").insert({
+            document_type: "arbitrator_ruling",
+            title: `Arbitrator Ruling — ${dispute?.dispute_id || "Unknown"}`,
+            transaction_id: session.transaction_id,
+            user_id: userIds[i],
+            role: roles[i],
+            industry: transaction?.industry || "general",
+            retention_years: 7,
+            file_url: ruling_file_url,
+            metadata: {
+              arbitrator_name: session.arbitrator_name,
+              dispute_id: session.dispute_id,
+              ruling_file_name,
+              uploaded_at: new Date().toISOString(),
+              auto_distributed: true,
+            },
+          });
+        }
       }
 
-      // Update session
+      // Update dispute status to ruling_issued
+      await supabase.from("disputes").update({
+        status: "ruling_issued",
+        updated_at: new Date().toISOString(),
+      }).eq("id", session.dispute_id);
+
+      // Mark session as distributed and anchored
       await supabase.from("arbitrator_sessions").update({
         ruling_distributed: true,
       }).eq("id", session_id);
 
+      // Send notifications to buyer, vendor, and admins
+      const notifyUsers: { userId: string | null; title: string; message: string }[] = [];
+      
+      if (dispute?.buyer_id) {
+        notifyUsers.push({
+          userId: dispute.buyer_id,
+          title: "⚖️ Arbitration Ruling Issued",
+          message: `The arbitrator has issued a binding ruling for dispute ${dispute.dispute_id}. The ruling document has been added to your Documents section under "Arbitrator Ruling."`,
+        });
+      }
+      if (dispute?.vendor_id) {
+        notifyUsers.push({
+          userId: dispute.vendor_id,
+          title: "⚖️ Arbitration Ruling Issued",
+          message: `The arbitrator has issued a binding ruling for dispute ${dispute.dispute_id}. The ruling document has been added to your Documents section under "Arbitrator Ruling."`,
+        });
+      }
+
+      // Notify admins
+      const { data: adminRoles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      for (const ar of adminRoles || []) {
+        notifyUsers.push({
+          userId: ar.user_id,
+          title: "⚖️ Arbitration Ruling Received",
+          message: `Arbitrator ${session.arbitrator_name} has uploaded a ruling for dispute ${dispute?.dispute_id || "unknown"}. Review and execute the ruling.`,
+        });
+      }
+
+      for (const n of notifyUsers) {
+        if (n.userId) {
+          await supabase.from("notifications").insert({
+            user_id: n.userId,
+            title: n.title,
+            message: n.message,
+            type: "info",
+            is_action_required: true,
+            related_entity_type: "dispute",
+            related_entity_id: dispute?.id,
+          });
+        }
+      }
+
       // Anchor to blockchain
       const txRef = transaction?.tx_id || dispute?.tx_id || `DSP-${session.dispute_id.slice(0, 8)}`;
 
-      // Get prev hash
       const { data: lastProof } = await supabase
         .from("blockchain_proofs")
         .select("content_hash")
