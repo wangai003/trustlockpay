@@ -50,6 +50,7 @@ interface AdminAccount {
   deleted_at: string | null;
   reinstated_at: string | null;
   created_at: string;
+  department_slug?: string;
 }
 
 // Testnet mock staff for simulation
