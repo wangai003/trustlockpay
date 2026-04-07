@@ -393,6 +393,24 @@ export default function AdminStaffManager() {
                 <p className="font-mono text-sm font-bold">{generatedUsername}</p>
               </div>
             )}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Department Assignment</p>
+              <Select value={newDepartment} onValueChange={setNewDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map(d => (
+                    <SelectItem key={d.slug} value={d.slug}>
+                      <div className="flex flex-col">
+                        <span className="text-sm">{d.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{d.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAddDialog(false)}>Cancel</Button>
