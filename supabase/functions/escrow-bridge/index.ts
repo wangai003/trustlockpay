@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
 
       const result = await sendContractCall(
         ESCROW_ABI.releaseMilestone,
-        JSON.stringify({ escrowId, milestoneIndex })
+        JSON.stringify({ orderId: escrowId, milestoneIndex })
       );
 
       // Update milestone in DB
