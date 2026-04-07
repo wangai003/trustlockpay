@@ -249,11 +249,55 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  BUYER APPROVAL
+    //  APPROVAL — Per-milestone dual-party OR global (atomic escrows)
     // ═══════════════════════════════════════════════════════════
-    function approveMilestone(bytes32 orderId) external escrowExists(orderId) notSettled(orderId) {
-        require(msg.sender == escrows[orderId].buyer, "Only buyer can approve");
-        escrows[orderId].buyerApproved = true;
+    /**
+     * @notice Approve a specific milestone or the entire escrow.
+     * @param orderId       The escrow order
+     * @param milestoneIndex Which milestone to approve (ignored for atomic escrows)
+     * @param isBuyer       true = buyer approving, false = vendor approving
+     *
+     * For atomic (non-milestone) escrows: sets global buyerApproved.
+     * For milestone escrows: sets per-milestone buyer/vendor approval.
+     */
+    function approveMilestone(
+        bytes32 orderId,
+        uint256 milestoneIndex,
+        bool isBuyer
+    ) external escrowExists(orderId) notSettled(orderId) {
+        EscrowRecord storage e = escrows[orderId];
+
+        if (isBuyer) {
+            require(msg.sender == e.buyer, "Only buyer can approve");
+        } else {
+            require(msg.sender == e.vendor, "Only vendor can approve");
+        }
+
+        // Atomic escrow (no milestones) — set global approval
+        if (e.milestoneCount == 0) {
+            if (isBuyer) {
+                e.buyerApproved = true;
+            }
+            emit BuyerApproval(orderId, msg.sender);
+            return;
+        }
+
+        // Milestone escrow — per-milestone approval
+        require(milestoneIndex < e.milestoneCount, "Invalid milestone");
+        Milestone storage m = milestones[orderId][milestoneIndex];
+        require(!m.released, "Already released");
+
+        if (isBuyer) {
+            m.buyerApproved = true;
+        } else {
+            m.vendorApproved = true;
+        }
+
+        // If buyer approved this milestone, set global flag for release functions
+        if (m.buyerApproved) {
+            e.buyerApproved = true;
+        }
+
         emit BuyerApproval(orderId, msg.sender);
     }
 
