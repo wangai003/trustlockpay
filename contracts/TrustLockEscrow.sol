@@ -239,7 +239,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         for (uint256 i = 0; i < milestoneAmounts.length; i++) {
             milestones[orderId][i] = Milestone({
                 amount: milestoneAmounts[i],
-                released: false
+                released: false,
+                buyerApproved: false,
+                vendorApproved: false
             });
         }
 
