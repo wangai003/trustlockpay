@@ -131,9 +131,34 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     event OperatorUpdated(address indexed operator, bool status);
     event AllowedTokenUpdated(address indexed token, bool status);
 
+    // ─── ERC-2771: Trusted Forwarder Check ─────────────────────
+    function isTrustedForwarder(address forwarder) public view returns (bool) {
+        return forwarder == trustedForwarder;
+    }
+
+    // ─── ERC-2771: Extract original sender from forwarded call ──
+    function _msgSender() internal view override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The original sender is appended as the last 20 bytes of calldata
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            sender = msg.sender;
+        }
+    }
+
+    // ─── ERC-2771: Extract original calldata from forwarded call ──
+    function _msgData() internal view override returns (bytes calldata) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            return msg.data[:msg.data.length - 20];
+        }
+        return msg.data;
+    }
+
     // ─── Modifiers ───────────────────────────────────────────
     modifier onlyOperator() {
-        require(operators[msg.sender] || msg.sender == owner(), "Not authorized");
+        require(operators[_msgSender()] || _msgSender() == owner(), "Not authorized");
         _;
     }
 
@@ -155,13 +180,15 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
     // ─── Constructor ─────────────────────────────────────────
     constructor(
         address _transactionWallet,
-        address _escrowWallet
+        address _escrowWallet,
+        address _trustedForwarder
     ) Ownable(msg.sender) {
         require(_transactionWallet != address(0), "Invalid transaction wallet");
         require(_escrowWallet != address(0), "Invalid escrow wallet");
 
         TRANSACTION_WALLET = _transactionWallet;
         ESCROW_WALLET = _escrowWallet;
+        trustedForwarder = _trustedForwarder; // Can be address(0) initially
 
         allowedTokens[USDC] = true;
         allowedTokens[USDT] = true;
@@ -169,6 +196,9 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         emit AllowedTokenUpdated(USDC, true);
         emit AllowedTokenUpdated(USDT, true);
+        if (_trustedForwarder != address(0)) {
+            emit TrustedForwarderUpdated(address(0), _trustedForwarder);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
