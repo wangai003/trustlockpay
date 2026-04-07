@@ -16,6 +16,7 @@ import { useAdminUnreadBadges } from "@/hooks/useAdminUnreadBadges";
 const allNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/admin", tip: "Dashboard summary with key metrics and alerts", moduleKey: "overview", badgeKey: null as string | null },
   { label: "Work Orders", icon: ArrowLeftRight, to: "/trustlock/admin/transactions", tip: "View and manage all escrow work orders", moduleKey: "transactions", badgeKey: null },
+  { label: "Staff Workflow", icon: GitBranch, to: "/trustlock/admin/staff-workflow", tip: "Monitor staff task assignments and performance across all departments", moduleKey: "staff-workflow", badgeKey: null },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/admin/disputes", tip: "Review open disputes and AI recommendations", moduleKey: "disputes", badgeKey: null },
   { label: "Workflow Tracker", icon: GitBranch, to: "/trustlock/admin/workflow", tip: "Track milestone progress across all orders", moduleKey: "workflow", badgeKey: null },
   { label: "Emmanuel AI", icon: Bot, to: "/trustlock/admin/emmanuel", tip: "Admin AI assistant for operations support", moduleKey: "emmanuel", badgeKey: null },

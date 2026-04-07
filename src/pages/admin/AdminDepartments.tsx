@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
+import DepartmentWorkflow from "@/components/admin/DepartmentWorkflow";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -77,6 +79,8 @@ const AdminDepartments = () => {
     }
   });
 
+  const [activeTab, setActiveTab] = useState("directory");
+
   return (
     <div>
       <AdminHeader title="Departments" />
@@ -90,6 +94,17 @@ const AdminDepartments = () => {
           </div>
         </div>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="directory">Directory</TabsTrigger>
+            {DEPARTMENTS.map(d => (
+              <TabsTrigger key={d.slug} value={d.slug} className="hidden sm:flex text-xs">
+                {d.name.split(" ")[0]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <TabsContent value="directory" className="mt-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {DEPARTMENTS.map((dept) => {
             const Icon = DEPT_ICONS[dept.slug] || Building2;
@@ -177,6 +192,15 @@ const AdminDepartments = () => {
         {isLoading && !isTestnet && (
           <p className="text-sm text-muted-foreground text-center py-8">Loading department data…</p>
         )}
+          </TabsContent>
+
+          {/* Department workflow tabs */}
+          {DEPARTMENTS.map(dept => (
+            <TabsContent key={dept.slug} value={dept.slug} className="mt-4">
+              <DepartmentWorkflow departmentSlug={dept.slug} departmentName={dept.name} />
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </div>
   );
