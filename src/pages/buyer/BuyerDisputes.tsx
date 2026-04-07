@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, Bot, Upload, MessageSquare, Eye, Scale } from "lucide-react";
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
