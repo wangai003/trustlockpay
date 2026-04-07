@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ArbitratorDirectory from "./arbitrator/ArbitratorDirectory";
 import ArbitratorProposalForm from "./arbitrator/ArbitratorProposalForm";
+import ArbitratorCountdown from "./arbitrator/ArbitratorCountdown";
 
 interface Props {
   disputeId?: string;
