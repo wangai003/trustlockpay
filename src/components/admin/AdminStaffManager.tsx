@@ -74,6 +74,7 @@ export default function AdminStaffManager() {
 
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
+  const [newDepartment, setNewDepartment] = useState("operations");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [tempPwResult, setTempPwResult] = useState<{ username: string; temp_password: string } | null>(null);
   const [copied, setCopied] = useState(false);
