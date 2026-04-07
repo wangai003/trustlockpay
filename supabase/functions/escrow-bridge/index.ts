@@ -541,7 +541,7 @@ Deno.serve(async (req) => {
 
       const result = await sendContractCall(
         ESCROW_ABI.refundMilestone,
-        JSON.stringify({ escrowId, milestoneIndex })
+        JSON.stringify({ orderId: escrowId, milestoneIndex })
       );
 
       const { data: milestone } = await supabase
