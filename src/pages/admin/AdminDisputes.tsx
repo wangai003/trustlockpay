@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Search, AlertTriangle, Clock, CheckCircle, Bot, Eye, ArrowUpRight, Scale, Gavel, UserCheck, Upload, FileText, Image, ShieldCheck, UserX, SplitSquareHorizontal, DollarSign } from "lucide-react";
 import ArbitratorManagementPanel from "@/components/admin/ArbitratorManagementPanel";
+import ArbitrationProcedureGuide from "@/components/admin/ArbitrationProcedureGuide";
 import { useDisputes, useReviewDispute, useEscalateToArbitration, useAssignArbitrator, useSubmitRuling, useDisputeEvidence, useUploadDisputeEvidence, useResolveDisputeVendorWins, useResolveDisputeBuyerWins, useResolveDisputeCompromise } from "@/hooks/useSupabaseData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";

@@ -155,7 +155,18 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Accepted arbitrator */}
+        {/* Live countdown timer for pending proposals */}
+        {!acceptedProposal && !hasAutoDeadlinePassed && proposals.length > 0 && (() => {
+          const latestDeadline = proposals
+            .filter((p: any) => p.counterparty_response === "pending")
+            .map((p: any) => p.auto_assign_deadline)
+            .sort()
+            .pop();
+          return latestDeadline ? (
+            <ArbitratorCountdown deadline={latestDeadline} label="Time remaining to agree on an arbitrator" />
+          ) : null;
+        })()}
+
         {acceptedProposal && (
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-1">
             <div className="flex items-center gap-2">
