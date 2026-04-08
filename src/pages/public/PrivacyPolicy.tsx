@@ -36,6 +36,7 @@ const PrivacyPolicy = () => (
         <li><strong>Technical data:</strong> IP address, browser type, user agent, device fingerprint</li>
         <li><strong>Usage data:</strong> Pages visited, features used, session duration</li>
         <li><strong>Legal signatures:</strong> IP address, user agent, and timestamp at the time of signing contracts, acknowledgement forms, and terms of service</li>
+        <li><strong>Geolocation data:</strong> With your browser permission, we capture GPS coordinates (latitude, longitude, accuracy) during milestone completion for applicable industries involving physical goods, construction, or cross-border shipments. These coordinates are resolved into human-readable addresses (street, city, state, country, postal code) using OpenStreetMap's Nominatim service for audit and compliance purposes. Location data is stored in your transaction record and anchored to the blockchain proof chain.</li>
       </ul>
 
       <h2>3. How We Use Your Data</h2>
@@ -50,6 +51,7 @@ const PrivacyPolicy = () => (
           <tr><td>Fraud prevention & velocity monitoring</td><td>Legitimate interest</td></tr>
           <tr><td>Dispute resolution & evidence archival</td><td>Contract performance / Legal obligation</td></tr>
           <tr><td>Blockchain anchoring of audit trails</td><td>Legitimate interest (trade integrity)</td></tr>
+          <tr><td>GPS capture & reverse geocoding for milestone verification</td><td>Consent (browser permission) / Legitimate interest (trade integrity)</td></tr>
           <tr><td>Platform notifications & communications</td><td>Contract performance</td></tr>
           <tr><td>Analytics & service improvement</td><td>Legitimate interest</td></tr>
         </tbody>
