@@ -143,6 +143,7 @@ interface RoutingResult {
   escrowFee: number;
   taxAmount: number;
   taxType: string;
+  remittanceFee?: number;
   totalDeductions: number;
   transactionWalletRetains: number;
   escrowWalletReceives: number;
@@ -196,20 +197,17 @@ Deno.serve(async (req) => {
     //  ACTION: ROUTE_INBOUND
     // ══════════════════════════════════════════════════
     if (action === "route_inbound") {
-      const escrowPrincipal = verifiedAmount || tx.amount;
+      const vendorSubtotal = verifiedAmount || tx.amount;
       const taxBreakdown = tx.tax_breakdown as Record<string, unknown> | null;
 
-      // 1) TrustLock transaction fee: 0.5% (kept by Transaction Fee Wallet)
-      const trustlockFee = round(escrowPrincipal * (FEE_RATES.trustlock_transaction_fee / 100));
-
-      // 2) Processor fee (already deducted by processor before funds reach us)
+      // 1) Processor fee (already deducted by processor before funds reach TrustLock)
       const processorRate = FEE_RATES.processor[usedProcessor] || 0;
-      const processorFee = usedProcessor === "direct" ? 0 : round(escrowPrincipal * (processorRate / 100));
+      const processorFee = usedProcessor === "direct" ? 0 : round(vendorSubtotal * (processorRate / 100));
 
-      // No escrow deposit — the 0.5% is TrustLock's transaction fee, NOT an escrow deposit
-      // No gas fee — MATIC gas paid by TrustLock Relayer Wallet
+      // 2) TrustLock transaction fee: 0.5% → Fee/Revenue Wallet
+      const trustlockFee = round(vendorSubtotal * (FEE_RATES.trustlock_transaction_fee / 100));
 
-      // 3) Jurisdiction taxes
+      // 3) Jurisdiction taxes & duties
       let taxAmount = 0;
       let taxType = "None";
       if (taxBreakdown) {
@@ -217,31 +215,35 @@ Deno.serve(async (req) => {
         taxType = String(taxBreakdown.tax_type || "None");
       }
 
-      // 4) Transaction Fee Wallet keeps: 0.5% TrustLock fee + taxes
-      const transactionWalletRetains = round(trustlockFee + taxAmount);
+      // 4) Remittance fee (wire transfer fee, if collected from buyer)
+      const remittanceFee = round(Number(body.remittanceFee || taxBreakdown?.remittance_fee || 0));
 
-      // 5) Escrow Wallet receives: vendor principal only
-      //    (the principal has the 1% escrow service fee baked in — extracted at release)
-      const escrowWalletReceives = escrowPrincipal;
+      // ══ POST-PROCESSOR SPLIT ══
+      // Fee/Revenue Wallet keeps: 0.5% TrustLock fee + taxes + remittance fee
+      const transactionWalletRetains = round(trustlockFee + taxAmount + remittanceFee);
 
-      if (escrowPrincipal <= 0) {
+      // Escrow Wallet receives: vendor subtotal + any additional invoice amounts
+      // (the 1% escrow service fee is baked into this principal — extracted at release)
+      const additionalInvoiceAmount = round(Number(body.additionalInvoiceAmount || 0));
+      const escrowWalletReceives = round(vendorSubtotal + additionalInvoiceAmount);
+
+      if (escrowWalletReceives <= 0) {
         return json({
           error: "Escrow principal would be zero or negative",
-          breakdown: { escrowPrincipal, trustlockFee, processorFee, taxAmount },
+          breakdown: { vendorSubtotal, trustlockFee, processorFee, taxAmount, remittanceFee },
         }, 400);
       }
 
-      // 6) Transfer: Transaction Fee Wallet → Escrow Wallet (principal only)
-      // The principal has 1% baked in — extracted at release
+      // Transfer: vendor subtotal → Escrow Wallet (1% escrow fee baked in, extracted at release)
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
         WALLETS.escrow.address,
         escrowWalletReceives,
         token,
-        `Vendor principal ($${escrowPrincipal}) for TX ${tx.tx_id} — 1% escrow fee baked in`
+        `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
 
-      // 8) Update transaction
+      // Update transaction with fee breakdown
       await supabase
         .from("transactions")
         .update({
@@ -251,7 +253,7 @@ Deno.serve(async (req) => {
         })
         .eq("id", transactionId);
 
-      // 8b) Log tax collection to tax_ledger for admin remittance tracking
+      // Log tax collection to tax_ledger for admin remittance tracking
       if (taxAmount > 0 && taxBreakdown) {
         const now = new Date();
         const quarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}`;
@@ -269,7 +271,7 @@ Deno.serve(async (req) => {
           tax_jurisdiction: String(taxBreakdown.jurisdiction || tx.vendor_location || "Unknown"),
           jurisdiction_country_code: String(taxBreakdown.country_code || ""),
           tax_authority_name: String(taxBreakdown.tax_authority || ""),
-          taxable_amount: escrowPrincipal,
+          taxable_amount: vendorSubtotal,
           tax_rate: Number(taxBreakdown.tax_rate || 0),
           tax_collected: round(Number(taxBreakdown.tax_amount || 0)),
           tariff_collected: round(Number(taxBreakdown.tariff_amount || 0)),
@@ -285,21 +287,22 @@ Deno.serve(async (req) => {
         });
       }
 
-      // 9) Notify
+      // Notify
       await notify(
         supabase, tx.vendor_id,
         "Funds Secured in Escrow",
-        `$${escrowPrincipal.toFixed(2)} has been locked in escrow for order #${tx.order_number || tx.tx_id}. ` +
-        `Upon release, a 1% escrow service fee will be extracted. Remainder is your payout.`,
+        `$${escrowWalletReceives.toFixed(2)} has been locked in escrow for order #${tx.order_number || tx.tx_id}. ` +
+        `Upon release, a 1% escrow service fee ($${round(escrowWalletReceives * 0.01).toFixed(2)}) will be extracted from your principal. Remainder is your payout.`,
         "success", transactionId
       );
 
       await notify(
         supabase, tx.buyer_id,
         "Payment Secured",
-        `Your payment is secured. $${escrowPrincipal.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
+        `Your payment is secured. $${escrowWalletReceives.toFixed(2)} is held in escrow for order #${tx.order_number || tx.tx_id}. ` +
         `Transaction fee: $${trustlockFee.toFixed(2)}` +
-        `${taxAmount > 0 ? `, Tax $${taxAmount.toFixed(2)}` : ""}. ` +
+        `${remittanceFee > 0 ? `, Remittance: $${remittanceFee.toFixed(2)}` : ""}` +
+        `${taxAmount > 0 ? `, Tax: $${taxAmount.toFixed(2)}` : ""}. ` +
         `In case of refund, you receive 100% of the escrow amount — $0 fees.`,
         "success", transactionId
       );
@@ -307,12 +310,13 @@ Deno.serve(async (req) => {
       const result: RoutingResult = {
         action: "route_inbound",
         transactionId,
-        grossAmount: round(escrowPrincipal + trustlockFee + processorFee + taxAmount),
+        grossAmount: round(escrowWalletReceives + trustlockFee + processorFee + taxAmount + remittanceFee),
         platformFee: trustlockFee,
         processorFee,
-        escrowFee: 0, // No escrow deposit at checkout
+        escrowFee: 0, // No escrow deposit at checkout — 1% extracted at release
         taxAmount,
         taxType,
+        remittanceFee,
         totalDeductions: transactionWalletRetains,
         transactionWalletRetains,
         escrowWalletReceives,
@@ -321,7 +325,7 @@ Deno.serve(async (req) => {
           to: WALLETS.escrow.address,
           amount: escrowWalletReceives,
           token,
-          memo: `Vendor principal for TX ${tx.tx_id} — 1% escrow fee baked in`,
+          memo: `Vendor principal for TX ${tx.tx_id} — 1% escrow fee baked in, extracted at release`,
           txHash: routingTransfer.txHash,
           status: routingTransfer.status,
         }],
@@ -703,7 +707,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fractional escrow fee trickle (from pre-paid escrow fee pool)
+      // Fractional escrow fee: 1% of TOTAL principal, split across payment milestones
       const { count: paymentMilestoneCount } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -711,8 +715,8 @@ Deno.serve(async (req) => {
         .gt("payment_amount", 0);
 
       const pmCount = paymentMilestoneCount || 1;
-      const totalPrePaidEscrowFee = round(tx.amount * (FEE_RATES.escrow_service / 100));
-      const fractionalFee = round(totalPrePaidEscrowFee / pmCount);
+      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_service / 100));
+      const fractionalFee = round(totalEscrowFee / pmCount);
 
       const { count: completedPaymentMilestones } = await supabase
         .from("transaction_milestones")
@@ -725,11 +729,11 @@ Deno.serve(async (req) => {
       const isLastPaymentMilestone = (priorCompleted + 1) === pmCount;
       const feesAlreadyTrickled = round(fractionalFee * priorCompleted);
       const escrowFeeTrickle = isLastPaymentMilestone
-        ? round(totalPrePaidEscrowFee - feesAlreadyTrickled)
+        ? round(totalEscrowFee - feesAlreadyTrickled)
         : fractionalFee;
 
-      // Vendor receives 100% of milestone amount (no deductions from principal!)
-      const vendorNet = milestoneAmount;
+      // Vendor receives: milestone amount minus their fractional escrow fee
+      const vendorNet = round(milestoneAmount - escrowFeeTrickle);
 
       const transfers = [];
 
@@ -748,17 +752,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Vendor payout — 100% of milestone amount
+      // Vendor payout — milestone amount minus fractional escrow fee
       const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTx = await transferOnChain(
         WALLETS.escrow.address, vendorWallet,
         vendorNet, token,
-        `Milestone "${milestone.title}" payout for TX ${tx.tx_id}`
+        `Milestone "${milestone.title}" payout for TX ${tx.tx_id} ($${vendorNet} after fractional fee)`
       );
       transfers.push({
         from: WALLETS.escrow.address, to: vendorWallet,
         amount: vendorNet, token,
-        memo: `Milestone payout (100% principal)`,
+        memo: `Milestone payout (principal $${milestoneAmount} - escrow fee $${escrowFeeTrickle})`,
         txHash: payoutTx.txHash, status: payoutTx.status,
       });
 
@@ -804,9 +808,9 @@ Deno.serve(async (req) => {
       }
 
       await notify(supabase, tx.vendor_id,
-        "Milestone Released — Full Amount",
-        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" — 100% of milestone principal, no deductions. ` +
-        `Escrow service fee ($${escrowFeeTrickle.toFixed(2)}) was pre-paid by the buyer at checkout.`,
+        "Milestone Released",
+        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" ($${milestoneAmount.toFixed(2)} principal - $${escrowFeeTrickle.toFixed(2)} escrow service fee). ` +
+        `1% total fee ($${totalEscrowFee.toFixed(2)}) is fractionalized across ${pmCount} milestones.`,
         "success", transactionId);
 
       return json({
@@ -817,7 +821,7 @@ Deno.serve(async (req) => {
         milestoneAmount,
         escrowFeeTrickle,
         vendorNet,
-        vendorReceives100Percent: true,
+        vendorReceivesPrincipalMinusFee: true,
         trickleToTransactionWallet: escrowFeeTrickle,
         allCompleted: !remaining?.length,
         transfers,

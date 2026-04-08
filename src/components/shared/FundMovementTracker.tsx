@@ -8,12 +8,14 @@ import {
 export type FundFlowType =
   | "os_pay_fiat"       // Buyer/Vendor paying for services via fiat
   | "os_pay_crypto"     // Buyer/Vendor paying via crypto
-  | "payout_release"    // Vendor receiving released funds
-  | "payout_refund"     // Buyer receiving refund
-  | "payout_split"      // Admin split pay to both parties
+  | "checkout_escrow"   // Buyer checkout → 2-wallet split (fee wallet + escrow wallet)
+  | "payout_release"    // Vendor receiving released funds (atomic: 99% vendor / 1% fee)
+  | "payout_refund"     // Buyer receiving refund (100% principal, $0 fees)
+  | "payout_split"      // Admin split pay to both parties (1% on vendor share only)
   | "buyer_release"     // Buyer authorizing release to vendor
   | "payout_crypto_direct"  // Polygon direct
-  | "payout_crypto_bridge"; // Non-Polygon via processor
+  | "payout_crypto_bridge"  // Non-Polygon via processor
+  | "milestone_release";    // Milestone fractional release (fractional 1%)
 
 interface FundFlowStep {
   label: string;
@@ -49,8 +51,8 @@ const getFlowSteps = (
     case "os_pay_fiat":
       return [
         { label: "Your Payment", sublabel: method || "Card/Bank/Mobile", icon: CreditCard, status: "completed" },
-        { label: "Secure Processing", sublabel: "Payment verified", icon: Building2, status: "active" },
-        { label: "TrustLock Platform", sublabel: "Payment received", icon: Shield, status: "pending" },
+        { label: "Processor", sublabel: `${providerName || "Payment processor"} takes fees`, icon: Building2, status: "completed" },
+        { label: "Fee Wallet", sublabel: `0.5% TrustLock fee${amount ? ` ($${(amount * 0.005).toFixed(2)})` : ""} + taxes/remittance`, icon: Shield, status: "active" },
         { label: "Service Activated", sublabel: "Credits applied to your account", icon: CheckCircle2, status: "pending" },
       ];
 
@@ -58,21 +60,56 @@ const getFlowSteps = (
       return [
         { label: "Your Wallet", sublabel: "Stablecoin sent", icon: Wallet, status: "completed" },
         { label: "Network Verification", sublabel: "On-chain confirmation", icon: Globe, status: "active" },
-        { label: "TrustLock Platform", sublabel: "Payment received", icon: Shield, status: "pending" },
+        { label: "Fee Wallet", sublabel: `0.5% TrustLock fee${amount ? ` ($${(amount * 0.005).toFixed(2)})` : ""}`, icon: Shield, status: "pending" },
         { label: "Service Activated", sublabel: "Credits applied to your account", icon: CheckCircle2, status: "pending" },
       ];
 
-    // ─── OS PAYOUT (fund disbursements) ───
+    // ─── CHECKOUT → ESCROW (inbound 2-wallet split) ───
+    case "checkout_escrow":
+      return [
+        { label: "Buyer Payment", sublabel: method || "Card/Bank/Crypto", icon: CreditCard, status: "completed" },
+        { label: "Processor Cut", sublabel: `${providerName || "Processor"} takes their fee`, icon: Building2, status: "completed" },
+        { label: "Fee/Revenue Wallet", sublabel: `0.5% fee${amount ? ` ($${(amount * 0.005).toFixed(2)})` : ""} + taxes + remittance`, icon: Shield, status: "active" },
+        { label: "Escrow Wallet", sublabel: `Vendor subtotal${amount ? ` ($${amount.toFixed(2)})` : ""} locked — 1% extracted at release`, icon: Wallet, status: "pending" },
+      ];
+
+    // ─── MILESTONE RELEASE (fractional 1%) ───
+    case "milestone_release":
+      return [
+        { label: "Escrow Wallet", sublabel: "Milestone portion held", icon: Shield, status: "completed" },
+        { label: "Fractional Fee", sublabel: "1% of total principal ÷ milestones → Fee Wallet", icon: Coins, status: "active" },
+        { label: "Vendor Payout", sublabel: "Milestone amount minus fractional fee → vendor", icon: CheckCircle2, status: "pending" },
+      ];
+
+    // ─── PAYOUT FLOWS ───
     case "payout_release":
     case "buyer_release":
+      return [
+        { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
+        { label: "1% Escrow Fee", sublabel: `Extracted from vendor principal → Fee Wallet${amount ? ` ($${(amount * 0.01).toFixed(2)})` : ""}`, icon: Coins, status: "active" },
+        { label: "Vendor Payout", sublabel: `99% of principal${amount ? ` ($${(amount * 0.99).toFixed(2)})` : ""} → vendor account`, icon: CheckCircle2, status: "pending" },
+      ];
+
     case "payout_refund":
+      return [
+        { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
+        { label: "Full Refund", sublabel: "100% of escrowed principal — $0 fees", icon: Coins, status: "active" },
+        { label: "Buyer Account", sublabel: "Funds returned", icon: CheckCircle2, status: "pending" },
+      ];
+
     case "payout_split":
+      return [
+        { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
+        { label: "Split Calculation", sublabel: `1% fee on vendor share only (${splitVendorPercent || "—"}V / ${splitBuyerPercent || "—"}B)`, icon: Coins, status: "active" },
+        { label: "Dual Payout", sublabel: "Vendor & buyer receive their portions", icon: CheckCircle2, status: "pending" },
+      ];
+
     case "payout_crypto_direct":
     case "payout_crypto_bridge":
       return [
-        { label: "Secure Escrow", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
-        { label: "Processing", sublabel: "Transaction in progress", icon: Coins, status: "active" },
-        { label: "Settlement", sublabel: "Funds delivered", icon: CheckCircle2, status: "pending" },
+        { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
+        { label: "1% Fee Extracted", sublabel: "Trickled to Fee Wallet", icon: Coins, status: "active" },
+        { label: "Settlement", sublabel: `99% → vendor via ${chain || "Polygon"}`, icon: CheckCircle2, status: "pending" },
       ];
 
     default:
