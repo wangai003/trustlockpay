@@ -465,11 +465,10 @@ const MilestoneWorkOrderPanel = ({
         gps_latitude: geo.latitude, gps_longitude: geo.longitude,
         gps_accuracy: geo.accuracy, gps_captured_at: geo.capturedAt,
       } as any).eq("id", milestoneId);
-      toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
 
       if (transactionId) {
         try {
-          await anchorProof(transactionId, "gps_verification", {
+          const result = await anchorProof(transactionId, "gps_verification", {
             milestoneId,
             latitude: geo.latitude,
             longitude: geo.longitude,
@@ -477,9 +476,26 @@ const MilestoneWorkOrderPanel = ({
             capturedAt: geo.capturedAt,
             capturedBy: role,
           });
+
+          // Show resolved address if available, fall back to coordinates
+          const loc = result?.resolvedLocation;
+          if (loc?.formatted) {
+            toast.success(`📍 ${loc.formatted}`, { duration: 6000 });
+            // Store resolved address alongside GPS coordinates
+            await supabase.from("transaction_milestones").update({
+              gps_address: loc.formatted,
+              gps_city: loc.city,
+              gps_country: loc.country,
+            } as any).eq("id", milestoneId);
+          } else {
+            toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+          }
         } catch (e) {
           console.warn("GPS blockchain anchor queued but failed to submit:", e);
+          toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
         }
+      } else {
+        toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
       }
     }
     // GPS-optional industries: no prompt, no capture — milestone proceeds without location data
