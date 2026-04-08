@@ -119,7 +119,7 @@ const DataRights = () => {
               </CardTitle>
               <CardDescription>
                 Download all your personal data in JSON format including profile, transactions,
-                orders, disputes, and notifications.
+                orders, disputes, GPS/location data from milestones, and notifications.
               </CardDescription>
             </CardHeader>
             <CardContent>
