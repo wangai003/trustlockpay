@@ -95,12 +95,12 @@ const SandboxCheckout = () => {
   const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
-  const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
+  const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
   const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
-    : paymentMethod === "mobile_money" ? "mobile_money"
-    : paymentMethod === "bank_transfer" ? "bank_transfer"
+    : derivedPaymentMethod === "mobile_money" ? "mobile_money"
+    : derivedPaymentMethod === "bank_transfer" ? "bank_transfer"
     : "card";
   const selectedProcessorId = selectProcessor(buyerCountry, isCryptoPayment, undefined, feeMethod);
   const selectedProcessor = PROCESSORS[selectedProcessorId];
