@@ -66,7 +66,7 @@ const WidgetCheckout = () => {
     const { category, processor, id } = selectedProvider;
     if (category === "crypto_wallet") return processor === "coinbase" ? "usdc" : id.includes("usdt") ? "usdt" : "usdc";
     if (category === "mobile_money") return "mobile_money";
-    if (category === "bank_transfer" || category === "international_bank") return "bank_transfer";
+    if (category === "bank_account") return "bank_transfer";
     if (id === "paypal") return "card"; // PayPal via Stripe
     return "card";
   }, [selectedProvider, form.paymentMethod]);
