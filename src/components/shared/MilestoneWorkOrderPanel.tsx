@@ -1194,6 +1194,17 @@ const MilestoneWorkOrderPanel = ({
                               </p>
                             </div>
                           </div>
+                          {milestoneExternalFees[idx]?.unverified > 0 && (
+                            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs">
+                              <Receipt className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-medium text-destructive">{milestoneExternalFees[idx].unverified} unverified external fee(s)</p>
+                                <p className="text-destructive/70 text-[10px] mt-0.5">
+                                  ${milestoneExternalFees[idx].unverifiedAmount.toLocaleString()} in third-party costs not yet confirmed by counterparty. You can still release, but both parties should reconcile offline fees first.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           <Button size="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" onClick={() => handleReleaseMilestone(ms.id)}>
                             <CheckCircle2 className="w-4 h-4 mr-2" /> Sign & Release Milestone
                           </Button>
