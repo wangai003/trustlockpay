@@ -699,6 +699,34 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Trigger Payout Router for vendor's split portion ──
+      let splitPayoutRoute: Record<string, unknown> | null = null;
+      if (vendorNet > 0) {
+        try {
+          const payoutRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/payout-router`;
+          const prRes = await fetch(payoutRouterUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({
+              action: "route_vendor_payout",
+              transactionId,
+              payoutAmount: vendorNet,
+              payoutType: "split_vendor",
+              vendorPaymentDetails: body.vendorPaymentDetails || null,
+              paymentProvider: body.vendorPaymentProvider || null,
+              paymentCategory: body.vendorPaymentCategory || null,
+              vendorId: tx.vendor_id,
+            }),
+          });
+          splitPayoutRoute = await prRes.json();
+        } catch (e) {
+          console.warn("Payout router split forward failed (non-blocking):", e);
+        }
+      }
+
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
         `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
@@ -725,6 +753,7 @@ Deno.serve(async (req) => {
         gasChargedToParties: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         buyerRefundDisbursement: splitRefundRoute,
+        vendorPayoutDisbursement: splitPayoutRoute,
         transfers,
       });
     }
