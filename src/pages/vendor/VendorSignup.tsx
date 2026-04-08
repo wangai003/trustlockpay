@@ -73,8 +73,7 @@ const VendorSignup = () => {
         userAgent: navigator.userAgent,
         acceptedAt: new Date().toISOString(),
       }));
-      // Auto-confirm is enabled, so redirect straight to dashboard
-      localStorage.setItem("tl_vendor_auth", "true");
+      // Redirect — Supabase session is already active, no localStorage auth flag needed
       localStorage.setItem("tl_vendor_network", "mainnet");
       navigate("/trustlock/vendor");
     }
