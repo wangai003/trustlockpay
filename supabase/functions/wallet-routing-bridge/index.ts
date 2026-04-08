@@ -402,6 +402,32 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge release forward failed:", e);
       }
 
+      // ── Trigger Payout Router for vendor last-mile disbursement ──
+      let vendorPayoutRoute: Record<string, unknown> | null = null;
+      try {
+        const payoutRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/payout-router`;
+        const prRes = await fetch(payoutRouterUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "route_vendor_payout",
+            transactionId,
+            payoutAmount: vendorPayout,
+            payoutType: "release",
+            vendorPaymentDetails: body.vendorPaymentDetails || null,
+            paymentProvider: body.paymentProvider || null,
+            paymentCategory: body.paymentCategory || null,
+            vendorId: tx.vendor_id,
+          }),
+        });
+        vendorPayoutRoute = await prRes.json();
+      } catch (e) {
+        console.warn("Payout router forward failed (non-blocking):", e);
+      }
+
       await notify(
         supabase, tx.vendor_id,
         "Funds Released",
