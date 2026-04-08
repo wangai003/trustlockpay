@@ -945,29 +945,84 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {/* ─── PAYMENT METHODS (vendor/buyer only) ─── */}
           {!isAdmin && (
           <>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pay With — {payMode === "local" ? "Africa" : "International"}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              {payMode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
+              <h3 className="text-sm font-bold text-foreground">
+                {payMode === "local" ? "Africa Payment Method" : "International Payment Method"}
+              </h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {payMode === "local"
+                ? "Pay via mobile money, local bank, card, or crypto within Africa."
+                : "Pay via card, PayPal, Apple Pay, Google Pay, bank transfer, or crypto."}
             </p>
-            {activeMethods.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(method === m.id ? null : m.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
-                  method === m.id ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+            <ProviderSearch
+              mode={payMode === "local" ? "local" : "diaspora"}
+              onSelect={(provider) => {
+                setSelectedProvider(provider);
+                setProviderFields({});
+                // Sync legacy state from provider selection
+                if (provider.category === "bank_account" && provider.mode === "local") {
+                  setBankName(provider.name);
+                }
+                if (provider.category === "mobile_money") {
+                  setMobileProvider(provider.name);
+                }
+              }}
+              selected={selectedProvider}
+            />
+            {/* International Bank Transfer — show when diaspora bank_account selected */}
+            {payMode === "diaspora" && method === "bank_transfer" && selectedProvider?.category === "bank_account" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">🌍 International Bank Transfer</p>
+                </div>
+                <InternationalBankSelector
+                  selectedBank={intlBankSelected}
+                  onBankSelected={(bank, region) => {
+                    setIntlBankSelected(bank);
+                    setIntlBankRegion(region);
+                    setBankName(bank);
+                  }}
+                  onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); setBankName(""); }}
+                />
+              </div>
+            )}
+            {/* Provider-specific fields (non-crypto, non-legacy handled) */}
+            {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
+              <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
+                {selectedProvider.fields.map((field) => (
+                  <div key={field.key}>
+                    <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                    {field.type === "select" ? (
+                      <select
+                        className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={providerFields[field.key] || ""}
+                        onChange={(e) => setProviderFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      >
+                        <option value="">Select...</option>
+                        {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <Input
+                        placeholder={field.placeholder || ""}
+                        value={providerFields[field.key] || ""}
+                        onChange={(e) => setProviderFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="mt-1 text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+                {selectedProvider.processor && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Routed via {selectedProvider.processor === "direct" ? "Direct" : selectedProvider.processor.charAt(0).toUpperCase() + selectedProvider.processor.slice(1)}
+                    {selectedProvider.fallbackNote && ` · ${selectedProvider.fallbackNote}`}
+                  </p>
                 )}
-              >
-                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <m.icon className="w-4 h-4 text-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{m.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{m.sub}</p>
-                </div>
-                {method === m.id && <div className="w-4 h-4 rounded-full bg-primary" />}
-              </button>
-            ))}
+              </div>
+            )}
           </div>
 
           {/* ─── UNAVAILABLE METHOD GUIDANCE ─── */}
