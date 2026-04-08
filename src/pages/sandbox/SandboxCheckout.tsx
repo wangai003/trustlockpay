@@ -391,8 +391,9 @@ const SandboxCheckout = () => {
                     <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                       <li>Escrow release follows the {config.milestones.length}-milestone schedule defined for {config.label}.</li>
                       <li>Document gates must be satisfied before milestone advancement.</li>
+                      <li>GPS location verification is required for physical-industry milestone completion.</li>
                       <li>Disputes must be filed within 7 days of delivery confirmation.</li>
-                      <li>High-value arbitration (&ge; $10,000) incurs a 2.0% fee.</li>
+                      <li>For escrow ≥ $10,000, arbitration incurs a flat Case Management Fee: $10K–$50K → $500 · $50K–$250K → $1,500 · $250K–$1M → $3,000 · $1M+ → $5,000. Arbitrator professional fees are separate.</li>
                       <li>This contract is archived for 7 years per TrustLock compliance policy.</li>
                     </ul>
                   </div>
