@@ -5370,6 +5370,15 @@ export type Database = {
         Args: { p_industry: string }
         Returns: number
       }
+      get_vendor_claim_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          expires_at: string
+          id: string
+          status: string
+          vendor_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
