@@ -1,65 +1,38 @@
 
+## Trade-Adaptive Fee Infrastructure — 6-Part Upgrade
 
-# Fund Flow Alignment: Subtotal-Only Escrow Routing
+### 1. Incoterms Awareness
+- Add `incoterm` field to transactions table (EXW, FOB, CIF, DDP, etc.)
+- Create an Incoterms responsibility matrix that maps which party (buyer/vendor) is responsible for each fee category based on the selected trade term
+- Surface responsibility labels in the External Fee Tracker UI so each party knows what they owe
+- Add Incoterms selector to checkout flow for international/regional trades
 
-## Current State — Already Correct
+### 2. Multi-Currency Rollups
+- Add `base_currency` and `exchange_rate_snapshot` columns to `external_fee_entries`
+- Build a currency normalization utility that converts all fees to the escrow's base currency for rollup totals
+- Display both original currency and normalized amount in the fee tracker UI
+- Show combined multi-currency summary in milestone panels
 
-After reviewing the full stack (feeEngine.ts, wallet-routing-bridge, escrow-bridge, TrustLockEscrow.sol), the system **already implements** the exact model you described:
+### 3. Temporal Fee Classification
+- Add `fee_phase` column to `external_fee_entries` (pre_shipment, in_transit, post_arrival, pre_escrow)
+- Group fees by phase in the External Fee Tracker UI with collapsible sections
+- Auto-suggest phase based on industry template and milestone position
 
-```text
-CHECKOUT FLOW:
-  Buyer pays: Subtotal + 0.5% platform fee + processor fee + taxes
-                    ↓
-  Processor takes their cut (before funds reach TrustLock)
-                    ↓
-  ALL remaining funds → Transaction Fee Wallet
-                    ↓
-  TX Wallet keeps: 0.5% platform fee + taxes
-  TX Wallet routes: EXACT SUBTOTAL → Escrow Wallet (smart contract)
-                    ↓
-  Contract locks: EXACT SUBTOTAL (no fees baked in upfront)
+### 4. Admin Escalation Thresholds
+- Add a database trigger that fires when total external fees exceed 30% of escrow value
+- Auto-create a cross-department alert to Finance + Compliance departments
+- Show warning badge in admin transaction views for flagged transactions
 
-RELEASE FLOW (Atomic):
-  Contract extracts 1% from locked subtotal → TX Wallet (fee loop)
-  Vendor receives: subtotal - 1% = net payout
+### 5. Fee Dispute Resolution Path
+- Add `dispute_status` and `dispute_note` columns to `external_fee_entries`
+- When a fee is rejected, transition it to `disputed` status with a required note
+- Create a mini-resolution flow: Rejected → Disputed → Revised/Withdrawn
+- Notify admin if fee disputes remain unresolved for 48+ hours
 
-RELEASE FLOW (Milestone):
-  Each milestone release: fractional fee = 1% ÷ total milestones
-  Final milestone absorbs rounding remainder
-  All fractional fees route back to TX Wallet (fee loop)
-```
+### 6. Pre-Escrow Fee Logging
+- Add `pre_escrow` boolean to `external_fee_entries` for costs incurred before lockup (LC fees, inspection costs)
+- Allow vendors to log pre-escrow costs during checkout/onboarding phase
+- Roll pre-escrow fees into the total cost summary but keep them visually separated
 
-### What is already wired correctly
-
-1. **feeEngine.ts** — `escrowWalletReceives: escrowPrincipal` (the agreed subtotal, nothing more)
-2. **wallet-routing-bridge** — Routes only `escrowPrincipal` from TX Wallet to Escrow Wallet
-3. **escrow-bridge** — Calculates `escrowFee = amount * 1%` at release, `vendorPayout = amount - escrowFee`
-4. **TrustLockEscrow.sol** — `ESCROW_RELEASE_FEE_BPS = 100` (1%), extracted at `releaseFunds` and `releaseMilestone`, sent to `TRANSACTION_WALLET`
-5. **Milestone fractionalization** — `fractionalFee = totalEscrowFee / milestoneCount`, remainder absorption on last milestone
-6. **Refunds** — $0 fees, full principal returned
-7. **Split payouts** — 1% on vendor share only, buyer gets full amount
-
-### Minor Cleanup Items (3 small fixes)
-
-These are comment/documentation clarifications, not logic bugs:
-
-1. **feeEngine.ts line 5-8**: Comments say "1% escrow fee baked in" — misleading. The escrow fee is NOT baked into the principal sent to the escrow wallet. It is extracted at release. Update comments to say: "Escrow Wallet holds vendor principal. On release, 1% is extracted and trickled back to Transaction Fee Wallet."
-
-2. **wallet-routing-bridge line 19**: Same misleading comment about "pre-paid escrow fee." Update to: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion."
-
-3. **InvoiceFeeCalculator.tsx**: The `Escrow Service Fee (1.0%)` line should include a note like: "Deducted from vendor payout only when the deal is completed — never deducted upfront." (This is partially done but could be more explicit.)
-
-### No structural changes needed
-
-The architecture already ensures:
-- Only the exact subtotal leaves the TX Wallet to the Escrow Wallet
-- The 1% is never deducted until a deal is complete (release or milestone completion)
-- The fee loops back to the TX Wallet (circular revenue model)
-- Milestone fees are fractionalized per the formula you described
-
-### Implementation steps
-
-1. Update misleading comments in `feeEngine.ts`, `wallet-routing-bridge`, and `InvoiceFeeCalculator.tsx` to clearly state: escrow fee is deferred until deal completion
-2. Add an explicit `escrowFeeDeferred: true` flag to the `InvoiceFeeCalculation` interface for frontend clarity
-3. Update the invoice UI note to read: "This fee is only collected when the deal is marked complete — never upfront"
-
+### Migration: Single SQL migration covering all schema changes
+### Code: Update ExternalFeeTracker, ExternalFeeSummary, MilestoneWorkOrderPanel, and checkout components
