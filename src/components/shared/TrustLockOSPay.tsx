@@ -309,7 +309,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
 
-  const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
+  /* activeMethods removed — now using ProviderSearch */
 
   /* ── Country-specific bank & mobile lists ── */
   const COUNTRY_BANKS: Record<string, string[]> = {
