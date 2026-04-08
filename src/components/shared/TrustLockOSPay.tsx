@@ -1425,10 +1425,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             </div>
           )}
 
-          {(method === "coinbase" || method === "transak") && (
+          {/* Coinbase/Transak on-ramp notice (when those providers selected) */}
+          {(method === "coinbase" || method === "transak") && selectedProvider && (
             <div className="p-3 rounded-lg border border-border text-center space-y-1">
               <p className="text-xs font-medium">
-                {method === "coinbase" ? "Coinbase Commerce" : "Transak"} on-ramp
+                {selectedProvider.name} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
@@ -1437,9 +1438,20 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             </div>
           )}
 
+          {/* Apple Pay / Google Pay notice */}
           {method === "applepay" && (
             <div className="p-3 rounded-lg border border-border text-center">
               <p className="text-xs text-muted-foreground">Apple Pay / Google Pay will launch on confirmation</p>
+            </div>
+          )}
+
+          {/* PayPal notice */}
+          {method === "paypal" && (
+            <div className="p-3 rounded-lg border border-border text-center space-y-1">
+              <p className="text-xs font-medium">PayPal (via Stripe)</p>
+              <p className="text-[10px] text-muted-foreground">
+                You'll be redirected to PayPal to complete payment. Routed through Stripe for settlement.
+              </p>
             </div>
           )}
 
