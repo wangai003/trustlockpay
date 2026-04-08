@@ -253,6 +253,7 @@ const App = () => (
               <Route path="/arbitrator/:token" element={<ArbitratorPortal />} />
 
               {/* Sandbox Demo */}
+              <Route path="/sandbox" element={<Navigate to="/sandbox/store" replace />} />
               <Route path="/sandbox/login" element={<SandboxLogin />} />
               <Route path="/sandbox/store" element={<SandboxStore />} />
               <Route path="/sandbox/store/:industry" element={<SandboxStorePage />} />
