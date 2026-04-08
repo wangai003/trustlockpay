@@ -38,6 +38,8 @@ import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMeth
 import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
 type AdminAction = "refund" | "split" | null;
