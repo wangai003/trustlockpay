@@ -41,6 +41,8 @@ const BuyerOrders = () => {
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [releaseOrderId, setReleaseOrderId] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardScenario, setWizardScenario] = useState<PayoutScenario>("buyer_full_refund");
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
