@@ -12,8 +12,8 @@ const corsHeaders = {
 //   1.0% = Escrow service fee (baked into principal, extracted at release/split)
 //   Gas  = Gasless — MATIC paid by TrustLock Relayer Wallet
 const FEE_RULES = {
-  checkout_fiat: { trustlockRate: 1.5, escrowServiceRate: 0, gasEstimate: 0 },
-  checkout_crypto: { trustlockRate: 1.0, escrowServiceRate: 0, gasEstimate: 0 },
+  checkout_fiat: { trustlockRate: 0.5, escrowServiceRate: 0, gasEstimate: 0 },
+  checkout_crypto: { trustlockRate: 0.5, escrowServiceRate: 0, gasEstimate: 0 },
   release: { trustlockRate: 0, escrowServiceRate: 1.0, gasEstimate: 0 },
   refund: { trustlockRate: 0, escrowServiceRate: 0, gasEstimate: 0 },
   split: { trustlockRate: 0, escrowServiceRate: 1.0, gasEstimate: 0 },
