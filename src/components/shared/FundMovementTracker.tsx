@@ -64,7 +64,24 @@ const getFlowSteps = (
         { label: "Service Activated", sublabel: "Credits applied to your account", icon: CheckCircle2, status: "pending" },
       ];
 
-    // ─── CHECKOUT (escrow inbound) ───
+    // ─── CHECKOUT → ESCROW (inbound 2-wallet split) ───
+    case "checkout_escrow":
+      return [
+        { label: "Buyer Payment", sublabel: method || "Card/Bank/Crypto", icon: CreditCard, status: "completed" },
+        { label: "Processor Cut", sublabel: `${providerName || "Processor"} takes their fee`, icon: Building2, status: "completed" },
+        { label: "Fee/Revenue Wallet", sublabel: `0.5% fee${amount ? ` ($${(amount * 0.005).toFixed(2)})` : ""} + taxes + remittance`, icon: Shield, status: "active" },
+        { label: "Escrow Wallet", sublabel: `Vendor subtotal${amount ? ` ($${amount.toFixed(2)})` : ""} locked — 1% extracted at release`, icon: Wallet, status: "pending" },
+      ];
+
+    // ─── MILESTONE RELEASE (fractional 1%) ───
+    case "milestone_release":
+      return [
+        { label: "Escrow Wallet", sublabel: "Milestone portion held", icon: Shield, status: "completed" },
+        { label: "Fractional Fee", sublabel: "1% of total principal ÷ milestones → Fee Wallet", icon: Coins, status: "active" },
+        { label: "Vendor Payout", sublabel: "Milestone amount minus fractional fee → vendor", icon: CheckCircle2, status: "pending" },
+      ];
+
+    // ─── PAYOUT FLOWS ───
     case "payout_release":
     case "buyer_release":
       return [
