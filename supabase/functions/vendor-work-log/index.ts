@@ -13,6 +13,11 @@ function jsonResp(data: unknown, status = 200) {
   });
 }
 
+/** Normalize a name: trim, collapse spaces, strip diacritics, lowercase */
+function normalizeName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
