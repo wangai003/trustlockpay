@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import { VendorProvider } from "@/contexts/VendorContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -37,6 +37,29 @@ const VendorLayoutInner = () => {
       </VendorProvider>
     </LanguageProvider>
   );
+};
+
+const VendorLayout = () => {
+  const { user, loading } = useAuth();
+
+  // Allow testnet access via localStorage (demo environment only)
+  const isTestnetAuth = localStorage.getItem("tl_vendor_network") === "testnet" &&
+    localStorage.getItem("tl_vendor_auth") === "true";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Mainnet: require real Supabase session. Testnet: allow localStorage fallback.
+  if (!user && !isTestnetAuth) {
+    return <Navigate to="/trustlock/vendor/login" replace />;
+  }
+
+  return <VendorLayoutInner />;
 };
 
 export default VendorLayout;
