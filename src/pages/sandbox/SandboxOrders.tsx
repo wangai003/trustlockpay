@@ -10,6 +10,13 @@ import { getSandboxLiveOrders, completeSandboxMilestone, SandboxLiveOrder } from
 import { toast } from "sonner";
 import { useGeolocation, GeoPosition } from "@/hooks/useGeolocation";
 
+const statusLabels: Record<string, { label: string; color: string }> = {
+  escrow_locked: { label: "Escrow Locked", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+  in_progress: { label: "In Progress", color: "text-blue-600 bg-blue-50 border-blue-200" },
+  completed: { label: "Completed", color: "text-green-600 bg-green-50 border-green-200" },
+  disputed: { label: "Disputed", color: "text-red-600 bg-red-50 border-red-200" },
+};
+
 // Physical industries that require GPS hard-gate
 const PHYSICAL_INDUSTRIES = [
   "real_estate", "mining", "energy", "ecommerce", "construction",
