@@ -401,12 +401,13 @@ const AcknowledgementForm = ({
                      This transaction exceeds ${clauses.arbitrationThreshold.toLocaleString()}. In the event of an
                      unresolved dispute, either party (buyer or vendor) may request escalation to a professional
                      arbitrator as a last resort. The requesting party pays a non-refundable <strong>Arbitration Filing
-                     &amp; Case Management Fee of 2%</strong> of the escrowed principal via TrustLock OS Pay, which covers
-                     case coordination and document packaging. The appointed arbitrator's professional fees are
-                     separate and determined by their institution's published schedule after appointment. The
-                     arbitrator may award costs to the prevailing party. TrustLock's internal dispute resolution
-                     remains the mandatory first step. All arbitration follows ICC/UNCITRAL rules and rulings are
-                     binding under the New York Convention.
+                     &amp; Case Management Fee</strong> based on the escrowed amount: <strong>$500</strong> ($10K–$50K),
+                     <strong>$1,500</strong> ($50K–$250K), <strong>$3,000</strong> ($250K–$1M), or <strong>$5,000</strong> ($1M+),
+                     payable via TrustLock OS Pay. This covers case coordination and document packaging. The appointed
+                     arbitrator's professional fees are separate and determined by their institution's published
+                     schedule after appointment. The arbitrator may award costs to the prevailing party. TrustLock's
+                     internal dispute resolution remains the mandatory first step. All arbitration follows ICC/UNCITRAL
+                     rules and rulings are binding under the New York Convention.
                    </p>
                    <ClauseCheckbox
                      id="arbitration-consent"
