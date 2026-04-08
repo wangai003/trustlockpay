@@ -134,8 +134,10 @@ const getFlowSteps = (
     case "payout_split":
       return [
         { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
-        { label: "Split Calculation", sublabel: `1% fee on vendor share only (${splitVendorPercent || "—"}V / ${splitBuyerPercent || "—"}B)`, icon: Coins, status: "active" },
-        { label: "Dual Payout", sublabel: "Vendor & buyer receive their portions", icon: CheckCircle2, status: "pending" },
+        { label: "Split Calculation", sublabel: `${splitVendorPercent || "—"}% Vendor / ${splitBuyerPercent || "—"}% Buyer`, icon: Coins, status: "completed" },
+        { label: "Vendor Share", sublabel: `1% escrow fee deducted → vendor receives 99% of their share via selected payout method`, icon: CheckCircle2, status: "active" },
+        { label: "Buyer Share", sublabel: `$0 fees — full split amount routed via buyer's refund method`, icon: Wallet, status: "active" },
+        { label: "Dual Disbursement", sublabel: "Both parties receive funds via their pre-entered payment details", icon: Globe, status: "pending" },
       ];
 
     case "payout_crypto_direct":
