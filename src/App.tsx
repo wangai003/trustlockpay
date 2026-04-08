@@ -223,6 +223,7 @@ const App = () => (
               {/* Buyer Dashboard */}
               <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
               <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
+              <Route path="/trustlock/buyer/forgot-password" element={<ForgotPassword role="buyer" />} />
               <Route path="/trustlock/buyer" element={
                 <ProtectedRoute loginPath="/trustlock/buyer/login" allowTestnet testnetKey="tl_buyer_auth">
                   <BuyerLayout />
