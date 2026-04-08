@@ -47,10 +47,10 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Handmade Bead Necklace Set", qty: 2, unit: "sets", unitPrice: 60 },
     ],
     milestones: [
-      { title: "Payment Confirmed", percentage: 20 },
-      { title: "Order Prepared & Packed", percentage: 30 },
-      { title: "Shipped (Tracking Provided)", percentage: 20, documentGate: "Shipping Receipt" },
-      { title: "Delivered & Confirmed", percentage: 30 },
+      { title: "Payment Confirmed", percentage: 0 },
+      { title: "Order Prepared & Packed", percentage: 35 },
+      { title: "Shipped (Tracking Provided)", percentage: 30, documentGate: "Shipping Receipt" },
+      { title: "Delivered & Confirmed", percentage: 35 },
     ],
     documents: [
       { name: "Commercial Invoice", required: true, owner: "vendor" },
@@ -71,10 +71,10 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Legal & Title Transfer Fees", qty: 1, unit: "flat", unitPrice: 3500 },
     ],
     milestones: [
-      { title: "Deposit Secured in Escrow", percentage: 15 },
-      { title: "Title Search & Due Diligence", percentage: 15, documentGate: "Title Search Report" },
-      { title: "Construction / Inspection Phase", percentage: 30, documentGate: "Structural Inspection Certificate" },
-      { title: "Final Inspection & Handover", percentage: 25, documentGate: "Completion Certificate" },
+      { title: "Deposit Secured in Escrow", percentage: 0 },
+      { title: "Title Search & Due Diligence", percentage: 20, documentGate: "Title Search Report" },
+      { title: "Construction / Inspection Phase", percentage: 35, documentGate: "Structural Inspection Certificate" },
+      { title: "Final Inspection & Handover", percentage: 30, documentGate: "Completion Certificate" },
       { title: "Title Transfer & Keys", percentage: 15, documentGate: "Transfer of Ownership Doc" },
     ],
     documents: [
@@ -100,11 +100,11 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Logistics & Secure Transport", qty: 1, unit: "flat", unitPrice: 1200 },
     ],
     milestones: [
-      { title: "Purchase Order Confirmed", percentage: 10 },
-      { title: "Assay & Quality Certification", percentage: 15, documentGate: "Assay Certificate" },
+      { title: "Purchase Order Confirmed", percentage: 0 },
+      { title: "Assay & Quality Certification", percentage: 20, documentGate: "Assay Certificate" },
       { title: "Environmental Clearance Obtained", percentage: 15, documentGate: "Environmental Permit" },
       { title: "Extraction & Processing", percentage: 25 },
-      { title: "Secure Shipment Dispatched", percentage: 20, documentGate: "Bill of Lading" },
+      { title: "Secure Shipment Dispatched", percentage: 25, documentGate: "Bill of Lading" },
       { title: "Delivery & Final Verification", percentage: 15 },
     ],
     documents: [
@@ -130,9 +130,9 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Tank Farm Storage (14 Days)", qty: 1, unit: "flat", unitPrice: 2800 },
     ],
     milestones: [
-      { title: "Allocation Verified & PO Signed", percentage: 10, documentGate: "NNPC Allocation Letter" },
-      { title: "Quality Inspection (SGS/Intertek)", percentage: 15, documentGate: "SGS Inspection Report" },
-      { title: "Product Loaded at Depot", percentage: 25 },
+      { title: "Allocation Verified & PO Signed", percentage: 0, documentGate: "NNPC Allocation Letter" },
+      { title: "Quality Inspection (SGS/Intertek)", percentage: 20, documentGate: "SGS Inspection Report" },
+      { title: "Product Loaded at Depot", percentage: 30 },
       { title: "In-Transit (GPS Tracked)", percentage: 25, documentGate: "Waybill & GPS Log" },
       { title: "Delivery & Quantity Verification", percentage: 25, documentGate: "Delivery Receipt" },
     ],
@@ -159,10 +159,10 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "2 Rounds of Revisions", qty: 1, unit: "flat", unitPrice: 400 },
     ],
     milestones: [
-      { title: "Project Brief Approved", percentage: 15 },
-      { title: "First Draft / Mockup Delivered", percentage: 30, documentGate: "Mockup Files" },
-      { title: "Revisions Completed", percentage: 25 },
-      { title: "Final Delivery & Handoff", percentage: 30, documentGate: "Source Files Package" },
+      { title: "Project Brief Approved", percentage: 0 },
+      { title: "First Draft / Mockup Delivered", percentage: 35, documentGate: "Mockup Files" },
+      { title: "Revisions Completed", percentage: 30 },
+      { title: "Final Delivery & Handoff", percentage: 35, documentGate: "Source Files Package" },
     ],
     documents: [
       { name: "Project Brief / Scope of Work", required: true, owner: "either" },

@@ -187,7 +187,11 @@ const SandboxOrders = () => {
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${isDone ? "text-green-700" : isActive ? "text-primary" : "text-muted-foreground"}`}>{m.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[9px]">{m.percentage}%</Badge>
+                      {m.percentage > 0 ? (
+                        <Badge variant="outline" className="text-[9px]">{m.percentage}%</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] bg-muted/50">Checkpoint</Badge>
+                      )}
                       {m.documentGate && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                           <FileText className="w-3 h-3" /> {m.documentGate}
