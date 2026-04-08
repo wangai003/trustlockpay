@@ -59,13 +59,43 @@ export interface ProcessorLimits {
   maxDailyTxCount: number;
 }
 
+// ─── ISO Region Sets ──────────────────────────────────────
+// All regions use ISO 3166-1 alpha-2 codes. "EU" and "global" are meta-tags
+// expanded by the region resolver below.
+const EU_MEMBERS = [
+  "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU",
+  "IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE",
+];
+
+function expandRegions(regions: string[]): Set<string> {
+  const set = new Set<string>();
+  for (const r of regions) {
+    if (r === "EU") {
+      EU_MEMBERS.forEach(c => set.add(c));
+    } else if (r !== "global") {
+      set.add(r);
+    }
+  }
+  return set;
+}
+
+export function regionMatch(regions: string[], country: string): boolean {
+  if (regions.includes("global")) return true;
+  const expanded = expandRegions(regions);
+  return expanded.has(country);
+}
+
 export const PROCESSORS: Record<ProcessorId, ProcessorConfig & { limits: ProcessorLimits }> = {
   stripe: {
     name: "Stripe",
     feeRate: 2.9,
     supportsFiat: true,
     supportsCrypto: false,
-    regions: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"],
+    regions: [
+      "US", "CA", "AU", "NZ", "JP", "SG", "HK", "GB", "MY", "TH",
+      "IN", "BR", "MX", "AE", "CN",
+      "EU",
+    ],
     onRamp: true,
     offRamp: false,
     supportedMethods: ["card", "bank_transfer"],
@@ -83,9 +113,11 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig & { limits: Process
     supportsFiat: true,
     supportsCrypto: true,
     regions: [
-      "US", "EU", "UK",
-      "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
-      "Uganda", "Tanzania", "Rwanda",
+      "US", "GB",
+      "EU",
+      "NG", "KE", "GH", "ZA", "CM", "EG", "UG", "TZ", "RW",
+      "BR", "MX", "AR", "CO", "CL",
+      "SG", "AU", "JP", "IN",
     ],
     onRamp: true,
     offRamp: true,
@@ -104,8 +136,14 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig & { limits: Process
     supportsFiat: true,
     supportsCrypto: true,
     regions: [
-      "US", "EU", "UK", "IN", "BR", "MX",
-      "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt",
+      "US", "GB", "IN", "BR", "MX",
+      "EU",
+      "NG", "KE", "GH", "ZA", "EG", "SN", "CI", "TZ", "UG", "RW",
+      "CM", "ET", "MA", "TN", "DZ",
+      "AE", "SA", "QA", "KW", "BH", "OM",
+      "SG", "MY", "TH", "ID", "PH", "VN", "KR", "JP", "AU", "NZ",
+      "AR", "CO", "CL", "PE",
+      "TR", "IL", "CN",
       "global",
     ],
     onRamp: true,
@@ -361,8 +399,8 @@ export function getEligibleProcessors(
   for (const [id, config] of Object.entries(PROCESSORS) as [ProcessorId, ProcessorConfig][]) {
     if (id === "direct" && paymentMethod !== "crypto") continue;
     if (paymentMethod === "crypto" && !config.supportsCrypto) continue;
-    const regionMatch = config.regions.includes(country) || config.regions.includes("global");
-    if (!regionMatch) continue;
+    const isRegionMatch = regionMatch(config.regions, country);
+    if (!isRegionMatch) continue;
     if (!config.supportedMethods.includes(paymentMethod)) continue;
 
     eligible.push({
