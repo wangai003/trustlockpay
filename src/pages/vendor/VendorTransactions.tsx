@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale, Info, Wallet
 } from "lucide-react";
 import { toast } from "sonner";
 import { getArbitrationFee } from "@/lib/arbitrationFees";
