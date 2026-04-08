@@ -51,6 +51,7 @@ const PrivacyPolicy = () => (
           <tr><td>Fraud prevention & velocity monitoring</td><td>Legitimate interest</td></tr>
           <tr><td>Dispute resolution & evidence archival</td><td>Contract performance / Legal obligation</td></tr>
           <tr><td>Blockchain anchoring of audit trails</td><td>Legitimate interest (trade integrity)</td></tr>
+          <tr><td>GPS capture & reverse geocoding for milestone verification</td><td>Consent (browser permission) / Legitimate interest (trade integrity)</td></tr>
           <tr><td>Platform notifications & communications</td><td>Contract performance</td></tr>
           <tr><td>Analytics & service improvement</td><td>Legitimate interest</td></tr>
         </tbody>
