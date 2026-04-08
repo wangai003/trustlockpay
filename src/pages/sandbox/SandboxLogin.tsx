@@ -22,6 +22,23 @@ const SandboxLogin = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [role, setRole] = useState<DemoRole>("vendor");
   const [saving, setSaving] = useState(false);
+  const [returning, setReturning] = useState<{ name: string; email: string; role: string } | null>(null);
+
+  // Check for existing session — let returning testers skip the form
+  useState(() => {
+    const raw = localStorage.getItem("tl_sandbox_session");
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        if (new Date(s.expiresAt) > new Date()) {
+          setReturning({ name: s.name, email: s.email, role: s.role });
+          setName(s.name);
+          setEmail(s.email);
+          setRole(s.role as DemoRole);
+        }
+      } catch { /* ignore */ }
+    }
+  });
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
