@@ -362,7 +362,7 @@ export function getEligibleProcessors(
     if (id === "direct" && paymentMethod !== "crypto") continue;
     if (paymentMethod === "crypto" && !config.supportsCrypto) continue;
     const isRegionMatch = regionMatch(config.regions, country);
-    if (!regionMatch) continue;
+    if (!isRegionMatch) continue;
     if (!config.supportedMethods.includes(paymentMethod)) continue;
 
     eligible.push({
