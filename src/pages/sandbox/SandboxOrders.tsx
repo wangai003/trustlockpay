@@ -5,22 +5,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Circle, Clock, FileText, ArrowLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, Circle, Clock, FileText, ArrowLeft, ChevronRight, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { getSandboxLiveOrders, completeSandboxMilestone, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
+import { useGeolocation, GeoPosition } from "@/hooks/useGeolocation";
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  escrow_locked: { label: "Escrow Locked", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
-  in_progress: { label: "In Progress", color: "text-blue-600 bg-blue-50 border-blue-200" },
-  completed: { label: "Completed", color: "text-green-600 bg-green-50 border-green-200" },
-  disputed: { label: "Disputed", color: "text-red-600 bg-red-50 border-red-200" },
-};
+// Physical industries that require GPS hard-gate
+const PHYSICAL_INDUSTRIES = [
+  "real_estate", "mining", "energy", "ecommerce", "construction",
+  "logistics", "agriculture", "manufacturing", "automotive",
+  "textiles", "food_beverage", "pharmaceuticals", "marine_fisheries",
+  "aviation", "renewable_energy", "water_sanitation",
+];
+
+interface ResolvedLocation {
+  address: string;
+  position: GeoPosition;
+}
 
 const SandboxOrders = () => {
   const session = useOutletContext<{ role: string; name: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<SandboxLiveOrder[]>([]);
   const selectedId = searchParams.get("detail");
+  const { capturePosition, loading: gpsLoading } = useGeolocation();
+  const [pendingMilestone, setPendingMilestone] = useState<{ orderId: string; idx: number } | null>(null);
+  const [resolvedLocation, setResolvedLocation] = useState<ResolvedLocation | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const refreshOrders = () => {
     const all = getSandboxLiveOrders();
@@ -39,7 +51,50 @@ const SandboxOrders = () => {
 
   const selectedOrder = orders.find(o => o.id === selectedId);
 
-  const handleAdvanceMilestone = (orderId: string, milestoneIdx: number) => {
+  const isPhysicalIndustry = (industryKey: string) =>
+    PHYSICAL_INDUSTRIES.includes(industryKey);
+
+  const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+        { headers: { "User-Agent": "TrustLock-Sandbox/1.0" } }
+      );
+      const data = await res.json();
+      return data.display_name || `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    } catch {
+      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    }
+  };
+
+  const handleAdvanceMilestone = async (orderId: string, milestoneIdx: number) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // For physical industries, require GPS
+    if (isPhysicalIndustry(order.industryKey)) {
+      setPendingMilestone({ orderId, idx: milestoneIdx });
+      setResolvedLocation(null);
+      setGpsError(null);
+      setResolving(true);
+
+      const pos = await capturePosition();
+      if (!pos) {
+        setGpsError("GPS access is required for this industry. Milestone cannot be completed without location verification.");
+        setResolving(false);
+        return;
+      }
+
+      const address = await reverseGeocode(pos.latitude, pos.longitude);
+      setResolvedLocation({ address, position: pos });
+      setResolving(false);
+    } else {
+      // Digital industries — complete directly
+      finalizeMilestone(orderId, milestoneIdx);
+    }
+  };
+
+  const finalizeMilestone = (orderId: string, milestoneIdx: number) => {
     const updated = completeSandboxMilestone(orderId, milestoneIdx);
     if (updated) {
       toast.success(`Milestone "${updated.milestones[milestoneIdx].title}" completed!`);
@@ -48,6 +103,15 @@ const SandboxOrders = () => {
       }
       refreshOrders();
     }
+    setPendingMilestone(null);
+    setResolvedLocation(null);
+    setGpsError(null);
+  };
+
+  const cancelGpsFlow = () => {
+    setPendingMilestone(null);
+    setResolvedLocation(null);
+    setGpsError(null);
   };
 
   if (selectedOrder) {
