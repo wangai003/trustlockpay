@@ -790,7 +790,7 @@ const TrustLockOSPayout = ({
             <FundMovementTracker
               flowType={
                 isAdmin
-                  ? payoutType === "refund" ? "payout_refund" : "payout_split"
+                  ? payoutType === "refund" ? "payout_refund" : payoutType === "split" ? "payout_split" : "payout_release"
                   : role === "buyer" && initialPayoutType === "release"
                     ? "buyer_release"
                     : isCrypto && selectedChain === "polygon"

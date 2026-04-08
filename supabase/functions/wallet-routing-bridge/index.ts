@@ -402,6 +402,32 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge release forward failed:", e);
       }
 
+      // ── Trigger Payout Router for vendor last-mile disbursement ──
+      let vendorPayoutRoute: Record<string, unknown> | null = null;
+      try {
+        const payoutRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/payout-router`;
+        const prRes = await fetch(payoutRouterUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "route_vendor_payout",
+            transactionId,
+            payoutAmount: vendorPayout,
+            payoutType: "release",
+            vendorPaymentDetails: body.vendorPaymentDetails || null,
+            paymentProvider: body.paymentProvider || null,
+            paymentCategory: body.paymentCategory || null,
+            vendorId: tx.vendor_id,
+          }),
+        });
+        vendorPayoutRoute = await prRes.json();
+      } catch (e) {
+        console.warn("Payout router forward failed (non-blocking):", e);
+      }
+
       await notify(
         supabase, tx.vendor_id,
         "Funds Released",
@@ -445,6 +471,7 @@ Deno.serve(async (req) => {
             status: payoutTransfer.status,
           },
         ],
+        vendorPayoutDisbursement: vendorPayoutRoute,
       });
     }
 
@@ -672,6 +699,34 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Trigger Payout Router for vendor's split portion ──
+      let splitPayoutRoute: Record<string, unknown> | null = null;
+      if (vendorNet > 0) {
+        try {
+          const payoutRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/payout-router`;
+          const prRes = await fetch(payoutRouterUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({
+              action: "route_vendor_payout",
+              transactionId,
+              payoutAmount: vendorNet,
+              payoutType: "split_vendor",
+              vendorPaymentDetails: body.vendorPaymentDetails || null,
+              paymentProvider: body.vendorPaymentProvider || null,
+              paymentCategory: body.vendorPaymentCategory || null,
+              vendorId: tx.vendor_id,
+            }),
+          });
+          splitPayoutRoute = await prRes.json();
+        } catch (e) {
+          console.warn("Payout router split forward failed (non-blocking):", e);
+        }
+      }
+
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
         `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
@@ -698,6 +753,7 @@ Deno.serve(async (req) => {
         gasChargedToParties: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         buyerRefundDisbursement: splitRefundRoute,
+        vendorPayoutDisbursement: splitPayoutRoute,
         transfers,
       });
     }
@@ -863,6 +919,35 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge milestone forward failed:", e);
       }
 
+      // ── Trigger Payout Router for vendor milestone disbursement ──
+      let milestonePayoutRoute: Record<string, unknown> | null = null;
+      if (vendorNet > 0) {
+        try {
+          const payoutRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/payout-router`;
+          const prRes = await fetch(payoutRouterUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({
+              action: "route_vendor_payout",
+              transactionId,
+              payoutAmount: vendorNet,
+              payoutType: "milestone_release",
+              vendorPaymentDetails: body.vendorPaymentDetails || null,
+              paymentProvider: body.paymentProvider || null,
+              paymentCategory: body.paymentCategory || null,
+              vendorId: tx.vendor_id,
+              milestoneId,
+            }),
+          });
+          milestonePayoutRoute = await prRes.json();
+        } catch (e) {
+          console.warn("Payout router milestone forward failed (non-blocking):", e);
+        }
+      }
+
       await notify(supabase, tx.vendor_id,
         "Milestone Released",
         `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" ($${milestoneAmount.toFixed(2)} principal - $${escrowFeeTrickle.toFixed(2)} escrow service fee). ` +
@@ -880,6 +965,7 @@ Deno.serve(async (req) => {
         vendorReceivesPrincipalMinusFee: true,
         trickleToTransactionWallet: escrowFeeTrickle,
         allCompleted: !remaining?.length,
+        vendorPayoutDisbursement: milestonePayoutRoute,
         transfers,
       });
     }
