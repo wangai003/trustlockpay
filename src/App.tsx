@@ -184,6 +184,7 @@ const App = () => (
               {/* Vendor Dashboard */}
               <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
               <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
+              <Route path="/trustlock/vendor/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
               <Route path="/trustlock/vendor" element={
                 <ProtectedRoute loginPath="/trustlock/vendor/login" allowTestnet testnetKey="tl_vendor_auth">
