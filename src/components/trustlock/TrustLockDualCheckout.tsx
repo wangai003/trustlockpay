@@ -228,48 +228,96 @@ const TrustLockDualCheckout = () => {
                 </div>
               )}
 
-              {/* Payment method selection with search (identical to OS Pay) */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {selectedProvider ? "Selected payment method" : "Choose payment method"}
-                </p>
-
-                <ProviderSearch
-                  mode={payMode === "local" ? "local" : "diaspora"}
-                  onSelect={setSelectedProvider}
-                  selected={selectedProvider}
-                />
-
-                {/* Provider-specific fields (same renderer as OS Pay) */}
-                {selectedProvider && selectedProvider.fields.length > 0 && (
-                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
-                    {selectedProvider.fields.map((field) => (
-                      <div key={field.key}>
-                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
-                        {field.type === "select" ? (
-                          <select
-                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          >
-                            <option value="">{field.placeholder}</option>
-                            {field.options?.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Input
-                            placeholder={field.placeholder}
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                            className="mt-1 text-sm"
-                          />
-                        )}
-                      </div>
-                    ))}
+              {/* Payment method selection — Card layout matching OS Payout */}
+              <Card className="border-2 border-primary/30 shadow-md">
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    {payMode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
+                    <h3 className="text-sm font-bold text-foreground">
+                      {payMode === "local" ? "Africa Payment Method" : "International Payment Method"}
+                    </h3>
                   </div>
-                )}
-              </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {payMode === "local"
+                      ? "Select how you want to pay — bank transfer, mobile wallet, or crypto."
+                      : "Select how you want to pay — card, PayPal, Apple Pay, Google Pay, bank, or crypto."
+                    }
+                  </p>
+
+                  <ProviderSearch
+                    mode={payMode === "local" ? "local" : "diaspora"}
+                    onSelect={setSelectedProvider}
+                    selected={selectedProvider}
+                  />
+
+                  {/* International Bank Transfer Selector (diaspora mode) */}
+                  {payMode === "diaspora" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground">🌍 International Bank Transfer</p>
+                        <button
+                          type="button"
+                          onClick={() => { setUseIntlBank(!useIntlBank); if (useIntlBank) { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                          className={cn(
+                            "text-[10px] px-3 py-1 rounded-full font-semibold transition-all",
+                            useIntlBank ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {useIntlBank ? "Using Bank Transfer" : "Use Bank Transfer"}
+                        </button>
+                      </div>
+                      {!useIntlBank && (
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Buyers in <strong className="text-foreground">North America, Europe, Asia, South America, Caribbean, Australia</strong> and 
+                          140+ other countries can pay directly from their local bank account.
+                          Click "Use Bank Transfer" above to select your region and bank.
+                        </p>
+                      )}
+                      {useIntlBank && (
+                        <InternationalBankSelector
+                          selectedBank={intlBankSelected}
+                          onBankSelected={(bank, region) => {
+                            setIntlBankSelected(bank);
+                            setIntlBankRegion(region);
+                          }}
+                          onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Provider-specific fields (with sanitization, suppress when intl bank active) */}
+                  {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && !(useIntlBank && intlBankSelected) && (
+                    <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                      <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
+                      {selectedProvider.fields.map((field) => (
+                        <div key={field.key}>
+                          <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                          {field.type === "select" ? (
+                            <select
+                              className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                              value={providerFields[field.key] || ""}
+                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                            >
+                              <option value="">{field.placeholder}</option>
+                              {field.options?.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Input
+                              placeholder={field.placeholder}
+                              value={providerFields[field.key] || ""}
+                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                              className="mt-1 text-sm"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Crypto Verification (identical to OS Pay crypto flow) */}
               {isCrypto && selectedProvider && (
