@@ -194,7 +194,6 @@ const SandboxOrders = () => {
             status: mappedStatus,
             industry: selectedOrder.industryKey,
           }}
-          role={session.role as "buyer" | "vendor"}
         />
 
         {/* Required Documents Reference */}
