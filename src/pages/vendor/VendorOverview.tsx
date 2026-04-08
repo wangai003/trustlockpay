@@ -150,13 +150,13 @@ const VendorOverview = () => {
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <stat.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                  <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{stat.value}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{stat.change}</p>
                 </CardContent>
               </Card>
             </motion.div>
