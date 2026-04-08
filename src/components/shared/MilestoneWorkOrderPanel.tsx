@@ -26,6 +26,7 @@ import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 import {
   useAddTransactionObserver,
   useCreateMilestones,
