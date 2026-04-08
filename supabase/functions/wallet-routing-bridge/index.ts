@@ -471,6 +471,7 @@ Deno.serve(async (req) => {
             status: payoutTransfer.status,
           },
         ],
+        vendorPayoutDisbursement: vendorPayoutRoute,
       });
     }
 
