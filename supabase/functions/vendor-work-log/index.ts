@@ -13,6 +13,11 @@ function jsonResp(data: unknown, status = 200) {
   });
 }
 
+/** Normalize a name: trim, collapse spaces, strip diacritics, lowercase */
+function normalizeName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -76,7 +81,7 @@ Deno.serve(async (req) => {
       return jsonResp({ error: "contract_id and typed_name are required" }, 400);
     }
 
-    if (vendorName && typed_name.trim().toLowerCase() !== vendorName.trim().toLowerCase()) {
+    if (vendorName && normalizeName(typed_name) !== normalizeName(vendorName)) {
       return jsonResp({ error: "Typed name does not match your profile name", expected: vendorName }, 400);
     }
 

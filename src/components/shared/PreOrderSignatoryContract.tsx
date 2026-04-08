@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { namesMatch } from "@/lib/nameNormalize";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,8 +115,8 @@ const PreOrderSignatoryContract = ({
   const checkedCount = allTermIds.filter((id) => checkedTerms[id]).length;
   const progress = (checkedCount / allTermIds.length) * 100;
 
-  const buyerNameMatch = buyerTypedName.trim().toLowerCase() === buyerName.trim().toLowerCase();
-  const vendorNameMatch = isAutoSigned || vendorTypedName.trim().toLowerCase() === vendorName.trim().toLowerCase();
+  const buyerNameMatch = namesMatch(buyerTypedName, buyerName);
+  const vendorNameMatch = isAutoSigned || namesMatch(vendorTypedName, vendorName);
 
   const canSign = allChecked && buyerNameMatch && vendorNameMatch && !previewMode;
 
