@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Store, ShoppingBag, Globe } from "lucide-react";
+import { Shield, Store, ShoppingBag, Globe, UserCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { SandboxCountdown } from "./SandboxCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
@@ -22,6 +23,23 @@ const SandboxLogin = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [role, setRole] = useState<DemoRole>("vendor");
   const [saving, setSaving] = useState(false);
+  const [returning, setReturning] = useState<{ name: string; email: string; role: string } | null>(null);
+
+  // Check for existing session — let returning testers skip the form
+  useState(() => {
+    const raw = localStorage.getItem("tl_sandbox_session");
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        if (new Date(s.expiresAt) > new Date()) {
+          setReturning({ name: s.name, email: s.email, role: s.role });
+          setName(s.name);
+          setEmail(s.email);
+          setRole(s.role as DemoRole);
+        }
+      } catch { /* ignore */ }
+    }
+  });
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +85,55 @@ const SandboxLogin = () => {
           <SandboxCountdown />
         </div>
 
-        {/* Browse Store CTA */}
+        {/* Returning tester quick-resume */}
+        {returning && (
+          <Card className="mb-4 border-primary/30 bg-primary/5">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-primary" />
+                <p className="text-sm font-semibold text-foreground">Welcome back, {returning.name}!</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You were last testing as <Badge variant="outline" className="mx-1 text-[10px]">{returning.role}</Badge>. Jump back in or switch roles below.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => navigate(returning.role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer")}
+                >
+                  Continue as {returning.role === "vendor" ? "Vendor" : "Buyer"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const otherRole = returning.role === "vendor" ? "buyer" : "vendor";
+                    const session = {
+                      name: returning.name,
+                      email: returning.email,
+                      role: otherRole,
+                      createdAt: new Date().toISOString(),
+                      expiresAt: "2026-12-31T23:59:59Z",
+                    };
+                    localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
+                    navigate(otherRole === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
+                  }}
+                >
+                  Switch to {returning.role === "vendor" ? "Buyer" : "Vendor"}
+                </Button>
+              </div>
+              <button
+                className="text-[10px] text-muted-foreground hover:underline"
+                onClick={() => { localStorage.removeItem("tl_sandbox_session"); setReturning(null); }}
+              >
+                Not you? Start fresh
+              </button>
+            </CardContent>
+          </Card>
+        )}
+
+
         <Link to="/sandbox/store">
           <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
             <CardContent className="p-4 flex items-center gap-3">
