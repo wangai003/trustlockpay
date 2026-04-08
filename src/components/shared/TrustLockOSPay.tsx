@@ -40,6 +40,7 @@ import InternationalBankSelector from "@/components/shared/InternationalBankSele
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
+import { AFRICAN_CURRENCIES, RATE_LOCK_DURATION_MS } from "@/lib/africanCurrencies";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "paypal" | null;
 type AdminAction = "refund" | "split" | null;
