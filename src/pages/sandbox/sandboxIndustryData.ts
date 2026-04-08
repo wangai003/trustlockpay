@@ -249,7 +249,7 @@ export function createSandboxOrder(
     paymentMethod,
     milestones: industry.milestones.map((m, i) => ({
       ...m,
-      status: i === 0 ? "completed" as const : "pending" as const,
+      status: i === 0 ? "completed" as const : i === 1 ? "in_progress" as const : "pending" as const,
     })),
     documents: industry.documents,
     status: "escrow_locked",
