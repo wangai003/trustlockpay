@@ -72,10 +72,46 @@ const TrustLockDualCheckout = () => {
     setSelectedProvider(null);
     setProviderFields({});
     setSelectedCountry("");
+    setUseIntlBank(false);
+    setIntlBankSelected(null);
+    setIntlBankRegion(null);
+  };
+
+  // ─── Input sanitization (matches OS Payout) ──────────────
+  const sanitizeField = (key: string, raw: string): string => {
+    if (key === "card_number") {
+      const digits = raw.replace(/\D/g, "").slice(0, 19);
+      return digits.replace(/(.{4})/g, "$1 ").trim();
+    }
+    if (key === "expiry" || key === "card_expiry") {
+      const digits = raw.replace(/\D/g, "").slice(0, 4);
+      if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      return digits;
+    }
+    if (key === "cvv" || key === "card_cvc") return raw.replace(/\D/g, "").slice(0, 4);
+    if (key === "phone_number") return raw.replace(/[^\d+\-\s]/g, "").slice(0, 20);
+    if (key === "bvn") return raw.replace(/\D/g, "").slice(0, 11);
+    if (key === "account_number") return raw.replace(/\D/g, "").slice(0, 20);
+    if (key === "routing_number") return raw.replace(/\D/g, "").slice(0, 9);
+    if (key === "branch_code") return raw.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+    if (key === "swift_bic") return raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 11);
+    if (key === "wallet_address") {
+      const cleaned = raw.replace(/[^a-fA-F0-9x]/g, "");
+      if (cleaned.length > 0 && !cleaned.startsWith("0x") && !cleaned.startsWith("0X") && /^[0-9a-fA-F]+$/.test(cleaned)) {
+        return `0x${cleaned}`.slice(0, 42);
+      }
+      return cleaned.slice(0, 42);
+    }
+    if (key === "email") return raw.trim().toLowerCase();
+    if (key === "cardholder" || key === "account_holder" || key === "account_name") {
+      return raw.replace(/[^a-zA-ZÀ-ÿ\s\-'.]/g, "").slice(0, 80);
+    }
+    return raw.slice(0, 100);
   };
 
   const handleFieldChange = (key: string, value: string) => {
-    setProviderFields((prev) => ({ ...prev, [key]: value }));
+    const sanitized = sanitizeField(key, value);
+    setProviderFields((prev) => ({ ...prev, [key]: sanitized }));
   };
 
   return (
