@@ -41,7 +41,8 @@ const BuyerSidebar = () => {
     return () => window.removeEventListener("tl-open-sidebar", handler);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");
     navigate("/trustlock/buyer/login");
