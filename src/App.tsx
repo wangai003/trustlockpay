@@ -107,6 +107,8 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
 const ArbitratorPortal = lazy(() => import("./pages/public/ArbitratorPortal"));
+const ForgotPassword = lazy(() => import("./pages/shared/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/shared/ResetPassword"));
 
 // Sandbox
 const SandboxLogin = lazy(() => import("./pages/sandbox/SandboxLogin"));
@@ -182,6 +184,7 @@ const App = () => (
               {/* Vendor Dashboard */}
               <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
               <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
+              <Route path="/trustlock/vendor/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
               <Route path="/trustlock/vendor" element={
                 <ProtectedRoute loginPath="/trustlock/vendor/login" allowTestnet testnetKey="tl_vendor_auth">
@@ -220,6 +223,7 @@ const App = () => (
               {/* Buyer Dashboard */}
               <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
               <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
+              <Route path="/trustlock/buyer/forgot-password" element={<ForgotPassword role="buyer" />} />
               <Route path="/trustlock/buyer" element={
                 <ProtectedRoute loginPath="/trustlock/buyer/login" allowTestnet testnetKey="tl_buyer_auth">
                   <BuyerLayout />
@@ -244,6 +248,7 @@ const App = () => (
               <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
               <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
               <Route path="/pay/:linkId" element={<PublicCheckout />} />
+              <Route path="/trustlock/reset-password" element={<ResetPassword />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
