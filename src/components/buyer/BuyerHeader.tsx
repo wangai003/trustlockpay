@@ -10,6 +10,7 @@ import LanguageSelector from "@/components/shared/LanguageSelector";
 import TLId from "@/components/shared/TLId";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const BuyerHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, buyer } = useBuyer();
