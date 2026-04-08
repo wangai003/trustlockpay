@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Circle, Clock, FileText, ArrowLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, Circle, Clock, FileText, ArrowLeft, ChevronRight, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { getSandboxLiveOrders, completeSandboxMilestone, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
+import { useGeolocation, GeoPosition } from "@/hooks/useGeolocation";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   escrow_locked: { label: "Escrow Locked", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
@@ -16,11 +17,29 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   disputed: { label: "Disputed", color: "text-red-600 bg-red-50 border-red-200" },
 };
 
+// Physical industries that require GPS hard-gate
+const PHYSICAL_INDUSTRIES = [
+  "real_estate", "mining", "energy", "ecommerce", "construction",
+  "logistics", "agriculture", "manufacturing", "automotive",
+  "textiles", "food_beverage", "pharmaceuticals", "marine_fisheries",
+  "aviation", "renewable_energy", "water_sanitation",
+];
+
+interface ResolvedLocation {
+  address: string;
+  position: GeoPosition;
+}
+
 const SandboxOrders = () => {
   const session = useOutletContext<{ role: string; name: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<SandboxLiveOrder[]>([]);
   const selectedId = searchParams.get("detail");
+  const { capturePosition, loading: gpsLoading } = useGeolocation();
+  const [pendingMilestone, setPendingMilestone] = useState<{ orderId: string; idx: number } | null>(null);
+  const [resolvedLocation, setResolvedLocation] = useState<ResolvedLocation | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const refreshOrders = () => {
     const all = getSandboxLiveOrders();
@@ -39,7 +58,50 @@ const SandboxOrders = () => {
 
   const selectedOrder = orders.find(o => o.id === selectedId);
 
-  const handleAdvanceMilestone = (orderId: string, milestoneIdx: number) => {
+  const isPhysicalIndustry = (industryKey: string) =>
+    PHYSICAL_INDUSTRIES.includes(industryKey);
+
+  const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+        { headers: { "User-Agent": "TrustLock-Sandbox/1.0" } }
+      );
+      const data = await res.json();
+      return data.display_name || `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    } catch {
+      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    }
+  };
+
+  const handleAdvanceMilestone = async (orderId: string, milestoneIdx: number) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // For physical industries, require GPS
+    if (isPhysicalIndustry(order.industryKey)) {
+      setPendingMilestone({ orderId, idx: milestoneIdx });
+      setResolvedLocation(null);
+      setGpsError(null);
+      setResolving(true);
+
+      const pos = await capturePosition();
+      if (!pos) {
+        setGpsError("GPS access is required for this industry. Milestone cannot be completed without location verification.");
+        setResolving(false);
+        return;
+      }
+
+      const address = await reverseGeocode(pos.latitude, pos.longitude);
+      setResolvedLocation({ address, position: pos });
+      setResolving(false);
+    } else {
+      // Digital industries — complete directly
+      finalizeMilestone(orderId, milestoneIdx);
+    }
+  };
+
+  const finalizeMilestone = (orderId: string, milestoneIdx: number) => {
     const updated = completeSandboxMilestone(orderId, milestoneIdx);
     if (updated) {
       toast.success(`Milestone "${updated.milestones[milestoneIdx].title}" completed!`);
@@ -48,6 +110,15 @@ const SandboxOrders = () => {
       }
       refreshOrders();
     }
+    setPendingMilestone(null);
+    setResolvedLocation(null);
+    setGpsError(null);
+  };
+
+  const cancelGpsFlow = () => {
+    setPendingMilestone(null);
+    setResolvedLocation(null);
+    setGpsError(null);
   };
 
   if (selectedOrder) {
@@ -106,7 +177,8 @@ const SandboxOrders = () => {
               const isActive = m.status === "in_progress";
               const isDone = m.status === "completed";
               return (
-                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${isActive ? "border-primary/30 bg-primary/5" : isDone ? "border-green-200 bg-green-50/30" : "border-border"}`}>
+                <div key={i} className={`p-3 rounded-lg border ${isActive ? "border-primary/30 bg-primary/5" : isDone ? "border-green-200 bg-green-50/30" : "border-border"}`}>
+                  <div className="flex items-start gap-3">
                   <div className="mt-0.5">
                     {isDone ? <CheckCircle className="w-5 h-5 text-green-600" /> :
                      isActive ? <Clock className="w-5 h-5 text-primary" /> :
@@ -123,10 +195,54 @@ const SandboxOrders = () => {
                       )}
                     </div>
                   </div>
-                  {isActive && (
+                  {isActive && !pendingMilestone && (
                     <Button size="sm" onClick={() => handleAdvanceMilestone(selectedOrder.id, i)} className="text-xs">
                       {session.role === "vendor" ? "Complete" : "Confirm"} <ChevronRight className="w-3 h-3 ml-0.5" />
                     </Button>
+                  )}
+                  </div>
+                  {isActive && pendingMilestone?.orderId === selectedOrder.id && pendingMilestone?.idx === i && (
+                    <div className="mt-2">
+                      {(resolving || gpsLoading) && (
+                        <div className="flex items-center gap-2 text-xs text-primary p-2 rounded bg-primary/5 border border-primary/20">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Capturing GPS & resolving address…</span>
+                        </div>
+                      )}
+                      {gpsError && (
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                          <div className="flex items-center gap-2 text-xs text-destructive font-medium">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span>GPS Required</span>
+                          </div>
+                          <p className="text-[11px] text-destructive/80">{gpsError}</p>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={cancelGpsFlow} className="text-[10px] h-7">Cancel</Button>
+                            <Button size="sm" onClick={() => handleAdvanceMilestone(selectedOrder.id, i)} className="text-[10px] h-7">Retry GPS</Button>
+                          </div>
+                        </div>
+                      )}
+                      {resolvedLocation && (
+                        <div className="p-3 rounded-lg bg-green-50 border border-green-200 space-y-2">
+                          <div className="flex items-center gap-2 text-xs text-green-700 font-medium">
+                            <MapPin className="w-4 h-4" />
+                            <span>Location Verified</span>
+                          </div>
+                          <div className="text-[11px] text-green-800 space-y-1">
+                            <p><strong>Address:</strong> {resolvedLocation.address}</p>
+                            <p><strong>Coordinates:</strong> {resolvedLocation.position.latitude.toFixed(6)}, {resolvedLocation.position.longitude.toFixed(6)}</p>
+                            <p><strong>Accuracy:</strong> ±{resolvedLocation.position.accuracy.toFixed(0)}m</p>
+                            <p><strong>Captured:</strong> {new Date(resolvedLocation.position.capturedAt).toLocaleString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={cancelGpsFlow} className="text-[10px] h-7">Cancel</Button>
+                            <Button size="sm" onClick={() => finalizeMilestone(selectedOrder.id, i)} className="text-[10px] h-7 bg-green-600 hover:bg-green-700 text-white">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Confirm & Complete
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               );
