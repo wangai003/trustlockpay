@@ -107,6 +107,8 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
 const ArbitratorPortal = lazy(() => import("./pages/public/ArbitratorPortal"));
+const ForgotPassword = lazy(() => import("./pages/shared/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/shared/ResetPassword"));
 
 // Sandbox
 const SandboxLogin = lazy(() => import("./pages/sandbox/SandboxLogin"));
