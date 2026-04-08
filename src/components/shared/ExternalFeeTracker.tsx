@@ -113,6 +113,13 @@ const ExternalFeeTracker = ({
     onTotalChange?.(totalExternal, primaryCurrency);
   }, [totalExternal, primaryCurrency, onTotalChange]);
 
+  // Notify parent of unverified fee status for soft-gate
+  useEffect(() => {
+    const unverifiedEntries = entries.filter(e => !e.verified_by_counterparty && !e.rejected);
+    const unverifiedAmount = unverifiedEntries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    onFeeStatusChange?.({ total: entries.length, unverified: unverifiedEntries.length, unverifiedAmount });
+  }, [entries, onFeeStatusChange]);
+
   const handleAddEntry = async () => {
     if (!newEntry.fee_label.trim()) { toast.error("Enter a fee label"); return; }
     if (!newEntry.amount || parseFloat(newEntry.amount) <= 0) { toast.error("Enter a valid amount"); return; }
