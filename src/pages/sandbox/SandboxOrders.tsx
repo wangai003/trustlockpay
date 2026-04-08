@@ -1,14 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Circle, Clock, FileText, ArrowLeft, ChevronRight, MapPin, Loader2, AlertTriangle } from "lucide-react";
-import { getSandboxLiveOrders, completeSandboxMilestone, SandboxLiveOrder } from "./sandboxIndustryData";
+import { CheckCircle, ArrowLeft, Globe } from "lucide-react";
+import {
+  getSandboxLiveOrders,
+  SandboxLiveOrder,
+  sandboxOrderToMockMilestones,
+  updateSandboxMilestoneStatus,
+} from "./sandboxIndustryData";
 import { toast } from "sonner";
-import { useGeolocation, GeoPosition } from "@/hooks/useGeolocation";
+import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
+import MilestoneProgress from "@/components/shared/MilestoneProgress";
+import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import TransactionDocuments from "@/components/shared/TransactionDocuments";
+import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
+import OrderStepGuide from "@/components/shared/OrderStepGuide";
+import type { MockMilestone } from "@/hooks/useTestnetData";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   escrow_locked: { label: "Escrow Locked", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
@@ -17,114 +29,80 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   disputed: { label: "Disputed", color: "text-red-600 bg-red-50 border-red-200" },
 };
 
-// Physical industries that require GPS hard-gate
-const PHYSICAL_INDUSTRIES = [
-  "real_estate", "mining", "energy", "ecommerce", "construction",
-  "logistics", "agriculture", "manufacturing", "automotive",
-  "textiles", "food_beverage", "pharmaceuticals", "marine_fisheries",
-  "aviation", "renewable_energy", "water_sanitation",
-];
-
-interface ResolvedLocation {
-  address: string;
-  position: GeoPosition;
-}
+const statusToMainnet = (s: string) => {
+  if (s === "escrow_locked") return "locked";
+  if (s === "in_progress") return "shipped";
+  if (s === "completed") return "released";
+  return s;
+};
 
 const SandboxOrders = () => {
   const session = useOutletContext<{ role: string; name: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<SandboxLiveOrder[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const selectedId = searchParams.get("detail");
-  const { capturePosition, loading: gpsLoading } = useGeolocation();
-  const [pendingMilestone, setPendingMilestone] = useState<{ orderId: string; idx: number } | null>(null);
-  const [resolvedLocation, setResolvedLocation] = useState<ResolvedLocation | null>(null);
-  const [resolving, setResolving] = useState(false);
-  const [gpsError, setGpsError] = useState<string | null>(null);
 
-  const refreshOrders = () => {
+  const refreshOrders = useCallback(() => {
     const all = getSandboxLiveOrders();
     if (session.role === "buyer") {
       setOrders(all.filter(o => o.claimedByBuyer));
     } else {
       setOrders(all);
     }
-  };
+  }, [session.role]);
 
   useEffect(() => {
     refreshOrders();
     const id = setInterval(refreshOrders, 3000);
     return () => clearInterval(id);
-  }, [session.role]);
+  }, [refreshOrders]);
 
   const selectedOrder = orders.find(o => o.id === selectedId);
 
-  const isPhysicalIndustry = (industryKey: string) =>
-    PHYSICAL_INDUSTRIES.includes(industryKey);
+  // ── Testnet-style callbacks for MilestoneWorkOrderPanel ──
 
-  const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
-        { headers: { "User-Agent": "TrustLock-Sandbox/1.0" } }
-      );
-      const data = await res.json();
-      return data.display_name || `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-    } catch {
-      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-    }
-  };
+  const handleUpdateStatus = useCallback((milestoneId: string, status: MockMilestone["status"]) => {
+    if (!selectedId) return;
+    updateSandboxMilestoneStatus(selectedId, milestoneId, status);
+    refreshOrders();
+    setRefreshKey(k => k + 1);
+    if (status === "completed") toast.success("Milestone completed!");
+  }, [selectedId, refreshOrders]);
 
-  const handleAdvanceMilestone = async (orderId: string, milestoneIdx: number) => {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
+  const handleSaveNote = useCallback((_milestoneId: string, note: string) => {
+    toast.success("Note saved (sandbox demo)");
+  }, []);
 
-    // For physical industries, require GPS
-    if (isPhysicalIndustry(order.industryKey)) {
-      setPendingMilestone({ orderId, idx: milestoneIdx });
-      setResolvedLocation(null);
-      setGpsError(null);
-      setResolving(true);
+  const handleAddDocument = useCallback((_milestoneId: string, doc: { name: string; url: string }) => {
+    toast.success(`Document "${doc.name}" attached (sandbox demo)`);
+  }, []);
 
-      const pos = await capturePosition();
-      if (!pos) {
-        setGpsError("GPS access is required for this industry. Milestone cannot be completed without location verification.");
-        setResolving(false);
-        return;
-      }
+  const handleInviteObserver = useCallback((_milestoneId: string, name: string, _email: string) => {
+    toast.success(`Observer "${name}" invited (sandbox demo)`);
+    return `obs-${crypto.randomUUID().slice(0, 8)}`;
+  }, []);
 
-      const address = await reverseGeocode(pos.latitude, pos.longitude);
-      setResolvedLocation({ address, position: pos });
-      setResolving(false);
-    } else {
-      // Digital industries — complete directly
-      finalizeMilestone(orderId, milestoneIdx);
-    }
-  };
+  const handleRelease = useCallback((milestoneId: string) => {
+    if (!selectedId) return;
+    updateSandboxMilestoneStatus(selectedId, milestoneId, "completed");
+    refreshOrders();
+    setRefreshKey(k => k + 1);
+    toast.success("Milestone payment released!");
+  }, [selectedId, refreshOrders]);
 
-  const finalizeMilestone = (orderId: string, milestoneIdx: number) => {
-    const updated = completeSandboxMilestone(orderId, milestoneIdx);
-    if (updated) {
-      toast.success(`Milestone "${updated.milestones[milestoneIdx].title}" completed!`);
-      if (updated.status === "completed") {
-        toast.success("🎉 Order completed! Funds released.");
-      }
-      refreshOrders();
-    }
-    setPendingMilestone(null);
-    setResolvedLocation(null);
-    setGpsError(null);
-  };
+  const handleAddGps = useCallback((_milestoneId: string, lat: number, lng: number, accuracy: number) => {
+    toast.success(`GPS captured: ${lat.toFixed(4)}, ${lng.toFixed(4)} ±${accuracy.toFixed(0)}m`);
+  }, []);
 
-  const cancelGpsFlow = () => {
-    setPendingMilestone(null);
-    setResolvedLocation(null);
-    setGpsError(null);
-  };
-
+  // ── Order Detail View (matching testnet/mainnet layout) ──
   if (selectedOrder) {
     const completedPct = selectedOrder.milestones
       .filter(m => m.status === "completed")
       .reduce((s, m) => s + m.percentage, 0);
+
+    const mockMilestones = sandboxOrderToMockMilestones(selectedOrder);
+    const mappedStatus = statusToMainnet(selectedOrder.status);
 
     return (
       <div className="space-y-4">
@@ -142,24 +120,18 @@ const SandboxOrders = () => {
           </Badge>
         </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted-foreground">Overall Progress</span>
-              <span className="font-bold">{completedPct}%</span>
-            </div>
-            <Progress value={completedPct} className="h-2" />
-          </CardContent>
-        </Card>
-
+        {/* Order Summary */}
         <Card>
           <CardHeader><CardTitle className="text-sm">Order Details</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Buyer</span><span>{selectedOrder.buyerName}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span>{selectedOrder.paymentMethod}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${selectedOrder.subtotal.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span>${selectedOrder.fee.toFixed(2)}</span></div>
-            <div className="flex justify-between font-bold"><span>Total</span><span>${selectedOrder.total.toLocaleString()}</span></div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div><p className="text-muted-foreground">Buyer</p><p className="font-medium">{selectedOrder.buyerName}</p></div>
+              <div><p className="text-muted-foreground">Vendor</p><p className="font-medium">{selectedOrder.vendorName}</p></div>
+              <div><p className="text-muted-foreground">Industry</p><p className="font-medium capitalize">{selectedOrder.industryLabel}</p></div>
+              <div><p className="text-muted-foreground">Payment</p><p className="font-medium">{selectedOrder.paymentMethod}</p></div>
+              <div><p className="text-muted-foreground">Date</p><p className="font-medium">{new Date(selectedOrder.createdAt).toLocaleDateString()}</p></div>
+              <div><p className="text-muted-foreground">Order #</p><p className="font-medium font-mono">{selectedOrder.orderNumber}</p></div>
+            </div>
             <Separator />
             {selectedOrder.items.map((item, idx) => (
               <div key={idx} className="flex justify-between text-xs">
@@ -167,93 +139,65 @@ const SandboxOrders = () => {
                 <span>${(item.qty * item.unitPrice).toLocaleString()}</span>
               </div>
             ))}
+            <Separator />
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${selectedOrder.subtotal.toLocaleString()}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">TrustLock Fee</span><span>${selectedOrder.fee.toFixed(2)}</span></div>
+            <div className="flex justify-between text-sm font-bold"><span>Total</span><span>${selectedOrder.total.toLocaleString()}</span></div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Milestone Tracker</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {selectedOrder.milestones.map((m, i) => {
-              const isActive = m.status === "in_progress";
-              const isDone = m.status === "completed";
-              return (
-                <div key={i} className={`p-3 rounded-lg border ${isActive ? "border-primary/30 bg-primary/5" : isDone ? "border-green-200 bg-green-50/30" : "border-border"}`}>
-                  <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    {isDone ? <CheckCircle className="w-5 h-5 text-green-600" /> :
-                     isActive ? <Clock className="w-5 h-5 text-primary" /> :
-                     <Circle className="w-5 h-5 text-muted-foreground" />}
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${isDone ? "text-green-700" : isActive ? "text-primary" : "text-muted-foreground"}`}>{m.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {m.percentage > 0 ? (
-                        <Badge variant="outline" className="text-[9px]">{m.percentage}%</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] bg-muted/50">Checkpoint</Badge>
-                      )}
-                      {m.documentGate && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <FileText className="w-3 h-3" /> {m.documentGate}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {isActive && !pendingMilestone && (
-                    <Button size="sm" onClick={() => handleAdvanceMilestone(selectedOrder.id, i)} className="text-xs">
-                      {session.role === "vendor" ? "Complete" : "Confirm"} <ChevronRight className="w-3 h-3 ml-0.5" />
-                    </Button>
-                  )}
-                  </div>
-                  {isActive && pendingMilestone?.orderId === selectedOrder.id && pendingMilestone?.idx === i && (
-                    <div className="mt-2">
-                      {(resolving || gpsLoading) && (
-                        <div className="flex items-center gap-2 text-xs text-primary p-2 rounded bg-primary/5 border border-primary/20">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Capturing GPS & resolving address…</span>
-                        </div>
-                      )}
-                      {gpsError && (
-                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-destructive font-medium">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span>GPS Required</span>
-                          </div>
-                          <p className="text-[11px] text-destructive/80">{gpsError}</p>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={cancelGpsFlow} className="text-[10px] h-7">Cancel</Button>
-                            <Button size="sm" onClick={() => handleAdvanceMilestone(selectedOrder.id, i)} className="text-[10px] h-7">Retry GPS</Button>
-                          </div>
-                        </div>
-                      )}
-                      {resolvedLocation && (
-                        <div className="p-3 rounded-lg bg-green-50 border border-green-200 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-green-700 font-medium">
-                            <MapPin className="w-4 h-4" />
-                            <span>Location Verified</span>
-                          </div>
-                          <div className="text-[11px] text-green-800 space-y-1">
-                            <p><strong>Address:</strong> {resolvedLocation.address}</p>
-                            <p><strong>Coordinates:</strong> {resolvedLocation.position.latitude.toFixed(6)}, {resolvedLocation.position.longitude.toFixed(6)}</p>
-                            <p><strong>Accuracy:</strong> ±{resolvedLocation.position.accuracy.toFixed(0)}m</p>
-                            <p><strong>Captured:</strong> {new Date(resolvedLocation.position.capturedAt).toLocaleString()}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={cancelGpsFlow} className="text-[10px] h-7">Cancel</Button>
-                            <Button size="sm" onClick={() => finalizeMilestone(selectedOrder.id, i)} className="text-[10px] h-7 bg-green-600 hover:bg-green-700 text-white">
-                              <CheckCircle className="w-3 h-3 mr-1" /> Confirm & Complete
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+        {/* Step Guide */}
+        <OrderStepGuide status={mappedStatus} role={session.role as "buyer" | "vendor"} industry={selectedOrder.industryKey} />
 
+        {/* Industry Blueprint */}
+        <IndustryBlueprintCard industry={selectedOrder.industryKey} />
+
+        {/* Milestone Timeline (visual Gantt) */}
+        <MilestoneTimeline industry={selectedOrder.industryKey} status={mappedStatus} />
+
+        {/* Milestone list format (collapsible) */}
+        <details className="text-xs">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">View list format</summary>
+          <MilestoneProgress industry={selectedOrder.industryKey} status={mappedStatus} />
+        </details>
+
+        {/* Full Work Order Panel */}
+        <MilestoneWorkOrderPanel
+          key={refreshKey}
+          role={session.role as "buyer" | "vendor"}
+          txId={selectedOrder.orderNumber}
+          transactionId={null}
+          industry={selectedOrder.industryKey}
+          transactionStatus={mappedStatus}
+          isTestnet={true}
+          testnetMilestones={mockMilestones}
+          onTestnetUpdateStatus={handleUpdateStatus}
+          onTestnetSaveNote={handleSaveNote}
+          onTestnetAddDocument={handleAddDocument}
+          onTestnetInviteObserver={handleInviteObserver}
+          onTestnetRelease={handleRelease}
+          onTestnetAddGps={handleAddGps}
+        />
+
+        {/* External Fee Summary */}
+        <ExternalFeeSummary transactionId={selectedOrder.id} escrowAmount={selectedOrder.subtotal} />
+
+        {/* Transaction Documents */}
+        <TransactionDocuments
+          tx={{
+            txId: selectedOrder.orderNumber,
+            vendorName: selectedOrder.vendorName,
+            buyerName: selectedOrder.buyerName,
+            item: selectedOrder.items[0]?.name || "Order",
+            amount: selectedOrder.subtotal,
+            date: new Date(selectedOrder.createdAt).toLocaleDateString(),
+            status: mappedStatus,
+            industry: selectedOrder.industryKey,
+          }}
+          role={session.role as "buyer" | "vendor"}
+        />
+
+        {/* Required Documents Reference */}
         <Card>
           <CardHeader><CardTitle className="text-sm">Required Documents</CardTitle></CardHeader>
           <CardContent className="space-y-2">
@@ -266,15 +210,13 @@ const SandboxOrders = () => {
                 </Badge>
               </div>
             ))}
-            <p className="text-[10px] text-muted-foreground italic mt-2">
-              In production, documents would need to be uploaded and verified before milestone advancement.
-            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // ── Order List View ──
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Orders</h1>
@@ -282,6 +224,7 @@ const SandboxOrders = () => {
       {orders.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="p-6 text-center">
+            <Globe className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">
               {session.role === "buyer"
                 ? "No orders claimed yet. Complete a checkout in the demo store, then enter your order number on the Overview page."
