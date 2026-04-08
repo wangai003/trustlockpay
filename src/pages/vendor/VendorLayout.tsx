@@ -12,7 +12,7 @@ import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
 import EntityClassificationPrompt from "@/components/shared/EntityClassificationPrompt";
 
-const VendorLayout = () => {
+const VendorLayoutInner = () => {
   useSessionTimeout("/trustlock/vendor/login");
   const { user } = useAuth();
   const navigate = useNavigate();

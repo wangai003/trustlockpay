@@ -38,7 +38,16 @@ const AdminLayoutInner = () => {
 
 const AdminLayout = () => {
   const authRaw = localStorage.getItem("tl_admin_auth");
-  const isAuth = authRaw === "true" || (() => { try { return JSON.parse(authRaw || "{}").authenticated === true; } catch { return false; } })();
+  let isAuth = false;
+
+  try {
+    const parsed = JSON.parse(authRaw || "{}");
+    // Require both authenticated flag AND a valid adminId (UUID format)
+    isAuth = parsed.authenticated === true &&
+      typeof parsed.adminId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parsed.adminId);
+  } catch { /* invalid JSON = not authed */ }
+
   if (!isAuth) return <Navigate to="/trustlock/admin/login" replace />;
   return <AdminLayoutInner />;
 };
