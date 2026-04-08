@@ -1213,7 +1213,37 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     return errorResponse("No payment amount set for this milestone", 400);
   }
 
-  const fees = calculateFees(paymentAmount, "release");
+  // ── Fractionalized 1% escrow fee ──────────────────────────
+  // The 1% is calculated on the TOTAL vendor principal, then split
+  // across all payment milestones. Last milestone absorbs rounding.
+  const totalPrincipal = Number(txData.amount);
+  const totalEscrowFee = round(totalPrincipal * 0.01); // 1% of total principal
+
+  // Count all payment milestones for this transaction
+  const { data: allMilestones } = await supabase
+    .from("transaction_milestones")
+    .select("id, is_payment_milestone, payment_released, payment_amount")
+    .eq("transaction_id", String(txData.id));
+
+  const paymentMilestones = (allMilestones || []).filter(
+    (m: Record<string, unknown>) => m.is_payment_milestone && Number(m.payment_amount) > 0
+  );
+  const pmCount = paymentMilestones.length || 1;
+  const fractionalFee = round(totalEscrowFee / pmCount);
+
+  // Determine if this is the last payment milestone
+  const priorReleased = paymentMilestones.filter(
+    (m: Record<string, unknown>) => m.payment_released && String(m.id) !== String(milestone_id)
+  ).length;
+  const isLastPaymentMilestone = (priorReleased + 1) === pmCount;
+  const feesAlreadyCharged = round(fractionalFee * priorReleased);
+  const thisEscrowFee = isLastPaymentMilestone
+    ? round(totalEscrowFee - feesAlreadyCharged)
+    : fractionalFee;
+
+  // Vendor receives: milestone amount minus their fractional escrow fee
+  const vendorNet = round(paymentAmount - thisEscrowFee);
+
   const wallets = getWalletAddresses();
   const now = new Date().toISOString();
 
@@ -1233,7 +1263,7 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
       payout_id: payoutId,
       vendor_id: txData.vendor_id,
       transaction_id: txData.id,
-      amount: fees.netAmount,
+      amount: vendorNet,
       tx_id: txData.tx_id,
       method: "milestone_release",
       status: "completed",
@@ -1245,14 +1275,10 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
   if (poErr) return errorResponse(poErr.message, 500);
 
   // Check if all payment milestones are released — if so, mark transaction as released
-  const { data: allMilestones } = await supabase
-    .from("transaction_milestones")
-    .select("is_payment_milestone, payment_released")
-    .eq("transaction_id", String(txData.id));
-
-  const allPaymentsDone = allMilestones
-    ?.filter((m: Record<string, unknown>) => m.is_payment_milestone)
-    .every((m: Record<string, unknown>) => m.payment_released);
+  const allPaymentsDone = paymentMilestones
+    .every((m: Record<string, unknown>) =>
+      m.payment_released || String(m.id) === String(milestone_id)
+    );
 
   if (allPaymentsDone) {
     await supabase
@@ -1265,7 +1291,8 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     transaction_id: txData.id,
     milestone_id: String(milestone_id),
     paymentAmount,
-    netAmount: fees.netAmount,
+    fractionalEscrowFee: thisEscrowFee,
+    vendorNet,
     allPaymentsDone,
   });
 
@@ -1276,8 +1303,11 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     milestone_id: String(milestone_id),
     milestone_title: milestone.title,
     payment_amount: paymentAmount,
-    net_amount: fees.netAmount,
-    escrow_fee: fees.escrowFee,
+    fractional_escrow_fee: thisEscrowFee,
+    vendor_net: vendorNet,
+    total_escrow_fee: totalEscrowFee,
+    milestone_count: pmCount,
+    is_last_milestone: isLastPaymentMilestone,
     all_milestones_released: allPaymentsDone,
     released_at: now,
   });
@@ -1287,12 +1317,20 @@ async function releaseMilestonePayment(body: Record<string, unknown>) {
     payout,
     milestoneTitle: milestone.title,
     allPaymentMilestonesReleased: allPaymentsDone,
-    feeBreakdown: fees,
+    feeBreakdown: {
+      totalPrincipal,
+      totalEscrowFee,
+      milestoneCount: pmCount,
+      fractionalFeePerMilestone: fractionalFee,
+      thisEscrowFee,
+      vendorNet,
+      trickleToTransactionWallet: thisEscrowFee,
+    },
     walletRouting: {
       transactionWallet: wallets.transactionWallet,
-      transactionWalletReceives: fees.transactionWalletReceives,
+      transactionWalletReceives: thisEscrowFee,
       escrowWallet: wallets.escrowWallet,
-      escrowWalletReceives: fees.escrowWalletReceives,
+      vendorReceives: vendorNet,
     },
   });
 }
