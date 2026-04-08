@@ -77,23 +77,7 @@ interface TrustLockOSPayProps {
   isTestnet?: boolean;
 }
 
-/* ── Local Africa payment methods ── */
-const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-  { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
-  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
-  { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
-];
-
-/* ── Diaspora payment methods ── */
-const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-  { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
-  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Checking / Savings · Region-based" },
-  { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
-  { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
-  { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
-  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
-];
+/* Legacy method arrays removed — now using shared ProviderSearch component */
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
 /* Plan services use a "plan:" prefix so we can detect and resolve pricing dynamically */
