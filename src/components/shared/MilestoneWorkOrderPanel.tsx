@@ -445,7 +445,44 @@ const MilestoneWorkOrderPanel = ({
         toast.warning(`Proceeding without recommended documents: ${gate.missingOptional.join(", ")}`, { duration: 5000 });
       }
     }
-    if (isTestnet) { onTestnetUpdateStatus?.(milestoneId, "completed"); return; }
+    if (isTestnet) {
+      const gpsNeeded = isGpsRequiredByIndustry(industry || "");
+      if (gpsNeeded) {
+        const geo = await capturePosition();
+        if (!geo) {
+          toast.error("GPS location is required for this industry. Enable location services and try again.", { duration: 6000 });
+          return;
+        }
+        onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy);
+
+        // Call real reverse geocoding via registry-anchor for display
+        try {
+          const result = await anchorProof(
+            transactionId || "testnet-sim",
+            "gps_verification",
+            {
+              milestoneId,
+              latitude: geo.latitude,
+              longitude: geo.longitude,
+              accuracy: geo.accuracy,
+              capturedAt: geo.capturedAt,
+              capturedBy: role,
+              isTestnet: true,
+            }
+          );
+          const loc = result?.resolvedLocation;
+          if (loc?.formatted) {
+            toast.success(`📍 ${loc.formatted}`, { duration: 6000 });
+          } else {
+            toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+          }
+        } catch {
+          toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+        }
+      }
+      onTestnetUpdateStatus?.(milestoneId, "completed");
+      return;
+    }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
 
