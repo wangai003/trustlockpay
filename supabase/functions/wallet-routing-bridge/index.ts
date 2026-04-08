@@ -752,17 +752,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Vendor payout — 100% of milestone amount
+      // Vendor payout — milestone amount minus fractional escrow fee
       const vendorWallet = body.vendorWallet || "vendor_pending";
       const payoutTx = await transferOnChain(
         WALLETS.escrow.address, vendorWallet,
         vendorNet, token,
-        `Milestone "${milestone.title}" payout for TX ${tx.tx_id}`
+        `Milestone "${milestone.title}" payout for TX ${tx.tx_id} ($${vendorNet} after fractional fee)`
       );
       transfers.push({
         from: WALLETS.escrow.address, to: vendorWallet,
         amount: vendorNet, token,
-        memo: `Milestone payout (100% principal)`,
+        memo: `Milestone payout (principal $${milestoneAmount} - escrow fee $${escrowFeeTrickle})`,
         txHash: payoutTx.txHash, status: payoutTx.status,
       });
 
