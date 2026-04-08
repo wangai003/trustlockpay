@@ -871,34 +871,45 @@ async function createMilestones(body: Record<string, unknown>) {
   const txAmount = Number(tx.amount);
   const milestoneCount = milestoneData.length;
 
-  // ── Equal-split default ─────────────────────────────
-  // If no milestone has a custom percentage or amount set,
-  // auto-distribute equally. Parties can override per-milestone.
-  const hasAnyCustomAmount = milestoneData.some(
-    (m: Record<string, unknown>) =>
-      (m.payment_percentage && Number(m.payment_percentage) > 0) ||
-      (m.payment_amount && Number(m.payment_amount) > 0)
-  );
+  // ── Normalize milestone input fields ────────────────
+  // Accept both "percentage" and "payment_percentage", and "is_checkpoint"
+  const normalized = milestoneData.map((m: Record<string, unknown>) => {
+    const pct = Number(m.payment_percentage ?? m.percentage ?? 0);
+    const isCheckpoint = Boolean(m.is_checkpoint);
+    // A milestone is a payment milestone if it has a non-zero percentage and is not a checkpoint
+    const isPaymentMilestone = m.is_payment_milestone !== undefined
+      ? Boolean(m.is_payment_milestone)
+      : (pct > 0 && !isCheckpoint);
+    return { ...m, _pct: pct, _isPayment: isPaymentMilestone, _isCheckpoint: isCheckpoint };
+  });
 
-  const equalShare = milestoneCount > 0 ? round(txAmount / milestoneCount) : txAmount;
-  // Last milestone absorbs rounding remainder
-  const equalShareLast = milestoneCount > 0
-    ? round(txAmount - equalShare * (milestoneCount - 1))
-    : txAmount;
+  // Check if any milestone has a custom percentage set
+  const hasCustomPercentages = normalized.some((m) => m._pct > 0);
 
-  const rows = milestoneData.map((m: Record<string, unknown>, idx: number) => {
-    let paymentAmount: number | null = null;
+  // For equal-split fallback (only when NO percentages are provided)
+  const payableMilestones = normalized.filter((m) => !m._isCheckpoint);
+  const payableCount = payableMilestones.length || 1;
+  const equalShare = round(txAmount / payableCount);
+  const equalShareLast = round(txAmount - equalShare * (payableCount - 1));
 
-    if (m.is_payment_milestone && m.payment_percentage && Number(m.payment_percentage) > 0 && txAmount > 0) {
+  let payableIdx = 0;
+  const rows = normalized.map((m, idx: number) => {
+    let paymentAmount = 0;
+
+    if (m._isCheckpoint) {
+      // Checkpoints (e.g., "Payment Confirmed" at 0%) get no payment
+      paymentAmount = 0;
+    } else if (m._pct > 0 && txAmount > 0) {
       // Custom percentage provided — use it
-      paymentAmount = round(txAmount * (Number(m.payment_percentage) / 100));
+      paymentAmount = round(txAmount * (m._pct / 100));
     } else if (m.payment_amount && Number(m.payment_amount) > 0) {
       // Custom fixed amount provided — use it
       paymentAmount = Number(m.payment_amount);
-    } else if (txAmount > 0) {
-      // No custom amount — auto-distribute equally (optional default)
-      paymentAmount = idx === milestoneCount - 1 ? equalShareLast : equalShare;
+    } else if (!hasCustomPercentages && txAmount > 0) {
+      // No percentages anywhere — auto-distribute equally among non-checkpoint milestones
+      paymentAmount = payableIdx === payableCount - 1 ? equalShareLast : equalShare;
     }
+    if (!m._isCheckpoint) payableIdx++;
 
     // Determine document mode: required (hard block), optional (warn), none (pass)
     const docMode = typeof m.document_mode === "string" ? m.document_mode : "none";
@@ -919,7 +930,7 @@ async function createMilestones(body: Record<string, unknown>) {
       optional_documents: optionalDocs,
       document_mode: docMode,
       assigned_to: m.assigned_to ? String(m.assigned_to) : null,
-      is_payment_milestone: Boolean(m.is_payment_milestone),
+      is_payment_milestone: m._isPayment,
       payment_amount: paymentAmount,
       estimated_days: estimatedDays,
     };
