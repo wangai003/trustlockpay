@@ -707,7 +707,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fractional escrow fee trickle (from pre-paid escrow fee pool)
+      // Fractional escrow fee: 1% of TOTAL principal, split across payment milestones
       const { count: paymentMilestoneCount } = await supabase
         .from("transaction_milestones")
         .select("id", { count: "exact", head: true })
@@ -715,8 +715,8 @@ Deno.serve(async (req) => {
         .gt("payment_amount", 0);
 
       const pmCount = paymentMilestoneCount || 1;
-      const totalPrePaidEscrowFee = round(tx.amount * (FEE_RATES.escrow_service / 100));
-      const fractionalFee = round(totalPrePaidEscrowFee / pmCount);
+      const totalEscrowFee = round(tx.amount * (FEE_RATES.escrow_service / 100));
+      const fractionalFee = round(totalEscrowFee / pmCount);
 
       const { count: completedPaymentMilestones } = await supabase
         .from("transaction_milestones")
@@ -729,11 +729,11 @@ Deno.serve(async (req) => {
       const isLastPaymentMilestone = (priorCompleted + 1) === pmCount;
       const feesAlreadyTrickled = round(fractionalFee * priorCompleted);
       const escrowFeeTrickle = isLastPaymentMilestone
-        ? round(totalPrePaidEscrowFee - feesAlreadyTrickled)
+        ? round(totalEscrowFee - feesAlreadyTrickled)
         : fractionalFee;
 
-      // Vendor receives 100% of milestone amount (no deductions from principal!)
-      const vendorNet = milestoneAmount;
+      // Vendor receives: milestone amount minus their fractional escrow fee
+      const vendorNet = round(milestoneAmount - escrowFeeTrickle);
 
       const transfers = [];
 
