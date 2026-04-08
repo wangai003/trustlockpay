@@ -1071,6 +1071,7 @@ const MilestoneWorkOrderPanel = ({
                         tradeScope={tradeScope}
                         industrySuggestions={getExternalFeeSuggestions(industry || "")}
                         isTestnet={isTestnet}
+                        onFeeStatusChange={(info) => setMilestoneExternalFees(prev => ({ ...prev, [idx]: info }))}
                       />
                     )}
                     {/* Admin: show external fees read-only */}
