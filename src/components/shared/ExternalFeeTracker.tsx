@@ -43,6 +43,8 @@ interface ExternalFeeTrackerProps {
   readOnly?: boolean;
   /** Called when entries change — parent can use for fee rollup */
   onTotalChange?: (total: number, currency: string) => void;
+  /** Called with unverified fee info for soft-gate checks */
+  onFeeStatusChange?: (info: { total: number; unverified: number; unverifiedAmount: number }) => void;
 }
 
 const CURRENCIES = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "GHS", "XOF", "CNY", "INR"];
