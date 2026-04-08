@@ -50,3 +50,8 @@ export const INDUSTRY_LABELS: Record<string, string> = Object.fromEntries(
 export function isMilestoneIndustryByKey(key: string): boolean {
   return ALL_INDUSTRIES.find((i) => i.value === key)?.milestone ?? false;
 }
+
+/** Check if an industry requires GPS capture for milestone completion */
+export function isGpsRequiredByIndustry(key: string): boolean {
+  return ALL_INDUSTRIES.find((i) => i.value === key)?.gpsRequired ?? false;
+}
