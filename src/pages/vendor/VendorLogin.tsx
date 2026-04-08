@@ -113,7 +113,6 @@ const VendorLogin = () => {
       return;
     }
 
-    localStorage.setItem("tl_vendor_auth", "true");
     localStorage.setItem("tl_vendor_network", "mainnet");
     localStorage.removeItem("tl_vendor_failed");
     localStorage.removeItem("tl_vendor_lockout");
