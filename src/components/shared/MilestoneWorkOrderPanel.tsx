@@ -542,8 +542,20 @@ const MilestoneWorkOrderPanel = ({
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
 
-  const handleReleaseMilestone = async (milestoneId: string) => {
+  const handleReleaseMilestone = async (milestoneId: string, bypassFeeGate = false) => {
     if (isTestnet) { onTestnetRelease?.(milestoneId); return; }
+
+    // Soft gate: check for unverified external fees on this milestone
+    if (!bypassFeeGate) {
+      const msIdx = milestones.findIndex((m: any) => m.id === milestoneId);
+      const feeInfo = milestoneExternalFees[msIdx];
+      if (feeInfo && feeInfo.unverified > 0) {
+        const msTitle = (milestones[msIdx] as any)?.title || `Stage #${msIdx + 1}`;
+        setPendingFeeGateRelease({ id: milestoneId, title: msTitle, unverifiedCount: feeInfo.unverified, unverifiedTotal: feeInfo.unverifiedAmount });
+        return;
+      }
+    }
+
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     await releaseMilestonePayment.mutateAsync({ milestoneId, userId });
