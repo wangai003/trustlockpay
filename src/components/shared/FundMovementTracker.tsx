@@ -15,7 +15,11 @@ export type FundFlowType =
   | "buyer_release"     // Buyer authorizing release to vendor
   | "payout_crypto_direct"  // Polygon direct
   | "payout_crypto_bridge"  // Non-Polygon via processor
-  | "milestone_release";    // Milestone fractional release (fractional 1%)
+  | "milestone_release"     // Milestone fractional release (fractional 1%)
+  | "refund_stripe"         // Refund via Stripe reverse charge
+  | "refund_crypto"         // Refund via direct USDC return
+  | "refund_offramp"        // Refund via Transak/Coinbase off-ramp
+  | "refund_manual";        // Refund queued for manual admin processing
 
 interface FundFlowStep {
   label: string;
