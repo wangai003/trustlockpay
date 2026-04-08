@@ -701,6 +701,11 @@ const VendorTransactions = () => {
           />
         );
       })()}
+      <PayoutGuideWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        scenario={wizardScenario}
+      />
     </div>
   );
 };
