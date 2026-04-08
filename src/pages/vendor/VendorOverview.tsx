@@ -144,9 +144,9 @@ const VendorOverview = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Active Escrows", value: String(activeEscrows), icon: Clock, change: "+3 this week" },
-            { label: "Total Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
-            { label: "Pending Payout", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
-            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((orderCount / planState.orderMax) * 100)}% of limit used` },
+            { label: "Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
+            { label: "Pending", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
+            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited" : `${Math.round((orderCount / planState.orderMax) * 100)}% used` },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
