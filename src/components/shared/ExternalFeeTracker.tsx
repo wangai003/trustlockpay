@@ -60,6 +60,7 @@ const ExternalFeeTracker = ({
   existingEntries = [],
   readOnly = false,
   onTotalChange,
+  onFeeStatusChange,
 }: ExternalFeeTrackerProps) => {
   const [entries, setEntries] = useState<ExternalFeeEntry[]>(existingEntries);
   const [showForm, setShowForm] = useState(false);
