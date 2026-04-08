@@ -47,10 +47,10 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Handmade Bead Necklace Set", qty: 2, unit: "sets", unitPrice: 60 },
     ],
     milestones: [
-      { title: "Payment Confirmed", percentage: 20 },
-      { title: "Order Prepared & Packed", percentage: 30 },
-      { title: "Shipped (Tracking Provided)", percentage: 20, documentGate: "Shipping Receipt" },
-      { title: "Delivered & Confirmed", percentage: 30 },
+      { title: "Payment Confirmed", percentage: 0 },
+      { title: "Order Prepared & Packed", percentage: 35 },
+      { title: "Shipped (Tracking Provided)", percentage: 30, documentGate: "Shipping Receipt" },
+      { title: "Delivered & Confirmed", percentage: 35 },
     ],
     documents: [
       { name: "Commercial Invoice", required: true, owner: "vendor" },
