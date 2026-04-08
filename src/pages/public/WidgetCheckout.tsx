@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake, Globe, MapPin, Phone, Wallet, Coins } from "lucide-react";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import { type InternationalRegion, getProcessorForRegion } from "@/lib/internationalBankData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,6 +58,18 @@ const WidgetCheckout = () => {
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  // Map selected provider to legacy paymentMethod string
+  const derivedPaymentMethod = useMemo(() => {
+    if (!selectedProvider) return form.paymentMethod;
+    const { category, processor, id } = selectedProvider;
+    if (category === "crypto_wallet") return processor === "coinbase" ? "usdc" : id.includes("usdt") ? "usdt" : "usdc";
+    if (category === "mobile_money") return "mobile_money";
+    if (category === "bank_account") return "bank_transfer";
+    if (id === "paypal") return "card"; // PayPal via Stripe
+    return "card";
+  }, [selectedProvider, form.paymentMethod]);
 
   // Resolve milestone templates for this industry
   const isMilestoneIndustry = isMilestoneIndustryByKey(vendor.industry);
@@ -177,7 +191,8 @@ const WidgetCheckout = () => {
           buyerEmail: form.buyerEmail,
           buyerName: form.buyerName,
           buyerLocation: form.buyerCountry,
-          paymentMethod: form.paymentMethod,
+          paymentMethod: derivedPaymentMethod,
+          ...(selectedProvider ? { providerDetails: { id: selectedProvider.id, name: selectedProvider.name, category: selectedProvider.category, processor: selectedProvider.processor } } : {}),
           industry: vendor.industry,
           orderType: "simple",
           buyerEntityType: form.buyerEntityType,
@@ -215,10 +230,10 @@ const WidgetCheckout = () => {
   };
 
   const baseAmount = parseFloat(form.amount || "0");
-  const isCryptoPayment = form.paymentMethod === "usdc" || form.paymentMethod === "usdt";
+  const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
   const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
-    : form.paymentMethod === "mobile_money" ? "mobile_money"
-    : form.paymentMethod === "bank_transfer" ? "bank_transfer"
+    : derivedPaymentMethod === "mobile_money" ? "mobile_money"
+    : derivedPaymentMethod === "bank_transfer" ? "bank_transfer"
     : "card";
   const selectedProcessorId = selectProcessor(form.buyerCountry, isCryptoPayment, undefined, feeMethod);
   const selectedProcessor = PROCESSORS[selectedProcessorId];
@@ -521,76 +536,26 @@ const WidgetCheckout = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => { setPayMode("africa"); setForm(p => ({ ...p, paymentMethod: "mobile_money" })); }}
+                    onClick={() => { setPayMode("africa"); setSelectedProvider(null); }}
                     className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
                   >
                     <MapPin className="w-3.5 h-3.5" /> Africa
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setPayMode("international"); setForm(p => ({ ...p, paymentMethod: "card" })); }}
+                    onClick={() => { setPayMode("international"); setSelectedProvider(null); }}
                     className={`flex items-center justify-center gap-2 p-2 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
                   >
                     <Globe className="w-3.5 h-3.5" /> International
                   </button>
                 </div>
 
-                {/* Payment methods based on mode */}
-                {payMode === "africa" ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
-                      { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
-                      { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
-                      { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
-                    ].map(pm => (
-                      <button
-                        key={pm.key}
-                        type="button"
-                        onClick={() => setForm(p => ({ ...p, paymentMethod: pm.key }))}
-                        className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                      >
-                        <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-[11px] font-medium">{pm.label}</span>
-                        <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {[
-                        { key: "card", label: "Card", icon: CreditCard, sub: "Visa / MC" },
-                        { key: "bank_transfer", label: "Bank", icon: Building2, sub: "Checking / Savings" },
-                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
-                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
-                      ].map(pm => (
-                        <button
-                          key={pm.key}
-                          type="button"
-                          onClick={() => { setForm(p => ({ ...p, paymentMethod: pm.key })); if (pm.key !== "bank_transfer") { setIntlBankSelected(null); setIntlBankRegion(null); } }}
-                          className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors ${form.paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                        >
-                          <pm.icon className={`w-4 h-4 ${form.paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                          <span className="text-[11px] font-medium">{pm.label}</span>
-                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* International Bank Selector */}
-                    {form.paymentMethod === "bank_transfer" && (
-                      <InternationalBankSelector
-                        selectedBank={intlBankSelected}
-                        onBankSelected={(bank, region) => {
-                          setIntlBankSelected(bank);
-                          setIntlBankRegion(region);
-                        }}
-                        onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
-                      />
-                    )}
-                  </>
-                )}
+                {/* Searchable Payment Provider */}
+                <ProviderSearch
+                  mode={payMode === "africa" ? "local" : "diaspora"}
+                  onSelect={(p) => { setSelectedProvider(p); setIntlBankSelected(null); setIntlBankRegion(null); }}
+                  selected={selectedProvider}
+                />
 
                 {/* Fee breakdown */}
                 <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 text-xs">

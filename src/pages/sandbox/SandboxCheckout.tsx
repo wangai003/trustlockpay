@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,6 +6,8 @@ import {
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
   Phone, Building2
 } from "lucide-react";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +48,18 @@ const SandboxCheckout = () => {
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  // Map selected provider to legacy paymentMethod string
+  const derivedPaymentMethod = useMemo(() => {
+    if (!selectedProvider) return paymentMethod;
+    const { category, processor, id } = selectedProvider;
+    if (category === "crypto_wallet") return processor === "coinbase" ? "usdc" : id.includes("usdt") ? "usdt" : "usdc";
+    if (category === "mobile_money") return "mobile_money";
+    if (category === "bank_account") return "bank_transfer";
+    if (id === "paypal") return "card";
+    return "card";
+  }, [selectedProvider, paymentMethod]);
 
   // Compliance
   const [complianceRunning, setComplianceRunning] = useState(false);
@@ -81,12 +95,12 @@ const SandboxCheckout = () => {
   const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
-  const isCryptoPayment = paymentMethod === "usdc" || paymentMethod === "usdt";
+  const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
   const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
-    : paymentMethod === "mobile_money" ? "mobile_money"
-    : paymentMethod === "bank_transfer" ? "bank_transfer"
+    : derivedPaymentMethod === "mobile_money" ? "mobile_money"
+    : derivedPaymentMethod === "bank_transfer" ? "bank_transfer"
     : "card";
   const selectedProcessorId = selectProcessor(buyerCountry, isCryptoPayment, undefined, feeMethod);
   const selectedProcessor = PROCESSORS[selectedProcessorId];
@@ -132,7 +146,7 @@ const SandboxCheckout = () => {
     setTimeout(() => {
       const newOrder = createSandboxOrder(
         config, buyerName.trim(), buyerEmail.trim(),
-        paymentMethod === "card" ? "Card (Visa ****4242)" : paymentMethod === "usdc" ? "USDC (Polygon)" : "USDT (Polygon)"
+        selectedProvider ? selectedProvider.name : derivedPaymentMethod === "card" ? "Card (Visa ****4242)" : derivedPaymentMethod === "usdc" ? "USDC (Polygon)" : "USDT (Polygon)"
       );
       setOrder(newOrder);
       setStep("confirmation");
@@ -509,73 +523,25 @@ const SandboxCheckout = () => {
                   {/* Dual-Mode Toggle: Africa / International */}
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => { setPayMode("africa"); setPaymentMethod("mobile_money"); }}
+                      onClick={() => { setPayMode("africa"); setSelectedProvider(null); }}
                       className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "africa" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
                     >
                       <MapPin className="w-4 h-4" /> Africa
                     </button>
                     <button
-                      onClick={() => { setPayMode("international"); setPaymentMethod("card"); }}
+                      onClick={() => { setPayMode("international"); setSelectedProvider(null); }}
                       className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-xs font-medium ${payMode === "international" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground/40"}`}
                     >
                       <Globe className="w-4 h-4" /> International
                     </button>
                   </div>
 
-                  {/* Payment methods based on mode */}
-                  {payMode === "africa" ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { key: "mobile_money", label: "Mobile Money", icon: Phone, sub: "M-Pesa, MTN, Airtel" },
-                        { key: "bank_transfer", label: "Bank Transfer", icon: Building2, sub: "Local bank" },
-                        { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon" },
-                        { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon" },
-                      ].map(pm => (
-                        <button
-                          key={pm.key}
-                          onClick={() => setPaymentMethod(pm.key)}
-                          className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                        >
-                          <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                          <span className="text-xs font-medium">{pm.label}</span>
-                          <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {[
-                          { key: "card", label: "Card", icon: CreditCard, sub: "Visa / Mastercard" },
-                          { key: "bank_transfer", label: "Bank", icon: Building2, sub: "Checking / Savings" },
-                          { key: "usdc", label: "USDC", icon: Wallet, sub: "Polygon Network" },
-                          { key: "usdt", label: "USDT", icon: Wallet, sub: "Polygon Network" },
-                        ].map(pm => (
-                          <button
-                            key={pm.key}
-                            onClick={() => { setPaymentMethod(pm.key); if (pm.key !== "bank_transfer") { setIntlBankSelected(null); setIntlBankRegion(null); } }}
-                            className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${paymentMethod === pm.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                          >
-                            <pm.icon className={`w-5 h-5 ${paymentMethod === pm.key ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="text-xs font-medium">{pm.label}</span>
-                            <span className="text-[9px] text-muted-foreground">{pm.sub}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* International Bank Selector */}
-                      {paymentMethod === "bank_transfer" && (
-                        <InternationalBankSelector
-                          selectedBank={intlBankSelected}
-                          onBankSelected={(bank, region) => {
-                            setIntlBankSelected(bank);
-                            setIntlBankRegion(region);
-                          }}
-                          onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
-                        />
-                      )}
-                    </>
-                  )}
+                  {/* Searchable Payment Provider */}
+                  <ProviderSearch
+                    mode={payMode === "africa" ? "local" : "diaspora"}
+                    onSelect={(p) => { setSelectedProvider(p); setIntlBankSelected(null); setIntlBankRegion(null); }}
+                    selected={selectedProvider}
+                  />
 
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
