@@ -497,6 +497,26 @@ const VendorTransactions = () => {
                                     </Button>
                                   </TLId>
                                 )}
+                                {tx.status === "released" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-[10px] h-7 px-2 gap-1"
+                                    onClick={() => { setWizardScenario("vendor_full_release"); setWizardOpen(true); }}
+                                  >
+                                    <Wallet className="w-3 h-3" /> How do I get paid?
+                                  </Button>
+                                )}
+                                {tx.status === "disputed" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-[10px] h-7 px-2 gap-1"
+                                    onClick={() => { setWizardScenario("vendor_split_release"); setWizardOpen(true); }}
+                                  >
+                                    <Info className="w-3 h-3" /> Payout Guide
+                                  </Button>
+                                )}
                                 <TLId code={dynTLId("V", "TX", row, "BTN-VIEW")} inline>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
                                 </TLId>
