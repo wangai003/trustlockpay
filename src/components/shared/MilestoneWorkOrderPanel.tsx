@@ -26,6 +26,7 @@ import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 import {
   useAddTransactionObserver,
   useCreateMilestones,
@@ -371,6 +372,7 @@ const MilestoneWorkOrderPanel = ({
   const [skippedMilestoneIndices, setSkippedMilestoneIndices] = useState<number[]>([]);
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+  const { anchor: anchorProof } = useBlockchainAnchor();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
@@ -452,6 +454,22 @@ const MilestoneWorkOrderPanel = ({
         gps_accuracy: geo.accuracy, gps_captured_at: geo.capturedAt,
       } as any).eq("id", milestoneId);
       toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+
+      // Anchor GPS proof to blockchain hash chain
+      if (transactionId) {
+        try {
+          await anchorProof(transactionId, "gps_verification", {
+            milestoneId,
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+            accuracy: geo.accuracy,
+            capturedAt: geo.capturedAt,
+            capturedBy: role,
+          });
+        } catch (e) {
+          console.warn("GPS blockchain anchor queued but failed to submit:", e);
+        }
+      }
     }
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
