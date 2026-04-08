@@ -144,19 +144,19 @@ const VendorOverview = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: "Active Escrows", value: String(activeEscrows), icon: Clock, change: "+3 this week" },
-            { label: "Total Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
-            { label: "Pending Payout", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
-            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited orders" : `${Math.round((orderCount / planState.orderMax) * 100)}% of limit used` },
+            { label: "Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
+            { label: "Pending", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
+            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited" : `${Math.round((orderCount / planState.orderMax) * 100)}% used` },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <stat.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
                   </div>
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                  <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{stat.value}</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{stat.change}</p>
                 </CardContent>
               </Card>
             </motion.div>
