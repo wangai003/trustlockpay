@@ -611,7 +611,7 @@ async function releaseFunds(body: Record<string, unknown>) {
 
 async function refundBuyer(body: Record<string, unknown>) {
   const supabase = getSupabaseAdmin();
-  const { txId, refundReason, user_id } = body;
+  const { txId, refundReason, user_id, buyerPaymentDetails, originalProcessor, paymentCategory } = body;
   if (!txId) return errorResponse("txId is required", 400);
 
   const { data: tx, error: fetchErr } = await supabase
@@ -669,14 +669,39 @@ async function refundBuyer(body: Record<string, unknown>) {
     refunded_at: new Date().toISOString(),
   });
 
+  // ── Forward to wallet-routing-bridge with buyer payment details ──
+  let routingResult: Record<string, unknown> | null = null;
+  try {
+    const routingUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/wallet-routing-bridge`;
+    const routeRes = await fetch(routingUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        action: "route_refund",
+        transactionId: tx.id,
+        buyerWallet: (buyerPaymentDetails as Record<string, unknown>)?.wallet_address || "buyer_pending",
+        buyerPaymentDetails: buyerPaymentDetails || null,
+        originalProcessor: originalProcessor || tx.processor_id || null,
+        paymentCategory: paymentCategory || null,
+      }),
+    });
+    routingResult = await routeRes.json();
+  } catch (e) {
+    console.warn("Wallet routing forward failed (non-blocking):", e);
+  }
+
   return jsonResponse({
     success: true,
     refundPayout,
     refundReason: refundReason ?? null,
     feeBreakdown: {
       ...fees,
-      note: "Escrow fee waived on refunds. Only network gas charged.",
+      note: "Escrow fee waived on refunds. $0 fees to buyer. Gas covered by TrustLock.",
     },
+    refundDisbursement: routingResult,
   });
 }
 
