@@ -140,16 +140,22 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const method: PaymentMethod = useMemo(() => {
     if (!selectedProvider) return null;
     const cat = selectedProvider.category;
-    if (cat === "crypto_wallet") return "azix";
+    const proc = selectedProvider.processor;
+    if (cat === "crypto_wallet") {
+      if (proc === "coinbase") return "coinbase";
+      return "azix";
+    }
     if (cat === "mobile_money") return "mobile_money";
     if (cat === "bank_account") return "bank_transfer";
     if (cat === "digital_wallet") {
       if (selectedProvider.id === "apple_pay" || selectedProvider.id === "google_pay") return "applepay";
       if (selectedProvider.id === "coinbase_pay") return "coinbase";
-      // PayPal and others route through stripe as card-like
+      if (selectedProvider.id === "paypal") return "paypal";
       return "card";
     }
     if (cat === "card") return "card";
+    // Transak-routed providers
+    if (proc === "transak") return "transak";
     return "card";
   }, [selectedProvider]);
 
