@@ -546,10 +546,9 @@ const SandboxCheckout = () => {
                   {/* International Bank Selector — shown when bank_account provider selected in international mode */}
                   {payMode === "international" && selectedProvider?.category === "bank_account" && (
                     <InternationalBankSelector
-                      onSelectBank={(bankId) => setIntlBankSelected(bankId)}
-                      onSelectRegion={(region) => setIntlBankRegion(region)}
+                      onBankSelected={(bank, region) => { setIntlBankSelected(bank); setIntlBankRegion(region); }}
                       selectedBank={intlBankSelected}
-                      selectedRegion={intlBankRegion}
+                      onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
                     />
                   )}
 
