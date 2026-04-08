@@ -9,18 +9,37 @@ import {
   AZIX_WALLETS,
   getFeeRangeForType,
   BUYER_FEE_LINES,
+  regionMatch,
   type TransactionType,
   type ProcessorId,
 } from "@/lib/feeEngine";
 
 describe("Fee Engine V2", () => {
+  describe("regionMatch", () => {
+    it("matches exact ISO codes", () => {
+      expect(regionMatch(["US", "GB"], "US")).toBe(true);
+      expect(regionMatch(["US", "GB"], "NG")).toBe(false);
+    });
+
+    it("expands EU meta-tag to all 27 members", () => {
+      expect(regionMatch(["EU"], "DE")).toBe(true);
+      expect(regionMatch(["EU"], "FR")).toBe(true);
+      expect(regionMatch(["EU"], "GR")).toBe(true);
+      expect(regionMatch(["EU"], "NG")).toBe(false);
+    });
+
+    it("global matches everything", () => {
+      expect(regionMatch(["global"], "ZZ")).toBe(true);
+    });
+  });
+
   describe("selectProcessor (cost-optimized)", () => {
     it("returns direct for crypto transactions", () => {
       expect(selectProcessor("US", true)).toBe("direct");
     });
 
     it("picks cheapest processor for African countries (coinbase/transak at 1.5%)", () => {
-      const result = selectProcessor("Nigeria", false);
+      const result = selectProcessor("NG", false);
       expect(["coinbase", "transak"]).toContain(result);
     });
 
@@ -29,16 +48,17 @@ describe("Fee Engine V2", () => {
       expect(["coinbase", "transak"]).toContain(result);
     });
 
-    it("picks transak for regions where transak has global coverage (cheaper than stripe)", () => {
-      expect(selectProcessor("JP", false)).toBe("transak");
+    it("picks cheapest for JP (stripe/coinbase/transak all cover JP)", () => {
+      const result = selectProcessor("JP", false);
+      expect(["coinbase", "transak"]).toContain(result);
     });
 
     it("respects processorHint override", () => {
-      expect(selectProcessor("Nigeria", false, "stripe")).toBe("stripe");
+      expect(selectProcessor("NG", false, "stripe")).toBe("stripe");
     });
 
     it("selects by payment method — mobile_money excludes stripe", () => {
-      const result = selectProcessor("Kenya", false, undefined, "mobile_money");
+      const result = selectProcessor("KE", false, undefined, "mobile_money");
       expect(["coinbase", "transak"]).toContain(result);
     });
 
@@ -58,7 +78,7 @@ describe("Fee Engine V2", () => {
     });
 
     it("excludes stripe for mobile_money", () => {
-      const eligible = getEligibleProcessors("Nigeria", "mobile_money", "checkout_fiat");
+      const eligible = getEligibleProcessors("NG", "mobile_money", "checkout_fiat");
       const ids = eligible.map(e => e.id);
       expect(ids).not.toContain("stripe");
       expect(ids.length).toBeGreaterThan(0);
@@ -69,6 +89,19 @@ describe("Fee Engine V2", () => {
       const ids = eligible.map(e => e.id);
       expect(ids).toContain("direct");
       expect(eligible[0].id).toBe("direct");
+    });
+
+    it("EU member countries resolve correctly", () => {
+      const eligible = getEligibleProcessors("DE", "card", "checkout_fiat");
+      const ids = eligible.map(e => e.id);
+      expect(ids).toContain("stripe");
+      expect(ids).toContain("coinbase");
+    });
+
+    it("GCC countries resolve to transak", () => {
+      const eligible = getEligibleProcessors("QA", "card", "checkout_fiat");
+      const ids = eligible.map(e => e.id);
+      expect(ids).toContain("transak");
     });
   });
 
