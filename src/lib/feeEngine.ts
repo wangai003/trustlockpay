@@ -361,7 +361,7 @@ export function getEligibleProcessors(
   for (const [id, config] of Object.entries(PROCESSORS) as [ProcessorId, ProcessorConfig][]) {
     if (id === "direct" && paymentMethod !== "crypto") continue;
     if (paymentMethod === "crypto" && !config.supportsCrypto) continue;
-    const regionMatch = config.regions.includes(country) || config.regions.includes("global");
+    const isRegionMatch = regionMatch(config.regions, country);
     if (!regionMatch) continue;
     if (!config.supportedMethods.includes(paymentMethod)) continue;
 
