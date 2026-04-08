@@ -132,8 +132,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const serviceList = role === "vendor" ? VENDOR_SERVICES : role === "buyer" ? BUYER_SERVICES : ADMIN_SERVICES;
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
 
-  const [payMode, setPayMode] = useState<PayMode>("local");
-  const [method, setMethod] = useState<PaymentMethod>(null);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+  const [providerFields, setProviderFields] = useState<Record<string, string>>({});
   const [adminAction, setAdminAction] = useState<AdminAction>(null);
   const [service, setService] = useState(prefillService);
   const [amount, setAmount] = useState(prefillAmount);
