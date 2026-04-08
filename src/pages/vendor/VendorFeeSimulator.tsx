@@ -12,6 +12,7 @@ import { useTaxResolver } from "@/hooks/useTaxResolver";
 import { calculateBuyerFeeDisplay, selectProcessor, PROCESSORS, type ProcessorId } from "@/lib/feeEngine";
 
 const COUNTRY_OPTIONS = [
+  // Africa
   { code: "NG", name: "Nigeria" }, { code: "GH", name: "Ghana" }, { code: "KE", name: "Kenya" },
   { code: "ZA", name: "South Africa" }, { code: "TZ", name: "Tanzania" }, { code: "UG", name: "Uganda" },
   { code: "RW", name: "Rwanda" }, { code: "ET", name: "Ethiopia" }, { code: "EG", name: "Egypt" },
@@ -25,12 +26,39 @@ const COUNTRY_OPTIONS = [
   { code: "GN", name: "Guinea" }, { code: "BI", name: "Burundi" }, { code: "CD", name: "DR Congo" },
   { code: "LS", name: "Lesotho" }, { code: "SZ", name: "Eswatini" },
   { code: "DZ", name: "Algeria" }, { code: "TN", name: "Tunisia" }, { code: "LY", name: "Libya" },
-  { code: "GA", name: "Gabon" }, { code: "DJ", name: "Djibouti" },
-  { code: "US", name: "United States" }, { code: "GB", name: "United Kingdom" },
-  { code: "DE", name: "Germany" }, { code: "FR", name: "France" }, { code: "CA", name: "Canada" },
-  { code: "AU", name: "Australia" }, { code: "IN", name: "India" }, { code: "CN", name: "China" },
-  { code: "JP", name: "Japan" }, { code: "BR", name: "Brazil" }, { code: "AE", name: "UAE" },
-  { code: "SA", name: "Saudi Arabia" }, { code: "SG", name: "Singapore" }, { code: "MX", name: "Mexico" },
+  { code: "GA", name: "Gabon" }, { code: "DJ", name: "Djibouti" }, { code: "SD", name: "Sudan" },
+  { code: "SS", name: "South Sudan" }, { code: "ER", name: "Eritrea" }, { code: "SO", name: "Somalia" },
+  { code: "CF", name: "Central African Republic" }, { code: "TD", name: "Chad" },
+  { code: "CG", name: "Congo Republic" }, { code: "GQ", name: "Equatorial Guinea" },
+  { code: "GW", name: "Guinea-Bissau" }, { code: "CV", name: "Cape Verde" },
+  { code: "MR", name: "Mauritania" }, { code: "KM", name: "Comoros" },
+  { code: "SC", name: "Seychelles" }, { code: "ST", name: "São Tomé and Príncipe" },
+  // Americas
+  { code: "US", name: "United States" }, { code: "CA", name: "Canada" }, { code: "MX", name: "Mexico" },
+  { code: "BR", name: "Brazil" }, { code: "AR", name: "Argentina" }, { code: "CO", name: "Colombia" },
+  { code: "CL", name: "Chile" }, { code: "PE", name: "Peru" }, { code: "UY", name: "Uruguay" },
+  { code: "PY", name: "Paraguay" },
+  // Europe
+  { code: "GB", name: "United Kingdom" }, { code: "DE", name: "Germany" }, { code: "FR", name: "France" },
+  { code: "IT", name: "Italy" }, { code: "ES", name: "Spain" }, { code: "NL", name: "Netherlands" },
+  { code: "BE", name: "Belgium" }, { code: "AT", name: "Austria" }, { code: "PT", name: "Portugal" },
+  { code: "IE", name: "Ireland" }, { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" },
+  { code: "FI", name: "Finland" }, { code: "PL", name: "Poland" }, { code: "HU", name: "Hungary" },
+  { code: "LU", name: "Luxembourg" }, { code: "GR", name: "Greece" }, { code: "CZ", name: "Czech Republic" },
+  { code: "RO", name: "Romania" }, { code: "BG", name: "Bulgaria" }, { code: "HR", name: "Croatia" },
+  { code: "SK", name: "Slovakia" }, { code: "SI", name: "Slovenia" }, { code: "LT", name: "Lithuania" },
+  { code: "LV", name: "Latvia" }, { code: "EE", name: "Estonia" }, { code: "MT", name: "Malta" },
+  { code: "CY", name: "Cyprus" }, { code: "TR", name: "Turkey" },
+  // Middle East
+  { code: "AE", name: "UAE" }, { code: "SA", name: "Saudi Arabia" }, { code: "QA", name: "Qatar" },
+  { code: "KW", name: "Kuwait" }, { code: "BH", name: "Bahrain" }, { code: "OM", name: "Oman" },
+  { code: "IL", name: "Israel" },
+  // Asia-Pacific
+  { code: "IN", name: "India" }, { code: "CN", name: "China" }, { code: "JP", name: "Japan" },
+  { code: "SG", name: "Singapore" }, { code: "AU", name: "Australia" }, { code: "NZ", name: "New Zealand" },
+  { code: "KR", name: "South Korea" }, { code: "MY", name: "Malaysia" }, { code: "TH", name: "Thailand" },
+  { code: "ID", name: "Indonesia" }, { code: "PH", name: "Philippines" }, { code: "VN", name: "Vietnam" },
+  { code: "PK", name: "Pakistan" }, { code: "BD", name: "Bangladesh" }, { code: "LK", name: "Sri Lanka" },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const CATEGORIES = [
