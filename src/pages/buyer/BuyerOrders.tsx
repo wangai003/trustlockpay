@@ -367,6 +367,11 @@ const BuyerOrders = () => {
             />
           ))}
         </div>
+        <PayoutGuideWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          scenario={wizardScenario}
+        />
       </div>
     </div>
   );
