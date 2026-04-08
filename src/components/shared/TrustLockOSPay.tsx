@@ -132,8 +132,30 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const serviceList = role === "vendor" ? VENDOR_SERVICES : role === "buyer" ? BUYER_SERVICES : ADMIN_SERVICES;
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
 
+  const [payMode, setPayMode] = useState<PayMode>("local");
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
+
+  // Derive legacy `method` from selectedProvider for fee engine / routing compatibility
+  const method: PaymentMethod = useMemo(() => {
+    if (!selectedProvider) return null;
+    const cat = selectedProvider.category;
+    if (cat === "crypto_wallet") return "azix";
+    if (cat === "mobile_money") return "mobile_money";
+    if (cat === "bank_account") return "bank_transfer";
+    if (cat === "digital_wallet") {
+      if (selectedProvider.id === "apple_pay" || selectedProvider.id === "google_pay") return "applepay";
+      if (selectedProvider.id === "coinbase_pay") return "coinbase";
+      // PayPal and others route through stripe as card-like
+      return "card";
+    }
+    if (cat === "card") return "card";
+    return "card";
+  }, [selectedProvider]);
+
+  const setMethod = (m: PaymentMethod) => {
+    if (!m) { setSelectedProvider(null); setProviderFields({}); }
+  };
   const [adminAction, setAdminAction] = useState<AdminAction>(null);
   const [service, setService] = useState(prefillService);
   const [amount, setAmount] = useState(prefillAmount);
