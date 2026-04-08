@@ -11,6 +11,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import { type PaymentProvider, PRIVACY_DISCLAIMER } from "@/lib/paymentProviders";
+import { AFRICAN_CURRENCIES } from "@/lib/africanCurrencies";
 import { FEE_DISCLOSURE_SHORT, AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,17 +21,8 @@ import { cn } from "@/lib/utils";
 
 type PayMode = "local" | "diaspora";
 
-const AFRICAN_CURRENCIES: Record<string, { code: string; name: string; symbol: string; rate: number }> = {
-  NG: { code: "NGN", name: "Nigerian Naira", symbol: "₦", rate: 1580.00 },
-  KE: { code: "KES", name: "Kenyan Shilling", symbol: "KSh", rate: 153.50 },
-  GH: { code: "GHS", name: "Ghanaian Cedi", symbol: "GH₵", rate: 15.80 },
-  ZA: { code: "ZAR", name: "South African Rand", symbol: "R", rate: 18.25 },
-  CM: { code: "XAF", name: "CFA Franc (CEMAC)", symbol: "FCFA", rate: 610.00 },
-  EG: { code: "EGP", name: "Egyptian Pound", symbol: "E£", rate: 50.85 },
-  UG: { code: "UGX", name: "Ugandan Shilling", symbol: "USh", rate: 3780.00 },
-  TZ: { code: "TZS", name: "Tanzanian Shilling", symbol: "TSh", rate: 2650.00 },
-  RW: { code: "RWF", name: "Rwandan Franc", symbol: "FRw", rate: 1350.00 },
-};
+
+
 
 const TrustLockDualCheckout = () => {
   const [payMode, setPayMode] = useState<PayMode>("diaspora");

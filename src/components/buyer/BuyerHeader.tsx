@@ -10,6 +10,7 @@ import LanguageSelector from "@/components/shared/LanguageSelector";
 import TLId from "@/components/shared/TLId";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const BuyerHeader = ({ title }: { title: string }) => {
   const { networkMode, setNetworkMode, isTestnet, buyer } = useBuyer();
@@ -17,7 +18,8 @@ const BuyerHeader = ({ title }: { title: string }) => {
   const { user } = useAuth();
   const unread = useUnreadMessages("buyer", user?.id);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");
     navigate("/trustlock/buyer/login");

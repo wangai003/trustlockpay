@@ -73,7 +73,6 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
     if (!authLoading && user && !localStorage.getItem("tl_vendor_network")) {
       setNetworkModeState("mainnet");
       localStorage.setItem("tl_vendor_network", "mainnet");
-      localStorage.setItem("tl_vendor_auth", "true");
     }
   }, [authLoading, user]);
 

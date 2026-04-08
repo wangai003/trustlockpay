@@ -9,6 +9,7 @@ import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
 import TLId from "@/components/shared/TLId";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 import { useSidebarBadges } from "@/hooks/useSidebarBadges";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/buyer", tip: "Dashboard summary with order status and alerts", tlId: "TL-B-SB-NAV-OVERVIEW", badgeKey: null as string | null },
@@ -41,7 +42,8 @@ const BuyerSidebar = () => {
     return () => window.removeEventListener("tl-open-sidebar", handler);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("tl_buyer_auth");
     localStorage.removeItem("tl_buyer_network");
     navigate("/trustlock/buyer/login");

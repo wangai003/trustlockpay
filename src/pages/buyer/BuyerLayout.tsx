@@ -39,8 +39,25 @@ const BuyerLayoutInner = () => {
 };
 
 const BuyerLayout = () => {
-  const isAuth = localStorage.getItem("tl_buyer_auth") === "true";
-  if (!isAuth) return <Navigate to="/trustlock/buyer/login" replace />;
+  const { user, loading } = useAuth();
+
+  // Allow testnet access via localStorage (demo environment only)
+  const isTestnetAuth = localStorage.getItem("tl_buyer_network") === "testnet" &&
+    localStorage.getItem("tl_buyer_auth") === "true";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Mainnet: require real Supabase session. Testnet: allow localStorage fallback.
+  if (!user && !isTestnetAuth) {
+    return <Navigate to="/trustlock/buyer/login" replace />;
+  }
+
   return <BuyerLayoutInner />;
 };
 
