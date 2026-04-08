@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2,
   UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning,
-  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe,
+  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe, Receipt,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -367,6 +367,8 @@ const MilestoneWorkOrderPanel = ({
   const [dismissedObserverPrompts, setDismissedObserverPrompts] = useState<Set<string>>(new Set());
   const [pendingDeleteMilestone, setPendingDeleteMilestone] = useState<{ id: string; title: string } | null>(null);
   const [pendingRestoreMilestone, setPendingRestoreMilestone] = useState<{ id: string; title: string } | null>(null);
+  const [pendingFeeGateRelease, setPendingFeeGateRelease] = useState<{ id: string; title: string; unverifiedCount: number; unverifiedTotal: number } | null>(null);
+  const [milestoneExternalFees, setMilestoneExternalFees] = useState<Record<number, { total: number; unverified: number; unverifiedAmount: number }>>({});
   const [docTypeSelections, setDocTypeSelections] = useState<Record<string, string>>({});
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
   const [reconciliationComplete, setReconciliationComplete] = useState(false);
@@ -540,8 +542,20 @@ const MilestoneWorkOrderPanel = ({
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
 
-  const handleReleaseMilestone = async (milestoneId: string) => {
+  const handleReleaseMilestone = async (milestoneId: string, bypassFeeGate = false) => {
     if (isTestnet) { onTestnetRelease?.(milestoneId); return; }
+
+    // Soft gate: check for unverified external fees on this milestone
+    if (!bypassFeeGate) {
+      const msIdx = milestones.findIndex((m: any) => m.id === milestoneId);
+      const feeInfo = milestoneExternalFees[msIdx];
+      if (feeInfo && feeInfo.unverified > 0) {
+        const msTitle = (milestones[msIdx] as any)?.title || `Stage #${msIdx + 1}`;
+        setPendingFeeGateRelease({ id: milestoneId, title: msTitle, unverifiedCount: feeInfo.unverified, unverifiedTotal: feeInfo.unverifiedAmount });
+        return;
+      }
+    }
+
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     await releaseMilestonePayment.mutateAsync({ milestoneId, userId });
@@ -1057,6 +1071,7 @@ const MilestoneWorkOrderPanel = ({
                         tradeScope={tradeScope}
                         industrySuggestions={getExternalFeeSuggestions(industry || "")}
                         isTestnet={isTestnet}
+                        onFeeStatusChange={(info) => setMilestoneExternalFees(prev => ({ ...prev, [idx]: info }))}
                       />
                     )}
                     {/* Admin: show external fees read-only */}
@@ -1179,6 +1194,17 @@ const MilestoneWorkOrderPanel = ({
                               </p>
                             </div>
                           </div>
+                          {milestoneExternalFees[idx]?.unverified > 0 && (
+                            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs">
+                              <Receipt className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-medium text-destructive">{milestoneExternalFees[idx].unverified} unverified external fee(s)</p>
+                                <p className="text-destructive/70 text-[10px] mt-0.5">
+                                  ${milestoneExternalFees[idx].unverifiedAmount.toLocaleString()} in third-party costs not yet confirmed by counterparty. You can still release, but both parties should reconcile offline fees first.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           <Button size="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" onClick={() => handleReleaseMilestone(ms.id)}>
                             <CheckCircle2 className="w-4 h-4 mr-2" /> Sign & Release Milestone
                           </Button>
@@ -1275,6 +1301,35 @@ const MilestoneWorkOrderPanel = ({
             if (error) toast.error("Failed to restore"); else toast.success(`"${pendingRestoreMilestone.title}" restored`);
             setPendingRestoreMilestone(null);
           }}>Restore</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    {/* External Fee Soft Gate Dialog */}
+    <AlertDialog open={!!pendingFeeGateRelease} onOpenChange={(open) => !open && setPendingFeeGateRelease(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-destructive" /> Unverified External Fees
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              <strong>{pendingFeeGateRelease?.title}</strong> has <strong>{pendingFeeGateRelease?.unverifiedCount}</strong> external fee(s) totaling <strong>${pendingFeeGateRelease?.unverifiedTotal.toLocaleString()}</strong> that have not been verified by the counterparty.
+            </p>
+            <p className="text-xs">
+              These are third-party costs (logistics, customs, insurance, etc.) logged against this milestone. It is recommended that both parties confirm all offline costs before releasing funds.
+            </p>
+            <p className="text-xs font-medium">
+              Are you sure you want to release funds without full fee reconciliation?
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Review Fees First</AlertDialogCancel>
+          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+            if (!pendingFeeGateRelease) return;
+            await handleReleaseMilestone(pendingFeeGateRelease.id, true);
+            setPendingFeeGateRelease(null);
+          }}>Release Anyway</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

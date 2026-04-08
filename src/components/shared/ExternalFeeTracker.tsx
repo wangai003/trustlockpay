@@ -43,6 +43,8 @@ interface ExternalFeeTrackerProps {
   readOnly?: boolean;
   /** Called when entries change — parent can use for fee rollup */
   onTotalChange?: (total: number, currency: string) => void;
+  /** Called with unverified fee info for soft-gate checks */
+  onFeeStatusChange?: (info: { total: number; unverified: number; unverifiedAmount: number }) => void;
 }
 
 const CURRENCIES = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "GHS", "XOF", "CNY", "INR"];
@@ -58,6 +60,7 @@ const ExternalFeeTracker = ({
   existingEntries = [],
   readOnly = false,
   onTotalChange,
+  onFeeStatusChange,
 }: ExternalFeeTrackerProps) => {
   const [entries, setEntries] = useState<ExternalFeeEntry[]>(existingEntries);
   const [showForm, setShowForm] = useState(false);
@@ -109,6 +112,13 @@ const ExternalFeeTracker = ({
   useEffect(() => {
     onTotalChange?.(totalExternal, primaryCurrency);
   }, [totalExternal, primaryCurrency, onTotalChange]);
+
+  // Notify parent of unverified fee status for soft-gate
+  useEffect(() => {
+    const unverifiedEntries = entries.filter(e => !e.verified_by_counterparty && !e.rejected);
+    const unverifiedAmount = unverifiedEntries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    onFeeStatusChange?.({ total: entries.length, unverified: unverifiedEntries.length, unverifiedAmount });
+  }, [entries, onFeeStatusChange]);
 
   const handleAddEntry = async () => {
     if (!newEntry.fee_label.trim()) { toast.error("Enter a fee label"); return; }
