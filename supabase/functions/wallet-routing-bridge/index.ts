@@ -821,7 +821,7 @@ Deno.serve(async (req) => {
         milestoneAmount,
         escrowFeeTrickle,
         vendorNet,
-        vendorReceives100Percent: true,
+        vendorReceivesPrincipalMinusFee: true,
         trickleToTransactionWallet: escrowFeeTrickle,
         allCompleted: !remaining?.length,
         transfers,
