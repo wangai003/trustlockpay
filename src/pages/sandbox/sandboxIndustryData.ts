@@ -320,3 +320,56 @@ export function claimSandboxOrder(orderNumber: string): SandboxLiveOrder | null 
 export function getSandboxExpiry(): Date {
   return new Date("2026-12-31T23:59:59Z");
 }
+
+/* ── Sandbox ↔ MockMilestone bridge for MilestoneWorkOrderPanel ── */
+
+import type { MockMilestone } from "@/hooks/useTestnetData";
+
+export function sandboxOrderToMockMilestones(order: SandboxLiveOrder): MockMilestone[] {
+  return order.milestones.map((m, i) => ({
+    id: `${order.id}-ms-${i}`,
+    transaction_id: order.id,
+    title: m.title,
+    description: m.documentGate ? `Document required: ${m.documentGate}` : m.title,
+    status: m.status === "completed" ? "completed" : m.status === "in_progress" ? "in_progress" : "pending",
+    is_payment_milestone: m.percentage > 0,
+    payment_percentage: m.percentage,
+    payment_amount: Math.round(order.subtotal * (m.percentage / 100) * 100) / 100,
+    payment_released: m.status === "completed" && m.percentage > 0,
+    uploaded_documents: [],
+    observer_id: null,
+    observer_name: null,
+    observer_email: null,
+    observer_access_token: null,
+    gps_latitude: null,
+    gps_longitude: null,
+    gps_accuracy: null,
+    gps_captured_at: null,
+    order_index: i,
+  }));
+}
+
+export function updateSandboxMilestoneStatus(orderId: string, milestoneId: string, status: MockMilestone["status"]) {
+  const orders = getSandboxLiveOrders();
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+  const idx = parseInt(milestoneId.split("-ms-")[1], 10);
+  if (isNaN(idx) || !order.milestones[idx]) return;
+
+  if (status === "completed") {
+    order.milestones[idx].status = "completed";
+    const nextPending = order.milestones.findIndex(m => m.status === "pending");
+    if (nextPending !== -1) {
+      order.milestones[nextPending].status = "in_progress";
+      order.status = "in_progress";
+    }
+    if (order.milestones.every(m => m.status === "completed")) {
+      order.status = "completed";
+    }
+  } else if (status === "in_progress") {
+    order.milestones[idx].status = "in_progress";
+    order.status = "in_progress";
+  }
+
+  saveOrders(orders);
+}
