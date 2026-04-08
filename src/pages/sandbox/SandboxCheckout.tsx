@@ -543,6 +543,15 @@ const SandboxCheckout = () => {
                     selected={selectedProvider}
                   />
 
+                  {/* International Bank Selector — shown when bank_account provider selected in international mode */}
+                  {payMode === "international" && selectedProvider?.category === "bank_account" && (
+                    <InternationalBankSelector
+                      onBankSelected={(bank, region) => { setIntlBankSelected(bank); setIntlBankRegion(region); }}
+                      selectedBank={intlBankSelected}
+                      onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                    />
+                  )}
+
                   <div className="bg-muted/50 p-3 rounded-lg space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
