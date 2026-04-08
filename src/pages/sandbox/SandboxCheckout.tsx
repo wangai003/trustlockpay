@@ -48,6 +48,18 @@ const SandboxCheckout = () => {
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  // Map selected provider to legacy paymentMethod string
+  const derivedPaymentMethod = useMemo(() => {
+    if (!selectedProvider) return paymentMethod;
+    const { category, processor, id } = selectedProvider;
+    if (category === "crypto_wallet") return processor === "coinbase" ? "usdc" : id.includes("usdt") ? "usdt" : "usdc";
+    if (category === "mobile_money") return "mobile_money";
+    if (category === "bank_transfer" || category === "international_bank") return "bank_transfer";
+    if (id === "paypal") return "card";
+    return "card";
+  }, [selectedProvider, paymentMethod]);
 
   // Compliance
   const [complianceRunning, setComplianceRunning] = useState(false);
