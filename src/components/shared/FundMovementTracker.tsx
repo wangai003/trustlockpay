@@ -15,7 +15,11 @@ export type FundFlowType =
   | "buyer_release"     // Buyer authorizing release to vendor
   | "payout_crypto_direct"  // Polygon direct
   | "payout_crypto_bridge"  // Non-Polygon via processor
-  | "milestone_release";    // Milestone fractional release (fractional 1%)
+  | "milestone_release"     // Milestone fractional release (fractional 1%)
+  | "refund_stripe"         // Refund via Stripe reverse charge
+  | "refund_crypto"         // Refund via direct USDC return
+  | "refund_offramp"        // Refund via Transak/Coinbase off-ramp
+  | "refund_manual";        // Refund queued for manual admin processing
 
 interface FundFlowStep {
   label: string;
@@ -94,7 +98,37 @@ const getFlowSteps = (
       return [
         { label: "Escrow Wallet", sublabel: "Funds verified and held", icon: Shield, status: "completed" },
         { label: "Full Refund", sublabel: "100% of escrowed principal — $0 fees", icon: Coins, status: "active" },
-        { label: "Buyer Account", sublabel: "Funds returned", icon: CheckCircle2, status: "pending" },
+        { label: "Refund Router", sublabel: "Auto-selects best return path for buyer", icon: Globe, status: "active" },
+        { label: "Buyer Account", sublabel: "Funds returned via original payment method", icon: CheckCircle2, status: "pending" },
+      ];
+
+    // ─── REFUND DISBURSEMENT PATHS ───
+    case "refund_stripe":
+      return [
+        { label: "Escrow Release", sublabel: "USDC unlocked from smart contract", icon: Shield, status: "completed" },
+        { label: "Stripe Refund API", sublabel: "Reverse charge on original payment", icon: CreditCard, status: "active" },
+        { label: "Buyer Card/Bank", sublabel: "Funds appear in 5-10 business days", icon: CheckCircle2, status: "pending" },
+      ];
+
+    case "refund_crypto":
+      return [
+        { label: "Escrow Release", sublabel: "USDC unlocked from smart contract", icon: Shield, status: "completed" },
+        { label: "On-Chain Transfer", sublabel: `USDC sent to buyer wallet — ${chain || "Polygon"}`, icon: Wallet, status: "active" },
+        { label: "Buyer Wallet", sublabel: "$0 fees — gas covered by TrustLock", icon: CheckCircle2, status: "pending" },
+      ];
+
+    case "refund_offramp":
+      return [
+        { label: "Escrow Release", sublabel: "USDC unlocked from smart contract", icon: Shield, status: "completed" },
+        { label: "Off-Ramp Conversion", sublabel: `${providerName || "Transak/Coinbase"} converts USDC → fiat`, icon: Globe, status: "active" },
+        { label: "Buyer Bank/Wallet", sublabel: `Fiat deposited (~1.5% conversion fee)`, icon: Building2, status: "pending" },
+      ];
+
+    case "refund_manual":
+      return [
+        { label: "Escrow Release", sublabel: "USDC unlocked from smart contract", icon: Shield, status: "completed" },
+        { label: "Admin Queue", sublabel: "Queued for manual processing", icon: Smartphone, status: "active" },
+        { label: "Buyer Account", sublabel: "Admin sends via bank/mobile money", icon: CheckCircle2, status: "pending" },
       ];
 
     case "payout_split":
