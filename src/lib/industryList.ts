@@ -7,6 +7,8 @@ export interface IndustryOption {
   value: string;
   label: string;
   milestone: boolean;
+  /** Whether GPS capture is mandatory for milestone completion */
+  gpsRequired: boolean;
 }
 
 export const ALL_INDUSTRIES: IndustryOption[] = [
