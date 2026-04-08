@@ -143,6 +143,7 @@ interface RoutingResult {
   escrowFee: number;
   taxAmount: number;
   taxType: string;
+  remittanceFee?: number;
   totalDeductions: number;
   transactionWalletRetains: number;
   escrowWalletReceives: number;
