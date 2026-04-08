@@ -357,12 +357,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const bankList = COUNTRY_BANKS[selectedCountry] || [];
   const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
-  // Map UI payment method → processor ID for API routing
+  // Map UI payment method → processor ID for API routing (prefer selectedProvider.processor)
   const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "direct" => {
+    if (selectedProvider?.processor) {
+      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "direct";
+    }
     if (m === "azix") return "direct";
     if (m === "coinbase") return "coinbase";
     if (m === "transak") return "transak";
-    if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak"; // Coinbase for Africa mobile money
+    if (m === "paypal") return "stripe";
+    if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak";
     if (m === "bank_transfer") return payMode === "local" ? "coinbase" : "stripe";
     return "stripe"; // card, applepay
   };
