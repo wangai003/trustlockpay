@@ -450,24 +450,23 @@ const MilestoneWorkOrderPanel = ({
     if (!userId) return toast.error("Sign in required");
 
     const gpsRequired = isGpsRequiredByIndustry(industry || "");
-    const geo = await capturePosition();
 
-    if (gpsRequired && !geo) {
-      toast.error(
-        "GPS location is required for this industry. Enable location services and try again.",
-        { duration: 6000 }
-      );
-      return; // Hard-block: cannot complete milestone without GPS
-    }
+    if (gpsRequired) {
+      const geo = await capturePosition();
+      if (!geo) {
+        toast.error(
+          "GPS location is required for this industry. Enable location services and try again.",
+          { duration: 6000 }
+        );
+        return; // Hard-block: cannot complete milestone without GPS
+      }
 
-    if (geo) {
       await supabase.from("transaction_milestones").update({
         gps_latitude: geo.latitude, gps_longitude: geo.longitude,
         gps_accuracy: geo.accuracy, gps_captured_at: geo.capturedAt,
       } as any).eq("id", milestoneId);
       toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
 
-      // Anchor GPS proof to blockchain hash chain
       if (transactionId) {
         try {
           await anchorProof(transactionId, "gps_verification", {
@@ -482,10 +481,8 @@ const MilestoneWorkOrderPanel = ({
           console.warn("GPS blockchain anchor queued but failed to submit:", e);
         }
       }
-    } else {
-      // GPS optional industry — user denied, log as unverified
-      toast.warning("Location not captured — milestone will be marked as unverified GPS", { duration: 4000 });
     }
+    // GPS-optional industries: no prompt, no capture — milestone proceeds without location data
 
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
