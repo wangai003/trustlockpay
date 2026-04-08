@@ -461,6 +461,17 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           };
         }
 
+        // Provider-level fields payload (from ProviderSearch fields)
+        const providerDetailsPayload: Record<string, unknown> = {};
+        if (selectedProvider && Object.keys(providerFields).length > 0) {
+          providerDetailsPayload.providerDetails = {
+            providerId: selectedProvider.id,
+            providerName: selectedProvider.name,
+            category: selectedProvider.category,
+            ...providerFields,
+          };
+        }
+
         const result = await processPayment.mutateAsync({
           action: "payment",
           service,
@@ -477,6 +488,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           buyer_country: selectedCountry || undefined,
           ...bankTransferPayload,
           ...mobileMoneyPayload,
+          ...providerDetailsPayload,
         });
 
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
