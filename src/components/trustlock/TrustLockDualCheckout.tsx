@@ -1,19 +1,22 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Shield, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2, MapPin, Globe } from "lucide-react";
+import { Shield, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2, MapPin, Globe, Smartphone } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProviderSearch from "@/components/shared/ProviderSearch";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
 import { type PaymentProvider, PRIVACY_DISCLAIMER } from "@/lib/paymentProviders";
 import { FEE_DISCLOSURE_SHORT, AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 type PayMode = "local" | "diaspora";
 
@@ -48,6 +51,9 @@ const TrustLockDualCheckout = () => {
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
+  const [useIntlBank, setUseIntlBank] = useState(false);
 
   const sampleAmountUsd = 292.50;
   const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
@@ -66,10 +72,46 @@ const TrustLockDualCheckout = () => {
     setSelectedProvider(null);
     setProviderFields({});
     setSelectedCountry("");
+    setUseIntlBank(false);
+    setIntlBankSelected(null);
+    setIntlBankRegion(null);
+  };
+
+  // ─── Input sanitization (matches OS Payout) ──────────────
+  const sanitizeField = (key: string, raw: string): string => {
+    if (key === "card_number") {
+      const digits = raw.replace(/\D/g, "").slice(0, 19);
+      return digits.replace(/(.{4})/g, "$1 ").trim();
+    }
+    if (key === "expiry" || key === "card_expiry") {
+      const digits = raw.replace(/\D/g, "").slice(0, 4);
+      if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      return digits;
+    }
+    if (key === "cvv" || key === "card_cvc") return raw.replace(/\D/g, "").slice(0, 4);
+    if (key === "phone_number") return raw.replace(/[^\d+\-\s]/g, "").slice(0, 20);
+    if (key === "bvn") return raw.replace(/\D/g, "").slice(0, 11);
+    if (key === "account_number") return raw.replace(/\D/g, "").slice(0, 20);
+    if (key === "routing_number") return raw.replace(/\D/g, "").slice(0, 9);
+    if (key === "branch_code") return raw.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+    if (key === "swift_bic") return raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 11);
+    if (key === "wallet_address") {
+      const cleaned = raw.replace(/[^a-fA-F0-9x]/g, "");
+      if (cleaned.length > 0 && !cleaned.startsWith("0x") && !cleaned.startsWith("0X") && /^[0-9a-fA-F]+$/.test(cleaned)) {
+        return `0x${cleaned}`.slice(0, 42);
+      }
+      return cleaned.slice(0, 42);
+    }
+    if (key === "email") return raw.trim().toLowerCase();
+    if (key === "cardholder" || key === "account_holder" || key === "account_name") {
+      return raw.replace(/[^a-zA-ZÀ-ÿ\s\-'.]/g, "").slice(0, 80);
+    }
+    return raw.slice(0, 100);
   };
 
   const handleFieldChange = (key: string, value: string) => {
-    setProviderFields((prev) => ({ ...prev, [key]: value }));
+    const sanitized = sanitizeField(key, value);
+    setProviderFields((prev) => ({ ...prev, [key]: sanitized }));
   };
 
   return (
@@ -186,48 +228,96 @@ const TrustLockDualCheckout = () => {
                 </div>
               )}
 
-              {/* Payment method selection with search (identical to OS Pay) */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {selectedProvider ? "Selected payment method" : "Choose payment method"}
-                </p>
-
-                <ProviderSearch
-                  mode={payMode === "local" ? "local" : "diaspora"}
-                  onSelect={setSelectedProvider}
-                  selected={selectedProvider}
-                />
-
-                {/* Provider-specific fields (same renderer as OS Pay) */}
-                {selectedProvider && selectedProvider.fields.length > 0 && (
-                  <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
-                    {selectedProvider.fields.map((field) => (
-                      <div key={field.key}>
-                        <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
-                        {field.type === "select" ? (
-                          <select
-                            className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          >
-                            <option value="">{field.placeholder}</option>
-                            {field.options?.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Input
-                            placeholder={field.placeholder}
-                            value={providerFields[field.key] || ""}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                            className="mt-1 text-sm"
-                          />
-                        )}
-                      </div>
-                    ))}
+              {/* Payment method selection — Card layout matching OS Payout */}
+              <Card className="border-2 border-primary/30 shadow-md">
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    {payMode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
+                    <h3 className="text-sm font-bold text-foreground">
+                      {payMode === "local" ? "Africa Payment Method" : "International Payment Method"}
+                    </h3>
                   </div>
-                )}
-              </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {payMode === "local"
+                      ? "Select how you want to pay — bank transfer, mobile wallet, or crypto."
+                      : "Select how you want to pay — card, PayPal, Apple Pay, Google Pay, bank, or crypto."
+                    }
+                  </p>
+
+                  <ProviderSearch
+                    mode={payMode === "local" ? "local" : "diaspora"}
+                    onSelect={setSelectedProvider}
+                    selected={selectedProvider}
+                  />
+
+                  {/* International Bank Transfer Selector (diaspora mode) */}
+                  {payMode === "diaspora" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground">🌍 International Bank Transfer</p>
+                        <button
+                          type="button"
+                          onClick={() => { setUseIntlBank(!useIntlBank); if (useIntlBank) { setIntlBankSelected(null); setIntlBankRegion(null); } }}
+                          className={cn(
+                            "text-[10px] px-3 py-1 rounded-full font-semibold transition-all",
+                            useIntlBank ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {useIntlBank ? "Using Bank Transfer" : "Use Bank Transfer"}
+                        </button>
+                      </div>
+                      {!useIntlBank && (
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Buyers in <strong className="text-foreground">North America, Europe, Asia, South America, Caribbean, Australia</strong> and 
+                          140+ other countries can pay directly from their local bank account.
+                          Click "Use Bank Transfer" above to select your region and bank.
+                        </p>
+                      )}
+                      {useIntlBank && (
+                        <InternationalBankSelector
+                          selectedBank={intlBankSelected}
+                          onBankSelected={(bank, region) => {
+                            setIntlBankSelected(bank);
+                            setIntlBankRegion(region);
+                          }}
+                          onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); }}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Provider-specific fields (with sanitization, suppress when intl bank active) */}
+                  {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && !(useIntlBank && intlBankSelected) && (
+                    <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                      <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
+                      {selectedProvider.fields.map((field) => (
+                        <div key={field.key}>
+                          <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                          {field.type === "select" ? (
+                            <select
+                              className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                              value={providerFields[field.key] || ""}
+                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                            >
+                              <option value="">{field.placeholder}</option>
+                              {field.options?.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Input
+                              placeholder={field.placeholder}
+                              value={providerFields[field.key] || ""}
+                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                              className="mt-1 text-sm"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Crypto Verification (identical to OS Pay crypto flow) */}
               {isCrypto && selectedProvider && (
