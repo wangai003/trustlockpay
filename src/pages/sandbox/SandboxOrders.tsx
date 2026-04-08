@@ -200,8 +200,9 @@ const SandboxOrders = () => {
                       {session.role === "vendor" ? "Complete" : "Confirm"} <ChevronRight className="w-3 h-3 ml-0.5" />
                     </Button>
                   )}
+                  </div>
                   {isActive && pendingMilestone?.orderId === selectedOrder.id && pendingMilestone?.idx === i && (
-                    <div className="w-full mt-2">
+                    <div className="mt-2">
                       {(resolving || gpsLoading) && (
                         <div className="flex items-center gap-2 text-xs text-primary p-2 rounded bg-primary/5 border border-primary/20">
                           <Loader2 className="w-4 h-4 animate-spin" />
