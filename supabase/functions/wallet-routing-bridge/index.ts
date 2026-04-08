@@ -808,9 +808,9 @@ Deno.serve(async (req) => {
       }
 
       await notify(supabase, tx.vendor_id,
-        "Milestone Released — Full Amount",
-        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" — 100% of milestone principal, no deductions. ` +
-        `Escrow service fee ($${escrowFeeTrickle.toFixed(2)}) was pre-paid by the buyer at checkout.`,
+        "Milestone Released",
+        `$${vendorNet.toFixed(2)} released for milestone "${milestone.title}" ($${milestoneAmount.toFixed(2)} principal - $${escrowFeeTrickle.toFixed(2)} escrow service fee). ` +
+        `1% total fee ($${totalEscrowFee.toFixed(2)}) is fractionalized across ${pmCount} milestones.`,
         "success", transactionId);
 
       return json({
