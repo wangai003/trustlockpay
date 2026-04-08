@@ -28,6 +28,25 @@ interface ProcessorInfo {
   offRamp: boolean;
   supportedMethods: PaymentMethod[];
   limits: ProcessorLimits;
+  regions: string[];
+}
+
+// ─── ISO Region Resolver ──────────────────────────────────
+const EU_MEMBERS = [
+  "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU",
+  "IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE",
+];
+
+function regionMatchFn(regions: string[], country: string): boolean {
+  if (regions.includes("global")) return true;
+  for (const r of regions) {
+    if (r === "EU") {
+      if (EU_MEMBERS.includes(country)) return true;
+    } else if (r === country) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // ─── Processor Registry (3 active + direct) ──────────────
@@ -48,6 +67,11 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
       monthlyLimit:{ none: 10_000, basic: 250_000, intermediate: 2_000_000, full: 10_000_000 },
       maxDailyTxCount: 200,
     },
+    regions: [
+      "US", "CA", "AU", "NZ", "JP", "SG", "HK", "GB", "MY", "TH",
+      "IN", "BR", "MX", "AE", "CN",
+      "EU",
+    ],
   },
   coinbase: {
     processorId: "coinbase",
@@ -65,6 +89,13 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
       monthlyLimit:{ none: 5_000, basic: 100_000, intermediate: 500_000, full: 2_500_000 },
       maxDailyTxCount: 100,
     },
+    regions: [
+      "US", "GB",
+      "EU",
+      "NG", "KE", "GH", "ZA", "CM", "EG", "UG", "TZ", "RW",
+      "BR", "MX", "AR", "CO", "CL",
+      "SG", "AU", "JP", "IN",
+    ],
   },
   transak: {
     processorId: "transak",
@@ -82,6 +113,17 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
       monthlyLimit:{ none: 1_000, basic: 10_000, intermediate: 100_000, full: 500_000 },
       maxDailyTxCount: 50,
     },
+    regions: [
+      "US", "GB", "IN", "BR", "MX",
+      "EU",
+      "NG", "KE", "GH", "ZA", "EG", "SN", "CI", "TZ", "UG", "RW",
+      "CM", "ET", "MA", "TN", "DZ",
+      "AE", "SA", "QA", "KW", "BH", "OM",
+      "SG", "MY", "TH", "ID", "PH", "VN", "KR", "JP", "AU", "NZ",
+      "AR", "CO", "CL", "PE",
+      "TR", "IL", "CN",
+      "global",
+    ],
   },
   direct: {
     processorId: "direct",
@@ -99,23 +141,8 @@ const PROCESSORS: Record<string, ProcessorInfo> = {
       monthlyLimit:{ none: 500_000, basic: 2_500_000, intermediate: 25_000_000, full: 100_000_000 },
       maxDailyTxCount: 500,
     },
+    regions: ["global"],
   },
-};
-
-// ─── Region Coverage ──────────────────────────────────────
-const PROCESSOR_REGIONS: Record<string, string[]> = {
-  stripe: ["US", "EU", "UK", "CA", "AU", "JP", "SG", "HK", "NZ", "global"],
-  coinbase: [
-    "US", "EU", "UK",
-    "Nigeria", "Kenya", "Ghana", "South Africa", "Cameroon", "Egypt",
-    "Uganda", "Tanzania", "Rwanda",
-  ],
-  transak: [
-    "US", "EU", "UK", "IN", "BR", "MX",
-    "Nigeria", "Kenya", "Ghana", "South Africa", "Egypt",
-    "global",
-  ],
-  direct: ["global"],
 };
 
 // Country name → code mapping for payout field lookups
@@ -179,16 +206,10 @@ function getEligibleProcessors(
   const candidates: ProcessorCandidate[] = [];
 
   for (const [id, proc] of Object.entries(PROCESSORS)) {
-    // Skip direct for non-crypto
     if (id === "direct" && paymentMethod !== "crypto") continue;
-    // Skip non-crypto processors for crypto method
     if (paymentMethod === "crypto" && !proc.supportsCrypto) continue;
-    // Check payment method support
     if (!proc.supportedMethods.includes(paymentMethod)) continue;
-    // Check region
-    const regions = PROCESSOR_REGIONS[id] ?? [];
-    const regionMatch = regions.includes(country) || regions.includes("global");
-    if (!regionMatch) continue;
+    if (!regionMatchFn(proc.regions, country)) continue;
 
     candidates.push({
       processor: proc,
@@ -197,7 +218,6 @@ function getEligibleProcessors(
     });
   }
 
-  // Sort by combined rate ascending (cheapest first)
   candidates.sort((a, b) => a.combinedRate - b.combinedRate);
   return candidates;
 }
@@ -225,7 +245,6 @@ function selectProcessor(
     };
   }
 
-  // Ultimate fallback
   return PROCESSORS.stripe;
 }
 
@@ -308,7 +327,6 @@ async function checkLimits(body: Record<string, unknown>) {
 
   const limits = proc.limits;
 
-  // Get user's rolling usage
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -388,7 +406,6 @@ Deno.serve(async (req) => {
       return await checkLimits(body);
     }
 
-    // Cost-optimized processor selection — now includes limits in response
     const { country, isCrypto, processorHint, paymentMethod, transactionType, kyc_tier } = body;
     const result = selectProcessor(
       country ?? "",
