@@ -100,11 +100,11 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Logistics & Secure Transport", qty: 1, unit: "flat", unitPrice: 1200 },
     ],
     milestones: [
-      { title: "Purchase Order Confirmed", percentage: 10 },
-      { title: "Assay & Quality Certification", percentage: 15, documentGate: "Assay Certificate" },
+      { title: "Purchase Order Confirmed", percentage: 0 },
+      { title: "Assay & Quality Certification", percentage: 20, documentGate: "Assay Certificate" },
       { title: "Environmental Clearance Obtained", percentage: 15, documentGate: "Environmental Permit" },
       { title: "Extraction & Processing", percentage: 25 },
-      { title: "Secure Shipment Dispatched", percentage: 20, documentGate: "Bill of Lading" },
+      { title: "Secure Shipment Dispatched", percentage: 25, documentGate: "Bill of Lading" },
       { title: "Delivery & Final Verification", percentage: 15 },
     ],
     documents: [
