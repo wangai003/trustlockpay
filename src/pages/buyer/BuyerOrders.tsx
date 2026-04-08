@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
+import PayoutGuideWizard, { type PayoutScenario } from "@/components/shared/PayoutGuideWizard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info } from "lucide-react";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
@@ -40,6 +41,8 @@ const BuyerOrders = () => {
   const [claimCode, setClaimCode] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [releaseOrderId, setReleaseOrderId] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardScenario, setWizardScenario] = useState<PayoutScenario>("buyer_full_refund");
   const queryClient = useQueryClient();
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
@@ -334,6 +337,7 @@ const BuyerOrders = () => {
                           openDisputeHook={openDisputeHook}
                           queryClient={queryClient}
                           getSourceBadge={getSourceBadge}
+                          onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
                         />
                       ))}
                     </div>
@@ -359,9 +363,15 @@ const BuyerOrders = () => {
               openDisputeHook={openDisputeHook}
               queryClient={queryClient}
               getSourceBadge={getSourceBadge}
+              onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
             />
           ))}
         </div>
+        <PayoutGuideWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          scenario={wizardScenario}
+        />
       </div>
     </div>
   );
@@ -380,9 +390,10 @@ interface OrderRowProps {
   openDisputeHook: any;
   queryClient: any;
   getSourceBadge: (source: string | null, platformId: string | null) => { label: string; icon: any; variant: "secondary" | "outline" } | null;
+  onOpenWizard: (scenario: PayoutScenario) => void;
 }
 
-function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, queryClient, getSourceBadge }: OrderRowProps) {
+function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, queryClient, getSourceBadge, onOpenWizard }: OrderRowProps) {
   const cfg = statusConfig[order.status] || statusConfig.locked;
   const row = rowIdx + 1;
   const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
@@ -499,6 +510,28 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                   Dispute
                 </Button>
               </TLId>
+            )}
+            {order.status === "disputed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => onOpenWizard("buyer_full_refund")}
+              >
+                <Info className="w-3.5 h-3.5" />
+                How will I get my refund?
+              </Button>
+            )}
+            {order.status === "released" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => onOpenWizard("buyer_full_refund")}
+              >
+                <Info className="w-3.5 h-3.5" />
+                Payout Guide
+              </Button>
             )}
             <TLId code={dynTLId("B", "BO", row, "BTN-VIEW")} inline>
               <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>

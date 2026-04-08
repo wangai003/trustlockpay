@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PayoutGuideWizard, { type PayoutScenario } from "@/components/shared/PayoutGuideWizard";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import VendorHeader from "@/components/vendor/VendorHeader";
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale, Info, Wallet
 } from "lucide-react";
 import { toast } from "sonner";
 import { getArbitrationFee } from "@/lib/arbitrationFees";
@@ -59,6 +60,8 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
   const [shipDialog, setShipDialog] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardScenario, setWizardScenario] = useState<PayoutScenario>("vendor_full_release");
 
   // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
@@ -494,6 +497,26 @@ const VendorTransactions = () => {
                                     </Button>
                                   </TLId>
                                 )}
+                                {tx.status === "released" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-[10px] h-7 px-2 gap-1"
+                                    onClick={() => { setWizardScenario("vendor_full_release"); setWizardOpen(true); }}
+                                  >
+                                    <Wallet className="w-3 h-3" /> How do I get paid?
+                                  </Button>
+                                )}
+                                {tx.status === "disputed" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-[10px] h-7 px-2 gap-1"
+                                    onClick={() => { setWizardScenario("vendor_split_release"); setWizardOpen(true); }}
+                                  >
+                                    <Info className="w-3 h-3" /> Payout Guide
+                                  </Button>
+                                )}
                                 <TLId code={dynTLId("V", "TX", row, "BTN-VIEW")} inline>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Eye className="w-3.5 h-3.5" /></Button>
                                 </TLId>
@@ -678,6 +701,11 @@ const VendorTransactions = () => {
           />
         );
       })()}
+      <PayoutGuideWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        scenario={wizardScenario}
+      />
     </div>
   );
 };
