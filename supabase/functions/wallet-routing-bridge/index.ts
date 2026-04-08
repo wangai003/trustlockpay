@@ -963,6 +963,35 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge milestone refund forward failed:", e);
       }
 
+      // ── Trigger Refund Router for milestone refund disbursement ──
+      let milestoneRefundRoute: Record<string, unknown> | null = null;
+      if (milestoneAmount > 0) {
+        try {
+          const refundRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/refund-router`;
+          const rrRes = await fetch(refundRouterUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({
+              action: "route_buyer_refund",
+              transactionId,
+              refundAmount: milestoneAmount,
+              refundType: "milestone_refund",
+              buyerPaymentDetails: body.buyerPaymentDetails || null,
+              originalProcessor: body.originalProcessor || null,
+              paymentCategory: body.paymentCategory || null,
+              buyerId: tx.buyer_id,
+              milestoneId,
+            }),
+          });
+          milestoneRefundRoute = await rrRes.json();
+        } catch (e) {
+          console.warn("Refund router milestone forward failed (non-blocking):", e);
+        }
+      }
+
       await notify(supabase, tx.buyer_id,
         "Milestone Refunded",
         `$${milestoneAmount.toFixed(2)} refunded for milestone "${milestone.title}" — $0 fees. Gas covered by TrustLock.`,
@@ -976,6 +1005,7 @@ Deno.serve(async (req) => {
         refundAmount: milestoneAmount,
         feesCharged: 0,
         allResolved,
+        refundDisbursement: milestoneRefundRoute,
         transfers,
       });
     }
