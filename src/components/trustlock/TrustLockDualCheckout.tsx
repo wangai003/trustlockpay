@@ -51,6 +51,9 @@ const TrustLockDualCheckout = () => {
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
   const [shortfallTxIds, setShortfallTxIds] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
+  const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
+  const [useIntlBank, setUseIntlBank] = useState(false);
 
   const sampleAmountUsd = 292.50;
   const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
