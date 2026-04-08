@@ -1740,14 +1740,22 @@ export type Database = {
       external_fee_entries: {
         Row: {
           amount: number
+          base_currency: string | null
           created_at: string
           currency: string
+          dispute_note: string | null
+          dispute_status: string | null
+          disputed_at: string | null
           evidence_note: string | null
+          exchange_rate_snapshot: number | null
           fee_label: string
+          fee_phase: string | null
           id: string
+          is_pre_escrow: boolean | null
           logged_by: string
           logged_by_role: string
           milestone_index: number
+          normalized_amount: number | null
           paid_to: string | null
           receipt_url: string | null
           required_scope: string[] | null
@@ -1758,14 +1766,22 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          base_currency?: string | null
           created_at?: string
           currency?: string
+          dispute_note?: string | null
+          dispute_status?: string | null
+          disputed_at?: string | null
           evidence_note?: string | null
+          exchange_rate_snapshot?: number | null
           fee_label: string
+          fee_phase?: string | null
           id?: string
+          is_pre_escrow?: boolean | null
           logged_by: string
           logged_by_role: string
           milestone_index: number
+          normalized_amount?: number | null
           paid_to?: string | null
           receipt_url?: string | null
           required_scope?: string[] | null
@@ -1776,14 +1792,22 @@ export type Database = {
         }
         Update: {
           amount?: number
+          base_currency?: string | null
           created_at?: string
           currency?: string
+          dispute_note?: string | null
+          dispute_status?: string | null
+          disputed_at?: string | null
           evidence_note?: string | null
+          exchange_rate_snapshot?: number | null
           fee_label?: string
+          fee_phase?: string | null
           id?: string
+          is_pre_escrow?: boolean | null
           logged_by?: string
           logged_by_role?: string
           milestone_index?: number
+          normalized_amount?: number | null
           paid_to?: string | null
           receipt_url?: string | null
           required_scope?: string[] | null
@@ -4478,6 +4502,7 @@ export type Database = {
           delivered_date: string | null
           fee: number | null
           id: string
+          incoterm: string | null
           industry: string | null
           item: string | null
           locked_price: number | null
@@ -4524,6 +4549,7 @@ export type Database = {
           delivered_date?: string | null
           fee?: number | null
           id?: string
+          incoterm?: string | null
           industry?: string | null
           item?: string | null
           locked_price?: number | null
@@ -4570,6 +4596,7 @@ export type Database = {
           delivered_date?: string | null
           fee?: number | null
           id?: string
+          incoterm?: string | null
           industry?: string | null
           item?: string | null
           locked_price?: number | null
