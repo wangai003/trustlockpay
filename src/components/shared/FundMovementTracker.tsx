@@ -8,12 +8,14 @@ import {
 export type FundFlowType =
   | "os_pay_fiat"       // Buyer/Vendor paying for services via fiat
   | "os_pay_crypto"     // Buyer/Vendor paying via crypto
-  | "payout_release"    // Vendor receiving released funds
-  | "payout_refund"     // Buyer receiving refund
-  | "payout_split"      // Admin split pay to both parties
+  | "checkout_escrow"   // Buyer checkout → 2-wallet split (fee wallet + escrow wallet)
+  | "payout_release"    // Vendor receiving released funds (atomic: 99% vendor / 1% fee)
+  | "payout_refund"     // Buyer receiving refund (100% principal, $0 fees)
+  | "payout_split"      // Admin split pay to both parties (1% on vendor share only)
   | "buyer_release"     // Buyer authorizing release to vendor
   | "payout_crypto_direct"  // Polygon direct
-  | "payout_crypto_bridge"; // Non-Polygon via processor
+  | "payout_crypto_bridge"  // Non-Polygon via processor
+  | "milestone_release";    // Milestone fractional release (fractional 1%)
 
 interface FundFlowStep {
   label: string;
