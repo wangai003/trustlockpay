@@ -383,6 +383,7 @@ Deno.serve(async (req) => {
         chainStatus,
         polygonTxHash,
         polygonConfigured: !!polygonConfig,
+        resolvedLocation: resolvedLocation || null,
         verifyUrl: polygonTxHash
           ? `https://polygonscan.com/tx/${polygonTxHash}`
           : polygonConfig
