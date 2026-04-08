@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       return jsonResp({ error: "contract_id and typed_name are required" }, 400);
     }
 
-    if (vendorName && typed_name.trim().toLowerCase() !== vendorName.trim().toLowerCase()) {
+    if (vendorName && normalizeName(typed_name) !== normalizeName(vendorName)) {
       return jsonResp({ error: "Typed name does not match your profile name", expected: vendorName }, 400);
     }
 
