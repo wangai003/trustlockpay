@@ -248,6 +248,7 @@ const App = () => (
               <Route path="/trustlock/confirm/:txId" element={<BuyerConfirmation />} />
               <Route path="/pay/widget-checkout" element={<WidgetCheckout />} />
               <Route path="/pay/:linkId" element={<PublicCheckout />} />
+              <Route path="/trustlock/reset-password" element={<ResetPassword />} />
               <Route path="/dispute-policy" element={<DisputePolicy />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />

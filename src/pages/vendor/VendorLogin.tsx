@@ -253,7 +253,7 @@ const VendorLogin = () => {
               </Button>
               {!isTestnet && (
                 <div className="text-center space-y-2">
-                  <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</button>
+                  <Link to="/trustlock/vendor/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
                   <div>
                     <Link to="/trustlock/vendor/signup" className="text-xs text-primary hover:underline">New vendor? Create an account →</Link>
                   </div>
