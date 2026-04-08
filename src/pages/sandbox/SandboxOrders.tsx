@@ -177,7 +177,8 @@ const SandboxOrders = () => {
               const isActive = m.status === "in_progress";
               const isDone = m.status === "completed";
               return (
-                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${isActive ? "border-primary/30 bg-primary/5" : isDone ? "border-green-200 bg-green-50/30" : "border-border"}`}>
+                <div key={i} className={`p-3 rounded-lg border ${isActive ? "border-primary/30 bg-primary/5" : isDone ? "border-green-200 bg-green-50/30" : "border-border"}`}>
+                  <div className="flex items-start gap-3">
                   <div className="mt-0.5">
                     {isDone ? <CheckCircle className="w-5 h-5 text-green-600" /> :
                      isActive ? <Clock className="w-5 h-5 text-primary" /> :
