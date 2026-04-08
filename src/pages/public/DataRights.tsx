@@ -42,6 +42,9 @@ const DataRights = () => {
         disputes: disputesRes.data || [],
         kyc_documents: docsRes.data || [],
         notifications: notifsRes.data || [],
+        milestone_location_data: (milestonesRes.data || []).filter(
+          (m: any) => m.gps_latitude || m.gps_address
+        ),
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
