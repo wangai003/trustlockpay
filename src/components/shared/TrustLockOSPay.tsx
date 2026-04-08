@@ -1504,15 +1504,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               flowType={method === "azix" ? "os_pay_crypto" : "os_pay_fiat"}
               role={role}
               method={method || undefined}
-              providerName={
+              providerName={selectedProvider?.name || (
                 method === "mobile_money" ? (mobileProvider || "Mobile Money")
                 : method === "bank_transfer" ? (bankName || "Bank Transfer")
                 : method === "azix" ? "Crypto (USDC/USDT)"
                 : method === "coinbase" ? "Coinbase"
                 : method === "transak" ? "Transak"
                 : method === "applepay" ? "Apple Pay / Google Pay"
+                : method === "paypal" ? "PayPal"
                 : "Card"
-              }
+              )}
               amount={parsedAmount}
             />
           )}
