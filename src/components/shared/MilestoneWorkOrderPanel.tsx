@@ -26,6 +26,7 @@ import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
 import TLId from "@/components/shared/TLId";
 import { woTLId } from "@/lib/tlIdRegistry";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { isGpsRequiredByIndustry } from "@/lib/industryList";
 import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 import {
   useAddTransactionObserver,
@@ -447,7 +448,18 @@ const MilestoneWorkOrderPanel = ({
     if (isTestnet) { onTestnetUpdateStatus?.(milestoneId, "completed"); return; }
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
+
+    const gpsRequired = isGpsRequiredByIndustry(industry || "");
     const geo = await capturePosition();
+
+    if (gpsRequired && !geo) {
+      toast.error(
+        "GPS location is required for this industry. Enable location services and try again.",
+        { duration: 6000 }
+      );
+      return; // Hard-block: cannot complete milestone without GPS
+    }
+
     if (geo) {
       await supabase.from("transaction_milestones").update({
         gps_latitude: geo.latitude, gps_longitude: geo.longitude,
@@ -470,7 +482,11 @@ const MilestoneWorkOrderPanel = ({
           console.warn("GPS blockchain anchor queued but failed to submit:", e);
         }
       }
+    } else {
+      // GPS optional industry — user denied, log as unverified
+      toast.warning("Location not captured — milestone will be marked as unverified GPS", { duration: 4000 });
     }
+
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
 
