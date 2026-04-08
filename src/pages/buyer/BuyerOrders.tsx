@@ -363,6 +363,7 @@ const BuyerOrders = () => {
               openDisputeHook={openDisputeHook}
               queryClient={queryClient}
               getSourceBadge={getSourceBadge}
+              onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
             />
           ))}
         </div>
