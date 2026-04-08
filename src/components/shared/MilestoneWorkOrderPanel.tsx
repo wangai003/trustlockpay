@@ -372,6 +372,7 @@ const MilestoneWorkOrderPanel = ({
   const [skippedMilestoneIndices, setSkippedMilestoneIndices] = useState<number[]>([]);
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
+  const { anchor: anchorProof } = useBlockchainAnchor();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
