@@ -99,7 +99,7 @@ const VendorConsentForm = ({
   const planInfo = PLAN_THRESHOLDS[vendorPlan] || PLAN_THRESHOLDS.starter;
 
   const allChecked = CONSENT_CLAUSES.every((c) => checkedClauses[c.id]);
-  const nameMatch = typedName.trim().toLowerCase() === vendorName.trim().toLowerCase();
+  const nameMatch = namesMatch(typedName, vendorName);
   const canSubmit = allChecked && nameMatch && !previewMode;
 
   const checkedCount = CONSENT_CLAUSES.filter((c) => checkedClauses[c.id]).length;
