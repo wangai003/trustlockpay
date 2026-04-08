@@ -312,7 +312,9 @@ const SandboxCheckout = () => {
                     <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                       <li>Funds will be locked in a TrustLock escrow account upon payment.</li>
                       <li>Funds will only be released to the Vendor upon completion of agreed milestones.</li>
-                      <li>I understand the dispute resolution process and 7-day arbitration window.</li>
+                      <li>Disputes must be filed within 7 days of delivery confirmation.</li>
+                      <li>For disputes ≥ $10,000, arbitration incurs a flat TrustLock Case Management Fee ($500 – $5,000 based on escrow size). Arbitrator professional fees are separate.</li>
+                      <li>GPS location may be captured during milestone completion for physical-industry orders and resolved to a street address for audit/compliance purposes.</li>
                       <li>I agree to TrustLock's Terms of Service and Escrow Protection Policy.</li>
                       <li>Industry: <strong>{config.label}</strong> — milestone-based escrow applies.</li>
                       <li>A PDF receipt of this acknowledgement is available for download (free in sandbox).</li>
