@@ -60,6 +60,8 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
   const [shipDialog, setShipDialog] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardScenario, setWizardScenario] = useState<PayoutScenario>("vendor_full_release");
 
   // Real hooks (mainnet)
   const { data: rawTransactions = [] } = useTransactions();
