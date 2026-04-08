@@ -644,6 +644,34 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge split forward failed:", e);
       }
 
+      // ── Trigger Refund Router for buyer's split portion ──
+      let splitRefundRoute: Record<string, unknown> | null = null;
+      if (buyerAmount > 0) {
+        try {
+          const refundRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/refund-router`;
+          const rrRes = await fetch(refundRouterUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({
+              action: "route_buyer_refund",
+              transactionId,
+              refundAmount: buyerAmount,
+              refundType: "split_buyer",
+              buyerPaymentDetails: body.buyerPaymentDetails || null,
+              originalProcessor: body.originalProcessor || null,
+              paymentCategory: body.paymentCategory || null,
+              buyerId: tx.buyer_id,
+            }),
+          });
+          splitRefundRoute = await rrRes.json();
+        } catch (e) {
+          console.warn("Refund router split forward failed (non-blocking):", e);
+        }
+      }
+
       await notify(supabase, tx.buyer_id,
         "Dispute Resolved",
         `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
@@ -669,6 +697,7 @@ Deno.serve(async (req) => {
         feeToTrickle,
         gasChargedToParties: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
+        buyerRefundDisbursement: splitRefundRoute,
         transfers,
       });
     }
