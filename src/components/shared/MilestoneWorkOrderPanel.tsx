@@ -454,6 +454,22 @@ const MilestoneWorkOrderPanel = ({
         gps_accuracy: geo.accuracy, gps_captured_at: geo.capturedAt,
       } as any).eq("id", milestoneId);
       toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
+
+      // Anchor GPS proof to blockchain hash chain
+      if (transactionId) {
+        try {
+          await anchorProof(transactionId, "gps_verification", {
+            milestoneId,
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+            accuracy: geo.accuracy,
+            capturedAt: geo.capturedAt,
+            capturedBy: role,
+          });
+        } catch (e) {
+          console.warn("GPS blockchain anchor queued but failed to submit:", e);
+        }
+      }
     }
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
