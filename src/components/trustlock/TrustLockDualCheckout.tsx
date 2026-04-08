@@ -1,19 +1,22 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Shield, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2, MapPin, Globe } from "lucide-react";
+import { Shield, ChevronRight, Lock, Info, AlertTriangle, Copy, CheckCircle2, MapPin, Globe, Smartphone } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProviderSearch from "@/components/shared/ProviderSearch";
+import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
+import type { InternationalRegion } from "@/lib/internationalBankData";
 import { type PaymentProvider, PRIVACY_DISCLAIMER } from "@/lib/paymentProviders";
 import { FEE_DISCLOSURE_SHORT, AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 type PayMode = "local" | "diaspora";
 
