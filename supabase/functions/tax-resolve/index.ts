@@ -53,6 +53,16 @@ const TRADE_BLOCS: Record<string, { name: string; members: string[]; tariffReduc
     members: ["BR", "AR", "UY", "PY"],
     tariffReduction: 0.9,
   },
+  ASEAN: {
+    name: "Association of Southeast Asian Nations",
+    members: ["SG", "MY", "TH", "ID", "PH", "VN", "MM", "KH", "LA", "BN"],
+    tariffReduction: 0.85,
+  },
+  CEMAC: {
+    name: "Central African Economic and Monetary Community",
+    members: ["CM", "GA", "CG", "TD", "CF", "GQ"],
+    tariffReduction: 0.9,
+  },
 };
 
 // ─── Item Category Tariff Multipliers ────────────────────
