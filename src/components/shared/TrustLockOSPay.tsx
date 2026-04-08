@@ -38,8 +38,10 @@ import PaymentMethodUnavailable, { detectUnavailableMethod } from "./PaymentMeth
 import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 
-type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | null;
+type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "paypal" | null;
 type AdminAction = "refund" | "split" | null;
 type PayMode = "local" | "diaspora";
 
@@ -75,23 +77,7 @@ interface TrustLockOSPayProps {
   isTestnet?: boolean;
 }
 
-/* ── Local Africa payment methods ── */
-const LOCAL_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-  { id: "mobile_money", icon: Phone, label: "Mobile Money", sub: "M-Pesa, MTN, Airtel Money" },
-  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Local bank (NUBAN, Branch Code)" },
-  { id: "card", icon: CreditCard, label: "Local Debit Card", sub: "Visa, Mastercard, Verve" },
-  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
-];
-
-/* ── Diaspora payment methods ── */
-const DIASPORA_METHODS: { id: PaymentMethod; icon: typeof CreditCard; label: string; sub: string }[] = [
-  { id: "card", icon: CreditCard, label: "Credit / Debit Card", sub: "Visa, Mastercard · 1.5% platform + 2.9% processor" },
-  { id: "bank_transfer", icon: Building2, label: "Bank Transfer", sub: "Checking / Savings · Region-based" },
-  { id: "applepay", icon: Smartphone, label: "Apple Pay / Google Pay", sub: "Instant tap-to-pay · 1.5% platform + 2.9% processor" },
-  { id: "coinbase", icon: Coins, label: "Coinbase On-Ramp", sub: "Fiat → USDC · 1.5% platform + 1.5% processor" },
-  { id: "transak", icon: Globe, label: "Transak", sub: "Fiat → Crypto · 1.5% platform + 1.5% processor" },
-  { id: "azix", icon: Wallet, label: "Crypto (USDC/USDT)", sub: "Direct on Polygon · 1.0% platform fee · no processor fee" },
-];
+/* Legacy method arrays removed — now using shared ProviderSearch component */
 
 /* ── Role-specific monetizable services (hardcoded from business model) ── */
 /* Plan services use a "plan:" prefix so we can detect and resolve pricing dynamically */
@@ -131,7 +117,35 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
 
   const [payMode, setPayMode] = useState<PayMode>("local");
-  const [method, setMethod] = useState<PaymentMethod>(null);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+  const [providerFields, setProviderFields] = useState<Record<string, string>>({});
+
+  // Derive legacy `method` from selectedProvider for fee engine / routing compatibility
+  const method: PaymentMethod = useMemo(() => {
+    if (!selectedProvider) return null;
+    const cat = selectedProvider.category;
+    const proc = selectedProvider.processor;
+    if (cat === "crypto_wallet") {
+      if (proc === "coinbase") return "coinbase";
+      return "azix";
+    }
+    if (cat === "mobile_money") return "mobile_money";
+    if (cat === "bank_account") return "bank_transfer";
+    if (cat === "digital_wallet") {
+      if (selectedProvider.id === "apple_pay" || selectedProvider.id === "google_pay") return "applepay";
+      if (selectedProvider.id === "coinbase_pay") return "coinbase";
+      if (selectedProvider.id === "paypal") return "paypal";
+      return "card";
+    }
+    if (cat === "card") return "card";
+    // Transak-routed providers
+    if (proc === "transak") return "transak";
+    return "card";
+  }, [selectedProvider]);
+
+  const setMethod = (m: PaymentMethod) => {
+    if (!m) { setSelectedProvider(null); setProviderFields({}); }
+  };
   const [adminAction, setAdminAction] = useState<AdminAction>(null);
   const [service, setService] = useState(prefillService);
   const [amount, setAmount] = useState(prefillAmount);
@@ -295,7 +309,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const processorFeeDisplay = feeBreakdown ? feeBreakdown.processorFee.toFixed(2) : "0.00";
   const total = parsedAmount ? (parsedAmount + taxTotal + (feeBreakdown ? feeBreakdown.totalFees : 0)).toFixed(2) : "0.00";
 
-  const activeMethods = payMode === "local" ? LOCAL_METHODS : DIASPORA_METHODS;
+  /* activeMethods removed — now using ProviderSearch */
 
   /* ── Country-specific bank & mobile lists ── */
   const COUNTRY_BANKS: Record<string, string[]> = {
@@ -343,12 +357,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const bankList = COUNTRY_BANKS[selectedCountry] || [];
   const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
-  // Map UI payment method → processor ID for API routing
+  // Map UI payment method → processor ID for API routing (prefer selectedProvider.processor)
   const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "direct" => {
+    if (selectedProvider?.processor) {
+      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "direct";
+    }
     if (m === "azix") return "direct";
     if (m === "coinbase") return "coinbase";
     if (m === "transak") return "transak";
-    if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak"; // Coinbase for Africa mobile money
+    if (m === "paypal") return "stripe";
+    if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak";
     if (m === "bank_transfer") return payMode === "local" ? "coinbase" : "stripe";
     return "stripe"; // card, applepay
   };
@@ -443,6 +461,17 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           };
         }
 
+        // Provider-level fields payload (from ProviderSearch fields)
+        const providerDetailsPayload: Record<string, unknown> = {};
+        if (selectedProvider && Object.keys(providerFields).length > 0) {
+          providerDetailsPayload.providerDetails = {
+            providerId: selectedProvider.id,
+            providerName: selectedProvider.name,
+            category: selectedProvider.category,
+            ...providerFields,
+          };
+        }
+
         const result = await processPayment.mutateAsync({
           action: "payment",
           service,
@@ -459,6 +488,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           buyer_country: selectedCountry || undefined,
           ...bankTransferPayload,
           ...mobileMoneyPayload,
+          ...providerDetailsPayload,
         });
 
         const procResult = (result as Record<string, unknown>)?.processorResult as Record<string, unknown> | undefined;
@@ -664,7 +694,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {!isAdmin && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Region</p>
-            <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setMethod(null); }}>
+            <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setSelectedProvider(null); setProviderFields({}); }}>
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="local" className="gap-1.5 text-xs">
                   <MapPin className="w-3.5 h-3.5" />
@@ -931,29 +961,84 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {/* ─── PAYMENT METHODS (vendor/buyer only) ─── */}
           {!isAdmin && (
           <>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pay With — {payMode === "local" ? "Africa" : "International"}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              {payMode === "local" ? <Smartphone className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4 text-primary" />}
+              <h3 className="text-sm font-bold text-foreground">
+                {payMode === "local" ? "Africa Payment Method" : "International Payment Method"}
+              </h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {payMode === "local"
+                ? "Pay via mobile money, local bank, card, or crypto within Africa."
+                : "Pay via card, PayPal, Apple Pay, Google Pay, bank transfer, or crypto."}
             </p>
-            {activeMethods.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(method === m.id ? null : m.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
-                  method === m.id ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+            <ProviderSearch
+              mode={payMode === "local" ? "local" : "diaspora"}
+              onSelect={(provider) => {
+                setSelectedProvider(provider);
+                setProviderFields({});
+                // Sync legacy state from provider selection
+                if (provider.category === "bank_account" && provider.mode === "local") {
+                  setBankName(provider.name);
+                }
+                if (provider.category === "mobile_money") {
+                  setMobileProvider(provider.name);
+                }
+              }}
+              selected={selectedProvider}
+            />
+            {/* International Bank Transfer — show when diaspora bank_account selected */}
+            {payMode === "diaspora" && method === "bank_transfer" && selectedProvider?.category === "bank_account" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">🌍 International Bank Transfer</p>
+                </div>
+                <InternationalBankSelector
+                  selectedBank={intlBankSelected}
+                  onBankSelected={(bank, region) => {
+                    setIntlBankSelected(bank);
+                    setIntlBankRegion(region);
+                    setBankName(bank);
+                  }}
+                  onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); setBankName(""); }}
+                />
+              </div>
+            )}
+            {/* Provider-specific fields (non-crypto, non-legacy handled) */}
+            {selectedProvider && selectedProvider.fields.length > 0 && selectedProvider.category !== "crypto_wallet" && (
+              <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+                <p className="text-xs font-semibold text-foreground">{selectedProvider.name} — Enter Your Details</p>
+                {selectedProvider.fields.map((field) => (
+                  <div key={field.key}>
+                    <Label className="text-[10px] text-muted-foreground">{field.label}{field.required && " *"}</Label>
+                    {field.type === "select" ? (
+                      <select
+                        className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={providerFields[field.key] || ""}
+                        onChange={(e) => setProviderFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      >
+                        <option value="">Select...</option>
+                        {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <Input
+                        placeholder={field.placeholder || ""}
+                        value={providerFields[field.key] || ""}
+                        onChange={(e) => setProviderFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="mt-1 text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+                {selectedProvider.processor && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Routed via {selectedProvider.processor === "direct" ? "Direct" : selectedProvider.processor.charAt(0).toUpperCase() + selectedProvider.processor.slice(1)}
+                    {selectedProvider.fallbackNote && ` · ${selectedProvider.fallbackNote}`}
+                  </p>
                 )}
-              >
-                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <m.icon className="w-4 h-4 text-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{m.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{m.sub}</p>
-                </div>
-                {method === m.id && <div className="w-4 h-4 rounded-full bg-primary" />}
-              </button>
-            ))}
+              </div>
+            )}
           </div>
 
           {/* ─── UNAVAILABLE METHOD GUIDANCE ─── */}
@@ -981,8 +1066,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             return null;
           })()}
 
-          {/* ─── METHOD-SPECIFIC FIELDS ─── */}
-          {method === "card" && (
+          {/* ─── Card PCI notice (when card-type provider selected) ─── */}
+          {method === "card" && selectedProvider?.category === "card" && (
             <div className="space-y-2 p-3 rounded-lg border border-border">
               <p className="text-xs font-semibold text-foreground">💳 Card Payment</p>
               <p className="text-[10px] text-muted-foreground">
@@ -996,96 +1081,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             </div>
           )}
 
-          {method === "mobile_money" && (
-            <div className="space-y-2 p-3 rounded-lg border border-border">
-              {!selectedCountry && (
-                <p className="text-[10px] text-destructive">↑ Please select your country above to see available providers</p>
-              )}
-              <div>
-                <Label className="text-xs">Mobile Money Provider</Label>
-                <select value={mobileProvider} onChange={e => setMobileProvider(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">Select provider...</option>
-                  {mobileList.length > 0
-                    ? mobileList.map(p => <option key={p} value={p}>{p}</option>)
-                    : <>
-                        <option value="mpesa">M-Pesa</option>
-                        <option value="mtn">MTN Mobile Money</option>
-                        <option value="airtel">Airtel Money</option>
-                        <option value="orange">Orange Money</option>
-                      </>
-                  }
-                </select>
-              </div>
-              <div><Label className="text-xs">Phone Number</Label><Input placeholder="+254 7XX XXX XXX" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className="mt-1" /></div>
-              {selectedCountry && (
-                <p className="text-[10px] text-muted-foreground">
-                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
-                </p>
-              )}
-            </div>
-          )}
-
-          {method === "bank_transfer" && payMode === "diaspora" && (
-            <div className="space-y-2 p-3 rounded-lg border border-border">
-              <p className="text-xs font-semibold text-foreground mb-1">🌍 International Bank Transfer</p>
-              <InternationalBankSelector
-                selectedBank={intlBankSelected}
-                onBankSelected={(bank, region) => {
-                  setIntlBankSelected(bank);
-                  setIntlBankRegion(region);
-                  setBankName(bank);
-                }}
-                onClear={() => { setIntlBankSelected(null); setIntlBankRegion(null); setBankName(""); }}
-              />
-            </div>
-          )}
-
-          {method === "bank_transfer" && payMode === "local" && (
-            <div className="space-y-2 p-3 rounded-lg border border-border">
-              {!selectedCountry && (
-                <p className="text-[10px] text-destructive">↑ Please select your country above to see available banks</p>
-              )}
-              <div>
-                <Label className="text-xs">Bank Name</Label>
-                {bankList.length > 0 ? (
-                  <select value={bankName} onChange={e => setBankName(e.target.value)} className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">Select your bank...</option>
-                    {bankList.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                ) : (
-                  <Input placeholder="Enter bank name" value={bankName} onChange={e => setBankName(e.target.value)} className="mt-1" />
-                )}
-              </div>
-              <div>
-                <Label className="text-xs">Account Number{selectedCountry === "NG" ? " (NUBAN)" : selectedCountry === "ZA" ? " (Branch Code + Account)" : ""}</Label>
-                <Input placeholder={selectedCountry === "NG" ? "10-digit NUBAN" : selectedCountry === "KE" ? "Branch + Account" : "Account number"} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="mt-1" />
-              </div>
-              {selectedCountry === "NG" && (
-                <div><Label className="text-xs">BVN (Bank Verification Number)</Label><Input placeholder="11-digit BVN" value={localBvn} onChange={e => setLocalBvn(e.target.value)} className="mt-1" /></div>
-              )}
-              {(selectedCountry === "ZA" || selectedCountry === "KE") && (
-                <div><Label className="text-xs">Branch / Sort Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
-              )}
-              {selectedCountry === "EG" && (
-                <div><Label className="text-xs">IBAN</Label><Input placeholder="EG followed by 27 digits" value={localIban} onChange={e => setLocalIban(e.target.value)} className="mt-1" /></div>
-              )}
-              {(selectedCountry === "SN" || selectedCountry === "CI" || selectedCountry === "ML" || selectedCountry === "BF" || selectedCountry === "BJ" || selectedCountry === "TG") && (
-                <div><Label className="text-xs">RIB (Relevé d'Identité Bancaire)</Label><Input placeholder="23-digit RIB" value={localRib} onChange={e => setLocalRib(e.target.value)} className="mt-1" /></div>
-              )}
-              {(selectedCountry === "UG" || selectedCountry === "TZ" || selectedCountry === "RW") && (
-                <div><Label className="text-xs">Branch Code</Label><Input placeholder="Branch code" value={localBranchCode} onChange={e => setLocalBranchCode(e.target.value)} className="mt-1" /></div>
-              )}
-              {(selectedCountry === "ZM" || selectedCountry === "MW") && (
-                <div><Label className="text-xs">Sort Code</Label><Input placeholder="Sort code" value={localSortCode} onChange={e => setLocalSortCode(e.target.value)} className="mt-1" /></div>
-              )}
-              {selectedCountry && (
-                <p className="text-[10px] text-muted-foreground">
-                  Processed via {selectedProcessorId === "direct" ? "Direct" : selectedProcessorId.charAt(0).toUpperCase() + selectedProcessorId.slice(1)} · Cheapest route for {selectedCountry}
-                </p>
-              )}
-            </div>
-          )}
-
+          {/* ─── CRYPTO (AZIX) SPECIAL FLOW ─── */}
           {method === "azix" && (
             <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
               {/* ── SIMPLIFIED CRYPTO PAYMENT INSTRUCTIONS ── */}
@@ -1445,10 +1441,11 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             </div>
           )}
 
-          {(method === "coinbase" || method === "transak") && (
+          {/* Coinbase/Transak on-ramp notice (when those providers selected) */}
+          {(method === "coinbase" || method === "transak") && selectedProvider && (
             <div className="p-3 rounded-lg border border-border text-center space-y-1">
               <p className="text-xs font-medium">
-                {method === "coinbase" ? "Coinbase Commerce" : "Transak"} on-ramp
+                {selectedProvider.name} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
@@ -1457,9 +1454,20 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
             </div>
           )}
 
+          {/* Apple Pay / Google Pay notice */}
           {method === "applepay" && (
             <div className="p-3 rounded-lg border border-border text-center">
               <p className="text-xs text-muted-foreground">Apple Pay / Google Pay will launch on confirmation</p>
+            </div>
+          )}
+
+          {/* PayPal notice */}
+          {method === "paypal" && (
+            <div className="p-3 rounded-lg border border-border text-center space-y-1">
+              <p className="text-xs font-medium">PayPal (via Stripe)</p>
+              <p className="text-[10px] text-muted-foreground">
+                You'll be redirected to PayPal to complete payment. Routed through Stripe for settlement.
+              </p>
             </div>
           )}
 
@@ -1508,15 +1516,16 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               flowType={method === "azix" ? "os_pay_crypto" : "os_pay_fiat"}
               role={role}
               method={method || undefined}
-              providerName={
+              providerName={selectedProvider?.name || (
                 method === "mobile_money" ? (mobileProvider || "Mobile Money")
                 : method === "bank_transfer" ? (bankName || "Bank Transfer")
                 : method === "azix" ? "Crypto (USDC/USDT)"
                 : method === "coinbase" ? "Coinbase"
                 : method === "transak" ? "Transak"
                 : method === "applepay" ? "Apple Pay / Google Pay"
+                : method === "paypal" ? "PayPal"
                 : "Card"
-              }
+              )}
               amount={parsedAmount}
             />
           )}
