@@ -490,6 +490,32 @@ Deno.serve(async (req) => {
         console.warn("Escrow bridge refund forward failed:", e);
       }
 
+      // ── Trigger Refund Router for last-mile disbursement ──
+      let refundRouteResult: Record<string, unknown> | null = null;
+      try {
+        const refundRouterUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/refund-router`;
+        const rrRes = await fetch(refundRouterUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({
+            action: "route_buyer_refund",
+            transactionId,
+            refundAmount: lockedPrincipal,
+            refundType: "full_refund",
+            buyerPaymentDetails: body.buyerPaymentDetails || null,
+            originalProcessor: body.originalProcessor || null,
+            paymentCategory: body.paymentCategory || null,
+            buyerId: tx.buyer_id,
+          }),
+        });
+        refundRouteResult = await rrRes.json();
+      } catch (e) {
+        console.warn("Refund router forward failed (non-blocking):", e);
+      }
+
       await notify(
         supabase, tx.buyer_id,
         "Refund Processed — $0 Fees",
@@ -506,6 +532,7 @@ Deno.serve(async (req) => {
         feesChargedToBuyer: 0,
         gasModel: "Gasless — MATIC paid by TrustLock Relayer Wallet",
         note: "The 0.5% transaction fee collected at checkout is NOT refunded — it is TrustLock revenue.",
+        refundDisbursement: refundRouteResult,
         transfers: [{
           from: WALLETS.escrow.address,
           to: buyerWallet,
