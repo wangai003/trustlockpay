@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,6 +6,8 @@ import {
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
   Phone, Building2
 } from "lucide-react";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

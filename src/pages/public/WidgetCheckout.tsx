@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Lock, CheckCircle, Loader2, Package, AlertTriangle, Building2, User, FileText, CreditCard, Copy, Clock, ArrowRight, Handshake, Globe, MapPin, Phone, Wallet, Coins } from "lucide-react";
+import ProviderSearch from "@/components/shared/ProviderSearch";
+import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import { type InternationalRegion, getProcessorForRegion } from "@/lib/internationalBankData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
