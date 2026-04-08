@@ -22,13 +22,14 @@ const DataRights = () => {
 
     setExporting(true);
     try {
-      const [profileRes, txRes, ordersRes, disputesRes, docsRes, notifsRes] = await Promise.all([
+      const [profileRes, txRes, ordersRes, disputesRes, docsRes, notifsRes, milestonesRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("transactions").select("*").or(`buyer_id.eq.${user.id},vendor_id.eq.${user.id}`).limit(500),
         supabase.from("order_carbon_copies").select("*").or(`buyer_id.eq.${user.id},vendor_id.eq.${user.id}`).limit(500),
         supabase.from("disputes").select("*").or(`buyer_id.eq.${user.id},vendor_id.eq.${user.id}`).limit(500),
         supabase.from("kyc_documents").select("id, name, status, document_category, created_at").eq("vendor_id", user.id).limit(100),
         supabase.from("notifications").select("*").eq("user_id", user.id).limit(500),
+        supabase.from("transaction_milestones").select("id, title, status, gps_latitude, gps_longitude, gps_accuracy, gps_captured_at, gps_address, gps_city, gps_country").limit(500),
       ]);
 
       const exportData = {
@@ -41,6 +42,9 @@ const DataRights = () => {
         disputes: disputesRes.data || [],
         kyc_documents: docsRes.data || [],
         notifications: notifsRes.data || [],
+        milestone_location_data: (milestonesRes.data || []).filter(
+          (m: any) => m.gps_latitude || m.gps_address
+        ),
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -115,7 +119,7 @@ const DataRights = () => {
               </CardTitle>
               <CardDescription>
                 Download all your personal data in JSON format including profile, transactions,
-                orders, disputes, and notifications.
+                orders, disputes, GPS/location data from milestones, and notifications.
               </CardDescription>
             </CardHeader>
             <CardContent>

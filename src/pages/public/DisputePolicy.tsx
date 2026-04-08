@@ -380,7 +380,7 @@ const DisputePolicy = () => {
             Both parties may upload evidence to support their case during a dispute. Accepted formats include:
           </p>
           <div className="flex flex-wrap gap-2">
-            {["Photos/Screenshots", "PDF Documents", "Shipping Receipts", "Communication Logs", "Inspection Reports", "Contracts/Invoices"].map((item) => (
+            {["Photos/Screenshots", "PDF Documents", "Shipping Receipts", "Communication Logs", "Inspection Reports", "Contracts/Invoices", "GPS/Location Proofs"].map((item) => (
               <Badge key={item} variant="outline" className="text-[10px]">{item}</Badge>
             ))}
           </div>
@@ -388,6 +388,11 @@ const DisputePolicy = () => {
             All evidence is securely stored and retained for <strong>7 years</strong> in compliance with international
             record-keeping requirements. Evidence uploaded by one party is visible to the other party and the reviewing
             administrator or arbitrator.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            For industries involving physical goods or site work, <strong>GPS verification data</strong> — including
+            coordinates, resolved street addresses, and timestamps — is automatically included in the dispute
+            evidence package. This location data is blockchain-anchored and cannot be retroactively altered.
           </p>
         </section>
 
