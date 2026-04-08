@@ -511,6 +511,28 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 </Button>
               </TLId>
             )}
+            {order.status === "disputed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => onOpenWizard("buyer_full_refund")}
+              >
+                <Info className="w-3.5 h-3.5" />
+                How will I get my refund?
+              </Button>
+            )}
+            {order.status === "released" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-xs"
+                onClick={() => onOpenWizard("buyer_full_refund")}
+              >
+                <Info className="w-3.5 h-3.5" />
+                Payout Guide
+              </Button>
+            )}
             <TLId code={dynTLId("B", "BO", row, "BTN-VIEW")} inline>
               <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
             </TLId>
