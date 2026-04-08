@@ -27,6 +27,14 @@ export interface AnchorResult {
   recordType?: string;
   chainStatus?: string;
   verifyUrl?: string;
+  resolvedLocation?: {
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    postcode: string | null;
+    formatted: string | null;
+  } | null;
   error?: string;
 }
 

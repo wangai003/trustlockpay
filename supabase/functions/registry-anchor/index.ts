@@ -40,6 +40,41 @@ function toBytes32(input: string): string {
   return hash;
 }
 
+// ─── Reverse Geocoding via OpenStreetMap Nominatim ───
+async function reverseGeocode(
+  lat: number,
+  lon: number
+): Promise<{
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postcode: string | null;
+  formatted: string | null;
+}> {
+  const empty = { address: null, city: null, state: null, country: null, postcode: null, formatted: null };
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&zoom=18`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "TrustLock-Escrow/1.0 (compliance-geocode)" },
+    });
+    if (!res.ok) return empty;
+    const data = await res.json();
+    const a = data.address || {};
+    return {
+      address: a.road || a.neighbourhood || a.suburb || null,
+      city: a.city || a.town || a.village || a.hamlet || null,
+      state: a.state || a.region || a.province || null,
+      country: a.country || null,
+      postcode: a.postcode || null,
+      formatted: data.display_name || null,
+    };
+  } catch (err) {
+    console.warn("[registry-anchor] Reverse geocode failed:", err);
+    return empty;
+  }
+}
+
 const RECORD_TYPE_MAP: Record<string, number> = {
   invoice: 0,
   contract: 1,
@@ -262,6 +297,22 @@ Deno.serve(async (req) => {
         return json({ error: `Unknown recordType: ${recordType}` }, 400);
       }
 
+      // ── Enrich GPS verification records with reverse geocoding ──
+      let resolvedLocation: Record<string, unknown> | null = null;
+      if (recordType === "gps_verification" && eventData.latitude && eventData.longitude) {
+        const geo = await reverseGeocode(eventData.latitude, eventData.longitude);
+        if (geo.formatted) {
+          resolvedLocation = geo;
+          // Merge into eventData so it's included in the content hash
+          eventData.resolvedAddress = geo.address;
+          eventData.resolvedCity = geo.city;
+          eventData.resolvedState = geo.state;
+          eventData.resolvedCountry = geo.country;
+          eventData.resolvedPostcode = geo.postcode;
+          eventData.resolvedFormatted = geo.formatted;
+        }
+      }
+
       // Create deterministic content hash
       const canonicalData = JSON.stringify(eventData, Object.keys(eventData).sort());
       const contentHash = await sha256(canonicalData);
@@ -332,6 +383,7 @@ Deno.serve(async (req) => {
         chainStatus,
         polygonTxHash,
         polygonConfigured: !!polygonConfig,
+        resolvedLocation: resolvedLocation || null,
         verifyUrl: polygonTxHash
           ? `https://polygonscan.com/tx/${polygonTxHash}`
           : polygonConfig
