@@ -682,7 +682,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {!isAdmin && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Region</p>
-            <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setMethod(null); }}>
+            <Tabs value={payMode} onValueChange={(v) => { setPayMode(v as PayMode); setSelectedProvider(null); setProviderFields({}); }}>
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="local" className="gap-1.5 text-xs">
                   <MapPin className="w-3.5 h-3.5" />
