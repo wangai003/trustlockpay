@@ -1304,6 +1304,35 @@ const MilestoneWorkOrderPanel = ({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    {/* External Fee Soft Gate Dialog */}
+    <AlertDialog open={!!pendingFeeGateRelease} onOpenChange={(open) => !open && setPendingFeeGateRelease(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-destructive" /> Unverified External Fees
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              <strong>{pendingFeeGateRelease?.title}</strong> has <strong>{pendingFeeGateRelease?.unverifiedCount}</strong> external fee(s) totaling <strong>${pendingFeeGateRelease?.unverifiedTotal.toLocaleString()}</strong> that have not been verified by the counterparty.
+            </p>
+            <p className="text-xs">
+              These are third-party costs (logistics, customs, insurance, etc.) logged against this milestone. It is recommended that both parties confirm all offline costs before releasing funds.
+            </p>
+            <p className="text-xs font-medium">
+              Are you sure you want to release funds without full fee reconciliation?
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Review Fees First</AlertDialogCancel>
+          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+            if (!pendingFeeGateRelease) return;
+            await handleReleaseMilestone(pendingFeeGateRelease.id, true);
+            setPendingFeeGateRelease(null);
+          }}>Release Anyway</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };
