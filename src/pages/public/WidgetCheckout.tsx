@@ -229,10 +229,10 @@ const WidgetCheckout = () => {
   };
 
   const baseAmount = parseFloat(form.amount || "0");
-  const isCryptoPayment = form.paymentMethod === "usdc" || form.paymentMethod === "usdt";
+  const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
   const feeMethod: FeePaymentMethod = isCryptoPayment ? "crypto"
-    : form.paymentMethod === "mobile_money" ? "mobile_money"
-    : form.paymentMethod === "bank_transfer" ? "bank_transfer"
+    : derivedPaymentMethod === "mobile_money" ? "mobile_money"
+    : derivedPaymentMethod === "bank_transfer" ? "bank_transfer"
     : "card";
   const selectedProcessorId = selectProcessor(form.buyerCountry, isCryptoPayment, undefined, feeMethod);
   const selectedProcessor = PROCESSORS[selectedProcessorId];
