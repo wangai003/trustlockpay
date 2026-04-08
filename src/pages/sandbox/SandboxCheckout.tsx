@@ -146,7 +146,7 @@ const SandboxCheckout = () => {
     setTimeout(() => {
       const newOrder = createSandboxOrder(
         config, buyerName.trim(), buyerEmail.trim(),
-        paymentMethod === "card" ? "Card (Visa ****4242)" : paymentMethod === "usdc" ? "USDC (Polygon)" : "USDT (Polygon)"
+        selectedProvider ? selectedProvider.name : derivedPaymentMethod === "card" ? "Card (Visa ****4242)" : derivedPaymentMethod === "usdc" ? "USDC (Polygon)" : "USDT (Polygon)"
       );
       setOrder(newOrder);
       setStep("confirmation");
