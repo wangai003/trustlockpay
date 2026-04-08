@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2,
   UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning,
-  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe,
+  ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe, Receipt,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
