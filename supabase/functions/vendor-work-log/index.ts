@@ -13,9 +13,9 @@ function jsonResp(data: unknown, status = 200) {
   });
 }
 
-/** Normalize a name: trim, collapse spaces, strip diacritics, lowercase */
+/** Normalize a name: trim, collapse spaces, lowercase. Accents preserved. */
 function normalizeName(name: string): string {
-  return name.trim().replace(/\s+/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 Deno.serve(async (req) => {
