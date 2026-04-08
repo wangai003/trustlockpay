@@ -1085,6 +1085,7 @@ const MilestoneWorkOrderPanel = ({
                         tradeScope={tradeScope}
                         industrySuggestions={[]}
                         isTestnet={isTestnet}
+                        totalMilestones={milestones.length}
                         readOnly
                       />
                     )}
