@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PayoutGuideWizard, { type PayoutScenario } from "@/components/shared/PayoutGuideWizard";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import VendorHeader from "@/components/vendor/VendorHeader";
