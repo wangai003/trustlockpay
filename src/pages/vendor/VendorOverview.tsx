@@ -17,7 +17,6 @@ import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import TLId from "@/components/shared/TLId";
 
 const statusColors: Record<string, string> = {
   locked: "bg-accent/15 text-accent-foreground",
@@ -133,10 +132,9 @@ const VendorOverview = () => {
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <TLId code="TL-V-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="vendor" /></TLId>
+        <OnboardingTaskCard role="vendor" />
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <TLId code="TL-V-OVW-CRD-WELCOME">
           <Card className="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border-primary/20 overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent pointer-events-none" />
             <CardContent className="p-4 sm:p-6 relative">
@@ -156,7 +154,6 @@ const VendorOverview = () => {
               </div>
             </CardContent>
           </Card>
-          </TLId>
         </motion.div>
 
         <motion.div
@@ -193,11 +190,9 @@ const VendorOverview = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between bg-muted/20">
               <CardTitle className="text-base">Recent Transactions</CardTitle>
-              <TLId code="TL-V-OVW-BTN-VIEW-ALL-TX" inline>
-                <Button variant="ghost" size="sm" className="text-xs hover:text-primary" onClick={() => navigate("/trustlock/vendor/transactions")}>
+              <Button variant="ghost" size="sm" className="text-xs hover:text-primary" onClick={() => navigate("/trustlock/vendor/transactions")}>
                   View All →
                 </Button>
-              </TLId>
             </CardHeader>
             <CardContent className="p-0">
               {txLoading ? (
@@ -273,11 +268,9 @@ const VendorOverview = () => {
                   <CardTitle className="text-base">Work Log</CardTitle>
                   <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
                 </div>
-                <TLId code="TL-V-OVW-BTN-ACCEPT-CONTRACT" inline>
-                  <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
+                <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
                     <Check className="w-3 h-3" /> Accept All
                   </Button>
-                </TLId>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">

@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import TLId from "@/components/shared/TLId";
 
 const tiers = [
   { tier: 0, label: "Unverified", limit: "Cannot transact", status: "completed" as const },
@@ -663,11 +662,9 @@ const VendorKYC = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Submitted Documents</CardTitle>
-                  <TLId code="TL-V-KYC-BTN-SUBMIT" inline>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { setSelectedCategory("other"); fileInputRef.current?.click(); }} disabled={uploading}>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => { setSelectedCategory("other"); fileInputRef.current?.click(); }} disabled={uploading}>
                       <Upload className="w-3 h-3" /> Upload Other
                     </Button>
-                  </TLId>
                 </div>
               </CardHeader>
               <CardContent>

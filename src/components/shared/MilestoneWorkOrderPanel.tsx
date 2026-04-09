@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import OfflineReconciliation from "@/components/shared/OfflineReconciliation";
-import TLId from "@/components/shared/TLId";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { isGpsRequiredByIndustry } from "@/lib/industryList";
 import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
@@ -225,8 +224,7 @@ const MilestoneWorkOrderPanel = ({
   if (!isTestnet && !transactionId) return null;
   if (milestones.length === 0 && !isTestnet) {
     return (
-      <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
-        <Card className="border-primary/20">
+      <Card className="border-primary/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
@@ -241,7 +239,6 @@ const MilestoneWorkOrderPanel = ({
             </Button>
           </CardContent>
         </Card>
-      </TLId>
     );
   }
   if (milestones.length === 0) return null;
@@ -255,8 +252,7 @@ const MilestoneWorkOrderPanel = ({
     reconciliationTemplates && reconciliationTemplates.length > 1 && layoutMode !== "single"
   ) {
     return (
-      <TLId code={`TL-${rolePrefix}-WO-RECONCILIATION`}>
-        <OfflineReconciliation
+      <OfflineReconciliation
           role={role} transactionId={transactionId} txId={txId} industry={industry}
           milestoneTemplates={reconciliationTemplates.map(t => ({
             name: t.name, percentage: t.percentage, documents: t.documents, description: t.description,
@@ -268,7 +264,6 @@ const MilestoneWorkOrderPanel = ({
           }}
           isTestnet={isTestnet}
         />
-      </TLId>
     );
   }
 
@@ -276,8 +271,7 @@ const MilestoneWorkOrderPanel = ({
 
   return (
     <>
-    <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
-      <Card className="border-primary/20">
+    <Card className="border-primary/20">
         <CardHeader className="pb-2 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -493,7 +487,6 @@ const MilestoneWorkOrderPanel = ({
           })}
         </CardContent>
       </Card>
-    </TLId>
 
     <MilestoneDialogs
       isTestnet={isTestnet}
