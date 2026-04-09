@@ -15,9 +15,9 @@ import Footer from "@/components/Footer";
 
 const TrustLock = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(160,20%,6%)]">
       {/* Sticky Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(160,20%,6%)]/80 backdrop-blur-lg border-b border-[hsl(160,15%,15%)]">
         <div className="container mx-auto flex items-center justify-between h-16 px-4 lg:px-8">
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
