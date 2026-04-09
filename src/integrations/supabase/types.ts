@@ -5188,6 +5188,7 @@ export type Database = {
         Row: {
           created_at: string
           default_trade_scope: string
+          display_currency: string
           id: string
           industry: string | null
           is_active: boolean | null
@@ -5199,6 +5200,7 @@ export type Database = {
         Insert: {
           created_at?: string
           default_trade_scope?: string
+          display_currency?: string
           id?: string
           industry?: string | null
           is_active?: boolean | null
@@ -5210,6 +5212,7 @@ export type Database = {
         Update: {
           created_at?: string
           default_trade_scope?: string
+          display_currency?: string
           id?: string
           industry?: string | null
           is_active?: boolean | null
