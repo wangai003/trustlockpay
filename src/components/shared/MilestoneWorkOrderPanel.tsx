@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2,
   UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning,
@@ -114,7 +116,6 @@ const LAYOUT_MODE_ICONS: Record<LayoutMode, string> = {
   linear: "📋", single: "🔒", inspection: "🔍", offline: "💼",
 };
 
-/* ─── Action-type visual classification ─── */
 type ActionVisual = "submit" | "confirm" | "sign" | "release";
 
 function classifyAction(label: string): ActionVisual {
@@ -132,18 +133,13 @@ const ACTION_STYLES: Record<ActionVisual, { icon: React.ElementType; className: 
   release: { icon: Banknote,       className: "bg-amber-600 hover:bg-amber-700 text-white shadow-lg ring-1 ring-amber-400/30" },
 };
 
-/* ─── Blueprint Data (inline for unified panel) ─── */
 interface MilestoneTemplate {
   name: string; percentage: number; documents: string[];
   documentMode: "none" | "optional" | "required";
   description: string; requiresObserver: boolean;
-  /** Who drives this step: vendor fulfills, buyer confirms, or both must act */
   owner: "vendor" | "buyer" | "both";
-  /** Industry-specific label for the primary action button */
   vendorAction?: string;
-  /** Industry-specific label for the buyer release/confirm button */
   buyerAction?: string;
-  /** Maps each document to who is responsible for uploading it */
   documentOwners?: Record<string, "vendor" | "buyer" | "either">;
 }
 
@@ -234,76 +230,65 @@ const INDUSTRY_MILESTONES: Record<string, MilestoneTemplate[]> = {
   ],
 };
 
-/* ─── Note: All pre-payment instruments (LC, bank guarantees) have been removed.
-   TrustLock escrow replaces traditional payment guarantees — funds are always locked before
-   the work order begins. No document gate bypass logic is needed. ─── */
-
 const getUploadedKeys = (ms: any): Set<string> => {
   const uploadedDocs: any[] = Array.isArray(ms.uploaded_documents) ? ms.uploaded_documents : [];
   const keys = new Set<string>();
   for (const d of uploadedDocs) {
-    if (d.document_type) keys.add(d.document_type.toLowerCase());
+    if (d.document_type && d.document_type !== "general") keys.add(d.document_type.toLowerCase());
     if (d.name) keys.add(d.name.toLowerCase());
   }
   return keys;
 };
 
-const getDocGateStatus = (ms: any, escrowFunded = false) => {
-  const mode: string = ms.document_mode || "none";
-  const requiredDocs: string[] = Array.isArray(ms.required_documents) ? ms.required_documents : [];
+const PRE_PAYMENT_DOCUMENTS = new Set([
+  "letter of credit", "lc", "bank guarantee", "payment guarantee",
+  "proforma invoice", "pro-forma invoice", "advance payment guarantee",
+]);
+
+function getDocGateStatus(ms: any, fundsAreLocked: boolean) {
+  const mode: "none" | "optional" | "required" = ms.document_mode || "none";
+  const requiredDocs: string[] = ms.required_documents || [];
   const optionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
   const uploadedKeys = getUploadedKeys(ms);
 
-  if (mode === "none" && requiredDocs.length === 0) {
-    return { mode: "none", satisfied: true, missingRequired: [] as string[], missingOptional: [] as string[], autoSatisfied: [] as string[] };
+  const autoSatisfied: string[] = [];
+  const missingRequired: string[] = [];
+  const missingOptional: string[] = [];
+
+  for (const doc of requiredDocs) {
+    if (PRE_PAYMENT_DOCUMENTS.has(doc.toLowerCase()) && fundsAreLocked) {
+      autoSatisfied.push(doc);
+      continue;
+    }
+    const docLower = doc.toLowerCase();
+    const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
+    if (!isMet) missingRequired.push(doc);
   }
 
-  const effectiveMode = requiredDocs.length > 0 ? (mode === "none" ? "required" : mode) : mode;
-  const checkDoc = (doc: string) => {
+  for (const doc of optionalDocs) {
     const docLower = doc.toLowerCase();
-    for (const key of uploadedKeys) {
-      if (key.includes(docLower) || docLower.includes(key.replace(/\.[^.]+$/, ""))) return true;
-    }
-    return false;
+    const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
+    if (!isMet) missingOptional.push(doc);
+  }
+
+  return {
+    mode,
+    satisfied: missingRequired.length === 0,
+    missingRequired,
+    missingOptional,
+    autoSatisfied,
   };
-
-  const missingRequired = requiredDocs.filter((doc) => !checkDoc(doc));
-  const missingOptional = optionalDocs.filter((doc) => !checkDoc(doc));
-  const satisfied = effectiveMode === "required" ? missingRequired.length === 0 : true;
-
-  return { mode: effectiveMode, satisfied, missingRequired, missingOptional, autoSatisfied: [] as string[] };
-};
+}
 
 /* ─── Progress Stepper ─── */
-
-const ProgressStepper = ({ milestones, activeIndex, onStepClick }: {
-  milestones: any[]; activeIndex: number; onStepClick: (idx: number) => void;
-}) => {
-  const completedCount = milestones.filter((m: any) => m.status === "completed" || m.status === "released").length;
-  const progressPct = milestones.length > 0 ? Math.round((completedCount / milestones.length) * 100) : 0;
-
+const ProgressStepper = ({ milestones, activeIndex, onStepClick }: { milestones: any[]; activeIndex: number; onStepClick: (idx: number) => void }) => {
   return (
-    <div className="space-y-2">
-      {/* Progress bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
-          {completedCount}/{milestones.length} ({progressPct}%)
-        </span>
-      </div>
-
-      {/* Step dots */}
+    <div className="space-y-1">
       <div className="flex items-center gap-0.5">
         {milestones.map((ms: any, idx: number) => {
           const isDone = ms.status === "completed" || ms.status === "released";
           const isActive = idx === activeIndex;
           const isDeleted = ms.status === "deleted";
-
           return (
             <button
               key={ms.id}
@@ -332,19 +317,14 @@ const ProgressStepper = ({ milestones, activeIndex, onStepClick }: {
   );
 };
 
-/* ─── Blueprint Summary (integrated header) ─── */
-
 const BlueprintSummary = ({ industry, layoutMode }: { industry?: string | null; layoutMode: LayoutMode }) => {
   const key = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
   const blueprintMs = INDUSTRY_MILESTONES[key]
     || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => key.includes(k)) || ""]
     || null;
-
   if (!blueprintMs) return null;
-
   const reqDocs = blueprintMs.flatMap(m => m.documentMode === "required" ? m.documents : []);
   const observers = blueprintMs.filter(m => m.requiresObserver).length;
-
   return (
     <div className="grid grid-cols-4 gap-1.5 text-center">
       <div className="rounded-md bg-muted/40 p-1.5">
@@ -414,13 +394,11 @@ const MilestoneWorkOrderPanel = ({
       }))
     : dbObservers;
 
-  // Auto-determine which milestone is the "active" one (first non-completed)
   const activeIndex = useMemo(() => {
     const idx = milestones.findIndex((ms: any) => ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted");
     return idx === -1 ? milestones.length - 1 : idx;
   }, [milestones]);
 
-  // Auto-expand active step
   const isExpanded = (idx: number) => expandedSteps.has(idx) || idx === activeIndex;
   const toggleStep = (idx: number) => {
     setExpandedSteps(prev => {
@@ -476,19 +454,13 @@ const MilestoneWorkOrderPanel = ({
           toast.error("GPS location is required for this industry. Enable location services and try again.", { duration: 6000 });
           return;
         }
-        // Call real reverse geocoding via registry-anchor for display
         try {
           const result = await anchorProof(
             transactionId || "testnet-sim",
             "gps_verification",
             {
-              milestoneId,
-              latitude: geo.latitude,
-              longitude: geo.longitude,
-              accuracy: geo.accuracy,
-              capturedAt: geo.capturedAt,
-              capturedBy: role,
-              isTestnet: true,
+              milestoneId, latitude: geo.latitude, longitude: geo.longitude,
+              accuracy: geo.accuracy, capturedAt: geo.capturedAt, capturedBy: role, isTestnet: true,
             }
           );
           const loc = result?.resolvedLocation;
@@ -510,42 +482,27 @@ const MilestoneWorkOrderPanel = ({
     if (!userId) return toast.error("Sign in required");
 
     const gpsRequired = isGpsRequiredByIndustry(industry || "");
-
     if (gpsRequired) {
       const geo = await capturePosition();
       if (!geo) {
-        toast.error(
-          "GPS location is required for this industry. Enable location services and try again.",
-          { duration: 6000 }
-        );
-        return; // Hard-block: cannot complete milestone without GPS
+        toast.error("GPS location is required for this industry. Enable location services and try again.", { duration: 6000 });
+        return;
       }
-
       await supabase.from("transaction_milestones").update({
         gps_latitude: geo.latitude, gps_longitude: geo.longitude,
         gps_accuracy: geo.accuracy, gps_captured_at: geo.capturedAt,
       } as any).eq("id", milestoneId);
-
       if (transactionId) {
         try {
           const result = await anchorProof(transactionId, "gps_verification", {
-            milestoneId,
-            latitude: geo.latitude,
-            longitude: geo.longitude,
-            accuracy: geo.accuracy,
-            capturedAt: geo.capturedAt,
-            capturedBy: role,
+            milestoneId, latitude: geo.latitude, longitude: geo.longitude,
+            accuracy: geo.accuracy, capturedAt: geo.capturedAt, capturedBy: role,
           });
-
-          // Show resolved address if available, fall back to coordinates
           const loc = result?.resolvedLocation;
           if (loc?.formatted) {
             toast.success(`📍 ${loc.formatted}`, { duration: 6000 });
-            // Store resolved address alongside GPS coordinates
             await supabase.from("transaction_milestones").update({
-              gps_address: loc.formatted,
-              gps_city: loc.city,
-              gps_country: loc.country,
+              gps_address: loc.formatted, gps_city: loc.city, gps_country: loc.country,
             } as any).eq("id", milestoneId);
           } else {
             toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
@@ -558,15 +515,11 @@ const MilestoneWorkOrderPanel = ({
         toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
       }
     }
-    // GPS-optional industries: no prompt, no capture — milestone proceeds without location data
-
     await updateMilestone.mutateAsync({ milestoneId, userId, status: "completed" });
   };
 
   const handleReleaseMilestone = async (milestoneId: string, bypassFeeGate = false) => {
     if (isTestnet) { onTestnetRelease?.(milestoneId); return; }
-
-    // Soft gate: check for unverified external fees on this milestone
     if (!bypassFeeGate) {
       const msIdx = milestones.findIndex((m: any) => m.id === milestoneId);
       const feeInfo = milestoneExternalFees[msIdx];
@@ -576,7 +529,6 @@ const MilestoneWorkOrderPanel = ({
         return;
       }
     }
-
     const userId = await getUserId();
     if (!userId) return toast.error("Sign in required");
     await releaseMilestonePayment.mutateAsync({ milestoneId, userId });
@@ -628,33 +580,22 @@ const MilestoneWorkOrderPanel = ({
   }
   if (milestones.length === 0) return null;
 
-  // ── Offline Reconciliation Gate ──
-  // Show before the work order activates when funds are first locked
+  // Offline Reconciliation Gate
   const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
   const reconciliationTemplates = INDUSTRY_MILESTONES[indKey]
     || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
     || null;
 
   if (
-    !isAdmin &&
-    fundsAreLocked &&
-    !reconciliationComplete &&
-    reconciliationTemplates &&
-    reconciliationTemplates.length > 1 &&
-    layoutMode !== "single"
+    !isAdmin && fundsAreLocked && !reconciliationComplete &&
+    reconciliationTemplates && reconciliationTemplates.length > 1 && layoutMode !== "single"
   ) {
     return (
       <TLId code={`TL-${rolePrefix}-WO-RECONCILIATION`}>
         <OfflineReconciliation
-          role={role}
-          transactionId={transactionId}
-          txId={txId}
-          industry={industry}
+          role={role} transactionId={transactionId} txId={txId} industry={industry}
           milestoneTemplates={reconciliationTemplates.map(t => ({
-            name: t.name,
-            percentage: t.percentage,
-            documents: t.documents,
-            description: t.description,
+            name: t.name, percentage: t.percentage, documents: t.documents, description: t.description,
           }))}
           onReconciliationComplete={(skipped) => {
             setSkippedMilestoneIndices(skipped);
@@ -673,7 +614,6 @@ const MilestoneWorkOrderPanel = ({
     <>
     <TLId code={`TL-${rolePrefix}-WO-PANEL`}>
       <Card className="border-primary/20">
-        {/* ── Header with integrated blueprint ── */}
         <CardHeader className="pb-2 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -692,45 +632,88 @@ const MilestoneWorkOrderPanel = ({
             </div>
           </div>
 
-          {/* Blueprint summary stats */}
           <BlueprintSummary industry={industry} layoutMode={layoutMode} />
 
-          {/* Trade Scope — compact in header */}
+          {/* ── Overall Progress Summary ── */}
+          {milestones.length > 1 && (() => {
+            const completed = milestones.filter((ms: any) => ms.status === "completed" || ms.status === "released").length;
+            const deleted = milestones.filter((ms: any) => ms.status === "deleted").length;
+            const total = milestones.length - deleted;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const released = milestones.filter((ms: any) => ms.status === "released").length;
+            const releasedAmount = milestones
+              .filter((ms: any) => ms.status === "released" && ms.is_payment_milestone)
+              .reduce((sum: number, ms: any) => sum + Number(ms.payment_amount || 0), 0);
+
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    <span className="font-semibold text-foreground">{completed}</span> of <span className="font-semibold text-foreground">{total}</span> stages complete
+                  </span>
+                  <span className="font-semibold text-primary">{pct}%</span>
+                </div>
+                <Progress value={pct} className="h-2" />
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  {released > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <Banknote className="w-3 h-3 text-primary" />
+                      {released} released · ${releasedAmount.toLocaleString()}
+                    </span>
+                  )}
+                  {deleted > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <Trash2 className="w-3 h-3" />
+                      {deleted} removed
+                    </span>
+                  )}
+                  {(() => {
+                    const waiting = milestones.find((ms: any) => ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted");
+                    if (!waiting) return null;
+                    const template = (() => {
+                      const k = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+                      const bp = INDUSTRY_MILESTONES[k] || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(ki => k.includes(ki)) || ""] || null;
+                      const wIdx = milestones.indexOf(waiting);
+                      return bp?.[wIdx] || null;
+                    })();
+                    const owner = template?.owner || "vendor";
+                    return (
+                      <span className="flex items-center gap-0.5 ml-auto">
+                        {owner === role ? (
+                          <><AlertTriangle className="w-3 h-3 text-accent" /> Your turn</>
+                        ) : (
+                          <><Lock className="w-3 h-3" /> Waiting on {owner === "both" ? "both" : owner}</>
+                        )}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })()}
+
           {!isAdmin && layoutMode !== "single" && (
-            <TradeScopeSelector
-              value={tradeScope}
-              onChange={setTradeScope}
-              compact
-              autoSet={false}
-            />
+            <TradeScopeSelector value={tradeScope} onChange={setTradeScope} compact autoSet={false} />
           )}
 
-          {/* Progress stepper */}
           {milestones.length > 1 && (
-            <ProgressStepper
-              milestones={milestones}
-              activeIndex={activeIndex}
-              onStepClick={toggleStep}
-            />
+            <ProgressStepper milestones={milestones} activeIndex={activeIndex} onStepClick={toggleStep} />
           )}
         </CardHeader>
 
-        {/* ── Accordion milestones ── */}
         <CardContent className="space-y-2 pt-0">
           {milestones.map((ms: any, idx: number) => {
             const row = idx + 1;
             const gateStatus = getDocGateStatus(ms, fundsAreLocked);
 
-            // Look up blueprint template for this milestone
-            const indKey = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
-            const blueprint = INDUSTRY_MILESTONES[indKey]
-              || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indKey.includes(k)) || ""]
+            const indK = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+            const blueprint = INDUSTRY_MILESTONES[indK]
+              || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(k => indK.includes(k)) || ""]
               || null;
             const template = blueprint?.[idx] || null;
             const stepOwner = template?.owner || "vendor";
             const docOwners = template?.documentOwners || {};
 
-            // Ownership-aware action logic
             const isVendorStep = stepOwner === "vendor" || stepOwner === "both";
             const isBuyerStep = stepOwner === "buyer" || stepOwner === "both";
             const canVendorFulfill = role === "vendor" && isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted";
@@ -738,11 +721,9 @@ const MilestoneWorkOrderPanel = ({
             const canBuyerRelease = role === "buyer" && ms.status === "completed" && ms.is_payment_milestone && !ms.payment_released;
             const hasObserver = !!ms.observer_id;
 
-            // Custom action labels from template
             const vendorActionLabel = template?.vendorAction || (layoutMode === "offline" ? "Confirm Offline Step" : layoutMode === "single" ? "Confirm & Ship Order" : "Mark Fulfilled");
             const buyerActionLabel = template?.buyerAction || "Confirm & Approve";
 
-            // Counterparty status indicators
             const vendorFulfilled = ms.status === "completed" || ms.status === "released";
             const buyerReleased = ms.status === "released";
             const isDisputed = ms.status === "disputed";
@@ -754,7 +735,6 @@ const MilestoneWorkOrderPanel = ({
             const rawRequiredDocs: string[] = ms.required_documents || [];
             const rawOptionalDocs: string[] = Array.isArray(ms.optional_documents) ? ms.optional_documents : [];
 
-            // Filter documents by trade scope
             const scopeFiltered = filterDocumentsByScope(rawRequiredDocs, rawOptionalDocs, tradeScope);
             const requiredDocs = scopeFiltered.required;
             const optionalDocs = scopeFiltered.optional;
@@ -770,12 +750,11 @@ const MilestoneWorkOrderPanel = ({
                   "border-border"
                 }`}
               >
-                {/* ── Collapsed Row (always visible) ── */}
+                {/* ── Collapsed Row ── */}
                 <button
                   onClick={() => toggleStep(idx)}
                   className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/20 transition-colors rounded-lg"
                 >
-                  {/* Step number / status icon */}
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
                     isDeleted ? "bg-muted text-muted-foreground" :
                     ms.status === "released" ? "bg-primary text-primary-foreground" :
@@ -786,18 +765,14 @@ const MilestoneWorkOrderPanel = ({
                     {isDeleted ? "✕" : isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : row}
                   </div>
 
-                  {/* Title + summary */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className={`text-xs font-medium truncate ${isDone ? "line-through text-muted-foreground" : ""}`}>
                         {layoutMode === "single" ? "Escrow Delivery" : ms.title}
                       </span>
                       {ms.is_payment_milestone && (
-                        <Badge className="text-[8px] h-4 px-1 shrink-0">
-                          {ms.payment_percentage || 100}%
-                        </Badge>
+                        <Badge className="text-[8px] h-4 px-1 shrink-0">{ms.payment_percentage || 100}%</Badge>
                       )}
-                      {/* Step owner badge */}
                       {!isDone && !isDeleted && (
                         <Badge variant="outline" className={`text-[7px] h-3.5 px-1 shrink-0 ${
                           stepOwner === "vendor" ? "border-primary/30 text-primary" :
@@ -808,7 +783,6 @@ const MilestoneWorkOrderPanel = ({
                         </Badge>
                       )}
                     </div>
-                    {/* One-line status summary */}
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <Badge variant="outline" className={`text-[8px] h-4 ${
                         isDone ? "border-primary/30 text-primary" :
@@ -817,17 +791,10 @@ const MilestoneWorkOrderPanel = ({
                       }`}>
                         {statusLabel[ms.status] || ms.status}
                       </Badge>
-                      {uploadedDocs.length > 0 && (
-                        <span className="text-[9px] text-muted-foreground">{uploadedDocs.length} doc(s)</span>
-                      )}
+                      {uploadedDocs.length > 0 && <span className="text-[9px] text-muted-foreground">{uploadedDocs.length} doc(s)</span>}
                       {ms.gps_latitude && <MapPin className="w-2.5 h-2.5 text-primary" />}
-                      {gateStatus.mode === "required" && !gateStatus.satisfied && (
-                        <AlertTriangle className="w-2.5 h-2.5 text-destructive" />
-                      )}
-                      {isDisputed && (
-                        <Badge variant="destructive" className="text-[8px] h-4">Disputed</Badge>
-                      )}
-                      {/* Counterparty status indicators */}
+                      {gateStatus.mode === "required" && !gateStatus.satisfied && <AlertTriangle className="w-2.5 h-2.5 text-destructive" />}
+                      {isDisputed && <Badge variant="destructive" className="text-[8px] h-4">Disputed</Badge>}
                       {role === "buyer" && vendorFulfilled && !buyerReleased && (
                         <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Vendor ✅</Badge>
                       )}
@@ -848,524 +815,494 @@ const MilestoneWorkOrderPanel = ({
                     </div>
                   </div>
 
-                  {/* Expand chevron */}
                   {expanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                 </button>
 
-                {/* ── Expanded Content ── */}
+                {/* ── Expanded Content with Tabs ── */}
                 {expanded && !isDeleted && (
-                  <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3 ml-9">
-                    {/* Amount */}
-                    <div className="text-[11px] text-muted-foreground">
+                  <div className="px-3 pb-3 border-t border-border/50 pt-3 ml-9">
+                    <div className="text-[11px] text-muted-foreground mb-2">
                       Amount: ${Number(ms.payment_amount || 0).toLocaleString()}
                     </div>
 
-                    {/* GPS Location Card */}
-                    {ms.gps_latitude && (
-                      <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
-                        <p className="text-[10px] font-semibold flex items-center gap-1 text-primary">
-                          <MapPin className="w-3.5 h-3.5" /> GPS Verification
-                        </p>
-                        {ms.gps_address && (
-                          <p className="text-[11px] font-medium">{ms.gps_address}</p>
-                        )}
-                        <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
-                          <span>Lat: {Number(ms.gps_latitude).toFixed(6)}</span>
-                          <span>Lng: {Number(ms.gps_longitude).toFixed(6)}</span>
-                          {ms.gps_accuracy && <span>Accuracy: ±{Number(ms.gps_accuracy).toFixed(0)}m</span>}
-                          {ms.gps_captured_at && <span>Captured: {new Date(ms.gps_captured_at).toLocaleString()}</span>}
-                        </div>
-                        {ms.gps_city && ms.gps_country && (
-                          <p className="text-[10px] text-muted-foreground">{ms.gps_city}, {ms.gps_country}</p>
-                        )}
-                      </div>
-                    )}
+                    <Tabs defaultValue="actions" className="w-full">
+                      <TabsList className="w-full h-8 grid grid-cols-3 mb-3">
+                        <TabsTrigger value="actions" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          ⚡ Actions
+                        </TabsTrigger>
+                        <TabsTrigger value="docs" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          📄 Docs
+                          {(requiredDocs.length > 0) && (
+                            <Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-0.5">
+                              {uploadedDocs.length}/{requiredDocs.length}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="notes" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          📝 Notes
+                        </TabsTrigger>
+                      </TabsList>
 
-                    {/* Description */}
-                    {ms.description && <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>}
-
-                    {/* ── Document Gate Checklist ── */}
-                    {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
-                      <div className="rounded-md border border-border p-2 space-y-2">
-                        {/* Auto-satisfied notice */}
-                        {gateStatus.autoSatisfied.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
-                            <Unlock className="w-3 h-3 shrink-0" />
-                            <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved — escrow already funded</span>
+                      {/* ═══ ACTIONS TAB ═══ */}
+                      <TabsContent value="actions" className="space-y-3 mt-0">
+                        {layoutMode === "offline" && ms.status === "pending" && (
+                          <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground">
+                            💼 This step happens offline. Once completed, confirm digitally below.
                           </div>
                         )}
-                        {/* Scope-downgraded notice */}
-                        {scopeDowngraded.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
-                            <Globe className="w-3 h-3 shrink-0" />
-                            <span><strong>{scopeDowngraded.length}</strong> doc(s) moved to optional — not required for <span className="capitalize font-medium">{tradeScope}</span> trades</span>
+
+                        {/* Enhanced waiting states with nudges */}
+                        {role === "vendor" && !isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted" && (
+                          <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/10 p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <Lock className="w-4 h-4 shrink-0 text-muted-foreground/60" />
+                              <div>
+                                <p className="font-medium text-foreground">Waiting for buyer</p>
+                                <p>This step is buyer-driven. They need to: <span className="font-medium text-foreground">{buyerActionLabel}</span></p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <span className="w-2 h-2 rounded-full bg-accent/60 animate-pulse" />
+                              Notification sent to buyer
+                            </div>
                           </div>
                         )}
-                        {requiredDocs.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-semibold flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3" /> Required Documents
-                              <Badge variant="outline" className={`text-[8px] ml-1 ${gateStatus.missingRequired.length === 0 ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}`}>
-                                {gateStatus.missingRequired.length === 0 ? "All uploaded" : `${gateStatus.missingRequired.length} missing`}
-                              </Badge>
+                        {role === "buyer" && !isBuyerStep && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
+                          <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/10 p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <Lock className="w-4 h-4 shrink-0 text-muted-foreground/60" />
+                              <div>
+                                <p className="font-medium text-foreground">Waiting for vendor</p>
+                                <p>This step is vendor-driven. They need to: <span className="font-medium text-foreground">{vendorActionLabel}</span></p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <span className="w-2 h-2 rounded-full bg-accent/60 animate-pulse" />
+                              Notification sent to vendor
+                            </div>
+                          </div>
+                        )}
+
+                        {isAdmin && (
+                          <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-1.5">
+                            <p className="text-[10px] font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Admin View</p>
+                            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">Vendor:</span>
+                                {vendorFulfilled
+                                  ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Fulfilled ✅</Badge>
+                                  : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Pending ⏳</Badge>
+                                }
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">Buyer:</span>
+                                {buyerReleased
+                                  ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Released ✅</Badge>
+                                  : vendorFulfilled
+                                    ? <Badge variant="outline" className="text-[8px] h-4 border-accent/30 text-accent">Action Required ⏳</Badge>
+                                    : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Waiting —</Badge>
+                                }
+                              </div>
+                            </div>
+                            {isDisputed && (
+                              <div className="flex items-center gap-1 text-destructive text-[10px] font-medium mt-1">
+                                <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
+                              </div>
+                            )}
+                            {ms.is_payment_milestone && (
+                              <p className="text-[9px] text-muted-foreground">
+                                💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
+                              </p>
+                            )}
+                            <p className="text-[9px] text-muted-foreground">
+                              🎯 Step owned by: <span className="font-semibold capitalize">{stepOwner}</span>
                             </p>
-                            <div className="flex flex-wrap gap-1">
-                              {requiredDocs.map((doc: string) => {
-                                const uploadedKeys = getUploadedKeys(ms);
-                                const docLower = doc.toLowerCase();
-                                const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
-                                const isAutoSatisfied = gateStatus.autoSatisfied.includes(doc);
-                                const owner = docOwners[doc] || "either";
-                                return (
-                                  <Badge key={doc} variant="outline" className={`text-[8px] ${
-                                    isAutoSatisfied ? "border-muted-foreground/30 text-muted-foreground line-through" :
-                                    isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"
-                                  }`}>
-                                    {isAutoSatisfied ? <Unlock className="w-2.5 h-2.5 mr-0.5" /> :
-                                     isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
-                                    {doc}
-                                    {isAutoSatisfied ? (
-                                      <span className="ml-0.5 text-[7px] text-muted-foreground italic">N/A — Escrow Funded</span>
-                                    ) : (
-                                      <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
-                                        ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
-                                      </span>
-                                    )}
-                                  </Badge>
-                                );
-                              })}
-                            </div>
                           </div>
                         )}
-                        {optionalDocs.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-semibold flex items-center gap-1 text-muted-foreground">
-                              <FileWarning className="w-3 h-3" /> Recommended
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {optionalDocs.map((doc: string) => {
-                                const uploadedKeys = getUploadedKeys(ms);
-                                const docLower = doc.toLowerCase();
-                                const isMet = Array.from(uploadedKeys).some(k => k.includes(docLower) || docLower.includes(k.replace(/\.[^.]+$/, "")));
-                                return (
-                                  <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/30 text-muted-foreground"}`}>
-                                    {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <FileWarning className="w-2.5 h-2.5 mr-0.5" />}
-                                    {doc}
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
 
-                    {/* Uploaded Documents */}
-                    {uploadedDocs.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold">Uploaded Documents</p>
-                        {/* Counterparty document summary */}
-                        {(() => {
-                          const counterpartyDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role && d.uploaded_by_role !== role);
-                          const myDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role === role);
-                          return counterpartyDocs.length > 0 ? (
-                            <div className="flex items-center gap-1.5 rounded border border-accent/30 bg-accent/5 px-2 py-1 text-[10px]">
-                              <Shield className="w-3 h-3 text-accent shrink-0" />
-                              <span className="text-accent font-medium">
-                                {counterpartyDocs.length} document{counterpartyDocs.length > 1 ? "s" : ""} from {role === "vendor" ? "Buyer" : "Vendor"}
-                              </span>
-                              {myDocs.length > 0 && (
-                                <span className="text-muted-foreground ml-auto">{myDocs.length} from you</span>
-                              )}
-                            </div>
-                          ) : null;
-                        })()}
-                        <div className="space-y-1">
-                          {uploadedDocs.map((doc: any, i: number) => {
-                            const isCounterparty = doc.uploaded_by_role && doc.uploaded_by_role !== role;
+                        <div className="flex flex-col gap-2 pt-1">
+                          {canVendorFulfill && (() => {
+                            const actionType = classifyAction(vendorActionLabel);
+                            const style = ACTION_STYLES[actionType];
+                            const ActionIcon = style.icon;
                             return (
-                              <div key={i} className={`flex items-center gap-1.5 rounded border p-1.5 text-[10px] ${
-                                isCounterparty ? "border-accent/30 bg-accent/5" : "border-border"
-                              }`}>
-                                <FileText className={`w-3 h-3 shrink-0 ${isCounterparty ? "text-accent" : "text-muted-foreground"}`} />
-                                <div className="flex-1 min-w-0">
-                                  <span className="truncate block">
-                                    {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
-                                    {doc.name}
-                                  </span>
-                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                    <User className="w-2 h-2" />
-                                    {isCounterparty ? (
-                                      <span className="text-accent font-medium">{doc.uploaded_by_role === "vendor" ? "Vendor" : "Buyer"}</span>
-                                    ) : (
-                                      <span>You ({doc.uploaded_by_role})</span>
-                                    )}
-                                    {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
-                                  </span>
-                                </div>
-                                {doc.url && (
-                                  <Button
-                                    variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]"
-                                    onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}
-                                  >
-                                    <Eye className="w-2.5 h-2.5 mr-0.5" /> View
-                                  </Button>
-                                )}
-                                {!isAdmin && !isDone && doc.uploaded_by_role === role && (
-                                  <Button
-                                    variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive"
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (!confirm(`Remove "${doc.name}"?`)) return;
-                                      if (isTestnet) {
-                                        toast.success(`Document "${doc.name}" removed`);
-                                        return;
-                                      }
-                                      const userId = await getUserId();
-                                      if (!userId) return;
-                                      const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
-                                      await supabase.from("transaction_milestones").update({
-                                        uploaded_documents: remaining,
-                                      } as any).eq("id", ms.id);
-                                      toast.success(`Document "${doc.name}" removed`);
-                                    }}
-                                  >
-                                    <Trash2 className="w-2.5 h-2.5" />
-                                  </Button>
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  size="default" variant="outline"
+                                  onClick={() => handleMarkFulfilled(ms.id)}
+                                  disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                                  className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
+                                >
+                                  <ActionIcon className="w-4 h-4 mr-2" /> {vendorActionLabel}
+                                </Button>
+                                {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                                  <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                                    <AlertTriangle className="w-2.5 h-2.5" /> Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                                  </p>
                                 )}
                               </div>
                             );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                          })()}
 
-                    {/* Observer Invite (vendor only, industries needing observers) */}
-                    {role === "vendor" && !hasObserver && industryNeedsObservers && !dismissedObserverPrompts.has(ms.id) && (
-                      <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2 relative">
-                        <button onClick={() => setDismissedObserverPrompts(prev => new Set(prev).add(ms.id))} className="absolute top-1.5 right-1.5 p-0.5 rounded hover:bg-amber-500/20" aria-label="Dismiss">
-                          <X className="w-3.5 h-3.5 text-amber-700" />
-                        </button>
-                        <p className="text-[11px] font-medium text-amber-700 pr-5">Observer recommended for this milestone.</p>
-                        <div className="grid sm:grid-cols-2 gap-2">
-                          <Input placeholder="Observer name" value={observerName} onChange={(e) => setObserverName(e.target.value)} />
-                          <Input placeholder="Observer email" value={observerEmail} onChange={(e) => setObserverEmail(e.target.value)} />
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => handleInviteObserver(ms.id)}>
-                          <UserPlus className="w-3 h-3 mr-1" /> Invite Observer
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Observer Linked (visible to vendor and admin) */}
-                    {(role === "vendor" || isAdmin) && hasObserver && (
-                      <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
-                        <p className="font-medium text-foreground">Observer linked</p>
-                        {observers.filter((obs: any) => (obs.milestone_ids ? obs.milestone_ids.includes(ms.id) : obs.milestoneId === ms.id)).map((obs: any) => {
-                          const link = obs.access_token || obs.observer_access_token
-                            ? `${window.location.origin}/trustlock/audit/${obs.access_token || obs.observer_access_token}` : null;
-                          return (
-                            <div key={obs.id || obs.observer_email} className="flex items-center gap-2 flex-wrap">
-                              <span>{obs.observer_name} ({obs.observer_email})</span>
-                              {link && !isAdmin && (
-                                <Button size="sm" variant="ghost" className="h-6 px-2" onClick={async () => { await navigator.clipboard.writeText(link); toast.success("Observer link copied"); }}>
-                                  <Copy className="w-3 h-3 mr-1" /> Copy Link
+                          {canBuyerAct && !canBuyerRelease && (() => {
+                            const actionType = classifyAction(buyerActionLabel);
+                            const style = ACTION_STYLES[actionType];
+                            const ActionIcon = style.icon;
+                            return (
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  size="default" variant="outline"
+                                  onClick={() => handleMarkFulfilled(ms.id)}
+                                  disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                                  className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
+                                >
+                                  <ActionIcon className="w-4 h-4 mr-2" /> {buyerActionLabel}
                                 </Button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Note — admin sees read-only */}
-                    {isAdmin ? (
-                      ms.description && (
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-medium flex items-center gap-1">
-                            <StickyNote className="w-3 h-3" /> Notes
-                          </label>
-                          <p className="text-[11px] text-muted-foreground bg-muted/30 rounded p-2">{ms.description}</p>
-                        </div>
-                      )
-                    ) : (
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium flex items-center gap-1">
-                          <StickyNote className="w-3 h-3" /> Note
-                        </label>
-                        <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
-                        <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
-                      </div>
-                    )}
-
-                    {/* Document Type Selector + Upload (not for admin) */}
-                    {!isAdmin && (() => {
-                      const allDocs = [...requiredDocs, ...optionalDocs];
-                      if (allDocs.length > 0) {
-                        return (
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-medium">Tag upload as:</label>
-                            <Select value={docTypeSelections[ms.id] || ""} onValueChange={(val) => setDocTypeSelections(prev => ({ ...prev, [ms.id]: val }))}>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select document type" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="general">General Evidence</SelectItem>
-                                {requiredDocs.map((doc: string) => <SelectItem key={doc} value={doc}>🔒 {doc}</SelectItem>)}
-                                {optionalDocs.map((doc: string) => <SelectItem key={doc} value={doc}>📎 {doc}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                    {!isAdmin && (isTestnet ? (
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => {
-                        const name = `Evidence-${ms.title.replace(/\s/g, "_")}-${Date.now()}.pdf`;
-                        onTestnetAddDocument?.(ms.id, { name, url: `testnet://mock/${name}` });
-                      }}>
-                        <FileText className="w-3 h-3 mr-1" /> Simulate Upload
-                      </Button>
-                    ) : (
-                      <DocumentUpload
-                        label="Upload evidence"
-                        context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
-                        onUploadComplete={(files) => {
-                          void (async () => {
-                            const userId = await getUserId();
-                            if (!userId) return;
-                            const selectedDocType = docTypeSelections[ms.id] || "general";
-                            await updateMilestone.mutateAsync({
-                              milestoneId: ms.id, userId,
-                              uploadedDocuments: files.map((file) => ({
-                                name: file.name, url: file.url, path: file.path,
-                                uploadedAt: new Date().toISOString(), uploaded_by: userId,
-                                uploaded_by_role: role, document_type: selectedDocType,
-                              })),
-                            });
-                            setDocTypeSelections(prev => ({ ...prev, [ms.id]: "" }));
-                          })();
-                        }}
-                      />
-                    ))}
-
-                    {/* Offline guidance */}
-                    {layoutMode === "offline" && ms.status === "pending" && (
-                      <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground">
-                        💼 This step happens offline. Once completed, confirm digitally below.
-                      </div>
-                    )}
-
-                    {/* External / Third-Party Fee Tracker */}
-                    {!isAdmin && !isDone && (
-                      <ExternalFeeTracker
-                        transactionId={transactionId}
-                        milestoneIndex={idx}
-                        milestoneName={ms.title}
-                        role={role}
-                        tradeScope={tradeScope}
-                        industrySuggestions={getExternalFeeSuggestions(industry || "")}
-                        isTestnet={isTestnet}
-                        totalMilestones={milestones.length}
-                        onFeeStatusChange={(info) => setMilestoneExternalFees(prev => ({ ...prev, [idx]: info }))}
-                      />
-                    )}
-                    {/* Admin: show external fees read-only */}
-                    {isAdmin && (
-                      <ExternalFeeTracker
-                        transactionId={transactionId}
-                        milestoneIndex={idx}
-                        milestoneName={ms.title}
-                        role={role}
-                        tradeScope={tradeScope}
-                        industrySuggestions={[]}
-                        isTestnet={isTestnet}
-                        totalMilestones={milestones.length}
-                        readOnly
-                      />
-                    )}
-                    {isAdmin && (
-                      <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-1.5">
-                        <p className="text-[10px] font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Admin View</p>
-                        <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground">Vendor:</span>
-                            {vendorFulfilled
-                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Fulfilled ✅</Badge>
-                              : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Pending ⏳</Badge>
-                            }
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground">Buyer:</span>
-                            {buyerReleased
-                              ? <Badge variant="outline" className="text-[8px] h-4 border-primary/30 text-primary">Released ✅</Badge>
-                              : vendorFulfilled
-                                ? <Badge variant="outline" className="text-[8px] h-4 border-accent/30 text-accent">Action Required ⏳</Badge>
-                                : <Badge variant="outline" className="text-[8px] h-4 border-muted-foreground/30">Waiting —</Badge>
-                            }
-                          </div>
-                        </div>
-                        {isDisputed && (
-                          <div className="flex items-center gap-1 text-destructive text-[10px] font-medium mt-1">
-                            <AlertTriangle className="w-3 h-3" /> Dispute active — review in Disputes tab
-                          </div>
-                        )}
-                         {ms.is_payment_milestone && (
-                          <p className="text-[9px] text-muted-foreground">
-                            💰 Payment milestone · {ms.payment_percentage || 100}% · ${Number(ms.payment_amount || 0).toLocaleString()}
-                          </p>
-                        )}
-                        <p className="text-[9px] text-muted-foreground">
-                          🎯 Step owned by: <span className="font-semibold capitalize">{stepOwner}</span>
-                        </p>
-                      </div>
-                    )}
-
-                    {/* ── PRIMARY ACTION (visually dominant) ── */}
-                    <div className="flex flex-col gap-2 pt-1">
-                      {canVendorFulfill && (() => {
-                        const actionType = classifyAction(vendorActionLabel);
-                        const style = ACTION_STYLES[actionType];
-                        const ActionIcon = style.icon;
-                        return (
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              size="default"
-                              variant="outline"
-                              onClick={() => handleMarkFulfilled(ms.id)}
-                              disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
-                              className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
-                            >
-                              <ActionIcon className="w-4 h-4 mr-2" />
-                              {vendorActionLabel}
-                            </Button>
-                            {gateStatus.mode === "required" && !gateStatus.satisfied && (
-                              <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
-                                <AlertTriangle className="w-2.5 h-2.5" />
-                                Upload {gateStatus.missingRequired.length} required doc(s) to unlock
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Buyer-driven step fulfillment (when step owner is buyer/both) */}
-                      {canBuyerAct && !canBuyerRelease && (() => {
-                        const actionType = classifyAction(buyerActionLabel);
-                        const style = ACTION_STYLES[actionType];
-                        const ActionIcon = style.icon;
-                        return (
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              size="default"
-                              variant="outline"
-                              onClick={() => handleMarkFulfilled(ms.id)}
-                              disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
-                              className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
-                            >
-                              <ActionIcon className="w-4 h-4 mr-2" />
-                              {buyerActionLabel}
-                            </Button>
-                            {gateStatus.mode === "required" && !gateStatus.satisfied && (
-                              <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
-                                <AlertTriangle className="w-2.5 h-2.5" />
-                                Upload {gateStatus.missingRequired.length} required doc(s) to unlock
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Vendor: waiting message when step is buyer-owned */}
-                      {role === "vendor" && !isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted" && (
-                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
-                          <Lock className="w-3.5 h-3.5 shrink-0" />
-                          This step is buyer-driven. Waiting for buyer to complete: <span className="font-medium">{buyerActionLabel}</span>
-                        </div>
-                      )}
-
-                      {/* Buyer: waiting for vendor (only when step is vendor-owned) */}
-                      {role === "buyer" && !isBuyerStep && !vendorFulfilled && ms.status !== "deleted" && ms.status !== "released" && (
-                        <div className="rounded-md border border-border bg-muted/20 p-2 text-[11px] text-muted-foreground flex items-center gap-2">
-                          <Lock className="w-3.5 h-3.5 shrink-0" />
-                          This step is vendor-driven. Waiting for vendor to complete: <span className="font-medium">{vendorActionLabel}</span>
-                        </div>
-                      )}
-
-                      {canBuyerRelease && (
-                        <div className="space-y-2">
-                          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-semibold text-amber-700">⚠️ Your Signature Required</p>
-                              <p className="text-amber-600 mt-0.5">
-                                Stage #{row} — {ms.title} is fulfilled. Review and release funds.
-                              </p>
-                            </div>
-                          </div>
-                          {milestoneExternalFees[idx]?.unverified > 0 && (
-                            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs">
-                              <Receipt className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
-                              <div>
-                                <p className="font-medium text-destructive">{milestoneExternalFees[idx].unverified} unverified external fee(s)</p>
-                                <p className="text-destructive/70 text-[10px] mt-0.5">
-                                  ${milestoneExternalFees[idx].unverifiedAmount.toLocaleString()} in third-party costs not yet confirmed by counterparty. You can still release, but both parties should reconcile offline fees first.
-                                </p>
+                                {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                                  <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                                    <AlertTriangle className="w-2.5 h-2.5" /> Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                                  </p>
+                                )}
                               </div>
+                            );
+                          })()}
+
+                          {canBuyerRelease && (
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-semibold text-amber-700">⚠️ Your Signature Required</p>
+                                  <p className="text-amber-600 mt-0.5">Stage #{row} — {ms.title} is fulfilled. Review and release funds.</p>
+                                </div>
+                              </div>
+                              {milestoneExternalFees[idx]?.unverified > 0 && (
+                                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs">
+                                  <Receipt className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-medium text-destructive">{milestoneExternalFees[idx].unverified} unverified external fee(s)</p>
+                                    <p className="text-destructive/70 text-[10px] mt-0.5">${milestoneExternalFees[idx].unverifiedAmount.toLocaleString()} in third-party costs not yet confirmed.</p>
+                                  </div>
+                                </div>
+                              )}
+                              <Button size="default" className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg ring-1 ring-amber-400/30" onClick={() => handleReleaseMilestone(ms.id)}>
+                                <Banknote className="w-4 h-4 mr-2" /> Sign & Release Milestone
+                              </Button>
                             </div>
                           )}
-                          <Button size="default" className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg ring-1 ring-amber-400/30" onClick={() => handleReleaseMilestone(ms.id)}>
-                            <Banknote className="w-4 h-4 mr-2" /> Sign & Release Milestone
-                          </Button>
+
+                          <div className="flex gap-2 flex-wrap">
+                            {!isAdmin && ms.status === "pending" && !fundsAreLocked && (
+                              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive text-xs" onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}>
+                                <Trash2 className="w-3 h-3 mr-1" /> Remove
+                              </Button>
+                            )}
+                            {!isAdmin && ms.status === "pending" && fundsAreLocked && (
+                              <Button size="sm" variant="ghost" className="text-muted-foreground text-xs" onClick={() => toast.info("Use milestone negotiation or contact admin for amendments.")}>
+                                <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
+                              </Button>
+                            )}
+                            {ms.status === "completed" && role === "vendor" && (
+                              <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                                <CheckCircle2 className="w-3 h-3 mr-0.5" /> Awaiting buyer release
+                              </Badge>
+                            )}
+                            {ms.status === "released" && (
+                              <Badge className="text-[10px] bg-primary/15 text-primary">
+                                <CheckCircle2 className="w-3 h-3 mr-0.5" /> Payment Released
+                              </Badge>
+                            )}
+                            {!isAdmin && !isDisputed && ms.status !== "released" && ms.status !== "deleted" && ms.status !== "pending" && (
+                              <Button
+                                size="sm" variant="ghost"
+                                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 text-xs ml-auto"
+                                onClick={() => {
+                                  const disputePath = role === "buyer" ? `/trustlock/buyer/disputes` : `/trustlock/vendor/disputes`;
+                                  navigate(`${disputePath}?tx=${encodeURIComponent(txId)}&milestone=${encodeURIComponent(ms.title)}&step=${row}`);
+                                  toast.info(`Opening dispute form for milestone "${ms.title}"`);
+                                }}
+                              >
+                                <Scale className="w-3 h-3 mr-1" /> Raise Dispute
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </TabsContent>
 
-                      {/* Secondary actions row */}
-                      <div className="flex gap-2 flex-wrap">
-                        {!isAdmin && ms.status === "pending" && !fundsAreLocked && (
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive text-xs" onClick={() => setPendingDeleteMilestone({ id: ms.id, title: ms.title })}>
-                            <Trash2 className="w-3 h-3 mr-1" /> Remove
-                          </Button>
-                        )}
-                        {!isAdmin && ms.status === "pending" && fundsAreLocked && (
-                          <Button size="sm" variant="ghost" className="text-muted-foreground text-xs" onClick={() => toast.info("Use milestone negotiation or contact admin for amendments.")}>
-                            <FileWarning className="w-3 h-3 mr-1" /> Request Amendment
-                          </Button>
-                        )}
-                        {ms.status === "completed" && role === "vendor" && (
-                          <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
-                            <CheckCircle2 className="w-3 h-3 mr-0.5" /> Awaiting buyer release
-                          </Badge>
-                        )}
-                        {ms.status === "released" && (
-                          <Badge className="text-[10px] bg-primary/15 text-primary">
-                            <CheckCircle2 className="w-3 h-3 mr-0.5" /> Payment Released
-                          </Badge>
+                      {/* ═══ DOCS TAB ═══ */}
+                      <TabsContent value="docs" className="space-y-3 mt-0">
+                        {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
+                          <div className="rounded-md border border-border p-2 space-y-2">
+                            {gateStatus.autoSatisfied.length > 0 && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                                <Unlock className="w-3 h-3 shrink-0" />
+                                <span><strong>{gateStatus.autoSatisfied.length}</strong> pre-payment doc(s) auto-resolved</span>
+                              </div>
+                            )}
+                            {scopeDowngraded.length > 0 && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded p-1.5">
+                                <Globe className="w-3 h-3 shrink-0" />
+                                <span><strong>{scopeDowngraded.length}</strong> doc(s) moved to optional for <span className="capitalize font-medium">{tradeScope}</span> trades</span>
+                              </div>
+                            )}
+                            {requiredDocs.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-semibold flex items-center gap-1">
+                                  <ShieldCheck className="w-3 h-3" /> Required
+                                  <Badge variant="outline" className={`text-[8px] ml-1 ${gateStatus.missingRequired.length === 0 ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}`}>
+                                    {gateStatus.missingRequired.length === 0 ? "All uploaded" : `${gateStatus.missingRequired.length} missing`}
+                                  </Badge>
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {requiredDocs.map((doc: string) => {
+                                    const uKeys = getUploadedKeys(ms);
+                                    const dl = doc.toLowerCase();
+                                    const isMet = Array.from(uKeys).some(k => k.includes(dl) || dl.includes(k.replace(/\.[^.]+$/, "")));
+                                    const isAutoSat = gateStatus.autoSatisfied.includes(doc);
+                                    const owner = docOwners[doc] || "either";
+                                    return (
+                                      <Badge key={doc} variant="outline" className={`text-[8px] ${
+                                        isAutoSat ? "border-muted-foreground/30 text-muted-foreground line-through" :
+                                        isMet ? "border-primary/40 text-primary" : "border-destructive/40 text-destructive"
+                                      }`}>
+                                        {isAutoSat ? <Unlock className="w-2.5 h-2.5 mr-0.5" /> : isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
+                                        {doc}
+                                        {isAutoSat ? (
+                                          <span className="ml-0.5 text-[7px] text-muted-foreground italic">N/A</span>
+                                        ) : (
+                                          <span className={`ml-0.5 text-[7px] ${owner === "vendor" ? "text-primary" : owner === "buyer" ? "text-accent" : "text-muted-foreground"}`}>
+                                            ({owner === "either" ? "V/B" : owner === "vendor" ? "V" : "B"})
+                                          </span>
+                                        )}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            {optionalDocs.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-semibold flex items-center gap-1 text-muted-foreground"><FileWarning className="w-3 h-3" /> Recommended</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {optionalDocs.map((doc: string) => {
+                                    const uKeys = getUploadedKeys(ms);
+                                    const dl = doc.toLowerCase();
+                                    const isMet = Array.from(uKeys).some(k => k.includes(dl) || dl.includes(k.replace(/\.[^.]+$/, "")));
+                                    return (
+                                      <Badge key={doc} variant="outline" className={`text-[8px] ${isMet ? "border-primary/40 text-primary" : "border-muted-foreground/30 text-muted-foreground"}`}>
+                                        {isMet ? <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> : <FileWarning className="w-2.5 h-2.5 mr-0.5" />}
+                                        {doc}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
 
-                        {/* Raise Dispute — contextual, appears when vendor fulfilled but buyer hasn't released, or vice versa */}
-                        {!isAdmin && !isDisputed && ms.status !== "released" && ms.status !== "deleted" && ms.status !== "pending" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 text-xs ml-auto"
-                            onClick={() => {
-                              const disputePath = role === "buyer"
-                                ? `/trustlock/buyer/disputes`
-                                : `/trustlock/vendor/disputes`;
-                              navigate(`${disputePath}?tx=${encodeURIComponent(txId)}&milestone=${encodeURIComponent(ms.title)}&step=${row}`);
-                              toast.info(`Opening dispute form for milestone "${ms.title}"`);
+                        {uploadedDocs.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-semibold">Uploaded Documents</p>
+                            {(() => {
+                              const cpDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role && d.uploaded_by_role !== role);
+                              const myDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role === role);
+                              return cpDocs.length > 0 ? (
+                                <div className="flex items-center gap-1.5 rounded border border-accent/30 bg-accent/5 px-2 py-1 text-[10px]">
+                                  <Shield className="w-3 h-3 text-accent shrink-0" />
+                                  <span className="text-accent font-medium">{cpDocs.length} doc{cpDocs.length > 1 ? "s" : ""} from {role === "vendor" ? "Buyer" : "Vendor"}</span>
+                                  {myDocs.length > 0 && <span className="text-muted-foreground ml-auto">{myDocs.length} from you</span>}
+                                </div>
+                              ) : null;
+                            })()}
+                            <div className="space-y-1">
+                              {uploadedDocs.map((doc: any, i: number) => {
+                                const isCp = doc.uploaded_by_role && doc.uploaded_by_role !== role;
+                                return (
+                                  <div key={i} className={`flex items-center gap-1.5 rounded border p-1.5 text-[10px] ${isCp ? "border-accent/30 bg-accent/5" : "border-border"}`}>
+                                    <FileText className={`w-3 h-3 shrink-0 ${isCp ? "text-accent" : "text-muted-foreground"}`} />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="truncate block">
+                                        {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
+                                        {doc.name}
+                                      </span>
+                                      <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                        <User className="w-2 h-2" />
+                                        {isCp ? <span className="text-accent font-medium">{doc.uploaded_by_role === "vendor" ? "Vendor" : "Buyer"}</span> : <span>You ({doc.uploaded_by_role})</span>}
+                                        {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
+                                      </span>
+                                    </div>
+                                    {doc.url && (
+                                      <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]" onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}>
+                                        <Eye className="w-2.5 h-2.5 mr-0.5" /> View
+                                      </Button>
+                                    )}
+                                    {!isAdmin && !isDone && doc.uploaded_by_role === role && (
+                                      <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive" onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!confirm(`Remove "${doc.name}"?`)) return;
+                                        if (isTestnet) { toast.success(`Document "${doc.name}" removed`); return; }
+                                        const userId = await getUserId();
+                                        if (!userId) return;
+                                        const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
+                                        await supabase.from("transaction_milestones").update({ uploaded_documents: remaining } as any).eq("id", ms.id);
+                                        toast.success(`Document "${doc.name}" removed`);
+                                      }}>
+                                        <Trash2 className="w-2.5 h-2.5" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {!isAdmin && (() => {
+                          const allDocs = [...requiredDocs, ...optionalDocs];
+                          if (allDocs.length > 0) {
+                            return (
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-medium">Tag upload as:</label>
+                                <Select value={docTypeSelections[ms.id] || ""} onValueChange={(val) => setDocTypeSelections(prev => ({ ...prev, [ms.id]: val }))}>
+                                  <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select document type" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="general">General Evidence</SelectItem>
+                                    {requiredDocs.map((doc: string) => <SelectItem key={doc} value={doc}>🔒 {doc}</SelectItem>)}
+                                    {optionalDocs.map((doc: string) => <SelectItem key={doc} value={doc}>📎 {doc}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {!isAdmin && (isTestnet ? (
+                          <Button size="sm" variant="outline" className="text-xs" onClick={() => {
+                            const name = `Evidence-${ms.title.replace(/\s/g, "_")}-${Date.now()}.pdf`;
+                            onTestnetAddDocument?.(ms.id, { name, url: `testnet://mock/${name}` });
+                          }}>
+                            <FileText className="w-3 h-3 mr-1" /> Simulate Upload
+                          </Button>
+                        ) : (
+                          <DocumentUpload
+                            label="Upload evidence"
+                            context={{ bucket: "milestone-documents", transactionId, milestoneId: ms.id }}
+                            onUploadComplete={(files) => {
+                              void (async () => {
+                                const userId = await getUserId();
+                                if (!userId) return;
+                                const selectedDocType = docTypeSelections[ms.id] || "general";
+                                await updateMilestone.mutateAsync({
+                                  milestoneId: ms.id, userId,
+                                  uploadedDocuments: files.map((file) => ({
+                                    name: file.name, url: file.url, path: file.path,
+                                    uploadedAt: new Date().toISOString(), uploaded_by: userId,
+                                    uploaded_by_role: role, document_type: selectedDocType,
+                                  })),
+                                });
+                                setDocTypeSelections(prev => ({ ...prev, [ms.id]: "" }));
+                              })();
                             }}
-                          >
-                            <Scale className="w-3 h-3 mr-1" /> Raise Dispute
-                          </Button>
+                          />
+                        ))}
+
+                        {uploadedDocs.length === 0 && requiredDocs.length === 0 && optionalDocs.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground italic">No documents required for this stage.</p>
                         )}
-                      </div>
-                    </div>
+                      </TabsContent>
+
+                      {/* ═══ NOTES TAB ═══ */}
+                      <TabsContent value="notes" className="space-y-3 mt-0">
+                        {ms.gps_latitude && (
+                          <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
+                            <p className="text-[10px] font-semibold flex items-center gap-1 text-primary"><MapPin className="w-3.5 h-3.5" /> GPS Verification</p>
+                            {ms.gps_address && <p className="text-[11px] font-medium">{ms.gps_address}</p>}
+                            <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                              <span>Lat: {Number(ms.gps_latitude).toFixed(6)}</span>
+                              <span>Lng: {Number(ms.gps_longitude).toFixed(6)}</span>
+                              {ms.gps_accuracy && <span>Accuracy: ±{Number(ms.gps_accuracy).toFixed(0)}m</span>}
+                              {ms.gps_captured_at && <span>Captured: {new Date(ms.gps_captured_at).toLocaleString()}</span>}
+                            </div>
+                            {ms.gps_city && ms.gps_country && <p className="text-[10px] text-muted-foreground">{ms.gps_city}, {ms.gps_country}</p>}
+                          </div>
+                        )}
+
+                        {ms.description && <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>}
+
+                        {role === "vendor" && !hasObserver && industryNeedsObservers && !dismissedObserverPrompts.has(ms.id) && (
+                          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 space-y-2 relative">
+                            <button onClick={() => setDismissedObserverPrompts(prev => new Set(prev).add(ms.id))} className="absolute top-1.5 right-1.5 p-0.5 rounded hover:bg-amber-500/20" aria-label="Dismiss">
+                              <X className="w-3.5 h-3.5 text-amber-700" />
+                            </button>
+                            <p className="text-[11px] font-medium text-amber-700 pr-5">Observer recommended for this milestone.</p>
+                            <div className="grid sm:grid-cols-2 gap-2">
+                              <Input placeholder="Observer name" value={observerName} onChange={(e) => setObserverName(e.target.value)} />
+                              <Input placeholder="Observer email" value={observerEmail} onChange={(e) => setObserverEmail(e.target.value)} />
+                            </div>
+                            <Button size="sm" variant="outline" onClick={() => handleInviteObserver(ms.id)}>
+                              <UserPlus className="w-3 h-3 mr-1" /> Invite Observer
+                            </Button>
+                          </div>
+                        )}
+
+                        {(role === "vendor" || isAdmin) && hasObserver && (
+                          <div className="rounded-md border border-border p-2 text-[11px] text-muted-foreground space-y-1">
+                            <p className="font-medium text-foreground">Observer linked</p>
+                            {observers.filter((obs: any) => (obs.milestone_ids ? obs.milestone_ids.includes(ms.id) : obs.milestoneId === ms.id)).map((obs: any) => {
+                              const link = obs.access_token || obs.observer_access_token
+                                ? `${window.location.origin}/trustlock/audit/${obs.access_token || obs.observer_access_token}` : null;
+                              return (
+                                <div key={obs.id || obs.observer_email} className="flex items-center gap-2 flex-wrap">
+                                  <span>{obs.observer_name} ({obs.observer_email})</span>
+                                  {link && !isAdmin && (
+                                    <Button size="sm" variant="ghost" className="h-6 px-2" onClick={async () => { await navigator.clipboard.writeText(link); toast.success("Observer link copied"); }}>
+                                      <Copy className="w-3 h-3 mr-1" /> Copy Link
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {isAdmin ? (
+                          ms.description && (
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-medium flex items-center gap-1"><StickyNote className="w-3 h-3" /> Notes</label>
+                              <p className="text-[11px] text-muted-foreground bg-muted/30 rounded p-2">{ms.description}</p>
+                            </div>
+                          )
+                        ) : (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-medium flex items-center gap-1"><StickyNote className="w-3 h-3" /> Note</label>
+                            <Textarea rows={2} value={notes[ms.id] ?? ms.description ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [ms.id]: e.target.value }))} placeholder="Add notes for this milestone" />
+                            <Button size="sm" variant="outline" onClick={() => handleSaveNote(ms.id)}>Save Note</Button>
+                          </div>
+                        )}
+
+                        {!isAdmin && !isDone && (
+                          <ExternalFeeTracker
+                            transactionId={transactionId} milestoneIndex={idx} milestoneName={ms.title}
+                            role={role} tradeScope={tradeScope}
+                            industrySuggestions={getExternalFeeSuggestions(industry || "")}
+                            isTestnet={isTestnet} totalMilestones={milestones.length}
+                            onFeeStatusChange={(info) => setMilestoneExternalFees(prev => ({ ...prev, [idx]: info }))}
+                          />
+                        )}
+                        {isAdmin && (
+                          <ExternalFeeTracker
+                            transactionId={transactionId} milestoneIndex={idx} milestoneName={ms.title}
+                            role={role} tradeScope={tradeScope} industrySuggestions={[]}
+                            isTestnet={isTestnet} totalMilestones={milestones.length} readOnly
+                          />
+                        )}
+                      </TabsContent>
+                    </Tabs>
                   </div>
                 )}
 
-                {/* Deleted milestone — restore option */}
                 {expanded && isDeleted && !fundsAreLocked && (
                   <div className="px-3 pb-3 ml-9">
                     <Button size="sm" variant="outline" className="text-primary border-primary/30" onClick={() => setPendingRestoreMilestone({ id: ms.id, title: ms.title })}>
@@ -1380,16 +1317,11 @@ const MilestoneWorkOrderPanel = ({
       </Card>
     </TLId>
 
-    {/* Delete Dialog */}
     <AlertDialog open={!!pendingDeleteMilestone} onOpenChange={(open) => !open && setPendingDeleteMilestone(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive" /> Remove Stage?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Remove <strong>"{pendingDeleteMilestone?.title}"</strong>? You can restore it before funds are locked.
-          </AlertDialogDescription>
+          <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-destructive" /> Remove Stage?</AlertDialogTitle>
+          <AlertDialogDescription>Remove <strong>"{pendingDeleteMilestone?.title}"</strong>? You can restore it before funds are locked.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1406,16 +1338,11 @@ const MilestoneWorkOrderPanel = ({
       </AlertDialogContent>
     </AlertDialog>
 
-    {/* Restore Dialog */}
     <AlertDialog open={!!pendingRestoreMilestone} onOpenChange={(open) => !open && setPendingRestoreMilestone(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-primary" /> Restore Stage?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Restore <strong>"{pendingRestoreMilestone?.title}"</strong> to active status?
-          </AlertDialogDescription>
+          <AlertDialogTitle className="flex items-center gap-2"><RotateCcw className="w-4 h-4 text-primary" /> Restore Stage?</AlertDialogTitle>
+          <AlertDialogDescription>Restore <strong>"{pendingRestoreMilestone?.title}"</strong> to active status?</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1431,23 +1358,15 @@ const MilestoneWorkOrderPanel = ({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-    {/* External Fee Soft Gate Dialog */}
+
     <AlertDialog open={!!pendingFeeGateRelease} onOpenChange={(open) => !open && setPendingFeeGateRelease(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-destructive" /> Unverified External Fees
-          </AlertDialogTitle>
+          <AlertDialogTitle className="flex items-center gap-2"><Receipt className="w-4 h-4 text-destructive" /> Unverified External Fees</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <p>
-              <strong>{pendingFeeGateRelease?.title}</strong> has <strong>{pendingFeeGateRelease?.unverifiedCount}</strong> external fee(s) totaling <strong>${pendingFeeGateRelease?.unverifiedTotal.toLocaleString()}</strong> that have not been verified by the counterparty.
-            </p>
-            <p className="text-xs">
-              These are third-party costs (logistics, customs, insurance, etc.) logged against this milestone. It is recommended that both parties confirm all offline costs before releasing funds.
-            </p>
-            <p className="text-xs font-medium">
-              Are you sure you want to release funds without full fee reconciliation?
-            </p>
+            <p><strong>{pendingFeeGateRelease?.title}</strong> has <strong>{pendingFeeGateRelease?.unverifiedCount}</strong> external fee(s) totaling <strong>${pendingFeeGateRelease?.unverifiedTotal.toLocaleString()}</strong> that have not been verified.</p>
+            <p className="text-xs">These are third-party costs logged against this milestone. Confirm all offline costs before releasing funds.</p>
+            <p className="text-xs font-medium">Release funds without full fee reconciliation?</p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
