@@ -34,44 +34,44 @@ const UserLookupCard = ({ user, onMessage }: Props) => {
   const industry = user.onboarding_industry ? INDUSTRY_LABELS[user.onboarding_industry] || user.onboarding_industry : null;
 
   return (
-    <Card className="hover:border-primary/40 transition-colors">
-      <CardContent className="p-4 flex items-start gap-3">
-        <Avatar className="h-10 w-10 shrink-0">
+    <Card className="hover:border-primary/40 transition-all duration-200 hover:shadow-[0_0_15px_hsl(152,52%,24%/0.06)]">
+      <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+        <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
           <AvatarImage src={user.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary text-[10px] sm:text-xs font-bold">{initials}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-foreground truncate">{displayName}</span>
-            <Badge variant="outline" className="text-[10px] shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="font-semibold text-xs sm:text-sm text-foreground truncate max-w-[140px] sm:max-w-none">{displayName}</span>
+            <Badge variant="outline" className="text-[9px] sm:text-[10px] shrink-0">
               {entityLabel[user.entity_type] || user.entity_type}
             </Badge>
           </div>
 
           {user.full_name && user.company_name && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Building2 className="w-3 h-3" />
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+              <Building2 className="w-3 h-3 shrink-0" />
               <span className="truncate">{user.full_name}</span>
             </div>
           )}
 
-          <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-[10px] sm:text-xs text-muted-foreground">
             {user.location && (
               <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {user.location}
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[80px] sm:max-w-none">{user.location}</span>
               </span>
             )}
             {industry && (
               <span className="flex items-center gap-1">
-                <Briefcase className="w-3 h-3" />
-                {industry}
+                <Briefcase className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[80px] sm:max-w-none">{industry}</span>
               </span>
             )}
             {user.tl_id && (
               <span className="flex items-center gap-1 font-mono">
-                <Hash className="w-3 h-3" />
+                <Hash className="w-3 h-3 shrink-0" />
                 {user.tl_id}
               </span>
             )}
@@ -81,11 +81,11 @@ const UserLookupCard = ({ user, onMessage }: Props) => {
         <Button
           size="sm"
           variant="outline"
-          className="shrink-0 gap-1.5"
+          className="shrink-0 gap-1.5 h-8 px-2.5 sm:px-3"
           onClick={() => onMessage(user.id)}
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Message</span>
+          <span className="hidden sm:inline text-xs">Message</span>
         </Button>
       </CardContent>
     </Card>
