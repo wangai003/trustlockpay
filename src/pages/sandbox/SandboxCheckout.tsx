@@ -99,17 +99,26 @@ const SandboxCheckout = () => {
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
 
-  // USA-Nigeria international corridor tax/tariff estimate
-  const SANDBOX_TAX_RATES: Record<string, number> = {
-    ecommerce: 0.075,      // 7.5% VAT
-    real_estate: 0.05,      // 5% property transfer tax
-    mining: 0.12,           // 12% royalty + export levy
-    energy: 0.10,           // 10% petroleum levy
-    freelance: 0.025,       // 2.5% withholding tax
+  // Dynamic tax rates based on trade scope + industry
+  const SANDBOX_TAX_RATES: Record<string, Record<TradeScope, number>> = {
+    ecommerce:     { domestic: 0.075, regional: 0.05, international: 0.075, hybrid: 0.06 },
+    real_estate:   { domestic: 0.05, regional: 0.035, international: 0.05, hybrid: 0.045 },
+    mining:        { domestic: 0.08, regional: 0.06, international: 0.12, hybrid: 0.10 },
+    energy:        { domestic: 0.05, regional: 0.04, international: 0.10, hybrid: 0.08 },
+    freelance:     { domestic: 0.025, regional: 0.02, international: 0.025, hybrid: 0.025 },
+    agriculture:   { domestic: 0.03, regional: 0.015, international: 0.08, hybrid: 0.05 },
+    construction:  { domestic: 0.075, regional: 0.05, international: 0.10, hybrid: 0.08 },
+    logistics:     { domestic: 0.05, regional: 0.03, international: 0.08, hybrid: 0.06 },
+    automotive:    { domestic: 0.075, regional: 0.05, international: 0.14, hybrid: 0.10 },
+    telecommunications: { domestic: 0.075, regional: 0.05, international: 0.075, hybrid: 0.06 },
   };
-  const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
+  const scopeRates = SANDBOX_TAX_RATES[config.key] || { domestic: 0.05, regional: 0.03, international: 0.05, hybrid: 0.04 };
+  const taxRate = scopeRates[tradeScope];
+  // Regional scope gets tariff reduction (trade bloc benefit)
+  const tariffReduction = tradeScope === "regional" ? 0.85 : tradeScope === "domestic" ? 1.0 : 0;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
-  const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
+  // Remittance fee: only for cross-border
+  const remittanceFee = tradeScope === "domestic" ? 0 : Math.round(taxAmount * 0.02 * 100) / 100;
   const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
