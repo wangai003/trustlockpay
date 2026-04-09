@@ -140,7 +140,8 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={<TrustLock />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/trustlock" element={<TrustLock />} />
 
               {/* Admin Dashboard */}
               <Route path="/trustlock/admin/login" element={<AdminLogin />} />
