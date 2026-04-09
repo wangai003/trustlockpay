@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
