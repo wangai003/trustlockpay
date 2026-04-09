@@ -28,6 +28,7 @@ const VendorPricing = () => {
   const navigate = useNavigate();
   const [billing, setBilling] = useState<BillingCycle>("yearly");
   const [activatingTrial, setActivatingTrial] = useState(false);
+  const [cancellingPlan, setCancellingPlan] = useState(false);
 
   const planState = getVendorPlanState();
   const trialUsed = localStorage.getItem("tl_vendor_trial_start") !== null;
