@@ -59,6 +59,7 @@ const PLATFORM_TIPS: Record<string, { label: string; steps: string[] }> = {
 };
 
 const TesterLanding = () => {
+  const navigate = useNavigate();
   const [siteName, setSiteName] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [copied, setCopied] = useState(false);
