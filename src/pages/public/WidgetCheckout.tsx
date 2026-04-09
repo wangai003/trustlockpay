@@ -150,7 +150,8 @@ const WidgetCheckout = () => {
     } catch {
       // Use defaults
     }
-    setStep("form");
+    // Milestone industries start at intent step; simple ones go to form
+    setStep(isMilestoneIndustryByKey(vendor.industry || data?.industry_category || "general") ? "intent" : "form");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
