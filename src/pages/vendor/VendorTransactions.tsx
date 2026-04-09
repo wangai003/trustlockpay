@@ -93,6 +93,7 @@ const VendorTransactions = () => {
         type: tx.type,
         buyerLocation: tx.buyer_location,
         vendorLocation: tx.vendor_location,
+        transportLegs: null as any[] | null,
       }))
     : rawTransactions.map((tx, i) => ({
         dbId: tx.id,
@@ -108,6 +109,7 @@ const VendorTransactions = () => {
         type: tx.type || "product",
         buyerLocation: tx.buyer_location || "—",
         vendorLocation: tx.vendor_location || "—",
+        transportLegs: (tx as any).transport_legs as any[] | null,
       }));
 
   const allTx = sourceData;
@@ -145,10 +147,12 @@ const VendorTransactions = () => {
   const handleTrackingSaved = async (tracking: string, legs?: any[]) => {
     const txId = trackDialog;
     if (!txId) return;
+    const tx = allTx.find((t) => t.id === txId);
+    const isAlreadyShipped = tx?.status === "shipped";
     if (isTestnet) {
       testnet.addTracking(txId, tracking);
     } else {
-      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs });
+      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs, updateOnly: isAlreadyShipped });
     }
     setTrackDialog(null);
   };
@@ -440,11 +444,18 @@ const VendorTransactions = () => {
                                   </>
                                 )}
                                 {tx.status === "shipped" && (
-                                  <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
-                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
-                                      <PackageCheck className="w-3 h-3 mr-1" /> Delivered
-                                    </Button>
-                                  </TLId>
+                                  <>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-UPDATE-TRACK")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleAddTracking(tx.id)} title="Update tracking details">
+                                        <Truck className="w-3 h-3 mr-1" /> Update Tracking
+                                      </Button>
+                                    </TLId>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
+                                        <PackageCheck className="w-3 h-3 mr-1" /> Delivered
+                                      </Button>
+                                    </TLId>
+                                  </>
                                 )}
                                 {(tx.status === "locked" || tx.status === "shipped") && (
                                   <TLId code={dynTLId("V", "TX", row, "BTN-WORKORDER")} inline>
@@ -700,6 +711,8 @@ const VendorTransactions = () => {
             onSave={handleTrackingSaved}
             txId={tx?.id || trackDialog}
             industry={tx?.industry}
+            existingLegs={tx?.transportLegs}
+            isUpdate={tx?.status === "shipped"}
           />
         );
       })()}
