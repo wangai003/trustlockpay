@@ -697,6 +697,64 @@ const MilestoneWorkOrderPanel = ({
           {/* Blueprint summary stats */}
           <BlueprintSummary industry={industry} layoutMode={layoutMode} />
 
+          {/* ── Overall Progress Summary ── */}
+          {milestones.length > 1 && (() => {
+            const completed = milestones.filter((ms: any) => ms.status === "completed" || ms.status === "released").length;
+            const deleted = milestones.filter((ms: any) => ms.status === "deleted").length;
+            const total = milestones.length - deleted;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const released = milestones.filter((ms: any) => ms.status === "released").length;
+            const releasedAmount = milestones
+              .filter((ms: any) => ms.status === "released" && ms.is_payment_milestone)
+              .reduce((sum: number, ms: any) => sum + Number(ms.payment_amount || 0), 0);
+
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    <span className="font-semibold text-foreground">{completed}</span> of <span className="font-semibold text-foreground">{total}</span> stages complete
+                  </span>
+                  <span className="font-semibold text-primary">{pct}%</span>
+                </div>
+                <Progress value={pct} className="h-2" />
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  {released > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <Banknote className="w-3 h-3 text-primary" />
+                      {released} released · ${releasedAmount.toLocaleString()}
+                    </span>
+                  )}
+                  {deleted > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <Trash2 className="w-3 h-3" />
+                      {deleted} removed
+                    </span>
+                  )}
+                  {(() => {
+                    const waiting = milestones.find((ms: any) => ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted");
+                    if (!waiting) return null;
+                    const template = (() => {
+                      const k = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
+                      const bp = INDUSTRY_MILESTONES[k] || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(ki => k.includes(ki)) || ""] || null;
+                      const wIdx = milestones.indexOf(waiting);
+                      return bp?.[wIdx] || null;
+                    })();
+                    const owner = template?.owner || "vendor";
+                    return (
+                      <span className="flex items-center gap-0.5 ml-auto">
+                        {owner === role ? (
+                          <><AlertTriangle className="w-3 h-3 text-accent" /> Your turn</>
+                        ) : (
+                          <><Lock className="w-3 h-3" /> Waiting on {owner === "both" ? "both" : owner}</>
+                        )}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Trade Scope — compact in header */}
           {!isAdmin && layoutMode !== "single" && (
             <TradeScopeSelector
