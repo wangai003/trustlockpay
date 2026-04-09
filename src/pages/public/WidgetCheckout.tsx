@@ -146,12 +146,15 @@ const WidgetCheckout = () => {
             }
           }
         }
+        // Use loaded industry to determine starting step
+        const resolvedIndustry = data?.industry_category || "general";
+        setStep(isMilestoneIndustryByKey(resolvedIndustry) ? "intent" : "form");
+        return;
       }
     } catch {
       // Use defaults
     }
-    // Milestone industries start at intent step; simple ones go to form
-    setStep(isMilestoneIndustryByKey(vendor.industry) ? "intent" : "form");
+    setStep("form");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
