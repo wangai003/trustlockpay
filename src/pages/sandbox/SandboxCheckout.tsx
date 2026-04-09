@@ -26,6 +26,7 @@ import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sand
 import { toast } from "sonner";
 import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
 import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
 import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 
