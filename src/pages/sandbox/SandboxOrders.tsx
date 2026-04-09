@@ -44,6 +44,11 @@ const SandboxOrders = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const selectedId = searchParams.get("detail");
 
+  // Milestone negotiation state (per order, keyed by order id)
+  const [negotiationStatus, setNegotiationStatus] = useState<Record<string, "drafting" | "proposed" | "agreed">>({});
+  const [negotiationProposer, setNegotiationProposer] = useState<Record<string, "buyer" | "vendor">>({});
+  const [negotiationMilestones, setNegotiationMilestones] = useState<Record<string, MilestoneDraft[]>>({});
+
   const refreshOrders = useCallback(() => {
     const all = getSandboxLiveOrders();
     if (session.role === "buyer") {
