@@ -450,9 +450,12 @@ const PublicCheckout = () => {
 
                   <Button
                     className="w-full gap-2"
-                    onClick={() => setStep("compliance")}
+                    onClick={() => {
+                      const isMilestone = isMilestoneIndustryByKey(linkData?.industry || "");
+                      setStep(isMilestone ? "negotiation" : "compliance");
+                    }}
                   >
-                    Proceed to Checkout <ExternalLink className="w-4 h-4" />
+                    {isMilestoneIndustryByKey(linkData?.industry || "") ? "Proceed to Milestone Negotiation" : "Proceed to Checkout"} <ExternalLink className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
