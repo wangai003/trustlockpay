@@ -95,7 +95,6 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
                           : "border-border bg-background text-muted-foreground hover:border-primary/40"
                       }`}
                     >
-                  >
                     <Icon className="w-3 h-3" />
                     {opt.label}
                     {suggestedScope === opt.value && !isSelected && (
