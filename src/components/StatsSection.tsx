@@ -1,13 +1,44 @@
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
 import { Target, Globe, Shield, TrendingDown, Building2 } from "lucide-react";
 
 const stats = [
-  { value: "50+", label: "Trade Corridors Supported", icon: Globe },
-  { value: "1.5%", label: "All-In Escrow Fee", icon: TrendingDown },
-  { value: "100%", label: "Blockchain-Verified Proofs", icon: Shield },
-  { value: "25+", label: "Industry Document Gates", icon: Target },
-  { value: "∞", label: "SMEs Welcome", icon: Building2 },
+  { value: 50, suffix: "+", label: "Trade Corridors Supported", icon: Globe },
+  { value: 1.5, suffix: "%", label: "All-In Escrow Fee", icon: TrendingDown, decimals: 1 },
+  { value: 100, suffix: "%", label: "Blockchain-Verified Proofs", icon: Shield },
+  { value: 25, suffix: "+", label: "Industry Document Gates", icon: Target },
+  { value: null, display: "∞", label: "SMEs Welcome", icon: Building2 },
 ];
+
+const AnimatedCounter = ({ value, suffix, decimals = 0, display }: { value: number | null; suffix?: string; decimals?: number; display?: string }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true });
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isInView || value === null) return;
+    const duration = 1500;
+    const steps = 40;
+    const increment = value / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(current);
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [isInView, value]);
+
+  return (
+    <span ref={ref} className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+      {display || `${decimals > 0 ? count.toFixed(decimals) : Math.floor(count)}${suffix || ""}`}
+    </span>
+  );
+};
 
 const StatsSection = () => {
   return (
@@ -31,16 +62,22 @@ const StatsSection = () => {
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               className="text-center group"
             >
-              <div className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-                {stat.value}
-              </div>
-              <p className="text-sm text-[hsl(160,5%,50%)] mt-2">{stat.label}</p>
+              <motion.div
+                whileHover={{ scale: 1.08 }}
+                className="inline-flex flex-col items-center gap-2"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-1 group-hover:bg-primary/20 transition-colors group-hover:shadow-[0_0_15px_hsl(152,52%,24%/0.2)]">
+                  <stat.icon className="w-5 h-5 text-primary" />
+                </div>
+                <AnimatedCounter value={stat.value ?? null} suffix={stat.suffix} decimals={stat.decimals} display={stat.display} />
+                <p className="text-sm text-[hsl(160,5%,50%)] mt-1">{stat.label}</p>
+              </motion.div>
             </motion.div>
           ))}
         </div>

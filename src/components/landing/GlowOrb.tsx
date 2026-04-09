@@ -19,10 +19,19 @@ const GlowOrb = ({ color = "primary", size = 400, top, left, right, bottom, dela
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 0.15, scale: 1 }}
-      transition={{ duration: 2, delay, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-      className="absolute rounded-full pointer-events-none blur-[100px]"
+      initial={{ opacity: 0, scale: 0.6 }}
+      animate={{
+        opacity: [0, 0.18, 0.12, 0.18],
+        scale: [0.8, 1, 1.05, 1],
+      }}
+      transition={{
+        duration: 6,
+        delay,
+        repeat: Infinity,
+        repeatType: "reverse",
+        ease: "easeInOut",
+      }}
+      className="absolute rounded-full pointer-events-none blur-[120px]"
       style={{
         width: size,
         height: size,

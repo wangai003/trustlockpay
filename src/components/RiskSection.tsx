@@ -15,6 +15,16 @@ const stats = [
   { value: "$1.7T", label: "Global trade finance gap" },
 ];
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 const RiskSection = () => {
   return (
     <section className="relative py-20 lg:py-28 bg-[hsl(160,20%,8%)] overflow-hidden">
@@ -35,24 +45,28 @@ const RiskSection = () => {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {risks.map((risk, i) => (
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          {risks.map((risk) => (
             <motion.div
               key={risk.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-xl p-6 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] hover:border-destructive/30 transition-all group"
+              variants={item}
+              whileHover={{ y: -4, borderColor: "hsl(0, 62%, 45%)" }}
+              className="rounded-xl p-6 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] transition-all group cursor-default"
             >
-              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center mb-4 group-hover:bg-destructive/20 transition-colors">
+              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center mb-4 group-hover:bg-destructive/20 group-hover:shadow-[0_0_15px_hsl(0,84%,60%/0.15)] transition-all">
                 <risk.icon className="w-6 h-6 text-destructive" />
               </div>
               <h3 className="font-heading font-semibold text-[hsl(0,0%,95%)]">{risk.title}</h3>
               <p className="text-sm text-[hsl(160,5%,50%)] mt-1">{risk.desc}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         <div className="mt-16 grid sm:grid-cols-3 gap-8">
           {stats.map((stat, i) => (
@@ -64,7 +78,12 @@ const RiskSection = () => {
               transition={{ delay: i * 0.15 }}
               className="text-center"
             >
-              <div className="text-3xl lg:text-4xl font-extrabold text-primary">{stat.value}</div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="text-3xl lg:text-4xl font-extrabold text-primary"
+              >
+                {stat.value}
+              </motion.div>
               <p className="text-sm text-[hsl(160,5%,50%)] mt-2">{stat.label}</p>
             </motion.div>
           ))}

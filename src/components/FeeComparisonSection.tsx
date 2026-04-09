@@ -11,6 +11,11 @@ const methods = [
   { name: "TrustLock Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
 ];
 
+const rowVariant = {
+  hidden: { opacity: 0, x: -15 },
+  show: { opacity: 1, x: 0 },
+};
+
 const FeeComparisonSection = () => {
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -40,20 +45,29 @@ const FeeComparisonSection = () => {
               <span className="text-sm font-semibold text-[hsl(0,0%,95%)]">Payment Method</span>
               <span className="text-sm font-semibold text-[hsl(0,0%,95%)] text-right">All-in Cost</span>
             </div>
-            {methods.map((m) => (
-              <div
-                key={m.name}
-                className={`grid grid-cols-2 px-6 py-4 border-t border-[hsl(160,15%,16%)] ${m.highlight ? "bg-primary/5" : ""}`}
-              >
-                <span className={`text-sm flex items-center gap-2 ${m.highlight ? "font-bold text-primary" : "text-[hsl(0,0%,90%)]"}`}>
-                  {m.highlight && <Check className="w-4 h-4 text-primary" />}
-                  {m.name}
-                </span>
-                <span className={`text-sm text-right ${m.highlight ? "font-bold text-primary" : "text-[hsl(160,5%,50%)]"}`}>
-                  {m.cost}
-                </span>
-              </div>
-            ))}
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              transition={{ staggerChildren: 0.07 }}
+            >
+              {methods.map((m) => (
+                <motion.div
+                  key={m.name}
+                  variants={rowVariant}
+                  whileHover={m.highlight ? { backgroundColor: "hsl(152, 52%, 24%, 0.12)" } : { backgroundColor: "hsl(160, 15%, 12%)" }}
+                  className={`grid grid-cols-2 px-6 py-4 border-t border-[hsl(160,15%,16%)] transition-colors ${m.highlight ? "bg-primary/5" : ""}`}
+                >
+                  <span className={`text-sm flex items-center gap-2 ${m.highlight ? "font-bold text-primary" : "text-[hsl(0,0%,90%)]"}`}>
+                    {m.highlight && <Check className="w-4 h-4 text-primary" />}
+                    {m.name}
+                  </span>
+                  <span className={`text-sm text-right ${m.highlight ? "font-bold text-primary" : "text-[hsl(160,5%,50%)]"}`}>
+                    {m.cost}
+                  </span>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
 
           <div className="mt-4 text-center">

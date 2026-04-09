@@ -9,6 +9,16 @@ const steps = [
   { num: "04", icon: CheckCircle, title: "Verified Release", desc: "Both parties digitally sign off. Funds release automatically or disputes trigger arbitration." },
 ];
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.15, delayChildren: 0.1 } },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 40 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+};
+
 const HowItWorksSection = () => {
   return (
     <section id="how-it-works" className="relative py-20 lg:py-28 bg-[hsl(160,20%,6%)] overflow-hidden">
@@ -28,27 +38,34 @@ const HowItWorksSection = () => {
           <p className="mt-4 text-[hsl(160,5%,60%)] text-lg">Four stages. Full transparency. Zero guesswork.</p>
         </motion.div>
 
-        <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((step, i) => (
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-8"
+        >
+          {steps.map((step) => (
             <motion.div
               key={step.num}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="relative text-center group"
+              variants={item}
+              whileHover={{ y: -6 }}
+              className="relative text-center group cursor-default"
             >
               <div className="text-6xl font-extrabold text-primary/10 group-hover:text-primary/25 transition-colors duration-500">
                 {step.num}
               </div>
-              <div className="mt-4 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto group-hover:border-primary/40 group-hover:shadow-[0_0_20px_hsl(152,52%,24%/0.2)] transition-all duration-500">
+              <motion.div
+                whileHover={{ scale: 1.08, boxShadow: "0 0 25px hsl(152,52%,24%/0.3)" }}
+                className="mt-4 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto group-hover:border-primary/40 transition-all duration-500"
+              >
                 <step.icon className="w-7 h-7 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="mt-4 font-heading font-bold text-lg text-[hsl(0,0%,95%)]">{step.title}</h3>
               <p className="mt-2 text-sm text-[hsl(160,5%,50%)] leading-relaxed">{step.desc}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

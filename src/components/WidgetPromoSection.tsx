@@ -13,9 +13,12 @@ const WidgetPromoSection = () => {
           viewport={{ once: true }}
           className="max-w-3xl mx-auto text-center space-y-4"
         >
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <motion.div
+            whileHover={{ scale: 1.08, rotate: 3 }}
+            className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"
+          >
             <Shield className="w-7 h-7 text-primary" />
-          </div>
+          </motion.div>
           <h2 className="text-2xl sm:text-3xl font-bold text-[hsl(0,0%,95%)]">
             Add Escrow to Any Website in Minutes
           </h2>
@@ -24,16 +27,20 @@ const WidgetPromoSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link to="/test-widget">
-              <Button size="lg" className="gap-2 px-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_25px_hsl(152,52%,24%/0.3)]">
-                <Code className="w-4 h-4" /> Try the Widget Free <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link to="/trustlock">
-              <Button size="lg" className="gap-2 px-8 rounded-full border-2 border-[hsl(160,15%,18%)] text-[hsl(0,0%,95%)] bg-transparent hover:bg-[hsl(160,15%,15%)]">
-                Learn About TrustLock Pay
-              </Button>
-            </Link>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Link to="/test-widget">
+                <Button size="lg" className="gap-2 px-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_25px_hsl(152,52%,24%/0.3)]">
+                  <Code className="w-4 h-4" /> Try the Widget Free <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Link to="/trustlock">
+                <Button size="lg" className="gap-2 px-8 rounded-full border-2 border-[hsl(160,15%,18%)] text-[hsl(0,0%,95%)] bg-transparent hover:bg-[hsl(160,15%,15%)]">
+                  Learn About TrustLock Pay
+                </Button>
+              </Link>
+            </motion.div>
           </div>
 
           <p className="text-xs text-[hsl(160,5%,40%)] pt-2">
