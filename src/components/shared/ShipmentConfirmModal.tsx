@@ -26,20 +26,28 @@ interface ShipmentConfirmModalProps {
   tradeScope?: string;
 }
 
-function getShippingDocRequirements(industry: string | null | undefined): { docs: string[]; mode: string } {
-  if (!industry) return { docs: [], mode: "none" };
+/** Collect ALL required documents from every milestone stage up to and including shipping */
+interface CumulativeDocGate {
+  stages: { name: string; docs: string[]; mode: string }[];
+  allRequiredDocs: string[];
+}
+
+function getCumulativeDocRequirements(industry: string | null | undefined): CumulativeDocGate {
+  if (!industry) return { stages: [], allRequiredDocs: [] };
   const templates = INDUSTRY_MILESTONE_MAP[industry as keyof typeof INDUSTRY_MILESTONE_MAP];
-  if (!templates) return { docs: [], mode: "none" };
-  const shippingStage = templates.find(
-    (m) =>
-      m.name.toLowerCase().includes("ship") ||
-      m.name.toLowerCase().includes("dispatch") ||
-      m.name.toLowerCase().includes("transit") ||
-      m.name.toLowerCase().includes("logistics") ||
-      m.name.toLowerCase().includes("export")
-  );
-  if (!shippingStage) return { docs: [], mode: "none" };
-  return { docs: shippingStage.documents, mode: shippingStage.documentMode };
+  if (!templates) return { stages: [], allRequiredDocs: [] };
+
+  const stages: CumulativeDocGate["stages"] = [];
+  const allRequiredDocs: string[] = [];
+
+  for (const m of templates) {
+    if (m.documentMode === "required" && m.documents.length > 0) {
+      stages.push({ name: m.name, docs: m.documents, mode: m.documentMode });
+      allRequiredDocs.push(...m.documents);
+    }
+  }
+
+  return { stages, allRequiredDocs };
 }
 
 const CONFIRM_PHRASE = "CONFIRM SHIPMENT";
