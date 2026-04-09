@@ -39,6 +39,9 @@ export interface MockMilestone {
   gps_longitude: number | null;
   gps_accuracy: number | null;
   gps_captured_at: string | null;
+  gps_address?: string | null;
+  gps_city?: string | null;
+  gps_country?: string | null;
   order_index: number;
 }
 

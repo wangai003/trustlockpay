@@ -485,6 +485,9 @@ export function sandboxOrderToMockMilestones(order: SandboxLiveOrder): MockMiles
     gps_longitude: null,
     gps_accuracy: null,
     gps_captured_at: null,
+    gps_address: null,
+    gps_city: null,
+    gps_country: null,
     order_index: i,
   }));
 }
