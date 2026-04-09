@@ -14,13 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
-import MilestonePaymentSchedule, { type ScheduleItem, type CounterProposalContact } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
+import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
 
 interface VendorInfo {
   name: string;
