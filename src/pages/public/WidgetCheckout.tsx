@@ -151,7 +151,7 @@ const WidgetCheckout = () => {
       // Use defaults
     }
     // Milestone industries start at intent step; simple ones go to form
-    setStep(isMilestoneIndustryByKey(vendor.industry || data?.industry_category || "general") ? "intent" : "form");
+    setStep(isMilestoneIndustryByKey(vendor.industry) ? "intent" : "form");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -328,41 +328,22 @@ const WidgetCheckout = () => {
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
-              {/* Milestone Payment Schedule — pre-escrow negotiation for milestone industries */}
-              {isMilestoneIndustry && milestoneSchedule.length > 0 && parseFloat(form.amount || "0") > 0 && (
-                <MilestonePaymentSchedule
-                  industry={vendor.industry}
-                  orderAmount={parseFloat(form.amount || "0")}
-                  defaultSchedule={milestoneSchedule}
-                  vendorName={vendor.name}
-                  readOnly={scheduleAccepted}
-                  onAccept={(schedule) => {
-                    setAgreedSchedule(schedule);
-                    setScheduleAccepted(true);
-                    toast.success("Payment schedule accepted — proceed to payment");
-                  }}
-                  onCounterPropose={async (schedule, contact) => {
-                    try {
-                      await supabase.from("milestone_counter_proposals").insert({
-                        vendor_id: vendorId,
-                        site_id: siteId || null,
-                        industry: vendor.industry,
-                        order_item: form.item,
-                        order_amount: parseFloat(form.amount || "0"),
-                        buyer_full_name: contact.fullName,
-                        buyer_email: contact.email,
-                        buyer_phone: contact.phone || null,
-                        buyer_country_code: contact.countryCode,
-                        vendor_schedule: milestoneSchedule as any,
-                        proposed_schedule: schedule as any,
-                      } as any);
-                      setStep("counter_submitted");
-                      toast.success("Counter-proposal submitted!");
-                    } catch {
-                      toast.error("Failed to submit counter-proposal. Please try again.");
-                    }
-                  }}
-                />
+              {/* Agreed milestone schedule summary (shown after negotiation) */}
+              {agreedMilestones && agreedMilestones.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold flex items-center gap-1.5">
+                    <Handshake className="w-3.5 h-3.5 text-primary" /> Agreed Milestone Schedule
+                  </p>
+                  <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                  <div className="space-y-1">
+                    {agreedMilestones.filter(m => m.percentage > 0).map((m, i) => (
+                      <div key={m.id} className="flex justify-between text-[10px]">
+                        <span className="text-muted-foreground">{m.title}</span>
+                        <span className="font-medium">{m.percentage}% · ${(parseFloat(form.amount || "0") * m.percentage / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Checkout mode toggle — RFQ-eligible industries only */}
@@ -598,11 +579,11 @@ const WidgetCheckout = () => {
                 <Button
                   type="submit"
                   className="w-full gap-2 text-sm"
-                  disabled={isMilestoneIndustry && !scheduleAccepted}
+                  disabled={isMilestoneIndustry && !agreedMilestones}
                 >
                   <Lock className="w-4 h-4" />
-                  {isMilestoneIndustry && !scheduleAccepted
-                    ? "Accept milestone schedule above first"
+                  {isMilestoneIndustry && !agreedMilestones
+                    ? "Complete milestone negotiation first"
                     : isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
                 </Button>
               </form>
