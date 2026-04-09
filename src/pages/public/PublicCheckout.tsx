@@ -3,9 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2, Download } from "lucide-react";
+import { Shield, Lock, ArrowLeft, CheckCircle, Copy, LogIn, ExternalLink, Loader2, Download, Handshake } from "lucide-react";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
-import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
+import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
@@ -17,6 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
+import { isMilestoneIndustryByKey } from "@/lib/industryList";
+import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
+import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
+
+
 
 interface LinkData {
   link_id: string;
@@ -37,7 +43,7 @@ interface LinkData {
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"loading" | "invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
+  const [step, setStep] = useState<"loading" | "invoice" | "negotiation" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
   const [linkData, setLinkData] = useState<LinkData | null>(null);
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
@@ -49,6 +55,9 @@ const PublicCheckout = () => {
   const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
   const [lockedVendorName, setLockedVendorName] = useState("");
   const [buyerRecognized, setBuyerRecognized] = useState(false);
+  // Milestone negotiation state
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
 
   // Load link data from DB
   useEffect(() => {
@@ -310,27 +319,45 @@ const PublicCheckout = () => {
         <ReturningBuyerBanner onRecognized={setBuyerRecognized} />
 
         {/* Steps indicator */}
-        <div className="flex items-center gap-2 justify-center flex-wrap">
-          {[
-            { key: "invoice", label: "Invoice", num: 1 },
-            { key: "compliance", label: "Compliance", num: 2 },
-            { key: "acknowledge", label: "Acknowledge", num: 3 },
-            { key: "contract", label: "Sign Contract", num: 4 },
-            { key: "pay", label: "Pay", num: 5 },
-          ].map((s, i) => (
-            <div key={s.key} className="flex items-center gap-1.5">
-              <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  step === s.key ? "bg-primary text-primary-foreground" :
-                  ["invoice","compliance","acknowledge","contract","pay"].indexOf(s.key) < ["invoice","compliance","acknowledge","contract","pay"].indexOf(step) ? "bg-primary text-primary-foreground" :
-                  "bg-muted text-muted-foreground"
-                }`}>{s.num}</span>
-                <span className="hidden sm:inline">{s.label}</span>
-              </div>
-              {i < 4 && <div className="w-4 sm:w-8 h-px bg-border" />}
+        {(() => {
+          const isMilestone = isMilestoneIndustryByKey(linkData?.industry || "");
+          const allSteps = isMilestone
+            ? [
+                { key: "invoice", label: "Invoice", num: 1 },
+                { key: "negotiation", label: "Negotiate", num: 2 },
+                { key: "compliance", label: "Compliance", num: 3 },
+                { key: "acknowledge", label: "Acknowledge", num: 4 },
+                { key: "contract", label: "Sign Contract", num: 5 },
+                { key: "pay", label: "Pay", num: 6 },
+              ]
+            : [
+                { key: "invoice", label: "Invoice", num: 1 },
+                { key: "compliance", label: "Compliance", num: 2 },
+                { key: "acknowledge", label: "Acknowledge", num: 3 },
+                { key: "contract", label: "Sign Contract", num: 4 },
+                { key: "pay", label: "Pay", num: 5 },
+              ];
+          const stepKeys = allSteps.map(s => s.key);
+          return (
+            <div className="flex items-center gap-2 justify-center flex-wrap">
+              {allSteps.map((s, i) => (
+                <div key={s.key} className="flex items-center gap-1.5">
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      step === s.key ? "bg-primary text-primary-foreground" :
+                      stepKeys.indexOf(s.key) < stepKeys.indexOf(step) ? "bg-primary text-primary-foreground" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{s.num}</span>
+                    <span className="hidden sm:inline">{s.label}</span>
+                  </div>
+                  {i < allSteps.length - 1 && <div className="w-4 sm:w-8 h-px bg-border" />}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
+
+
 
         {/* Invoice Step */}
         {step === "invoice" && (
@@ -423,9 +450,12 @@ const PublicCheckout = () => {
 
                   <Button
                     className="w-full gap-2"
-                    onClick={() => setStep("compliance")}
+                    onClick={() => {
+                      const isMilestone = isMilestoneIndustryByKey(linkData?.industry || "");
+                      setStep(isMilestone ? "negotiation" : "compliance");
+                    }}
                   >
-                    Proceed to Checkout <ExternalLink className="w-4 h-4" />
+                    {isMilestoneIndustryByKey(linkData?.industry || "") ? "Proceed to Milestone Negotiation" : "Proceed to Checkout"} <ExternalLink className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
@@ -439,7 +469,84 @@ const PublicCheckout = () => {
           </div>
         )}
 
-        {/* Compliance Step */}
+        {/* Milestone Negotiation Step */}
+        {step === "negotiation" && linkData && (
+          <div className="space-y-4">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => setStep("invoice")}>
+              <ArrowLeft className="w-4 h-4" /> Back to Invoice
+            </Button>
+
+            {agreedMilestones ? (
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Handshake className="w-4 h-4 text-primary" /> Milestone Schedule Agreed
+                  </p>
+                  <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                  <div className="space-y-1">
+                    {agreedMilestones.filter(m => m.percentage > 0).map((m) => (
+                      <div key={m.id} className="flex justify-between text-[10px]">
+                        <span className="text-muted-foreground">{m.title}</span>
+                        <span className="font-medium">{m.percentage}% · ${(linkData.grand_total * m.percentage / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button className="w-full gap-2" onClick={() => setStep("compliance")}>
+                    Proceed to Compliance <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <MilestoneNegotiation
+                role="buyer"
+                txId={linkData.link_id}
+                industry={linkData.industry}
+                orderAmount={linkData.grand_total}
+                buyerName="Buyer"
+                vendorName={linkData.vendor_name}
+                status={negotiationStatus}
+                proposedBy="vendor"
+                existingMilestones={(() => {
+                  const key = linkData.industry.replace(/_/g, "-");
+                  const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[linkData.industry] || [];
+                  return templates.map((m, i) => ({
+                    id: `ms-${i}`,
+                    title: m.name,
+                    description: m.description || "",
+                    percentage: m.percentage,
+                    estimatedDays: 14,
+                    documentRequired: true,
+                    documentName: "",
+                  }));
+                })()}
+                onSubmitDraft={(milestones) => {
+                  setAgreedMilestones(milestones);
+                  setNegotiationStatus("agreed");
+                  toast.success("Milestone schedule locked — proceed to compliance.");
+                }}
+                onApproveDraft={() => {
+                  setNegotiationStatus("agreed");
+                  const key = linkData.industry.replace(/_/g, "-");
+                  const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[linkData.industry] || [];
+                  setAgreedMilestones(templates.map((m, i) => ({
+                    id: `ms-${i}`,
+                    title: m.name,
+                    description: m.description || "",
+                    percentage: m.percentage,
+                    estimatedDays: 14,
+                    documentRequired: true,
+                    documentName: "",
+                  })));
+                  toast.success("Vendor schedule accepted!");
+                }}
+                onRequestChanges={(note) => {
+                  toast.info(`Change requested: ${note}`);
+                }}
+              />
+            )}
+          </div>
+        )}
+
         {step === "compliance" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button

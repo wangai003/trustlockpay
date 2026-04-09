@@ -14,13 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/IndustryBlueprintCard";
-import MilestonePaymentSchedule, { type ScheduleItem, type CounterProposalContact } from "@/components/shared/MilestonePaymentSchedule";
 import { isRFQEligible, getRFQTerms } from "@/lib/rfqIndustryConfig";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import RFQForm from "@/components/shared/RFQForm";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
+import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
 
 interface VendorInfo {
   name: string;
@@ -36,7 +38,7 @@ const WidgetCheckout = () => {
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
 
-  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
+  const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
@@ -53,8 +55,9 @@ const WidgetCheckout = () => {
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
-  const [scheduleAccepted, setScheduleAccepted] = useState(false);
-  const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
+  // Milestone negotiation state (replaces old scheduleAccepted)
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
@@ -143,6 +146,10 @@ const WidgetCheckout = () => {
             }
           }
         }
+        // Use loaded industry to determine starting step
+        const resolvedIndustry = data?.industry_category || "general";
+        setStep(isMilestoneIndustryByKey(resolvedIndustry) ? "intent" : "form");
+        return;
       }
     } catch {
       // Use defaults
@@ -297,6 +304,106 @@ const WidgetCheckout = () => {
           </div>
         )}
 
+        {/* ── Step: Intent (milestone industries only) ── */}
+        {step === "intent" && isMilestoneIndustry && (
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <div className="text-center space-y-1">
+                <div className="mx-auto w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm font-semibold">{vendor.name}</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Escrow-protected payment</span>
+                </div>
+              </div>
+
+              <IndustryBlueprintCard industry={vendor.industry} />
+
+              <OrderIntentRouter
+                industry={vendor.industry}
+                industryLabel={vendor.industry.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                vendorName={vendor.name}
+                subtotal={parseFloat(form.amount || "0")}
+                presetMilestones={milestoneSchedule.map(m => ({
+                  title: m.name,
+                  percentage: m.percentage,
+                }))}
+                hasFixedPrice={parseFloat(form.amount || "0") > 0}
+                rfqEnabled={rfqEligible}
+                onDecision={(decision: IntentDecision) => {
+                  if (decision === "accept") {
+                    // Accept vendor presets → convert to MilestoneDraft and lock
+                    const drafts: MilestoneDraft[] = milestoneSchedule.map((m, i) => ({
+                      id: `ms-preset-${i}`,
+                      title: m.name,
+                      description: m.description || "",
+                      percentage: m.percentage,
+                      estimatedDays: 14,
+                      documentRequired: true,
+                      documentName: "",
+                    }));
+                    setAgreedMilestones(drafts);
+                    setNegotiationStatus("agreed");
+                    setStep("form");
+                    toast.success("Vendor schedule accepted — proceed to payment details.");
+                  } else if (decision === "counter") {
+                    setStep("negotiation");
+                  } else if (decision === "rfq") {
+                    setStep("rfq");
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Step: Negotiation ── */}
+        {step === "negotiation" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <MilestoneNegotiation
+                role="buyer"
+                txId={`widget-${vendorId}`}
+                industry={vendor.industry}
+                orderAmount={parseFloat(form.amount || "0")}
+                buyerName={form.buyerName || "Buyer"}
+                vendorName={vendor.name}
+                status={negotiationStatus}
+                proposedBy="vendor"
+                existingMilestones={milestoneSchedule.map((m, i) => ({
+                  id: `ms-preset-${i}`,
+                  title: m.name,
+                  description: m.description || "",
+                  percentage: m.percentage,
+                  estimatedDays: 14,
+                  documentRequired: true,
+                  documentName: "",
+                }))}
+                onSubmitDraft={(milestones) => {
+                  setAgreedMilestones(milestones);
+                  setNegotiationStatus("proposed");
+                  toast.info("Counter-proposal submitted to vendor for review.");
+                  setStep("counter_submitted");
+                }}
+                onApproveDraft={() => {
+                  setNegotiationStatus("agreed");
+                  setStep("form");
+                  toast.success("Milestone schedule agreed — proceed to payment.");
+                }}
+                onRequestChanges={(note) => {
+                  toast.info(`Change requested: ${note}`);
+                }}
+              />
+
+              <Button variant="outline" size="sm" onClick={() => setStep("intent")} className="text-xs">
+                ← Back to Options
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {step === "form" && (
           <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
@@ -324,41 +431,22 @@ const WidgetCheckout = () => {
               {/* Industry Blueprint — shows buyer what security protocols apply */}
               <IndustryBlueprintCard industry={vendor.industry} />
 
-              {/* Milestone Payment Schedule — pre-escrow negotiation for milestone industries */}
-              {isMilestoneIndustry && milestoneSchedule.length > 0 && parseFloat(form.amount || "0") > 0 && (
-                <MilestonePaymentSchedule
-                  industry={vendor.industry}
-                  orderAmount={parseFloat(form.amount || "0")}
-                  defaultSchedule={milestoneSchedule}
-                  vendorName={vendor.name}
-                  readOnly={scheduleAccepted}
-                  onAccept={(schedule) => {
-                    setAgreedSchedule(schedule);
-                    setScheduleAccepted(true);
-                    toast.success("Payment schedule accepted — proceed to payment");
-                  }}
-                  onCounterPropose={async (schedule, contact) => {
-                    try {
-                      await supabase.from("milestone_counter_proposals").insert({
-                        vendor_id: vendorId,
-                        site_id: siteId || null,
-                        industry: vendor.industry,
-                        order_item: form.item,
-                        order_amount: parseFloat(form.amount || "0"),
-                        buyer_full_name: contact.fullName,
-                        buyer_email: contact.email,
-                        buyer_phone: contact.phone || null,
-                        buyer_country_code: contact.countryCode,
-                        vendor_schedule: milestoneSchedule as any,
-                        proposed_schedule: schedule as any,
-                      } as any);
-                      setStep("counter_submitted");
-                      toast.success("Counter-proposal submitted!");
-                    } catch {
-                      toast.error("Failed to submit counter-proposal. Please try again.");
-                    }
-                  }}
-                />
+              {/* Agreed milestone schedule summary (shown after negotiation) */}
+              {agreedMilestones && agreedMilestones.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold flex items-center gap-1.5">
+                    <Handshake className="w-3.5 h-3.5 text-primary" /> Agreed Milestone Schedule
+                  </p>
+                  <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                  <div className="space-y-1">
+                    {agreedMilestones.filter(m => m.percentage > 0).map((m, i) => (
+                      <div key={m.id} className="flex justify-between text-[10px]">
+                        <span className="text-muted-foreground">{m.title}</span>
+                        <span className="font-medium">{m.percentage}% · ${(parseFloat(form.amount || "0") * m.percentage / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Checkout mode toggle — RFQ-eligible industries only */}
@@ -594,11 +682,11 @@ const WidgetCheckout = () => {
                 <Button
                   type="submit"
                   className="w-full gap-2 text-sm"
-                  disabled={isMilestoneIndustry && !scheduleAccepted}
+                  disabled={isMilestoneIndustry && !agreedMilestones}
                 >
                   <Lock className="w-4 h-4" />
-                  {isMilestoneIndustry && !scheduleAccepted
-                    ? "Accept milestone schedule above first"
+                  {isMilestoneIndustry && !agreedMilestones
+                    ? "Complete milestone negotiation first"
                     : isSandbox ? "Test Escrow Payment" : "Pay with Escrow"}
                 </Button>
               </form>
