@@ -1044,7 +1044,23 @@ async function updateMilestone(body: Record<string, unknown>) {
     });
   }
 
-  await logAuditAction(supabase, String(user_id), "update_milestone", {
+  // Notify counterparty when documents are uploaded
+  if (newDocCount > 0 && !status) {
+    const counterpartyId = role === "vendor" ? String(txData.buyer_id) : String(txData.vendor_id);
+    const fromRole = role === "vendor" ? "Vendor" : "Buyer";
+    const docNames = (Array.isArray(uploaded_documents) ? uploaded_documents : [uploaded_documents])
+      .map((d: any) => d?.name || d?.document_type || "Document").slice(0, 3).join(", ");
+    await supabase.from("notifications").insert({
+      user_id: counterpartyId,
+      title: `📄 ${fromRole} uploaded ${newDocCount} document${newDocCount > 1 ? "s" : ""}`,
+      message: `${fromRole} uploaded ${docNames} to milestone "${milestone.title || "Untitled"}". Review the documents in your Work Order Log.`,
+      type: "info",
+      related_entity_type: "milestone",
+      related_entity_id: String(milestone_id),
+      action_url: role === "vendor" ? "/trustlock/buyer/orders" : "/trustlock/vendor/transactions",
+    });
+  }
+
     transaction_id: txData.id,
     milestone_id: String(milestone_id),
     changes: Object.keys(updatePayload),
