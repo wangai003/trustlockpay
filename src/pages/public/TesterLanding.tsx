@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp, Play } from "lucide-react";
+import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp, Play, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const WIDGET_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || "dbajucxswcgxllmwxnia"}.supabase.co/functions/v1/widget-embed`;
 
