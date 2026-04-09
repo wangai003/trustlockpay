@@ -11,6 +11,16 @@ const industries = [
   { icon: ShoppingBag, title: "Retail & E-Commerce", desc: "Lightweight escrow for product orders with shipping confirmation and delivery proof.", stat: "Drop-in widget for any vendor website" },
 ];
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 25, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5 } },
+};
+
 const IndustriesSection = () => {
   return (
     <section id="industries" className="relative py-20 lg:py-28 bg-[hsl(160,20%,8%)] overflow-hidden">
@@ -29,25 +39,32 @@ const IndustriesSection = () => {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {industries.map((ind, i) => (
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {industries.map((ind) => (
             <motion.div
               key={ind.title}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="rounded-xl p-6 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] hover:border-primary/30 hover:shadow-[0_0_30px_hsl(152,52%,24%/0.1)] transition-all duration-300 group"
+              variants={item}
+              whileHover={{ y: -6, borderColor: "hsl(152, 52%, 30%)" }}
+              className="rounded-xl p-6 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] hover:shadow-[0_0_30px_hsl(152,52%,24%/0.12)] transition-all duration-300 group cursor-default"
             >
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 3 }}
+                className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
+              >
                 <ind.icon className="w-6 h-6 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="font-heading font-bold text-lg text-[hsl(0,0%,95%)]">{ind.title}</h3>
               <p className="text-sm text-[hsl(160,5%,50%)] mt-2">{ind.desc}</p>
               <p className="text-xs text-accent font-medium mt-3">{ind.stat}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

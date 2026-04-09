@@ -8,6 +8,16 @@ const promises = [
   { icon: Zap, title: "LC Alternative for SMEs", text: "Traditional Letters of Credit require bank relationships and large collateral. TrustLock provides the same guarantee at 1.5%." },
 ];
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
+
+const item = {
+  hidden: { opacity: 0, x: -20 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.5 } },
+};
+
 const TestimonialsSection = () => {
   return (
     <section id="testimonials" className="relative py-20 lg:py-28 bg-[hsl(160,20%,8%)] overflow-hidden">
@@ -26,24 +36,31 @@ const TestimonialsSection = () => {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {promises.map((p, i) => (
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mt-12 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+        >
+          {promises.map((p) => (
             <motion.div
               key={p.title}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-xl p-8 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] hover:border-primary/20 transition-all duration-300"
+              variants={item}
+              whileHover={{ y: -4, borderColor: "hsl(152, 52%, 28%)" }}
+              className="rounded-xl p-8 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] transition-all duration-300 cursor-default group"
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_hsl(152,52%,24%/0.2)] transition-all"
+              >
                 <p.icon className="w-5 h-5 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="font-heading font-bold text-lg text-[hsl(0,0%,95%)]">{p.title}</h3>
               <p className="text-sm text-[hsl(160,5%,50%)] mt-2 leading-relaxed">{p.text}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
