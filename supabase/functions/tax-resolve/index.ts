@@ -63,6 +63,21 @@ const TRADE_BLOCS: Record<string, { name: string; members: string[]; tariffReduc
     members: ["CM", "GA", "CG", "TD", "CF", "GQ"],
     tariffReduction: 0.9,
   },
+  CARICOM: {
+    name: "Caribbean Community",
+    members: ["AG", "BS", "BB", "BZ", "DM", "GD", "GY", "HT", "JM", "KN", "LC", "VC", "SR", "TT"],
+    tariffReduction: 0.85,
+  },
+  CAFTA_DR: {
+    name: "Central America-Dominican Republic Free Trade Agreement",
+    members: ["US", "CR", "SV", "GT", "HN", "NI", "DO"],
+    tariffReduction: 0.9,
+  },
+  CPTPP: {
+    name: "Comprehensive and Progressive Agreement for Trans-Pacific Partnership",
+    members: ["AU", "BN", "CA", "CL", "JP", "MY", "MX", "NZ", "PE", "SG", "VN", "GB"],
+    tariffReduction: 0.85,
+  },
 };
 
 // ─── Item Category Tariff Multipliers ────────────────────
