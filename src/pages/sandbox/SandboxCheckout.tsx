@@ -275,11 +275,14 @@ const SandboxCheckout = () => {
                       </div>
                     ))}
                     <Separator className="my-2" />
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs items-center"><span className="text-muted-foreground">Subtotal</span><DualCurrencyPrice amount={subtotal} countryCode={buyerCountry} variant="compact" /></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Processor Fee{isCryptoPayment ? "" : ` (${selectedProcessor.name})`}</span><span>{isCryptoPayment ? "$0.00 — Direct" : `$${combinedProcessorFee.toLocaleString()}`}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Duties ({(taxRate * 100).toFixed(1)}% + {remittanceFee > 0 ? `$${remittanceFee.toFixed(2)} remittance` : "remittance"})</span><span>${totalTaxes.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Taxes & Duties ({(taxRate * 100).toFixed(1)}%{remittanceFee > 0 ? ` + $${remittanceFee.toFixed(2)} remittance` : ""})</span><span>${totalTaxes.toLocaleString()}</span></div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Escrow Service Fee (1.0%)</span><span className="text-muted-foreground italic">Deducted at release</span></div>
-                    <div className="flex justify-between text-sm font-bold pt-1"><span>Total Due Now</span><span>${grandTotal.toLocaleString()}</span></div>
+                    <div className="flex justify-between items-center text-sm font-bold pt-1">
+                      <span>Total Due Now</span>
+                      <DualCurrencyPrice amount={grandTotal} countryCode={buyerCountry} variant="primary" />
+                    </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic">{config.invoiceNote}</p>
 
