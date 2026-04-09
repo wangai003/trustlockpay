@@ -59,20 +59,24 @@ const BuyerConfirmation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-15%] left-[20%] w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+        <div className="absolute bottom-[-15%] right-[20%] w-[350px] h-[350px] rounded-full bg-accent/5 blur-[80px]" />
+      </div>
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg relative z-10">
+        <motion.div className="flex items-center justify-center gap-3 mb-8" initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: "spring", stiffness: 200 }}>
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <Shield className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
             <p className="text-xs text-muted-foreground">Delivery Confirmation</p>
           </div>
-        </div>
+        </motion.div>
 
         {confirmed ? (
-          <Card className="border-primary/30">
+          <Card className="border-primary/30 shadow-xl shadow-primary/5">
             <CardContent className="p-8 text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                 <CheckCircle className="w-8 h-8 text-primary" />
@@ -111,7 +115,7 @@ const BuyerConfirmation = () => {
             </CardContent>
           </Card>
         ) : disputed ? (
-          <Card className="border-destructive/30">
+          <Card className="border-destructive/30 shadow-xl shadow-destructive/5">
             <CardContent className="p-8 text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
                 <AlertTriangle className="w-8 h-8 text-destructive" />
@@ -138,7 +142,7 @@ const BuyerConfirmation = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="shadow-xl shadow-black/5 border-border/50">
             <CardContent className="p-6 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="font-heading text-lg font-bold">Confirm Your Delivery</h2>
