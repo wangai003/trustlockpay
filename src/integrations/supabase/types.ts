@@ -4965,40 +4965,55 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          expiry_date: string | null
           file_size: string | null
           file_type: string | null
           file_url: string
+          flagged_reason: string | null
           id: string
+          last_validated_at: string | null
           tags: string[] | null
           updated_at: string
           use_count: number | null
           user_id: string
+          validation_notes: string | null
+          validation_status: string | null
           vault_name: string
         }
         Insert: {
           category?: string | null
           created_at?: string
+          expiry_date?: string | null
           file_size?: string | null
           file_type?: string | null
           file_url: string
+          flagged_reason?: string | null
           id?: string
+          last_validated_at?: string | null
           tags?: string[] | null
           updated_at?: string
           use_count?: number | null
           user_id: string
+          validation_notes?: string | null
+          validation_status?: string | null
           vault_name: string
         }
         Update: {
           category?: string | null
           created_at?: string
+          expiry_date?: string | null
           file_size?: string | null
           file_type?: string | null
           file_url?: string
+          flagged_reason?: string | null
           id?: string
+          last_validated_at?: string | null
           tags?: string[] | null
           updated_at?: string
           use_count?: number | null
           user_id?: string
+          validation_notes?: string | null
+          validation_status?: string | null
           vault_name?: string
         }
         Relationships: []
