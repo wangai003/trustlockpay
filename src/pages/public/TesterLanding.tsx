@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp, Play } from "lucide-react";
+import { Shield, Copy, CheckCircle, Code, Monitor, Smartphone, ArrowRight, Zap, Lock, Eye, ChevronDown, ChevronUp, Play, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const WIDGET_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || "dbajucxswcgxllmwxnia"}.supabase.co/functions/v1/widget-embed`;
 
@@ -58,6 +59,7 @@ const PLATFORM_TIPS: Record<string, { label: string; steps: string[] }> = {
 };
 
 const TesterLanding = () => {
+  const navigate = useNavigate();
   const [siteName, setSiteName] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [copied, setCopied] = useState(false);
@@ -90,6 +92,14 @@ const TesterLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Back Button */}
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+        </div>
+      </div>
       {/* Hero */}
       <div className="bg-gradient-to-b from-primary/5 to-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-12 text-center space-y-4">
