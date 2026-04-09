@@ -983,10 +983,12 @@ async function updateMilestone(body: Record<string, unknown>) {
     }
   }
 
+  let newDocCount = 0;
   if (uploaded_documents) {
     // Merge new documents with existing
     const existingDocs = Array.isArray(milestone.uploaded_documents) ? milestone.uploaded_documents : [];
     const newDocs = Array.isArray(uploaded_documents) ? uploaded_documents : [uploaded_documents];
+    newDocCount = newDocs.length;
     updatePayload.uploaded_documents = [...existingDocs, ...newDocs];
   }
 
