@@ -28,6 +28,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 const BuyerDisputes = () => {
   const { isTestnet } = useBuyer();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showNewDispute, setShowNewDispute] = useState(false);
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Item not as described");
