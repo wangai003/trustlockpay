@@ -113,6 +113,24 @@ const LAYOUT_MODE_ICONS: Record<LayoutMode, string> = {
   linear: "📋", single: "🔒", inspection: "🔍", offline: "💼",
 };
 
+/* ─── Action-type visual classification ─── */
+type ActionVisual = "submit" | "confirm" | "sign" | "release";
+
+function classifyAction(label: string): ActionVisual {
+  const l = label.toLowerCase();
+  if (/release|approve.*release|sign.*off.*release/.test(l)) return "release";
+  if (/sign|countersign|execute|accept.*sign/.test(l)) return "sign";
+  if (/submit|upload|grant|issue/.test(l)) return "submit";
+  return "confirm";
+}
+
+const ACTION_STYLES: Record<ActionVisual, { icon: React.ElementType; className: string; }> = {
+  submit:  { icon: Upload,         className: "border-2 border-primary text-primary bg-primary/5 hover:bg-primary/15 shadow-sm" },
+  confirm: { icon: PackageCheck,   className: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" },
+  sign:    { icon: PenLine,        className: "border-2 border-primary bg-primary/10 text-primary hover:bg-primary/20 shadow-sm" },
+  release: { icon: Banknote,       className: "bg-amber-600 hover:bg-amber-700 text-white shadow-lg ring-1 ring-amber-400/30" },
+};
+
 /* ─── Blueprint Data (inline for unified panel) ─── */
 interface MilestoneTemplate {
   name: string; percentage: number; documents: string[];
