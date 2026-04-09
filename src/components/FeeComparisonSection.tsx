@@ -4,11 +4,11 @@ import { useState } from "react";
 import { ALL_IN_RANGES, BUYER_FEE_LINES } from "@/lib/feeEngine";
 
 const methods = [
-  { name: "Bank Wire", cost: "5% – 10%", highlight: false },
+  { name: "Letter of Credit (LC)", cost: "2% – 8% + bank fees", highlight: false },
+  { name: "Bank Wire (no escrow)", cost: "3% – 10%", highlight: false },
   { name: "Remittance Services", cost: "6% – 9%", highlight: false },
-  { name: "Online Payment Platforms", cost: "3% – 7%", highlight: false },
   { name: "Legal Escrow Services", cost: "5% – 12%", highlight: false },
-  { name: "Azix Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
+  { name: "TrustLock Escrow", cost: `${ALL_IN_RANGES.cryptoDirect.range} – ${ALL_IN_RANGES.fiat.range.split(" – ")[1]}`, highlight: true },
 ];
 
 const FeeComparisonSection = () => {
@@ -24,10 +24,10 @@ const FeeComparisonSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Lower Fees. More Money Delivered.
+            Lower Fees. Stronger Guarantees.
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Stop losing your hard-earned money to exorbitant international transfer fees.
+            Why pay bank LC fees when you can get the same escrow protection at a fraction of the cost?
           </p>
         </motion.div>
 
@@ -81,7 +81,6 @@ const FeeComparisonSection = () => {
                 What buyers see at checkout
               </p>
 
-              {/* Line 1: Transaction Fee */}
               <div className="p-3 rounded-lg bg-background border border-border space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-foreground">{BUYER_FEE_LINES.transactionFee.label}</span>
@@ -91,7 +90,6 @@ const FeeComparisonSection = () => {
                 <p className="text-[10px] text-muted-foreground italic">Includes: {BUYER_FEE_LINES.transactionFee.includes}</p>
               </div>
 
-              {/* Line 2: Taxes & Duties */}
               <div className="p-3 rounded-lg bg-background border border-border space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-foreground">{BUYER_FEE_LINES.taxesAndDuties.label}</span>
@@ -100,7 +98,6 @@ const FeeComparisonSection = () => {
                 <p className="text-[10px] text-muted-foreground">{BUYER_FEE_LINES.taxesAndDuties.description}</p>
               </div>
 
-              {/* Line 3: Escrow Service Fee */}
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-primary">{BUYER_FEE_LINES.escrowServiceFee.label}</span>
@@ -109,7 +106,6 @@ const FeeComparisonSection = () => {
                 <p className="text-[10px] text-muted-foreground">{BUYER_FEE_LINES.escrowServiceFee.description}</p>
               </div>
 
-              {/* All-in ranges */}
               <div className="border-t border-border pt-3 space-y-1.5">
                 <p className="text-muted-foreground">
                   <strong className="text-foreground">Crypto Direct:</strong> {ALL_IN_RANGES.cryptoDirect.range} (no processor fee)

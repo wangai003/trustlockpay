@@ -1,17 +1,17 @@
 import { motion } from "framer-motion";
-import { HardHat, MapPinned, Plane, Package } from "lucide-react";
+import { AlertTriangle, FileWarning, Globe, Landmark } from "lucide-react";
 
 const risks = [
-  { icon: HardHat, title: "Contractor Fraud", desc: "Unfinished construction projects" },
-  { icon: MapPinned, title: "Land Fraud", desc: "Duplicate land sales and disputes" },
-  { icon: Plane, title: "Travel Scams", desc: "Fake or unreliable tour operators" },
-  { icon: Package, title: "Delivery Issues", desc: "Goods never arriving or substituted" },
+  { icon: AlertTriangle, title: "Non-Delivery Risk", desc: "Goods paid for but never shipped — or substituted on arrival" },
+  { icon: FileWarning, title: "Document Fraud", desc: "Forged Bills of Lading, inspection certs, or invoices" },
+  { icon: Globe, title: "Jurisdictional Gaps", desc: "No legal recourse when buyer and vendor are in different countries" },
+  { icon: Landmark, title: "LC Inaccessibility", desc: "Banks reject SMEs — Letters of Credit require large collateral and credit history" },
 ];
 
 const stats = [
-  { value: "$98B+", label: "in remittances to Africa annually" },
-  { value: "8%–10%", label: "Average cross-border payment fees" },
-  { value: "#1 Risk", label: "Diaspora property transaction fraud" },
+  { value: "$18T+", label: "Annual global trade volume" },
+  { value: "40%", label: "of SMEs denied trade finance" },
+  { value: "$1.7T", label: "Global trade finance gap" },
 ];
 
 const RiskSection = () => {
@@ -25,10 +25,10 @@ const RiskSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            The Risk of Doing Business From Abroad
+            Cross-Border Trade Is Broken
           </h2>
           <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
-            Every year millions of people in the diaspora send money home to build houses, buy land, invest in businesses, book travel experiences, or support family. But doing business from thousands of miles away often comes with serious risks.
+            Whether you're importing machinery from China, exporting cocoa from Ghana, or purchasing real estate across borders — the same problems persist: counterparty risk, document fraud, and zero recourse.
           </p>
         </motion.div>
 

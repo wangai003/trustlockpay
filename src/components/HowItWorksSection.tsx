@@ -1,30 +1,30 @@
 import { motion } from "framer-motion";
-import { ShoppingBag, Lock, Truck, CheckCircle } from "lucide-react";
+import { FileText, Lock, ClipboardCheck, CheckCircle } from "lucide-react";
 
 const steps = [
   {
     num: "01",
-    icon: ShoppingBag,
-    title: "Place Your Order",
-    desc: "Find a vendor or paste a checkout link. Review the item, milestones, and pricing before you commit.",
+    icon: FileText,
+    title: "Create a Trade Order",
+    desc: "Define milestones, upload proforma invoices, and set document requirements for your industry — from SGS certs to Bills of Lading.",
   },
   {
     num: "02",
     icon: Lock,
-    title: "Payment Held in Escrow",
-    desc: "Your funds are locked in a blockchain-secured smart contract — the vendor can see them but can't access them yet.",
+    title: "Funds Locked in Escrow",
+    desc: "Buyer funds are held in a blockchain-secured smart contract. The vendor can see the funds but can't access them until conditions are met.",
   },
   {
     num: "03",
-    icon: Truck,
-    title: "Vendor Delivers",
-    desc: "The vendor fulfils each milestone. You track progress in real time from your dashboard.",
+    icon: ClipboardCheck,
+    title: "Document-Gated Fulfillment",
+    desc: "Each milestone requires verified documents — AI scans for expiry, forgery, and page completeness before the gate unlocks.",
   },
   {
     num: "04",
     icon: CheckCircle,
-    title: "You Approve & Release",
-    desc: "Once you're satisfied, approve the release. Funds transfer to the vendor instantly.",
+    title: "Verified Release",
+    desc: "Both parties digitally sign off at each stage. Funds release automatically upon final approval — or disputes trigger arbitration.",
   },
 ];
 
@@ -39,10 +39,10 @@ const HowItWorksSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            How Azix Escrow Works
+            How TrustLock Escrow Works
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Four simple steps to absolute peace of mind.
+            Four stages. Full transparency. Zero guesswork.
           </p>
         </motion.div>
 

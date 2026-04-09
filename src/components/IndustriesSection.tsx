@@ -1,36 +1,42 @@
 import { motion } from "framer-motion";
-import { Building2, Home, Sprout, Plane, ShoppingBag } from "lucide-react";
+import { Building2, Home, Sprout, Cpu, ShoppingBag, Gem } from "lucide-react";
 
 const industries = [
   {
     icon: Building2,
-    title: "Construction",
-    desc: "Secure milestone payments for contractors and building projects.",
-    stat: "Diaspora housing investment exceeds $10B annually",
+    title: "Construction & Infrastructure",
+    desc: "Milestone-based payments for contractors, verified with inspection certs and progress photos.",
+    stat: "Supports 7-stage document gates",
   },
   {
     icon: Home,
     title: "Real Estate",
-    desc: "Protect land deposits and property purchases with escrow.",
-    stat: "Property fraud is the most common risk for diaspora investors.",
+    desc: "Protect deposits, title transfers, and property purchases with escrow and legal document gates.",
+    stat: "Survey, title search, and deed verification",
   },
   {
     icon: Sprout,
-    title: "Agriculture",
-    desc: "Safely purchase agricultural products from verified farmers.",
-    stat: "Agriculture contributes over 30% of Africa's GDP",
+    title: "Agriculture & Commodities",
+    desc: "SGS certificates, phytosanitary permits, and Bill of Lading gates for bulk commodity trade.",
+    stat: "End-to-end traceability from farm to port",
   },
   {
-    icon: Plane,
-    title: "Tourism",
-    desc: "Book tours and travel experiences with payment protection.",
-    stat: "Africa receives over 70M international visitors annually",
+    icon: Cpu,
+    title: "Technology & Equipment",
+    desc: "Secure hardware imports with customs clearance docs, warranty certs, and delivery confirmation.",
+    stat: "Serial number verification supported",
+  },
+  {
+    icon: Gem,
+    title: "Mining & Precious Metals",
+    desc: "Assayer reports, chain-of-custody certs, and export permits — all gated per milestone.",
+    stat: "Multi-page assay report upload support",
   },
   {
     icon: ShoppingBag,
-    title: "Retail",
-    desc: "Purchase groceries, supplies, and goods for family back home.",
-    stat: "Remittances to Africa exceed $98 billion each year",
+    title: "Retail & E-Commerce",
+    desc: "Lightweight escrow for product orders with shipping confirmation and delivery proof.",
+    stat: "Drop-in widget for any vendor website",
   },
 ];
 
@@ -45,6 +51,9 @@ const IndustriesSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Industries We Support</h2>
+          <p className="mt-3 text-muted-foreground text-lg">
+            Every industry has different document requirements. TrustLock enforces them automatically.
+          </p>
         </motion.div>
 
         <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

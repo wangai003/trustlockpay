@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin, Lock, CheckCircle } from "lucide-react";
+import { ArrowRight, Lock, CheckCircle, Globe, Shield, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PortalPicker from "@/components/shared/PortalPicker";
 import heroImage from "@/assets/hero-craftsman.jpg";
@@ -20,24 +20,30 @@ const HeroSection = () => {
               transition={{ duration: 0.7 }}
             >
               <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-                <span className="text-foreground">Securely Do Business</span>
+                <span className="text-foreground">The Escrow OS for</span>
                 <br />
-                <span className="text-accent">Back Home</span>
+                <span className="text-accent">Global Trade</span>
               </h1>
               <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed">
-                Azix protects diaspora transactions with escrow payments, verified vendors, and low-cost global transfers.
+                TrustLock replaces Letters of Credit with milestone-based smart contract escrow — securing cross-border transactions from Purchase Order to final delivery.
               </p>
               <p className="mt-2 text-base text-muted-foreground max-w-lg">
-                Send money, hire contractors, invest in property, or support family businesses with confidence.
+                Built for importers, exporters, and SMEs trading across any corridor — from US-Nigeria to EU-China and beyond.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <Button variant="hero" size="lg" className="rounded-full px-8" onClick={() => setPortalOpen(true)}>
-                  Get Started <ArrowRight className="ml-1 w-4 h-4" />
+                  Start Free <ArrowRight className="ml-1 w-4 h-4" />
                 </Button>
                 <Button variant="hero-outline" size="lg" className="rounded-full px-8" asChild>
                   <a href="#how-it-works">See How It Works</a>
                 </Button>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-6 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Blockchain-verified</span>
+                <span className="flex items-center gap-1.5"><FileCheck className="w-3.5 h-3.5 text-primary" /> Document-gated milestones</span>
+                <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-primary" /> Multi-currency settlement</span>
               </div>
             </motion.div>
 
@@ -51,7 +57,7 @@ const HeroSection = () => {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src={heroImage}
-                  alt="African artisan working in workshop"
+                  alt="Global trade commerce with secure escrow protection"
                   className="w-full h-[280px] sm:h-[400px] lg:h-[480px] object-cover"
                   loading="eager"
                 />
@@ -65,14 +71,14 @@ const HeroSection = () => {
                   <CheckCircle className="w-5 h-5 text-primary" />
                 </div>
 
-                {/* Location badges */}
+                {/* Corridor badges */}
                 <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm shadow-md">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Dallas, USA</span>
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium text-foreground">Buyer</span>
                 </div>
                 <div className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm shadow-md">
-                  <MapPin className="w-4 h-4 text-accent" />
-                  <span className="font-medium text-foreground">Nairobi, KE</span>
+                  <Globe className="w-4 h-4 text-accent" />
+                  <span className="font-medium text-foreground">Vendor</span>
                 </div>
               </div>
             </motion.div>
