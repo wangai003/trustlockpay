@@ -264,6 +264,144 @@ const SandboxCheckout = () => {
         </div>
 
         <AnimatePresence mode="wait">
+          {/* ─── PRE-STEP: Order Intent Router (Milestone Industries Only) ─── */}
+          {step === "intent" && config && (
+            <motion.div key="intent" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield className="w-4 h-4" /> Pre-Escrow — Choose Your Path
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Before payment, both parties must agree on the milestone schedule.
+                      The vendor has pre-configured a schedule below — you can accept, negotiate, or request a custom quote.
+                    </p>
+                    <OrderIntentRouter
+                      industry={config.key}
+                      industryLabel={config.label}
+                      vendorName={config.vendorName}
+                      subtotal={config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)}
+                      presetMilestones={config.milestones}
+                      hasFixedPrice={true}
+                      rfqEnabled={true}
+                      onDecision={(decision: IntentDecision) => {
+                        if (decision === "accept") {
+                          // Lock vendor presets as agreed milestones
+                          const locked: MilestoneDraft[] = config.milestones
+                            .filter(m => m.percentage > 0)
+                            .map((m, i) => ({
+                              id: `ms-preset-${i}`,
+                              title: m.title,
+                              description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                              percentage: m.percentage,
+                              estimatedDays: 14 + i * 7,
+                              documentRequired: !!m.documentGate,
+                              documentName: m.documentGate || "",
+                            }));
+                          setAgreedMilestones(locked);
+                          setNegotiationStatus("agreed");
+                          toast.success("✅ Vendor schedule accepted! Proceeding to invoice.");
+                          setStep("invoice");
+                        } else if (decision === "counter") {
+                          setStep("negotiation");
+                        } else if (decision === "rfq") {
+                          toast.info("📨 RFQ submitted to vendor. In production, the vendor would respond via CRM with a proforma invoice.");
+                          // For sandbox, simulate vendor responding and go to negotiation
+                          setTimeout(() => {
+                            toast.success("📋 Vendor responded with a quote. Now negotiate milestones.");
+                            setStep("negotiation");
+                          }, 1500);
+                        }
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="flex gap-2">
+                  <Link to={`/sandbox/store/${config.key}`}>
+                    <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back to Store</Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── PRE-STEP 2: Milestone Negotiation ─── */}
+          {step === "negotiation" && config && (
+            <motion.div key="negotiation" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="space-y-4">
+                <MilestoneNegotiation
+                  role="buyer"
+                  txId={`SBX-DRAFT-${Date.now().toString(36)}`}
+                  industry={config.label}
+                  orderAmount={config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)}
+                  buyerName="Sandbox Buyer"
+                  vendorName={config.vendorName}
+                  status={negotiationStatus}
+                  proposedBy={negotiationStatus === "proposed" ? "vendor" : undefined}
+                  existingMilestones={
+                    config.milestones
+                      .filter(m => m.percentage > 0)
+                      .map((m, i) => ({
+                        id: `ms-neg-${i}`,
+                        title: m.title,
+                        description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                        percentage: m.percentage,
+                        estimatedDays: 14 + i * 7,
+                        documentRequired: !!m.documentGate,
+                        documentName: m.documentGate || "",
+                      }))
+                  }
+                  onSubmitDraft={(milestones) => {
+                    setNegotiationStatus("proposed");
+                    toast.info("📤 Proposal sent to vendor for review...");
+                    // Simulate vendor auto-approval after 2s
+                    setTimeout(() => {
+                      setAgreedMilestones(milestones);
+                      setNegotiationStatus("agreed");
+                      toast.success("🤝 Vendor approved! Milestone schedule locked.");
+                    }, 2000);
+                  }}
+                  onApproveDraft={() => {
+                    setAgreedMilestones(
+                      config.milestones
+                        .filter(m => m.percentage > 0)
+                        .map((m, i) => ({
+                          id: `ms-agreed-${i}`,
+                          title: m.title,
+                          description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                          percentage: m.percentage,
+                          estimatedDays: 14 + i * 7,
+                          documentRequired: !!m.documentGate,
+                          documentName: m.documentGate || "",
+                        }))
+                    );
+                    setNegotiationStatus("agreed");
+                    toast.success("🤝 Milestones locked!");
+                  }}
+                  onRequestChanges={(note) => {
+                    toast.info(`📝 Change request sent: "${note}". Vendor will revise.`);
+                    setNegotiationStatus("drafting");
+                  }}
+                />
+
+                {negotiationStatus === "agreed" && (
+                  <Button onClick={() => setStep("invoice")} className="w-full gap-2">
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                    Continue to Invoice Review →
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={() => setStep("intent")}>
+                  <ArrowLeft className="w-3 h-3 mr-1" />Back to Path Selection
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
           {/* ─── STEP 1: Invoice Review ─── */}
           {step === "invoice" && (
             <motion.div key="invoice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
