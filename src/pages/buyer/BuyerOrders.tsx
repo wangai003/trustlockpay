@@ -20,7 +20,6 @@ import TrustLockOSPayout from "@/components/shared/TrustLockOSPayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import TransportLegsViewer from "@/components/shared/TransportLegsViewer";
@@ -407,14 +406,10 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <TLId code={dynTLId("B", "BO", row, "LBL-TXID")} inline>
-                <span className="font-mono text-sm font-bold">{order.id}</span>
-              </TLId>
-              <TLId code={dynTLId("B", "BO", row, "STS")} inline>
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+              <span className="font-mono text-sm font-bold">{order.id}</span>
+              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
                   <cfg.icon className="w-3 h-3" /> {cfg.label}
                 </span>
-              </TLId>
               {sourceBadge && (
                 <Badge variant={sourceBadge.variant} className="text-[9px] gap-1">
                   <sourceBadge.icon className="w-3 h-3" /> {sourceBadge.label}
@@ -422,17 +417,15 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               )}
             </div>
             <p className="text-sm">
-              <TLId code={dynTLId("B", "BO", row, "LBL-ITEM")} inline><strong>{order.item}</strong></TLId>
+              <strong>{order.item}</strong>
               {" "}from{" "}
-              <TLId code={dynTLId("B", "BO", row, "LBL-VENDOR")} inline><span className="text-muted-foreground">{order.vendor}</span></TLId>
+              <span className="text-muted-foreground">{order.vendor}</span>
             </p>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <TLId code={dynTLId("B", "BO", row, "LBL-AMOUNT")} inline><span>Amount: {order.amount}</span></TLId>
+              <span>Amount: {order.amount}</span>
               <span>Date: {order.date}</span>
               {order.tracking && (
-                <TLId code={dynTLId("B", "BO", row, "LBL-TRACKING")} inline>
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
-                </TLId>
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
               )}
             </div>
             <ExternalFeeSummary
@@ -443,8 +436,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
           </div>
 
           <div className="lg:w-64">
-            <TLId code={dynTLId("B", "BO", row, "STEP-PROGRESS")}>
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1">
                 {["Paid", "Shipped", "Delivered", "Released"].map((step, i) => {
                   const stepIndex = { locked: 0, shipped: 1, delivered: 2, released: 3, disputed: -1 }[order.status] ?? -1;
                   const isComplete = i <= stepIndex;
@@ -464,20 +456,16 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
                 <span>Paid</span><span>Shipped</span><span>Delivered</span><span>Released</span>
               </div>
-            </TLId>
           </div>
 
           <div className="flex gap-2 shrink-0">
             {order.status === "delivered" && (
               <>
-                <TLId code={dynTLId("B", "BO", row, "BTN-CONFIRM")} inline>
-                  <Button size="sm" onClick={() => {
+                <Button size="sm" onClick={() => {
                     if (isTestnet) { testnet.confirmDelivery(order.id); }
                     else { confirmDeliveryHook.mutate(order.id); }
                   }}>Confirm Delivery</Button>
-                </TLId>
-                <TLId code={dynTLId("B", "BO", row, "BTN-RELEASE")} inline>
-                  <Button
+                <Button
                     size="sm"
                     variant="default"
                     className="gap-1"
@@ -489,12 +477,10 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                     <Unlock className="w-3.5 h-3.5" />
                     Release Funds
                   </Button>
-                </TLId>
               </>
             )}
             {order.status === "shipped" && (
-              <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
-                <Button variant="outline" size="sm" onClick={() => {
+              <Button variant="outline" size="sm" onClick={() => {
                   const legs = order.transportLegs;
                   if (legs && legs.length > 0) {
                     const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
@@ -506,11 +492,9 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 }}>
                   <ExternalLink className="w-3 h-3 mr-1" /> Track
                 </Button>
-              </TLId>
             )}
             {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
-              <TLId code={dynTLId("B", "BO", row, "BTN-DISPUTE")} inline>
-                <Button
+              <Button
                   variant="outline"
                   size="sm"
                   className="text-destructive border-destructive/30"
@@ -523,7 +507,6 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 >
                   Dispute
                 </Button>
-              </TLId>
             )}
             {order.status === "disputed" && (
               <Button
@@ -547,14 +530,10 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 Payout Guide
               </Button>
             )}
-            <TLId code={dynTLId("B", "BO", row, "BTN-VIEW")} inline>
-              <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-            </TLId>
-            <TLId code={dynTLId("B", "BO", row, "BTN-EXPAND")} inline>
-              <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+            <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
                 {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </Button>
-            </TLId>
           </div>
         </div>
         {expandedOrder === order.id && (

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Crown, Building2, Gift, Briefcase, Shield } from "lucide-react";
 import { toast } from "sonner";
-import TLId from "@/components/shared/TLId";
 import { useActivateTrial } from "@/hooks/useBackendSync";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -99,7 +98,7 @@ const VendorPricing = () => {
                 <p className="text-sm font-semibold">Try Growth features free for 30 days</p>
                 <p className="text-xs text-muted-foreground">Full access to analytics, AI, and up to 300 orders. No payment required.</p>
               </div>
-              <TLId code="TL-V-PRC-BTN-TRIAL" inline><Button size="sm" onClick={() => setActivatingTrial(true)}>Activate Free Trial</Button></TLId>
+              <Button size="sm" onClick={() => setActivatingTrial(true)}>Activate Free Trial</Button>
             </div>
             <div className="p-3 bg-background/50 rounded-lg border border-border">
               <p className="text-[10px] text-muted-foreground leading-relaxed">

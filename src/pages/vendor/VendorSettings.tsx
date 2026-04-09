@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import TLId from "@/components/shared/TLId";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
@@ -206,7 +205,7 @@ const VendorSettings = () => {
                   When disabled, buyers cannot make payments via TrustLock on your connected sites.
                 </p>
               </div>
-              <TLId code="TL-V-SET-TGL-PAY-WIDGET" inline><Switch checked={payEnabled} onCheckedChange={handlePayToggle} /></TLId>
+              <Switch checked={payEnabled} onCheckedChange={handlePayToggle} />
             </div>
             {!payEnabled && (
               <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5">
@@ -264,13 +263,11 @@ const VendorSettings = () => {
                           : "Automatically mark orders as shipped when payment is received. Best for digital goods or high-volume sellers."}
                       </p>
                     </div>
-                    <TLId code="TL-V-SET-TGL-AUTO-DELIVERY" inline>
-                      <Switch
+                    <Switch
                         checked={autoDelivery && !isMilestoneIndustry}
                         onCheckedChange={handleAutoDeliveryToggle}
                         disabled={isMilestoneIndustry}
                       />
-                    </TLId>
                   </div>
                   {isMilestoneIndustry && (
                     <div className="p-3 rounded-lg border border-muted bg-muted/30">
@@ -317,7 +314,7 @@ const VendorSettings = () => {
                 <p className="text-sm font-medium">Tier B — Self-Custody</p>
                 <p className="text-xs text-muted-foreground">Direct to your Polygon wallet (1.0% fee)</p>
               </div>
-              <TLId code="TL-V-SET-BTN-PAYOUT-SWITCH" inline><Button variant="outline" size="sm">Switch</Button></TLId>
+              <Button variant="outline" size="sm">Switch</Button>
             </div>
           </CardContent>
         </Card>
@@ -353,7 +350,7 @@ const VendorSettings = () => {
           </CardContent>
         </Card>
 
-        <TLId code="TL-V-SET-BTN-SAVE" inline><Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button></TLId>
+        <Button className="gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
 
         {/* Account Actions */}
         <Card className="border-destructive/20">
@@ -372,22 +369,18 @@ const VendorSettings = () => {
                 <p className="text-sm font-medium">Pause Account</p>
                 <p className="text-xs text-muted-foreground">Temporarily deactivate your account. All pending escrows continue processing. You can reactivate anytime.</p>
               </div>
-              <TLId code="TL-V-SET-BTN-PAUSE" inline>
-                <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
+              <Button variant="outline" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => setShowPauseDialog(true)}>
                   <Pause className="w-3.5 h-3.5" /> Pause
                 </Button>
-              </TLId>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
               <div>
                 <p className="text-sm font-medium text-destructive">Delete Account</p>
                 <p className="text-xs text-muted-foreground">Permanently delete your account and all data. This action cannot be undone. Audit records are retained per compliance policy.</p>
               </div>
-              <TLId code="TL-V-SET-BTN-DELETE" inline>
-                <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
+              <Button variant="destructive" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </Button>
-              </TLId>
             </div>
           </CardContent>
         </Card>

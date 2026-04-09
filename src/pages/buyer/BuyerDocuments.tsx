@@ -12,7 +12,6 @@ import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import TLId from "@/components/shared/TLId";
 
 const docs = [
   { title: "Buyer Protection Policy", desc: "How TrustLock escrow protects your funds. Auto-release rules, dispute rights, and refund procedures.", updated: "Mar 2026" },
@@ -49,9 +48,7 @@ const BuyerDocuments = () => {
     <div>
       <BuyerHeader title="Documents" />
       <div className="p-3 sm:p-6 space-y-6">
-        <TLId code="TL-B-DOC-UPL-MAIN">
         <DocumentUpload label="Upload Documents (Receipts, Photos, Evidence)" />
-        </TLId>
 
         {/* ── Acknowledgement Form Preview ─── */}
         <Card className="border-primary/20">
@@ -65,17 +62,13 @@ const BuyerDocuments = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <TLId code="TL-B-DOC-BTN-ACK-PDF" inline>
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleDownloadForm}>
                   <Download className="w-3 h-3" /> PDF <Badge variant="secondary" className="text-[9px] ml-1">$0.50</Badge>
                 </Button>
-                </TLId>
-                <TLId code="TL-B-DOC-BTN-ACK-PREVIEW" inline>
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setShowAckPreview(!showAckPreview)}>
                   <Eye className="w-3 h-3" />
                   {showAckPreview ? "Hide" : "Preview"}
                 </Button>
-                </TLId>
               </div>
             </div>
           </CardHeader>

@@ -9,7 +9,6 @@ import { Package, DollarSign, Clock, CheckCircle, AlertTriangle, Eye, ShieldChec
 import { useTransactions, useConfirmDelivery } from "@/hooks/useSupabaseData";
 import { useNavigate } from "react-router-dom";
 import OnboardingTaskCard from "@/components/shared/OnboardingTaskCard";
-import TLId from "@/components/shared/TLId";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -60,10 +59,9 @@ const BuyerOverview = () => {
     <div>
       <BuyerHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <TLId code="TL-B-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="buyer" /></TLId>
+        <OnboardingTaskCard role="buyer" />
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <TLId code="TL-B-OVW-CRD-WELCOME">
           <Card className="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border-primary/20 overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent pointer-events-none" />
             <CardContent className="p-4 sm:p-6 relative">
@@ -75,7 +73,6 @@ const BuyerOverview = () => {
               </div>
             </CardContent>
           </Card>
-          </TLId>
         </motion.div>
 
         <motion.div
@@ -118,7 +115,7 @@ const BuyerOverview = () => {
                   <p className="text-sm font-semibold">Action Required</p>
                   <p className="text-xs text-muted-foreground">You have orders awaiting delivery confirmation. Confirm to release funds to vendor.</p>
                 </div>
-                <TLId code="TL-B-OVW-BTN-CONFIRM-DELIVERY" inline><Button size="sm">Review Now</Button></TLId>
+                <Button size="sm">Review Now</Button>
               </CardContent>
             </Card>
           </motion.div>
@@ -128,11 +125,9 @@ const BuyerOverview = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between bg-muted/20">
               <CardTitle className="text-base">Recent Orders</CardTitle>
-              <TLId code="TL-B-OVW-BTN-VIEW-ALL" inline>
-                <Button variant="ghost" size="sm" className="text-xs hover:text-primary" onClick={() => navigate("/trustlock/buyer/orders")}>
+              <Button variant="ghost" size="sm" className="text-xs hover:text-primary" onClick={() => navigate("/trustlock/buyer/orders")}>
                   View All →
                 </Button>
-              </TLId>
             </CardHeader>
             <CardContent className="p-0">
               {txLoading ? (
@@ -176,7 +171,7 @@ const BuyerOverview = () => {
                             </td>
                             <td className="p-4 text-center hidden sm:table-cell">
                               <div className="flex items-center justify-center gap-1">
-                                {order.status === "delivered" && <TLId code="TL-B-OVW-BTN-CONFIRM-DELIVERY" inline><Button size="sm" className="text-xs" onClick={() => confirmDelivery.mutate(order.id)}>Confirm</Button></TLId>}
+                                {order.status === "delivered" && <Button size="sm" className="text-xs" onClick={() => confirmDelivery.mutate(order.id)}>Confirm</Button>}
                                 {order.status === "shipped" && <Button variant="outline" size="sm" className="text-xs">Track</Button>}
                                 <Button variant="ghost" size="sm" className="hover:text-primary"><Eye className="w-4 h-4" /></Button>
                               </div>

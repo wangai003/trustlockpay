@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
-import TLId from "@/components/shared/TLId";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,14 +51,12 @@ const BuyerSidebar = () => {
 
   return (
     <>
-      <TLId code="TL-B-SB-BTN-MENU" inline>
-        <button
+      <button
           onClick={() => setOpen(true)}
           className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-sidebar border border-sidebar-border text-sidebar-foreground"
         >
           <Menu className="w-5 h-5" />
         </button>
-      </TLId>
 
       {open && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
@@ -92,8 +89,7 @@ const BuyerSidebar = () => {
             const badgeCount = item.badgeKey ? (badgeCounts[item.badgeKey] || 0) : 0;
             return (
               <div key={item.to} className="flex items-center gap-1">
-                <TLId code={item.tlId} inline>
-                  <NavLink
+                <NavLink
                     to={item.to}
                     end={item.to === "/trustlock/buyer"}
                     onClick={() => setOpen(false)}
@@ -114,7 +110,6 @@ const BuyerSidebar = () => {
                       </Badge>
                     )}
                   </NavLink>
-                </TLId>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
@@ -132,23 +127,17 @@ const BuyerSidebar = () => {
 
         <SidebarLegalLinks />
         <div className="p-3 border-t border-sidebar-border space-y-1">
-          <TLId code="TL-B-SB-BTN-SWITCH-VENDOR" inline>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-sidebar-foreground font-semibold" onClick={() => { setOpen(false); switchRole(); }} disabled={switching}>
               <Store className="w-4 h-4" />
               {switching ? "Switching..." : "Switch to Vendor"}
             </Button>
-          </TLId>
-          <TLId code="TL-B-SB-BTN-HOME" inline>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => { setOpen(false); navigate("/"); }}>
               <Home className="w-4 h-4" />
               Back to Home
             </Button>
-          </TLId>
-          <TLId code="TL-B-SB-BTN-LOGOUT" inline>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={handleLogout}>
               <LogOut className="w-4 h-4" /> Sign Out
             </Button>
-          </TLId>
         </div>
       </aside>
     </>

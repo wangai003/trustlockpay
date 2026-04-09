@@ -25,7 +25,6 @@ import {
 import WidgetInstallGuide from "@/components/vendor/WidgetInstallGuide";
 import WidgetPreviewMockup from "@/components/vendor/WidgetPreviewMockup";
 import WidgetIndustryConfig from "@/components/vendor/WidgetIndustryConfig";
-import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import { ALL_INDUSTRIES } from "@/lib/industryList";
 import { useVendorSites, useAddSite, useDeleteSite } from "@/hooks/useSupabaseData";
@@ -757,8 +756,8 @@ const VendorSitesAndWidget = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <TLId code={dynTLId("V", "SIT", row, "LBL-NAME")} inline><h3 className="font-heading font-bold">{site.name}</h3></TLId>
-                                <TLId code={dynTLId("V", "SIT", row, "BDG-PLATFORM")} inline><Badge variant="secondary" className="text-[10px]">{site.platform}</Badge></TLId>
+                                <h3 className="font-heading font-bold">{site.name}</h3>
+                                <Badge variant="secondary" className="text-[10px]">{site.platform}</Badge>
                                 {site.industry && <Badge variant="outline" className="text-[10px]">{INDUSTRY_ICONS[site.industry] || "📦"} {TRUSTLOCK_INDUSTRIES.find(i => i.key === site.industry)?.label || site.industry}</Badge>}
                               </div>
                               <p className="text-sm text-muted-foreground mt-1"><ExternalLink className="w-3 h-3 inline mr-1" />{site.url}</p>

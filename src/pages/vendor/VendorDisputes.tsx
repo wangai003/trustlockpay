@@ -10,7 +10,6 @@ import ArbitratorProposalPanel from "@/components/shared/ArbitratorProposalPanel
 import { useDisputes, useFileDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useVendor } from "@/contexts/VendorContext";
-import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -167,11 +166,9 @@ const VendorDisputes = () => {
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track disputes you've filed or that buyers filed against you</p>
           </div>
-          <TLId code="TL-V-DSP-BTN-FILE" inline>
-            <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
               <AlertTriangle className="w-4 h-4" /> File Dispute
             </Button>
-          </TLId>
         </div>
 
         {showNewDispute && (
@@ -182,9 +179,7 @@ const VendorDisputes = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Transaction ID</Label>
-                <TLId code={dynTLId("V", "DSPF", 1, "INP-TXID")} inline>
-                  <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
-                </TLId>
+                <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., TL-2026-XXXX" value={txIdInput} onChange={e => setTxIdInput(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Reason</Label>
@@ -255,29 +250,19 @@ const VendorDisputes = () => {
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <TLId code={dynTLId("V", "DSP", row, "LBL-ID")} inline>
-                          <span className="font-mono text-sm font-bold">{dispute.id}</span>
-                        </TLId>
-                        <TLId code={dynTLId("V", "DSP", row, "STS")} inline>
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                        <span className="font-mono text-sm font-bold">{dispute.id}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
                             <cfg.icon className="w-3 h-3" /> {cfg.label}
                           </span>
-                        </TLId>
                       </div>
                       <p className="text-sm">
-                        <TLId code={dynTLId("V", "DSP", row, "LBL-BUYER")} inline>
-                          <strong>Filed by {dispute.buyer}</strong>
-                        </TLId>
+                        <strong>Filed by {dispute.buyer}</strong>
                         {" — "}
-                        <TLId code={dynTLId("V", "DSP", row, "LBL-REASON")} inline>
-                          <span>{dispute.reason}</span>
-                        </TLId>
+                        <span>{dispute.reason}</span>
                       </p>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span>TX: {dispute.txId}</span>
-                        <TLId code={dynTLId("V", "DSP", row, "LBL-AMOUNT")} inline>
-                          <span>Amount: {dispute.amount}</span>
-                        </TLId>
+                        <span>Amount: {dispute.amount}</span>
                         <span>Filed: {dispute.filed}</span>
                       </div>
                     </div>
@@ -287,32 +272,24 @@ const VendorDisputes = () => {
                         <Bot className="w-4 h-4 text-primary" />
                         <span className="text-xs font-semibold">Status Update</span>
                       </div>
-                      <TLId code={dynTLId("V", "DSP", row, "LBL-AI-STATUS")} inline>
-                        <p className="text-xs text-muted-foreground">{dispute.lastUpdate}</p>
-                      </TLId>
+                      <p className="text-xs text-muted-foreground">{dispute.lastUpdate}</p>
                       <p className="text-[10px] text-muted-foreground">You will be notified when a decision is made</p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 shrink-0">
                       {dispute.status !== "resolved" && dispute.status !== "resolved_buyer" && dispute.status !== "resolved_vendor" && (
                         <>
-                          <TLId code={dynTLId("V", "DSP", row, "BTN-EVIDENCE")} inline>
-                            <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}>
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => handleAddEvidence(dispute.id)}>
                               <MessageSquare className="w-3 h-3" /> Add Evidence
                             </Button>
-                          </TLId>
                           {dispute.rawAmount >= 10000 && (
-                            <TLId code={dynTLId("V", "DSP", row, "BTN-ARBITRATE")} inline>
-                              <Button variant="outline" size="sm" className="gap-1 border-accent text-accent-foreground hover:bg-accent/10" onClick={() => handleRequestArbitrator(dispute)}>
+                            <Button variant="outline" size="sm" className="gap-1 border-accent text-accent-foreground hover:bg-accent/10" onClick={() => handleRequestArbitrator(dispute)}>
                                 <Scale className="w-3 h-3" /> Request Arbitrator
                               </Button>
-                            </TLId>
                           )}
                         </>
                       )}
-                      <TLId code={dynTLId("V", "DSP", row, "BTN-VIEW")} inline>
-                        <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-                      </TLId>
+                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 </CardContent>

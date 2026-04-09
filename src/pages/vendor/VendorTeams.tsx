@@ -24,7 +24,6 @@ import { queueOfflineAction, syncOfflineActions, getPendingActions } from "@/lib
 import { Plus, Users, Trash2, UserPlus, CheckCircle2, XCircle, AlertTriangle, ClipboardList, WifiOff, Wifi, RotateCcw, MessageSquare, Settings2 } from "lucide-react";
 import TestnetTeamsView from "@/components/shared/TestnetTeamsView";
 import { cn } from "@/lib/utils";
-import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 
 const INDUSTRIES = [
@@ -470,27 +469,19 @@ const VendorTeams = () => {
                       return (
                       <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border gap-2">
                         <div>
-                          <TLId code={dynTLId("V", "TM", row, "LBL-NAME")} inline>
-                            <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
-                          </TLId>
-                          <TLId code={dynTLId("V", "TM", row, "LBL-USERID")} inline>
-                            <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
-                          </TLId>
+                          <p className="font-medium text-sm">{m.display_name || "Unnamed"}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{m.user_id.slice(0, 8)}... {m.preferred_language && m.preferred_language !== "en" && `· ${LANGUAGES.find(l => l.code === m.preferred_language)?.label || m.preferred_language}`}</p>
                         </div>
                         {isOwner && (
                           <div className="flex items-center gap-3 self-end sm:self-center">
                             <div className="flex items-center gap-2">
                               <Label className="text-xs">Finalizer</Label>
-                              <TLId code={dynTLId("V", "TM", row, "TGL-FINALIZE")} inline>
-                                <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
-                              </TLId>
+                              <Switch checked={m.can_finalize} onCheckedChange={() => toggleFinalize(m.id, m.can_finalize)} disabled={selectedWs.status !== "active"} />
                             </div>
                             {selectedWs.status === "active" && (
-                              <TLId code={dynTLId("V", "TM", row, "BTN-REMOVE")} inline>
-                                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setConfirmAction({ type: "remove_member", id: m.id, label: `Remove ${m.display_name || "member"}` })}>
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
-                              </TLId>
                             )}
                           </div>
                         )}
