@@ -194,6 +194,7 @@ const BuyerOrders = () => {
         cartId: (tx as any).cart_id as string | null,
         transactionSource: (tx as any).transaction_source as string | null,
         platformId: (tx as any).platform_id as string | null,
+        transportLegs: (tx as any).transport_legs as any[] | null,
       }));
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
