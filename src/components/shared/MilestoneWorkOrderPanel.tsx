@@ -1312,8 +1312,8 @@ const MilestoneWorkOrderPanel = ({
                               </div>
                             </div>
                           )}
-                          <Button size="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" onClick={() => handleReleaseMilestone(ms.id)}>
-                            <CheckCircle2 className="w-4 h-4 mr-2" /> Sign & Release Milestone
+                          <Button size="default" className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg ring-1 ring-amber-400/30" onClick={() => handleReleaseMilestone(ms.id)}>
+                            <Banknote className="w-4 h-4 mr-2" /> Sign & Release Milestone
                           </Button>
                         </div>
                       )}
