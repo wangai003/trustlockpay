@@ -11,6 +11,7 @@ import DocumentUpload from "@/components/shared/DocumentUpload";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import VendorConsentForm from "@/components/shared/VendorConsentForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
+import VendorDocumentVault from "@/components/vendor/VendorDocumentVault";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import TLId from "@/components/shared/TLId";
@@ -55,6 +56,9 @@ const VendorDocuments = () => {
         <TLId code="TL-V-DOC-UPL-MAIN">
         <DocumentUpload label="Upload Documents (Receipts, Proof of Shipment, etc.)" />
         </TLId>
+
+        {/* ── Document Vault ─── */}
+        <VendorDocumentVault />
 
         {/* ── Acknowledgement Form Preview ─── */}
         <Card className="border-primary/20">

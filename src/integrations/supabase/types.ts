@@ -4961,6 +4961,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_document_vault: {
+        Row: {
+          category: string | null
+          created_at: string
+          file_size: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          tags: string[] | null
+          updated_at: string
+          use_count: number | null
+          user_id: string
+          vault_name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          file_size?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          tags?: string[] | null
+          updated_at?: string
+          use_count?: number | null
+          user_id: string
+          vault_name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          file_size?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          tags?: string[] | null
+          updated_at?: string
+          use_count?: number | null
+          user_id?: string
+          vault_name?: string
+        }
+        Relationships: []
+      }
       vendor_offerings: {
         Row: {
           base_price: number | null
