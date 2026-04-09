@@ -11,7 +11,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import { type PaymentProvider, PRIVACY_DISCLAIMER } from "@/lib/paymentProviders";
-import { AFRICAN_CURRENCIES } from "@/lib/africanCurrencies";
+import { GLOBAL_CURRENCIES } from "@/lib/globalCurrencies";
 import { FEE_DISCLOSURE_SHORT, AZIX_WALLETS, calculateFeesV2, selectProcessor, type TransactionType } from "@/lib/feeEngine";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
