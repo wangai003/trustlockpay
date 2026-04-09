@@ -155,8 +155,11 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange(opt.value)}
+                onClick={() => !locked && onChange(opt.value)}
+                disabled={locked}
                 className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all ${
+                  locked ? "cursor-not-allowed opacity-60" : ""
+                } ${
                   isSelected
                     ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                     : "border-border hover:border-primary/30"
