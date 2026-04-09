@@ -71,7 +71,7 @@ interface Props {
 }
 
 const OnboardingTaskCard = ({ role }: Props) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const tasks = role === "vendor" ? vendorTasks : role === "buyer" ? buyerTasks : adminTasks;
@@ -154,85 +154,100 @@ const OnboardingTaskCard = ({ role }: Props) => {
       : "📋 Buyer Order Requirements";
 
   return (
-    <Card className="border-2 border-yellow-400/60 bg-yellow-50/80 dark:bg-yellow-900/10 dark:border-yellow-500/40 shadow-md">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-sm text-foreground">{title}</h3>
-          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setExpanded(!expanded)}>
+    <Card className={`border ${expanded ? "border-2 border-yellow-400/60 bg-yellow-50/80 dark:bg-yellow-900/10 dark:border-yellow-500/40 shadow-md" : "border-border bg-muted/30"}`}>
+      <CardContent className={expanded ? "p-4" : "p-2 px-3"}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            {!expanded && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-foreground truncate">{title}</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground">{checkedCount}/{tasks.length}</span>
+                </div>
+                {tasks.length - checkedCount > 0 && (
+                  <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                    · {tasks.length - checkedCount} remaining
+                  </span>
+                )}
+              </div>
+            )}
+            {expanded && <h3 className="font-bold text-sm text-foreground">{title}</h3>}
+          </div>
+          <Button variant="ghost" size="sm" className="h-7 px-2 shrink-0" onClick={() => setExpanded(!expanded)}>
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
         </div>
 
-        {/* Progress bar */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 h-1.5 rounded-full bg-yellow-200 dark:bg-yellow-800/40 overflow-hidden">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-          </div>
-          <span className="text-[10px] font-bold text-foreground">
-            {checkedCount}/{tasks.length}
-          </span>
-        </div>
-
-        {expanded && isLoading && role !== "admin" && (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-start gap-2 p-2">
-                <Skeleton className="w-4 h-4 rounded-full shrink-0" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-3 w-3/4" />
-                  <Skeleton className="h-2 w-1/2" />
-                </div>
+        {expanded && (
+          <>
+            {/* Progress bar */}
+            <div className="flex items-center gap-2 mb-3 mt-2">
+              <div className="flex-1 h-1.5 rounded-full bg-yellow-200 dark:bg-yellow-800/40 overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
               </div>
-            ))}
-          </div>
-        )}
+              <span className="text-[10px] font-bold text-foreground">
+                {checkedCount}/{tasks.length}
+              </span>
+            </div>
 
-        {expanded && (!isLoading || role === "admin") && (
-          <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
-            {tasks.map((task) => {
-              const done = task.task_key && role !== "admin" ? isChecked(task) : localChecked.has(task.id);
-              const badge = frequencyBadge[task.frequency];
-              const isMutating = completeMutation.isPending && completeMutation.variables?.taskKey === task.task_key;
-              return (
-                <button
-                  key={task.id}
-                  onClick={() => toggle(task)}
-                  disabled={isMutating}
-                  className={`w-full flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
-                    done ? "bg-primary/5 opacity-60" : "hover:bg-yellow-100/80 dark:hover:bg-yellow-800/20"
-                  }`}
-                >
-                  {isMutating ? (
-                    <Loader2 className="w-4 h-4 text-primary shrink-0 mt-0.5 animate-spin" />
-                  ) : done ? (
-                    <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  ) : (
-                    <Circle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-xs font-bold text-foreground ${done ? "line-through" : ""}`}>
-                        {task.label}
-                      </span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.color}`}>
-                        {badge.label}
-                      </span>
+            {isLoading && role !== "admin" && (
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-start gap-2 p-2">
+                    <Skeleton className="w-4 h-4 rounded-full shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-2 w-1/2" />
                     </div>
-                    {task.description && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{task.description}</p>
-                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                ))}
+              </div>
+            )}
 
-        {!expanded && (
-          <p className="text-[10px] text-muted-foreground">
-            <AlertTriangle className="w-3 h-3 inline mr-1 text-yellow-600" />
-            {tasks.length - checkedCount} task{tasks.length - checkedCount !== 1 ? "s" : ""} remaining — expand to view
-          </p>
+            {(!isLoading || role === "admin") && (
+              <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+                {tasks.map((task) => {
+                  const done = task.task_key && role !== "admin" ? isChecked(task) : localChecked.has(task.id);
+                  const badge = frequencyBadge[task.frequency];
+                  const isMutating = completeMutation.isPending && completeMutation.variables?.taskKey === task.task_key;
+                  return (
+                    <button
+                      key={task.id}
+                      onClick={() => toggle(task)}
+                      disabled={isMutating}
+                      className={`w-full flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                        done ? "bg-primary/5 opacity-60" : "hover:bg-yellow-100/80 dark:hover:bg-yellow-800/20"
+                      }`}
+                    >
+                      {isMutating ? (
+                        <Loader2 className="w-4 h-4 text-primary shrink-0 mt-0.5 animate-spin" />
+                      ) : done ? (
+                        <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-xs font-bold text-foreground ${done ? "line-through" : ""}`}>
+                            {task.label}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.color}`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                        {task.description && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{task.description}</p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

@@ -58,7 +58,7 @@ const storageKey = (role: string) => `tl_testnet_guide_${role}`;
 const TestnetGuide = ({ role }: TestnetGuideProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const { resetTestnetData } = useTestnetData();
   const [completed, setCompleted] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(storageKey(role)) || "[]"); } catch { return []; }
@@ -88,29 +88,34 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
 
   return (
     <div className="mx-4 sm:mx-6 mt-3">
-      <Card className="border-blue-400/30 bg-blue-50/50 dark:bg-blue-950/20">
-        <CardContent className="p-3 space-y-2">
+      <Card className={`${collapsed ? "border-border bg-muted/30" : "border-blue-400/30 bg-blue-50/50 dark:bg-blue-950/20"}`}>
+        <CardContent className={collapsed ? "p-2 px-3" : "p-3 space-y-2"}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-blue-500" />
+              <Lightbulb className="w-4 h-4 text-blue-500 shrink-0" />
               <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                Testnet Guide — {role.charAt(0).toUpperCase() + role.slice(1)}
+                Testnet Guide
               </span>
-              <Badge variant="secondary" className="text-[10px]">{completedCount}/{steps.length}</Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-20 h-1.5 bg-blue-200 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+              <div className="flex items-center gap-1.5">
+                <div className="w-16 h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                </div>
+                <Badge variant="secondary" className="text-[10px]">{completedCount}/{steps.length}</Badge>
               </div>
-              <button onClick={() => setCollapsed(!collapsed)} className="text-blue-500 hover:text-blue-700">
-                {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </button>
+              {collapsed && currentStep && (
+                <span className="text-[10px] text-muted-foreground hidden sm:inline truncate max-w-[200px]">
+                  · Next: {currentStep.title}
+                </span>
+              )}
             </div>
+            <button onClick={() => setCollapsed(!collapsed)} className="text-blue-500 hover:text-blue-700 shrink-0">
+              {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
           </div>
 
           {!collapsed && (
             <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-              {steps.map((step, i) => {
+              {steps.map((step) => {
                 const isDone = completed.includes(step.id);
                 const isCurrent = currentStep?.id === step.id;
                 return (
@@ -144,7 +149,7 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
                       </Button>
                     )}
                     {isCurrent && step.route === location.pathname && (
-                      <Badge className="bg-blue-500 text-white text-[8px] shrink-0 animate-pulse">
+                      <Badge className="bg-blue-500 text-primary-foreground text-[8px] shrink-0 animate-pulse">
                         👉 Do this now
                       </Badge>
                     )}
@@ -154,7 +159,7 @@ const TestnetGuide = ({ role }: TestnetGuideProps) => {
             </div>
           )}
 
-          {completedCount === steps.length && !collapsed && (
+          {!collapsed && completedCount === steps.length && (
             <div className="text-center py-2 space-y-2">
               <p className="text-xs font-semibold text-blue-600">🎉 All tasks completed! You've explored the {role} dashboard.</p>
               <Button size="sm" variant="outline" className="text-[10px] gap-1" onClick={() => { setCompleted([]); resetTestnetData(); }}>
