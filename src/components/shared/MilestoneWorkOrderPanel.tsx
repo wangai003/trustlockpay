@@ -455,8 +455,6 @@ const MilestoneWorkOrderPanel = ({
           toast.error("GPS location is required for this industry. Enable location services and try again.", { duration: 6000 });
           return;
         }
-        onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy);
-
         // Call real reverse geocoding via registry-anchor for display
         try {
           const result = await anchorProof(
@@ -473,12 +471,14 @@ const MilestoneWorkOrderPanel = ({
             }
           );
           const loc = result?.resolvedLocation;
+          onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy, loc?.formatted || undefined, loc?.city || undefined, loc?.country || undefined);
           if (loc?.formatted) {
             toast.success(`📍 ${loc.formatted}`, { duration: 6000 });
           } else {
             toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
           }
         } catch {
+          onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy);
           toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
         }
       }
