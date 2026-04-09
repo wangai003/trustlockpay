@@ -1061,6 +1061,7 @@ async function updateMilestone(body: Record<string, unknown>) {
     });
   }
 
+  await logAuditAction(supabase, String(user_id), "update_milestone", {
     transaction_id: txData.id,
     milestone_id: String(milestone_id),
     changes: Object.keys(updatePayload),
