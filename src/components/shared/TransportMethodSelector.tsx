@@ -133,12 +133,13 @@ function LegEditor({
   disabled?: boolean;
 }) {
   const meta = TRANSPORT_METHODS.find((m) => m.key === leg.mode);
-  if (!meta) return null;
 
   const carriers = useMemo(
     () => getCarrierSuggestions(leg.mode, region),
     [leg.mode, region]
   );
+
+  if (!meta) return null;
 
   // Auto-fill tracking URL when carrier changes
   const handleCarrierChange = (name: string) => {
