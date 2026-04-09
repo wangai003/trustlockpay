@@ -1221,46 +1221,58 @@ const MilestoneWorkOrderPanel = ({
 
                     {/* ── PRIMARY ACTION (visually dominant) ── */}
                     <div className="flex flex-col gap-2 pt-1">
-                      {canVendorFulfill && (
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            size="default"
-                            onClick={() => handleMarkFulfilled(ms.id)}
-                            disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
-                            className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            {vendorActionLabel}
-                          </Button>
-                          {gateStatus.mode === "required" && !gateStatus.satisfied && (
-                            <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
-                              <AlertTriangle className="w-2.5 h-2.5" />
-                              Upload {gateStatus.missingRequired.length} required doc(s) to unlock
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      {canVendorFulfill && (() => {
+                        const actionType = classifyAction(vendorActionLabel);
+                        const style = ACTION_STYLES[actionType];
+                        const ActionIcon = style.icon;
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="default"
+                              variant="outline"
+                              onClick={() => handleMarkFulfilled(ms.id)}
+                              disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                              className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
+                            >
+                              <ActionIcon className="w-4 h-4 mr-2" />
+                              {vendorActionLabel}
+                            </Button>
+                            {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                              <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Buyer-driven step fulfillment (when step owner is buyer/both) */}
-                      {canBuyerAct && !canBuyerRelease && (
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            size="default"
-                            onClick={() => handleMarkFulfilled(ms.id)}
-                            disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
-                            className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50" : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"}`}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            {buyerActionLabel}
-                          </Button>
-                          {gateStatus.mode === "required" && !gateStatus.satisfied && (
-                            <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
-                              <AlertTriangle className="w-2.5 h-2.5" />
-                              Upload {gateStatus.missingRequired.length} required doc(s) to unlock
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      {canBuyerAct && !canBuyerRelease && (() => {
+                        const actionType = classifyAction(buyerActionLabel);
+                        const style = ACTION_STYLES[actionType];
+                        const ActionIcon = style.icon;
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="default"
+                              variant="outline"
+                              onClick={() => handleMarkFulfilled(ms.id)}
+                              disabled={gateStatus.mode === "required" && !gateStatus.satisfied}
+                              className={`w-full ${gateStatus.mode === "required" && !gateStatus.satisfied ? "opacity-50 border-muted" : style.className}`}
+                            >
+                              <ActionIcon className="w-4 h-4 mr-2" />
+                              {buyerActionLabel}
+                            </Button>
+                            {gateStatus.mode === "required" && !gateStatus.satisfied && (
+                              <p className="text-[9px] text-destructive flex items-center gap-0.5 justify-center">
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                Upload {gateStatus.missingRequired.length} required doc(s) to unlock
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Vendor: waiting message when step is buyer-owned */}
                       {role === "vendor" && !isVendorStep && ms.status !== "completed" && ms.status !== "released" && ms.status !== "deleted" && (
