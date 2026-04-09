@@ -48,7 +48,8 @@ const SandboxCheckout = () => {
   const navigate = useNavigate();
   const config = SANDBOX_INDUSTRIES.find(i => i.key === industry);
 
-  const [step, setStep] = useState<Step>("invoice");
+  const isMilestone = isMilestoneIndustryByKey(config?.key || "");
+  const [step, setStep] = useState<Step>(isMilestone ? "intent" : "invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerCountry, setBuyerCountry] = useState("US");
@@ -61,6 +62,10 @@ const SandboxCheckout = () => {
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  // Milestone negotiation state
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
 
   // GPS-enforced Trade Scope
   const { position: gpsPosition, loading: gpsLoading, capturePosition } = useGeolocation();
