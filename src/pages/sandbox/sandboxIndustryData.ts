@@ -47,10 +47,9 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Handmade Bead Necklace Set", qty: 2, unit: "sets", unitPrice: 60 },
     ],
     milestones: [
-      { title: "Payment Confirmed", percentage: 0 },
       { title: "Order Prepared & Packed", percentage: 35 },
-      { title: "Shipped (Tracking Provided)", percentage: 30, documentGate: "Shipping Receipt" },
-      { title: "Delivered & Confirmed", percentage: 35 },
+      { title: "Shipped (Tracking Provided)", percentage: 35, documentGate: "Shipping Receipt" },
+      { title: "Delivered & Confirmed", percentage: 30 },
     ],
     documents: [
       { name: "Commercial Invoice", required: true, owner: "vendor" },
@@ -71,7 +70,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Legal & Title Transfer Fees", qty: 1, unit: "flat", unitPrice: 3500 },
     ],
     milestones: [
-      { title: "Deposit Secured in Escrow", percentage: 0 },
       { title: "Title Search & Due Diligence", percentage: 20, documentGate: "Title Search Report" },
       { title: "Construction / Inspection Phase", percentage: 35, documentGate: "Structural Inspection Certificate" },
       { title: "Final Inspection & Handover", percentage: 30, documentGate: "Completion Certificate" },
@@ -100,7 +98,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Logistics & Secure Transport", qty: 1, unit: "flat", unitPrice: 1200 },
     ],
     milestones: [
-      { title: "Purchase Order Confirmed", percentage: 0 },
       { title: "Assay & Quality Certification", percentage: 20, documentGate: "Assay Certificate" },
       { title: "Environmental Clearance Obtained", percentage: 15, documentGate: "Environmental Permit" },
       { title: "Extraction & Processing", percentage: 25 },
@@ -130,7 +127,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Tank Farm Storage (14 Days)", qty: 1, unit: "flat", unitPrice: 2800 },
     ],
     milestones: [
-      { title: "Allocation Verified & PO Signed", percentage: 0, documentGate: "NNPC Allocation Letter" },
       { title: "Quality Inspection (SGS/Intertek)", percentage: 20, documentGate: "SGS Inspection Report" },
       { title: "Product Loaded at Depot", percentage: 30 },
       { title: "In-Transit (GPS Tracked)", percentage: 25, documentGate: "Waybill & GPS Log" },
@@ -159,7 +155,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "2 Rounds of Revisions", qty: 1, unit: "flat", unitPrice: 400 },
     ],
     milestones: [
-      { title: "Project Brief Approved", percentage: 0 },
       { title: "First Draft / Mockup Delivered", percentage: 35, documentGate: "Mockup Files" },
       { title: "Revisions Completed", percentage: 30 },
       { title: "Final Delivery & Handoff", percentage: 35, documentGate: "Source Files Package" },
@@ -185,7 +180,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Site Supervision (6 Months)", qty: 6, unit: "months", unitPrice: 3000 },
     ],
     milestones: [
-      { title: "Contract Signed & Permits Filed", percentage: 0 },
       { title: "Foundation & Structural Work", percentage: 25, documentGate: "Structural Engineer Report" },
       { title: "MEP Rough-In (Mechanical/Electrical/Plumbing)", percentage: 25 },
       { title: "Finishing & Interior Fit-Out", percentage: 25, documentGate: "Progress Photo Report" },
@@ -213,7 +207,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Export Logistics (CIF Rotterdam)", qty: 1, unit: "flat", unitPrice: 2200 },
     ],
     milestones: [
-      { title: "Purchase Order Confirmed", percentage: 0 },
       { title: "Quality Inspection & Grading", percentage: 20, documentGate: "Quality Certificate" },
       { title: "Phytosanitary & Export Clearance", percentage: 15, documentGate: "Phytosanitary Certificate" },
       { title: "Loaded & Shipped (Bill of Lading)", percentage: 35, documentGate: "Bill of Lading" },
@@ -241,7 +234,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Cargo Insurance (Full Value)", qty: 1, unit: "flat", unitPrice: 380 },
     ],
     milestones: [
-      { title: "Booking Confirmed & Pickup Scheduled", percentage: 0 },
       { title: "Cargo Collected & Loaded", percentage: 25, documentGate: "Packing List" },
       { title: "Customs Cleared (Origin)", percentage: 20, documentGate: "Export Customs Declaration" },
       { title: "In Transit (GPS Tracked)", percentage: 30, documentGate: "Waybill & GPS Log" },
@@ -269,7 +261,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "12-Month Warranty & Support", qty: 1, unit: "flat", unitPrice: 2000 },
     ],
     milestones: [
-      { title: "Order Placed & Specs Confirmed", percentage: 0 },
       { title: "Manufacturing & Assembly", percentage: 30, documentGate: "Factory Test Report" },
       { title: "Quality Assurance & Certification", percentage: 20, documentGate: "ISO Compliance Certificate" },
       { title: "Shipment & Delivery", percentage: 25, documentGate: "Bill of Lading" },
@@ -297,7 +288,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Import Duty & Clearing Agent", qty: 1, unit: "flat", unitPrice: 8500 },
     ],
     milestones: [
-      { title: "Vehicle Sourced & Inspected", percentage: 0, documentGate: "Pre-Shipment Inspection" },
       { title: "Purchase & Export Documentation", percentage: 20, documentGate: "Bill of Sale" },
       { title: "Shipped (Marine Bill of Lading)", percentage: 30, documentGate: "Bill of Lading" },
       { title: "Arrived at Port — Customs Clearance", percentage: 30, documentGate: "Customs Import Declaration" },

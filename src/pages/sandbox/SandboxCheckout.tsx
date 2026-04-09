@@ -25,10 +25,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
 import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
+import { isMilestoneIndustryByKey } from "@/lib/industryList";
 
-type Step = "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
+type Step = "intent" | "negotiation" | "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
 
 const STEP_LABELS: { key: Step; label: string }[] = [
+  { key: "intent", label: "Intent" },
+  { key: "negotiation", label: "Negotiate" },
   { key: "invoice", label: "Invoice" },
   { key: "compliance", label: "Compliance" },
   { key: "acknowledgement", label: "Acknowledgement" },
@@ -43,7 +49,8 @@ const SandboxCheckout = () => {
   const navigate = useNavigate();
   const config = SANDBOX_INDUSTRIES.find(i => i.key === industry);
 
-  const [step, setStep] = useState<Step>("invoice");
+  const isMilestone = isMilestoneIndustryByKey(config?.key || "");
+  const [step, setStep] = useState<Step>(isMilestone ? "intent" : "invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerCountry, setBuyerCountry] = useState("US");
@@ -56,6 +63,10 @@ const SandboxCheckout = () => {
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  // Milestone negotiation state
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
 
   // GPS-enforced Trade Scope
   const { position: gpsPosition, loading: gpsLoading, capturePosition } = useGeolocation();
@@ -175,8 +186,7 @@ const SandboxCheckout = () => {
   const grandTotal = Math.round((subtotal + totalFees + totalTaxes) * 100) / 100;
   const fee = totalFees + totalTaxes;
 
-  const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
-  const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
+  // Step index calculation moved to inline stepper render
 
   const handleProceedFromInvoice = () => {
     if (!buyerName.trim() || !buyerEmail.trim()) return;
@@ -236,34 +246,199 @@ const SandboxCheckout = () => {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Progress stepper */}
-        <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
-          {STEP_LABELS.map((s, i) => (
-            <div key={s.key} className="flex items-center gap-1 shrink-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                i < effectiveStepIdx ? "bg-primary text-primary-foreground" :
-                i === effectiveStepIdx ? "bg-primary text-primary-foreground" :
-                "bg-muted text-muted-foreground"
-              }`}>
-                {i < effectiveStepIdx ? "✓" : i + 1}
-              </div>
-              <span className={`text-[10px] ${i <= effectiveStepIdx ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</span>
-              {i < STEP_LABELS.length - 1 && <div className="w-4 h-px bg-border mx-0.5" />}
+        {/* Progress stepper — filter out intent/negotiation for non-milestone industries */}
+        {(() => {
+          const visibleSteps = isMilestone ? STEP_LABELS : STEP_LABELS.filter(s => s.key !== "intent" && s.key !== "negotiation");
+          const currentIdx = visibleSteps.findIndex(s => s.key === step);
+          const activeIdx = step === "processing" ? visibleSteps.findIndex(s => s.key === "payment") : currentIdx;
+          return (
+            <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+              {visibleSteps.map((s, i) => (
+                <div key={s.key} className="flex items-center gap-1 shrink-0">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                    i < activeIdx ? "bg-primary text-primary-foreground" :
+                    i === activeIdx ? "bg-primary text-primary-foreground" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {i < activeIdx ? "✓" : i + 1}
+                  </div>
+                  <span className={`text-[10px] ${i <= activeIdx ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</span>
+                  {i < visibleSteps.length - 1 && <div className="w-4 h-px bg-border mx-0.5" />}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         <AnimatePresence mode="wait">
+          {/* ─── PRE-STEP: Order Intent Router (Milestone Industries Only) ─── */}
+          {step === "intent" && config && (
+            <motion.div key="intent" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield className="w-4 h-4" /> Pre-Escrow — Choose Your Path
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Before payment, both parties must agree on the milestone schedule.
+                      The vendor has pre-configured a schedule below — you can accept, negotiate, or request a custom quote.
+                    </p>
+                    <OrderIntentRouter
+                      industry={config.key}
+                      industryLabel={config.label}
+                      vendorName={config.vendorName}
+                      subtotal={config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)}
+                      presetMilestones={config.milestones}
+                      hasFixedPrice={true}
+                      rfqEnabled={true}
+                      onDecision={(decision: IntentDecision) => {
+                        if (decision === "accept") {
+                          // Lock vendor presets as agreed milestones
+                          const locked: MilestoneDraft[] = config.milestones
+                            .filter(m => m.percentage > 0)
+                            .map((m, i) => ({
+                              id: `ms-preset-${i}`,
+                              title: m.title,
+                              description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                              percentage: m.percentage,
+                              estimatedDays: 14 + i * 7,
+                              documentRequired: !!m.documentGate,
+                              documentName: m.documentGate || "",
+                            }));
+                          setAgreedMilestones(locked);
+                          setNegotiationStatus("agreed");
+                          toast.success("✅ Vendor schedule accepted! Proceeding to invoice.");
+                          setStep("invoice");
+                        } else if (decision === "counter") {
+                          setStep("negotiation");
+                        } else if (decision === "rfq") {
+                          toast.info("📨 RFQ submitted to vendor. In production, the vendor would respond via CRM with a proforma invoice.");
+                          // For sandbox, simulate vendor responding and go to negotiation
+                          setTimeout(() => {
+                            toast.success("📋 Vendor responded with a quote. Now negotiate milestones.");
+                            setStep("negotiation");
+                          }, 1500);
+                        }
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="flex gap-2">
+                  <Link to={`/sandbox/store/${config.key}`}>
+                    <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back to Store</Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── PRE-STEP 2: Milestone Negotiation ─── */}
+          {step === "negotiation" && config && (
+            <motion.div key="negotiation" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div className="space-y-4">
+                <MilestoneNegotiation
+                  role="buyer"
+                  txId={`SBX-DRAFT-${Date.now().toString(36)}`}
+                  industry={config.label}
+                  orderAmount={config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)}
+                  buyerName="Sandbox Buyer"
+                  vendorName={config.vendorName}
+                  status={negotiationStatus}
+                  proposedBy={negotiationStatus === "proposed" ? "vendor" : undefined}
+                  existingMilestones={
+                    config.milestones
+                      .filter(m => m.percentage > 0)
+                      .map((m, i) => ({
+                        id: `ms-neg-${i}`,
+                        title: m.title,
+                        description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                        percentage: m.percentage,
+                        estimatedDays: 14 + i * 7,
+                        documentRequired: !!m.documentGate,
+                        documentName: m.documentGate || "",
+                      }))
+                  }
+                  onSubmitDraft={(milestones) => {
+                    setNegotiationStatus("proposed");
+                    toast.info("📤 Proposal sent to vendor for review...");
+                    // Simulate vendor auto-approval after 2s
+                    setTimeout(() => {
+                      setAgreedMilestones(milestones);
+                      setNegotiationStatus("agreed");
+                      toast.success("🤝 Vendor approved! Milestone schedule locked.");
+                    }, 2000);
+                  }}
+                  onApproveDraft={() => {
+                    setAgreedMilestones(
+                      config.milestones
+                        .filter(m => m.percentage > 0)
+                        .map((m, i) => ({
+                          id: `ms-agreed-${i}`,
+                          title: m.title,
+                          description: m.documentGate ? `Document gate: ${m.documentGate}` : "",
+                          percentage: m.percentage,
+                          estimatedDays: 14 + i * 7,
+                          documentRequired: !!m.documentGate,
+                          documentName: m.documentGate || "",
+                        }))
+                    );
+                    setNegotiationStatus("agreed");
+                    toast.success("🤝 Milestones locked!");
+                  }}
+                  onRequestChanges={(note) => {
+                    toast.info(`📝 Change request sent: "${note}". Vendor will revise.`);
+                    setNegotiationStatus("drafting");
+                  }}
+                />
+
+                {negotiationStatus === "agreed" && (
+                  <Button onClick={() => setStep("invoice")} className="w-full gap-2">
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                    Continue to Invoice Review →
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={() => setStep("intent")}>
+                  <ArrowLeft className="w-3 h-3 mr-1" />Back to Path Selection
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
           {/* ─── STEP 1: Invoice Review ─── */}
           {step === "invoice" && (
             <motion.div key="invoice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Step 1 — Invoice Review
+                    <FileText className="w-4 h-4" /> {isMilestone ? "Step 3" : "Step 1"} — Invoice Review
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Agreed Milestones Summary (if negotiated) */}
+                  {agreedMilestones && agreedMilestones.length > 0 && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <p className="text-xs font-semibold text-foreground">Locked Milestone Schedule</p>
+                        <Badge className="text-[9px] bg-primary/10 text-primary">{agreedMilestones.length} stages</Badge>
+                      </div>
+                      <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                      <div className="space-y-1">
+                        {agreedMilestones.map((m, i) => (
+                          <div key={m.id} className="flex justify-between text-[10px]">
+                            <span>{i + 1}. {m.title}</span>
+                            <span className="font-medium">{m.percentage}% · ${((subtotal * m.percentage) / 100).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                     <p className="text-xs font-medium text-foreground">Vendor: {config.vendorName}</p>
                     <p className="text-[10px] text-muted-foreground">Industry: {config.label}</p>
@@ -382,9 +557,15 @@ const SandboxCheckout = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Link to={`/sandbox/store/${config.key}`}>
-                      <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back</Button>
-                    </Link>
+                    {isMilestone ? (
+                      <Button variant="outline" size="sm" onClick={() => setStep(agreedMilestones ? "negotiation" : "intent")}>
+                        <ArrowLeft className="w-3 h-3 mr-1" />Back
+                      </Button>
+                    ) : (
+                      <Link to={`/sandbox/store/${config.key}`}>
+                        <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back</Button>
+                      </Link>
+                    )}
                     <Button onClick={handleProceedFromInvoice} disabled={!buyerName.trim() || !buyerEmail.trim()} className="flex-1">
                       Continue → Compliance Screening
                     </Button>
