@@ -180,6 +180,7 @@ const BuyerOrders = () => {
         cartId: null as string | null,
         transactionSource: "widget" as string | null,
         platformId: null as string | null,
+        transportLegs: null as any[] | null,
       }))
     : rawTransactions.map(tx => ({
         dbId: tx.id,
