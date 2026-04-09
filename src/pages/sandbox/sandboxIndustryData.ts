@@ -180,7 +180,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Site Supervision (6 Months)", qty: 6, unit: "months", unitPrice: 3000 },
     ],
     milestones: [
-      { title: "Contract Signed & Permits Filed", percentage: 0 },
       { title: "Foundation & Structural Work", percentage: 25, documentGate: "Structural Engineer Report" },
       { title: "MEP Rough-In (Mechanical/Electrical/Plumbing)", percentage: 25 },
       { title: "Finishing & Interior Fit-Out", percentage: 25, documentGate: "Progress Photo Report" },
