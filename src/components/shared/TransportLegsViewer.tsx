@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Truck, Ship, Plane, Train, Package, Wifi, HandMetal, MapPin, Calendar } from "lucide-react";
 import type { TransportLeg } from "@/lib/transportMethods";
-import { TRANSPORT_MODES } from "@/lib/transportMethods";
+import { TRANSPORT_METHODS } from "@/lib/transportMethods";
 
 const modeIcons: Record<string, any> = {
   air_freight: Plane,
