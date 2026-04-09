@@ -15,6 +15,10 @@ interface TradeScopeSelectorProps {
   compact?: boolean;
   /** When true, auto-sets scope on country detection (user can override) */
   autoSet?: boolean;
+  /** When true, the selector is read-only — GPS has verified the scope */
+  locked?: boolean;
+  /** Label shown when locked (e.g. "GPS-verified") */
+  lockedLabel?: string;
 }
 
 const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; description: string; docLevel: string }[] = [
