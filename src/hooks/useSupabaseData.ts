@@ -63,7 +63,7 @@ export function useTransaction(txId: string) {
 export function useAddTracking() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { txId: string; tracking: string }) =>
+    mutationFn: (params: { txId: string; tracking: string; transportLegs?: any[] }) =>
       callEdgeFunction("manage-transaction", { action: "add_tracking", ...params }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });

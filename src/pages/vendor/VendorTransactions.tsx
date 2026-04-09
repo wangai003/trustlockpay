@@ -142,13 +142,13 @@ const VendorTransactions = () => {
     setTrackDialog(txId);
   };
 
-  const handleTrackingSaved = async (tracking: string) => {
+  const handleTrackingSaved = async (tracking: string, legs?: any[]) => {
     const txId = trackDialog;
     if (!txId) return;
     if (isTestnet) {
       testnet.addTracking(txId, tracking);
     } else {
-      await addTrackingHook.mutateAsync({ txId, tracking });
+      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs });
     }
     setTrackDialog(null);
   };
@@ -157,13 +157,13 @@ const VendorTransactions = () => {
     setShipDialog(txId);
   };
 
-  const handleShipConfirmed = async (tracking: string) => {
+  const handleShipConfirmed = async (tracking: string, legs?: any[]) => {
     const txId = shipDialog;
     if (!txId) return;
     if (isTestnet) {
       testnet.addTracking(txId, tracking);
     } else {
-      await addTrackingHook.mutateAsync({ txId, tracking });
+      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs });
     }
     setShipDialog(null);
   };
