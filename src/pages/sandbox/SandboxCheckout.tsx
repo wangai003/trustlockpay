@@ -42,7 +42,9 @@ const SandboxCheckout = () => {
   const [step, setStep] = useState<Step>("invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerCountry] = useState("US"); // Hardcoded: USA buyer
+  const [buyerCountry, setBuyerCountry] = useState("US");
+  const [vendorCountry] = useState("NG"); // Sandbox vendor is always Nigeria
+  const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
@@ -50,6 +52,18 @@ const SandboxCheckout = () => {
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  const handleScopeChange = useCallback((scope: TradeScope) => {
+    setTradeScope(scope);
+    // Auto-adjust buyer country to match scope for demo purposes
+    if (scope === "domestic") {
+      setBuyerCountry("NG"); // Same as vendor
+    } else if (scope === "regional") {
+      setBuyerCountry("GH"); // ECOWAS member
+    } else {
+      setBuyerCountry("US"); // International default
+    }
+  }, []);
 
   // Map selected provider to legacy paymentMethod string
   const derivedPaymentMethod = useMemo(() => {
