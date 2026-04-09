@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
         transaction_id: dispute.transaction_id,
         arbitrator_name,
         arbitrator_email: arbitrator_email || null,
-        access_password: hashedPwd,
+        access_password_hash: hashedPwd,
       }).select().single();
 
       if (error) {

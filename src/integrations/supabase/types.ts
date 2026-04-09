@@ -785,7 +785,7 @@ export type Database = {
       arbitrator_sessions: {
         Row: {
           access_count: number
-          access_password: string
+          access_password_hash: string
           access_token: string
           arbitrator_email: string | null
           arbitrator_name: string
@@ -807,7 +807,7 @@ export type Database = {
         }
         Insert: {
           access_count?: number
-          access_password: string
+          access_password_hash: string
           access_token?: string
           arbitrator_email?: string | null
           arbitrator_name: string
@@ -829,7 +829,7 @@ export type Database = {
         }
         Update: {
           access_count?: number
-          access_password?: string
+          access_password_hash?: string
           access_token?: string
           arbitrator_email?: string | null
           arbitrator_name?: string
