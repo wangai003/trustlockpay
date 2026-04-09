@@ -16,7 +16,7 @@ interface MilestoneDialogsProps {
   pendingFeeGateRelease: { id: string; title: string; unverifiedCount: number; unverifiedTotal: number } | null;
   setPendingFeeGateRelease: (v: { id: string; title: string; unverifiedCount: number; unverifiedTotal: number } | null) => void;
   onTestnetUpdateStatus?: (milestoneId: string, status: MockMilestone["status"]) => void;
-  onReleaseMilestone: (id: string, bypass: boolean) => Promise<void>;
+  onReleaseMilestone: (id: string, bypass: boolean) => Promise<any>;
   getUserId: () => Promise<string | null>;
 }
 
