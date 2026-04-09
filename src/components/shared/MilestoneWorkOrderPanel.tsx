@@ -54,7 +54,7 @@ interface MilestoneWorkOrderPanelProps {
   onTestnetAddDocument?: (milestoneId: string, doc: { name: string; url: string }) => void;
   onTestnetInviteObserver?: (milestoneId: string, name: string, email: string) => string | void;
   onTestnetRelease?: (milestoneId: string) => void;
-  onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number) => void;
+  onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number, address?: string, city?: string, country?: string) => void;
 }
 
 const FUNDS_LOCKED_STATUSES = new Set([
@@ -455,8 +455,6 @@ const MilestoneWorkOrderPanel = ({
           toast.error("GPS location is required for this industry. Enable location services and try again.", { duration: 6000 });
           return;
         }
-        onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy);
-
         // Call real reverse geocoding via registry-anchor for display
         try {
           const result = await anchorProof(
@@ -473,12 +471,14 @@ const MilestoneWorkOrderPanel = ({
             }
           );
           const loc = result?.resolvedLocation;
+          onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy, loc?.formatted || undefined, loc?.city || undefined, loc?.country || undefined);
           if (loc?.formatted) {
             toast.success(`📍 ${loc.formatted}`, { duration: 6000 });
           } else {
             toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
           }
         } catch {
+          onTestnetAddGps?.(milestoneId, geo.latitude, geo.longitude, geo.accuracy);
           toast.success(`GPS: ${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}`);
         }
       }
@@ -834,16 +834,31 @@ const MilestoneWorkOrderPanel = ({
                 {/* ── Expanded Content ── */}
                 {expanded && !isDeleted && (
                   <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3 ml-9">
-                    {/* Amount + GPS */}
+                    {/* Amount */}
                     <div className="text-[11px] text-muted-foreground">
                       Amount: ${Number(ms.payment_amount || 0).toLocaleString()}
-                      {ms.gps_latitude && (
-                        <span className="ml-2 inline-flex items-center gap-0.5">
-                          <MapPin className="w-3 h-3 text-primary" />
-                          {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
-                        </span>
-                      )}
                     </div>
+
+                    {/* GPS Location Card */}
+                    {ms.gps_latitude && (
+                      <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
+                        <p className="text-[10px] font-semibold flex items-center gap-1 text-primary">
+                          <MapPin className="w-3.5 h-3.5" /> GPS Verification
+                        </p>
+                        {ms.gps_address && (
+                          <p className="text-[11px] font-medium">{ms.gps_address}</p>
+                        )}
+                        <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                          <span>Lat: {Number(ms.gps_latitude).toFixed(6)}</span>
+                          <span>Lng: {Number(ms.gps_longitude).toFixed(6)}</span>
+                          {ms.gps_accuracy && <span>Accuracy: ±{Number(ms.gps_accuracy).toFixed(0)}m</span>}
+                          {ms.gps_captured_at && <span>Captured: {new Date(ms.gps_captured_at).toLocaleString()}</span>}
+                        </div>
+                        {ms.gps_city && ms.gps_country && (
+                          <p className="text-[10px] text-muted-foreground">{ms.gps_city}, {ms.gps_country}</p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Description */}
                     {ms.description && <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>}
@@ -926,20 +941,55 @@ const MilestoneWorkOrderPanel = ({
 
                     {/* Uploaded Documents */}
                     {uploadedDocs.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <p className="text-[10px] font-semibold">Uploaded Documents</p>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {uploadedDocs.map((doc: any, i: number) => (
-                            <Badge key={i} variant="outline" className="text-[8px] gap-1">
-                              <FileText className="w-2.5 h-2.5" />
-                              {doc.document_type && <span className="font-semibold">[{doc.document_type}]</span>}
-                              {doc.name}
-                              {doc.uploaded_by_role && (
-                                <span className="text-muted-foreground ml-0.5 flex items-center gap-0.5">
-                                  <User className="w-2 h-2" />{doc.uploaded_by_role}
+                            <div key={i} className="flex items-center gap-1.5 rounded border border-border p-1.5 text-[10px]">
+                              <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
+                              <div className="flex-1 min-w-0">
+                                <span className="truncate block">
+                                  {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
+                                  {doc.name}
                                 </span>
+                                {doc.uploaded_by_role && (
+                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                    <User className="w-2 h-2" />{doc.uploaded_by_role}
+                                    {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
+                                  </span>
+                                )}
+                              </div>
+                              {doc.url && (
+                                <Button
+                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]"
+                                  onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}
+                                >
+                                  <Eye className="w-2.5 h-2.5 mr-0.5" /> View
+                                </Button>
                               )}
-                            </Badge>
+                              {!isAdmin && !isDone && doc.uploaded_by_role === role && (
+                                <Button
+                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!confirm(`Remove "${doc.name}"?`)) return;
+                                    if (isTestnet) {
+                                      toast.success(`Document "${doc.name}" removed`);
+                                      return;
+                                    }
+                                    const userId = await getUserId();
+                                    if (!userId) return;
+                                    const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
+                                    await supabase.from("transaction_milestones").update({
+                                      uploaded_documents: remaining,
+                                    } as any).eq("id", ms.id);
+                                    toast.success(`Document "${doc.name}" removed`);
+                                  }}
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </Button>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>
