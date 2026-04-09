@@ -2,9 +2,10 @@ import { useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Image, X, Check, AlertTriangle, MessageSquare, Film, Loader2 } from "lucide-react";
+import { Upload, FileText, Image, X, Check, AlertTriangle, MessageSquare, Film, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getCategoryRule, validateFilesForCategory, getAcceptStringForCategory } from "@/lib/documentFileRules";
 
 export type UploadContext =
   | { bucket: "milestone-documents"; transactionId: string; milestoneId: string }
@@ -75,6 +76,8 @@ interface DocumentUploadProps {
   label?: string;
   storageLimitMb?: number;
   context?: UploadContext;
+  /** Document category for file-type enforcement (e.g. "assay_report", "certificate", "proof_of_delivery"). Defaults to "general". */
+  documentCategory?: string;
   onUploadComplete?: (files: { name: string; url: string; path: string }[]) => void;
 }
 
@@ -82,15 +85,23 @@ const DocumentUpload = ({
   label = "Upload Documents",
   storageLimitMb,
   context,
+  documentCategory = "general",
   onUploadComplete,
 }: DocumentUploadProps) => {
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const config = context ? BUCKET_CONFIG[context.bucket] : BUCKET_CONFIG["milestone-documents"];
-  const effectiveStorageMb = storageLimitMb ?? config.storageMb;
+  const bucketConfig = context ? BUCKET_CONFIG[context.bucket] : BUCKET_CONFIG["milestone-documents"];
+  const categoryRule = getCategoryRule(documentCategory);
+  const effectiveStorageMb = storageLimitMb ?? bucketConfig.storageMb;
   const storageLimitBytes = effectiveStorageMb * 1024 * 1024;
+
+  // Use category rule for maxFiles and accept when a specific category is set
+  const effectiveMaxFiles = documentCategory !== "general" ? categoryRule.maxFiles : bucketConfig.maxFiles;
+  const effectiveAccept = documentCategory !== "general" ? getAcceptStringForCategory(documentCategory) : bucketConfig.accept;
+  const effectiveMaxSize = bucketConfig.maxSize;
 
   const usedBytes = useMemo(() => uploads.reduce((sum, f) => sum + f.sizeBytes, 0), [uploads]);
   const usedMb = usedBytes / (1024 * 1024);
@@ -100,26 +111,37 @@ const DocumentUpload = ({
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
+    setCategoryError(null);
 
-    const allowedExts = config.accept.split(",").map((e) => e.trim().replace(".", ""));
+    const fileArray = Array.from(files);
+
+    // ── Category-level validation (anti-fragmentation, format, max files) ──
+    const validation = validateFilesForCategory(fileArray, documentCategory, uploads.length);
+    if (!validation.valid) {
+      setCategoryError(validation.reason || null);
+      toast.error(validation.reason || "File validation failed.");
+      return;
+    }
+
+    const allowedExts = effectiveAccept.split(",").map((e) => e.trim().replace(".", ""));
 
     setUploading(true);
     const newUploads: { name: string; url: string; path: string }[] = [];
 
-    for (const file of Array.from(files)) {
-      if (uploads.length + newUploads.length >= config.maxFiles) {
-        toast.error(`Maximum ${config.maxFiles} files allowed.`);
+    for (const file of fileArray) {
+      if (uploads.length + newUploads.length >= effectiveMaxFiles) {
+        toast.error(`Maximum ${effectiveMaxFiles} file(s) allowed for ${categoryRule.label}.`);
         break;
       }
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       if (!allowedExts.includes(ext)) {
-        toast.error(`${file.name} — file type .${ext} not accepted.`);
+        toast.error(`${file.name} — file type .${ext} not accepted for ${categoryRule.label}.`);
         continue;
       }
 
-      if (file.size > config.maxSize) {
-        toast.error(`${file.name} is too large. Max ${config.maxSize / (1024 * 1024)}MB.`);
+      if (file.size > effectiveMaxSize) {
+        toast.error(`${file.name} is too large. Max ${effectiveMaxSize / (1024 * 1024)}MB.`);
         continue;
       }
 
@@ -133,7 +155,6 @@ const DocumentUpload = ({
           ? `${(file.size / 1024 / 1024).toFixed(1)} MB`
           : `${(file.size / 1024).toFixed(0)} KB`;
 
-      // Upload to Supabase Storage if context provided
       if (context) {
         const uniqueName = `${Date.now()}_${file.name}`;
         const path = buildStoragePath(context, uniqueName);
@@ -148,7 +169,6 @@ const DocumentUpload = ({
         }
 
         const { data: urlData } = supabase.storage.from(context.bucket).getPublicUrl(path);
-
         newUploads.push({ name: file.name, url: urlData.publicUrl, path });
 
         setUploads((prev) => [
@@ -156,7 +176,6 @@ const DocumentUpload = ({
           { name: file.name, type: file.type, size: sizeStr, sizeBytes: file.size, date: new Date().toLocaleDateString(), url: urlData.publicUrl, storagePath: path },
         ]);
       } else {
-        // Local-only mode (no storage context)
         setUploads((prev) => [
           ...prev,
           { name: file.name, type: file.type, size: sizeStr, sizeBytes: file.size, date: new Date().toLocaleDateString() },
@@ -178,6 +197,7 @@ const DocumentUpload = ({
       await supabase.storage.from(context.bucket).remove([file.storagePath]);
     }
     setUploads((prev) => prev.filter((_, i) => i !== index));
+    setCategoryError(null);
   };
 
   const getIcon = (type: string) => {
@@ -189,15 +209,36 @@ const DocumentUpload = ({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold">{label}</h3>
-      <p className="text-xs text-muted-foreground">
-        {config.accept.replace(/\./g, "").toUpperCase()} — max {config.maxSize / (1024 * 1024)}MB each · up to {config.maxFiles} files
-      </p>
+
+      {/* Category-specific format hint */}
+      {documentCategory !== "general" ? (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <p className="font-medium">{categoryRule.label}</p>
+          <p>{categoryRule.formatHint}</p>
+          <p>Max {effectiveMaxSize / (1024 * 1024)}MB each · up to {effectiveMaxFiles} file(s)</p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {effectiveAccept.replace(/\./g, "").toUpperCase()} — max {effectiveMaxSize / (1024 * 1024)}MB each · up to {effectiveMaxFiles} files
+        </p>
+      )}
+
+      {/* Category validation error banner */}
+      {categoryError && (
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
+          <ShieldAlert className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-medium text-destructive">Upload Blocked</p>
+            <p className="text-[10px] text-destructive/80 mt-0.5">{categoryError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Storage usage bar */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>
-            {uploads.length}/{config.maxFiles} files · {usedMb.toFixed(1)}MB of {effectiveStorageMb}MB used
+            {uploads.length}/{effectiveMaxFiles} files · {usedMb.toFixed(1)}MB of {effectiveStorageMb}MB used
           </span>
           {isNearCap && !isAtCap && (
             <span className="flex items-center gap-1 text-yellow-600 font-medium">
@@ -219,7 +260,7 @@ const DocumentUpload = ({
           variant="outline"
           size="sm"
           onClick={() => fileRef.current?.click()}
-          disabled={isAtCap || uploads.length >= config.maxFiles || uploading}
+          disabled={isAtCap || uploads.length >= effectiveMaxFiles || uploading}
         >
           {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
           {uploading ? "Uploading..." : "Upload Files"}
@@ -227,8 +268,8 @@ const DocumentUpload = ({
         <input
           ref={fileRef}
           type="file"
-          accept={config.accept}
-          multiple
+          accept={effectiveAccept}
+          multiple={effectiveMaxFiles > 1}
           className="hidden"
           onChange={(e) => {
             handleFiles(e.target.files);
@@ -238,7 +279,7 @@ const DocumentUpload = ({
       </div>
 
       {/* At-cap redirect notice */}
-      {(isAtCap || uploads.length >= config.maxFiles) && (
+      {(isAtCap || uploads.length >= effectiveMaxFiles) && (
         <div className="flex items-start gap-2 p-3 rounded-lg border border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30">
           <MessageSquare className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
           <div>
