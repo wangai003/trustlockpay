@@ -214,7 +214,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const parsedAmount = amount ? parseFloat(amount) : 0;
 
   // ── Rate Lock: auto-lock when country selected + amount entered in Africa mode ──
-  const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
+  const currencyInfo = selectedCountry ? (GLOBAL_CURRENCIES[selectedCountry] ?? null) : null;
 
   const lockRate = () => {
     if (!currencyInfo || parsedAmount <= 0) return;
