@@ -673,7 +673,7 @@ const MilestoneWorkOrderPanel = ({
                     const template = (() => {
                       const k = industry?.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") || "";
                       const bp = INDUSTRY_MILESTONES[k] || INDUSTRY_MILESTONES[Object.keys(INDUSTRY_MILESTONES).find(ki => k.includes(ki)) || ""] || null;
-                      const wIdx = milestones.indexOf(waiting);
+                      const wIdx = milestones.indexOf(waiting as any);
                       return bp?.[wIdx] || null;
                     })();
                     const owner = template?.owner || "vendor";
