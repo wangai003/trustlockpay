@@ -48,7 +48,7 @@ const TrustLockDualCheckout = () => {
   const [useIntlBank, setUseIntlBank] = useState(false);
 
   const sampleAmountUsd = 292.50;
-  const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
+  const currencyInfo = selectedCountry ? (GLOBAL_CURRENCIES[selectedCountry] ?? null) : null;
   const localAmount = currencyInfo ? sampleAmountUsd * currencyInfo.rate : 450000;
 
   const isCrypto = selectedProvider?.category === "crypto_wallet";
