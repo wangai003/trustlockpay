@@ -301,7 +301,106 @@ const WidgetCheckout = () => {
           </div>
         )}
 
-        {step === "form" && (
+        {/* ── Step: Intent (milestone industries only) ── */}
+        {step === "intent" && isMilestoneIndustry && (
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <div className="text-center space-y-1">
+                <div className="mx-auto w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm font-semibold">{vendor.name}</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">Escrow-protected payment</span>
+                </div>
+              </div>
+
+              <IndustryBlueprintCard industry={vendor.industry} />
+
+              <OrderIntentRouter
+                industry={vendor.industry}
+                industryLabel={vendor.industry.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                vendorName={vendor.name}
+                subtotal={parseFloat(form.amount || "0")}
+                presetMilestones={milestoneSchedule.map(m => ({
+                  title: m.name,
+                  percentage: m.percentage,
+                }))}
+                hasFixedPrice={parseFloat(form.amount || "0") > 0}
+                rfqEnabled={rfqEligible}
+                onDecision={(decision: IntentDecision) => {
+                  if (decision === "accept") {
+                    // Accept vendor presets → convert to MilestoneDraft and lock
+                    const drafts: MilestoneDraft[] = milestoneSchedule.map((m, i) => ({
+                      id: `ms-preset-${i}`,
+                      title: m.name,
+                      description: m.description || "",
+                      percentage: m.percentage,
+                      estimatedDays: 14,
+                      documentRequired: true,
+                      documentName: "",
+                    }));
+                    setAgreedMilestones(drafts);
+                    setNegotiationStatus("agreed");
+                    setStep("form");
+                    toast.success("Vendor schedule accepted — proceed to payment details.");
+                  } else if (decision === "counter") {
+                    setStep("negotiation");
+                  } else if (decision === "rfq") {
+                    setStep("rfq");
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Step: Negotiation ── */}
+        {step === "negotiation" && (
+          <Card className="border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <MilestoneNegotiation
+                role="buyer"
+                txId={`widget-${vendorId}`}
+                industry={vendor.industry}
+                orderAmount={parseFloat(form.amount || "0")}
+                buyerName={form.buyerName || "Buyer"}
+                vendorName={vendor.name}
+                status={negotiationStatus}
+                proposedBy="vendor"
+                existingMilestones={milestoneSchedule.map((m, i) => ({
+                  id: `ms-preset-${i}`,
+                  title: m.name,
+                  description: m.description || "",
+                  percentage: m.percentage,
+                  estimatedDays: 14,
+                  documentRequired: true,
+                  documentName: "",
+                }))}
+                onSubmitDraft={(milestones) => {
+                  setAgreedMilestones(milestones);
+                  setNegotiationStatus("proposed");
+                  toast.info("Counter-proposal submitted to vendor for review.");
+                  setStep("counter_submitted");
+                }}
+                onApproveDraft={() => {
+                  setNegotiationStatus("agreed");
+                  setStep("form");
+                  toast.success("Milestone schedule agreed — proceed to payment.");
+                }}
+                onRequestChanges={(note) => {
+                  toast.info(`Change requested: ${note}`);
+                }}
+              />
+
+              <Button variant="outline" size="sm" onClick={() => setStep("intent")} className="text-xs">
+                ← Back to Options
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
           <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
               {/* Vendor header */}
