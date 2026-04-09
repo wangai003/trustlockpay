@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ const baseNavItems = [
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails", tlId: "TL-V-SB-NAV-PAYOUT", badgeKey: null },
   { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS", badgeKey: null },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK", badgeKey: null },
+  { label: "Buyer Lookup", icon: Search, to: "/trustlock/vendor/buyer-lookup", tip: "Search and connect with buyers on the TrustLock network", tlId: "TL-V-SB-NAV-BUYER-LOOKUP", badgeKey: null },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages", tip: "Direct messaging with buyers and admin support", tlId: "TL-V-SB-NAV-MESSAGES", badgeKey: "messages" },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/vendor/disputes", tip: "View and respond to disputes filed by buyers", tlId: "TL-V-SB-NAV-DISPUTES", badgeKey: "disputes" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS", badgeKey: null },

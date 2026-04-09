@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, Info, BookOpen, Users, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, Info, BookOpen, Users, MessageSquare, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ const navItems = [
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Withdraw refunded or split funds", tlId: "TL-B-SB-NAV-PAYOUT", badgeKey: null },
   { label: "Teams", icon: Users, to: "/trustlock/buyer/teams", tip: "Manage procurement teams and coordinate buyer-side tasks", tlId: "TL-B-SB-NAV-TEAMS", badgeKey: null },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/buyer/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-B-SB-NAV-PLAYBOOK", badgeKey: null },
+  { label: "Vendor Lookup", icon: Search, to: "/trustlock/buyer/vendor-lookup", tip: "Search and connect with vendors on the TrustLock network", tlId: "TL-B-SB-NAV-VENDOR-LOOKUP", badgeKey: null },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/buyer/messages", tip: "Direct messaging with vendors and admin support", tlId: "TL-B-SB-NAV-MESSAGES", badgeKey: "messages" },
   { label: "Settings", icon: Settings, to: "/trustlock/buyer/settings", tip: "Account preferences and notifications", tlId: "TL-B-SB-NAV-SETTINGS", badgeKey: null },
 ];
