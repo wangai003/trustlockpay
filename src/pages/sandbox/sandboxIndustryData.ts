@@ -288,7 +288,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Import Duty & Clearing Agent", qty: 1, unit: "flat", unitPrice: 8500 },
     ],
     milestones: [
-      { title: "Vehicle Sourced & Inspected", percentage: 0, documentGate: "Pre-Shipment Inspection" },
       { title: "Purchase & Export Documentation", percentage: 20, documentGate: "Bill of Sale" },
       { title: "Shipped (Marine Bill of Lading)", percentage: 30, documentGate: "Bill of Lading" },
       { title: "Arrived at Port — Customs Clearance", percentage: 30, documentGate: "Customs Import Declaration" },
