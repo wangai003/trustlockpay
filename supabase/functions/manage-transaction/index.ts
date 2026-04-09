@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action, txId, tracking, reason, description } = body;
+    const { action, txId, tracking, transportLegs, reason, description } = body;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -89,16 +89,21 @@ Deno.serve(async (req) => {
         const shippedDate = new Date().toISOString();
         const autoReleaseDate = new Date(Date.now() + releaseDays * 86400000).toISOString();
 
-        const { data, error } = await supabase
-          .from("transactions")
-          .update({
+        const updatePayload: Record<string, unknown> = {
             tracking,
             status: "shipped",
             shipped_date: shippedDate,
             auto_release_days: releaseDays,
             auto_release_date: autoReleaseDate,
             updated_at: shippedDate,
-          })
+        };
+        if (transportLegs) {
+          updatePayload.transport_legs = transportLegs;
+        }
+
+        const { data, error } = await supabase
+          .from("transactions")
+          .update(updatePayload)
           .eq("tx_id", txId)
           .select()
           .single();

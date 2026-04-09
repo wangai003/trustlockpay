@@ -4578,6 +4578,7 @@ export type Database = {
           tracking: string | null
           trade_scope: string
           transaction_source: string | null
+          transport_legs: Json | null
           tx_id: string
           type: string | null
           updated_at: string
@@ -4625,6 +4626,7 @@ export type Database = {
           tracking?: string | null
           trade_scope?: string
           transaction_source?: string | null
+          transport_legs?: Json | null
           tx_id: string
           type?: string | null
           updated_at?: string
@@ -4672,6 +4674,7 @@ export type Database = {
           tracking?: string | null
           trade_scope?: string
           transaction_source?: string | null
+          transport_legs?: Json | null
           tx_id?: string
           type?: string | null
           updated_at?: string

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info, ExternalLink } from "lucide-react";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
 import { useTestnetData } from "@/hooks/useTestnetData";
@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
+import TransportLegsViewer from "@/components/shared/TransportLegsViewer";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -179,6 +180,7 @@ const BuyerOrders = () => {
         cartId: null as string | null,
         transactionSource: "widget" as string | null,
         platformId: null as string | null,
+        transportLegs: null as any[] | null,
       }))
     : rawTransactions.map(tx => ({
         dbId: tx.id,
@@ -193,6 +195,7 @@ const BuyerOrders = () => {
         cartId: (tx as any).cart_id as string | null,
         transactionSource: (tx as any).transaction_source as string | null,
         platformId: (tx as any).platform_id as string | null,
+        transportLegs: (tx as any).transport_legs as any[] | null,
       }));
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -491,7 +494,18 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             )}
             {order.status === "shipped" && (
               <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
-                <Button variant="outline" size="sm">Track</Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const legs = order.transportLegs;
+                  if (legs && legs.length > 0) {
+                    const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
+                    if (firstUrl) window.open(firstUrl, "_blank");
+                    else setExpandedOrder(order.id);
+                  } else if (order.tracking) {
+                    setExpandedOrder(order.id);
+                  }
+                }}>
+                  <ExternalLink className="w-3 h-3 mr-1" /> Track
+                </Button>
               </TLId>
             )}
             {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
@@ -546,6 +560,10 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
         {expandedOrder === order.id && (
           <div className="mt-3 border-t border-border pt-3 space-y-3">
             <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
+            {/* Transport Legs Viewer */}
+            {order.transportLegs && order.transportLegs.length > 0 && (
+              <TransportLegsViewer legs={order.transportLegs} compact />
+            )}
             <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
