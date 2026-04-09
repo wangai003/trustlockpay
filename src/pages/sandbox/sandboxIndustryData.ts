@@ -234,7 +234,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Cargo Insurance (Full Value)", qty: 1, unit: "flat", unitPrice: 380 },
     ],
     milestones: [
-      { title: "Booking Confirmed & Pickup Scheduled", percentage: 0 },
       { title: "Cargo Collected & Loaded", percentage: 25, documentGate: "Packing List" },
       { title: "Customs Cleared (Origin)", percentage: 20, documentGate: "Export Customs Declaration" },
       { title: "In Transit (GPS Tracked)", percentage: 30, documentGate: "Waybill & GPS Log" },
