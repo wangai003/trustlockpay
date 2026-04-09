@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Globe, MapPin, Building2, Info, Shuffle } from "lucide-react";
+import { Globe, MapPin, Building2, Info, Shuffle, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { detectTradeScope } from "@/lib/tradeBlocs";
 
@@ -15,6 +15,10 @@ interface TradeScopeSelectorProps {
   compact?: boolean;
   /** When true, auto-sets scope on country detection (user can override) */
   autoSet?: boolean;
+  /** When true, the selector is read-only — GPS has verified the scope */
+  locked?: boolean;
+  /** Label shown when locked (e.g. "GPS-verified") */
+  lockedLabel?: string;
 }
 
 const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; description: string; docLevel: string }[] = [
@@ -48,7 +52,7 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
   },
 ];
 
-const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false, autoSet = true }: TradeScopeSelectorProps) => {
+const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false, autoSet = true, locked = false, lockedLabel }: TradeScopeSelectorProps) => {
   const detected = useMemo(
     () => detectTradeScope(buyerCountry || "", vendorCountry || ""),
     [buyerCountry, vendorCountry]
@@ -79,15 +83,18 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
             <TooltipProvider key={opt.value}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => onChange(opt.value)}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
-                    }`}
-                  >
+                    <button
+                      type="button"
+                      onClick={() => !locked && onChange(opt.value)}
+                      disabled={locked}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
+                        locked ? "cursor-not-allowed opacity-60" : ""
+                      } ${
+                        isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
                     <Icon className="w-3 h-3" />
                     {opt.label}
                     {suggestedScope === opt.value && !isSelected && (
@@ -115,7 +122,13 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
         <div className="flex items-center gap-1.5">
           <Globe className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold">Trade Scope</span>
-          {isOverridden && (
+          {locked && (
+            <Badge className="text-[7px] px-1.5 py-0 bg-primary/10 text-primary border border-primary/30">
+              <Lock className="w-2.5 h-2.5 mr-0.5" />
+              {lockedLabel || "GPS-Verified"}
+            </Badge>
+          )}
+          {!locked && isOverridden && (
             <Badge variant="outline" className="text-[7px] border-accent/30 text-accent">
               Overridden
             </Badge>
@@ -142,8 +155,11 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange(opt.value)}
+                onClick={() => !locked && onChange(opt.value)}
+                disabled={locked}
                 className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-all ${
+                  locked ? "cursor-not-allowed opacity-60" : ""
+                } ${
                   isSelected
                     ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                     : "border-border hover:border-primary/30"

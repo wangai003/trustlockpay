@@ -1,11 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CreditCard, Wallet, Copy, Check, ArrowLeft, CheckCircle,
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
-  Phone, Building2
+  Phone, Building2, Lock, Navigation
 } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocodeToCountry, type GpsCountryResult } from "@/lib/gpsCountryDetect";
+import { detectTradeScope } from "@/lib/tradeBlocs";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
@@ -53,17 +56,50 @@ const SandboxCheckout = () => {
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
 
+  // GPS-enforced Trade Scope
+  const { position: gpsPosition, loading: gpsLoading, capturePosition } = useGeolocation();
+  const [gpsCountry, setGpsCountry] = useState<GpsCountryResult | null>(null);
+  const [gpsDetecting, setGpsDetecting] = useState(false);
+  const [scopeLocked, setScopeLocked] = useState(false);
+
+  // Auto-trigger GPS on mount
+  useEffect(() => {
+    handleGpsDetection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleGpsDetection = useCallback(async () => {
+    setGpsDetecting(true);
+    const pos = await capturePosition();
+    if (pos) {
+      const result = await reverseGeocodeToCountry(pos.latitude, pos.longitude);
+      if (result) {
+        setGpsCountry(result);
+        setBuyerCountry(result.countryCode);
+        // Auto-detect scope from GPS country vs vendor country
+        const detected = detectTradeScope(result.countryCode, vendorCountry);
+        setTradeScope(detected.scope);
+        setScopeLocked(true);
+        toast.success(`📍 Location verified: ${result.countryName} — Trade scope auto-set to "${detected.scope}"`);
+      } else {
+        toast.warning("Could not determine your country from GPS. Please select trade scope manually.");
+      }
+    }
+    setGpsDetecting(false);
+  }, [capturePosition, vendorCountry]);
+
   const handleScopeChange = useCallback((scope: TradeScope) => {
+    if (scopeLocked) return; // Prevent manual override when GPS-locked
     setTradeScope(scope);
     // Auto-adjust buyer country to match scope for demo purposes
     if (scope === "domestic") {
-      setBuyerCountry("NG"); // Same as vendor
+      setBuyerCountry("NG");
     } else if (scope === "regional") {
-      setBuyerCountry("GH"); // ECOWAS member
+      setBuyerCountry("GH");
     } else {
-      setBuyerCountry("US"); // International default
+      setBuyerCountry("US");
     }
-  }, []);
+  }, [scopeLocked]);
 
   // Map selected provider to legacy paymentMethod string
   const derivedPaymentMethod = useMemo(() => {
@@ -257,21 +293,54 @@ const SandboxCheckout = () => {
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
                   </div>
 
-                  {/* Trade Scope Selector — buyer chooses domestic/regional/international */}
+                  {/* GPS Location Verification */}
+                  <div className={`rounded-lg p-3 space-y-2 border ${scopeLocked ? "bg-primary/5 border-primary/20" : gpsDetecting ? "bg-muted/50 border-border" : "bg-accent/5 border-accent/20"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Navigation className={`w-3.5 h-3.5 ${scopeLocked ? "text-primary" : "text-accent"}`} />
+                        <span className="text-[10px] font-semibold">Location Verification</span>
+                        {scopeLocked && <Lock className="w-3 h-3 text-primary" />}
+                      </div>
+                      {!scopeLocked && !gpsDetecting && (
+                        <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={handleGpsDetection}>
+                          <MapPin className="w-3 h-3 mr-1" />Retry GPS
+                        </Button>
+                      )}
+                    </div>
+                    {gpsDetecting && (
+                      <div className="flex items-center gap-2 py-1">
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        <span className="text-[10px] text-muted-foreground">Detecting your location…</span>
+                      </div>
+                    )}
+                    {gpsCountry && (
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] text-foreground">📍 <strong>{gpsCountry.countryName}</strong>{gpsCountry.city ? `, ${gpsCountry.city}` : ""}</p>
+                        <p className="text-[9px] text-muted-foreground">Coordinates: {gpsCountry.latitude.toFixed(4)}, {gpsCountry.longitude.toFixed(4)}</p>
+                      </div>
+                    )}
+                    {!gpsCountry && !gpsDetecting && (
+                      <p className="text-[9px] text-accent">⚠️ GPS unavailable. Trade scope is manually selectable but may trigger admin review.</p>
+                    )}
+                  </div>
+
+                  {/* Trade Scope Selector — locked when GPS verified */}
                   <TradeScopeSelector
                     value={tradeScope}
                     onChange={handleScopeChange}
                     buyerCountry={buyerCountry}
                     vendorCountry={vendorCountry}
                     autoSet={false}
+                    locked={scopeLocked}
+                    lockedLabel={gpsCountry ? `Verified: ${gpsCountry.countryName}` : undefined}
                   />
 
                   {/* Dynamic corridor info based on scope */}
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                    <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor (Sandbox Demo)</p>
+                    <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor {scopeLocked ? "(GPS-Verified)" : "(Sandbox Demo)"}</p>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Buyer Location</span>
-                      <span>{buyerCountry === "NG" ? "🇳🇬 Nigeria" : buyerCountry === "GH" ? "🇬🇭 Ghana" : "🇺🇸 United States"}</span>
+                      <span>{gpsCountry ? `${gpsCountry.countryName}` : buyerCountry === "NG" ? "🇳🇬 Nigeria" : buyerCountry === "GH" ? "🇬🇭 Ghana" : "🇺🇸 United States"}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Vendor Location</span>
@@ -279,7 +348,10 @@ const SandboxCheckout = () => {
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Trade Scope</span>
-                      <Badge variant="outline" className="text-[9px] capitalize">{tradeScope}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-[9px] capitalize">{tradeScope}</Badge>
+                        {scopeLocked && <Lock className="w-2.5 h-2.5 text-primary" />}
+                      </div>
                     </div>
                     {tradeScope === "regional" && (
                       <div className="flex justify-between text-xs">
