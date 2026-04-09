@@ -244,22 +244,52 @@ const VendorSettings = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Auto-Delivery Confirmation</p>
-                <p className="text-xs text-muted-foreground">
-                  Automatically mark orders as shipped when payment is received. Best for digital goods or high-volume sellers.
-                </p>
-              </div>
-              <TLId code="TL-V-SET-TGL-AUTO-DELIVERY" inline><Switch checked={autoDelivery} onCheckedChange={handleAutoDeliveryToggle} /></TLId>
-            </div>
-            {autoDelivery && (
-              <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
-                <p className="text-xs text-muted-foreground">
-                  <strong className="text-foreground">Active:</strong> Orders will auto-confirm shipment upon payment. The 48-hour buyer confirmation countdown begins immediately.
-                </p>
-              </div>
-            )}
+            {(() => {
+              const milestoneIndustries = [
+                "mining", "construction", "real_estate", "manufacturing", "energy",
+                "renewable_energy", "aviation", "marine_fisheries", "water_sanitation",
+                "logistics", "agriculture", "project_management", "pharmaceuticals",
+              ];
+              const vendorIndustry = localStorage.getItem("tl_vendor_industry") || "";
+              const isMilestoneIndustry = milestoneIndustries.includes(vendorIndustry);
+
+              return (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Auto-Delivery Confirmation</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isMilestoneIndustry
+                          ? "Disabled for your industry — milestone-based orders require manual delivery confirmation at each stage."
+                          : "Automatically mark orders as shipped when payment is received. Best for digital goods or high-volume sellers."}
+                      </p>
+                    </div>
+                    <TLId code="TL-V-SET-TGL-AUTO-DELIVERY" inline>
+                      <Switch
+                        checked={autoDelivery && !isMilestoneIndustry}
+                        onCheckedChange={handleAutoDeliveryToggle}
+                        disabled={isMilestoneIndustry}
+                      />
+                    </TLId>
+                  </div>
+                  {isMilestoneIndustry && (
+                    <div className="p-3 rounded-lg border border-muted bg-muted/30">
+                      <p className="text-xs text-muted-foreground">
+                        <strong className="text-foreground">⚠️ Industry restriction:</strong> Auto-delivery is not available for <strong>{vendorIndustry.replace(/_/g, " ")}</strong> transactions. 
+                        Each milestone requires manual vendor confirmation and buyer sign-off before funds are released.
+                      </p>
+                    </div>
+                  )}
+                  {autoDelivery && !isMilestoneIndustry && (
+                    <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                      <p className="text-xs text-muted-foreground">
+                        <strong className="text-foreground">Active:</strong> Orders will auto-confirm shipment upon payment. The 48-hour buyer confirmation countdown begins immediately.
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 

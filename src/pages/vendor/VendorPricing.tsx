@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +28,7 @@ const VendorPricing = () => {
   const navigate = useNavigate();
   const [billing, setBilling] = useState<BillingCycle>("yearly");
   const [activatingTrial, setActivatingTrial] = useState(false);
+  const [cancellingPlan, setCancellingPlan] = useState(false);
 
   const planState = getVendorPlanState();
   const trialUsed = localStorage.getItem("tl_vendor_trial_start") !== null;
@@ -124,6 +128,27 @@ const VendorPricing = () => {
               toast.success("Trial cancelled. You're now on the Basic plan.");
               window.location.reload();
             }}>Cancel Trial</Button>
+          </div>
+        )}
+
+        {/* Active paid plan — cancel button */}
+        {!planState.isTrialActive && !planState.isExpired && planState.currentPlan !== "basic" && (
+          <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 flex items-center gap-3">
+            <Shield className="w-5 h-5 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold">
+                {PLANS[planState.currentPlan].name} Plan Active
+                {planState.daysUntilExpiry !== null && ` — ${planState.daysUntilExpiry} days remaining`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Cancel anytime. You'll keep full access until your current billing period ends
+                {planState.expiresAt ? ` on ${planState.expiresAt.toLocaleDateString()}` : ""}.
+                After that, you'll fall back to the Basic plan.
+              </p>
+            </div>
+            <Button size="sm" variant="destructive" onClick={() => setCancellingPlan(true)}>
+              Cancel Plan
+            </Button>
           </div>
         )}
 
@@ -268,6 +293,39 @@ const VendorPricing = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={cancellingPlan} onOpenChange={setCancellingPlan}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel {PLANS[planState.currentPlan]?.name} Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your plan will remain active until the current billing period ends
+              {planState.expiresAt ? ` on ${planState.expiresAt.toLocaleDateString()}` : ""}.
+              After that, your account will automatically downgrade to the Basic plan ({PLANS.basic.orderMin}–{PLANS.basic.orderMax} orders/month).
+              <br /><br />
+              <strong>Your data, order history, and documents will be preserved.</strong> You can re-subscribe at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Plan</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                // Mark plan as cancelled — it stays active until expiry
+                localStorage.setItem("tl_vendor_plan_cancelled", "true");
+                toast.success(
+                  `Plan cancellation scheduled. You'll keep ${PLANS[planState.currentPlan]?.name} access until ${
+                    planState.expiresAt ? planState.expiresAt.toLocaleDateString() : "the end of your billing period"
+                  }.`
+                );
+                setCancellingPlan(false);
+              }}
+            >
+              Confirm Cancellation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
