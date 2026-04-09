@@ -941,20 +941,55 @@ const MilestoneWorkOrderPanel = ({
 
                     {/* Uploaded Documents */}
                     {uploadedDocs.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <p className="text-[10px] font-semibold">Uploaded Documents</p>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {uploadedDocs.map((doc: any, i: number) => (
-                            <Badge key={i} variant="outline" className="text-[8px] gap-1">
-                              <FileText className="w-2.5 h-2.5" />
-                              {doc.document_type && <span className="font-semibold">[{doc.document_type}]</span>}
-                              {doc.name}
-                              {doc.uploaded_by_role && (
-                                <span className="text-muted-foreground ml-0.5 flex items-center gap-0.5">
-                                  <User className="w-2 h-2" />{doc.uploaded_by_role}
+                            <div key={i} className="flex items-center gap-1.5 rounded border border-border p-1.5 text-[10px]">
+                              <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
+                              <div className="flex-1 min-w-0">
+                                <span className="truncate block">
+                                  {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
+                                  {doc.name}
                                 </span>
+                                {doc.uploaded_by_role && (
+                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                    <User className="w-2 h-2" />{doc.uploaded_by_role}
+                                    {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
+                                  </span>
+                                )}
+                              </div>
+                              {doc.url && (
+                                <Button
+                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]"
+                                  onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}
+                                >
+                                  <Eye className="w-2.5 h-2.5 mr-0.5" /> View
+                                </Button>
                               )}
-                            </Badge>
+                              {!isAdmin && !isDone && doc.uploaded_by_role === role && (
+                                <Button
+                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!confirm(`Remove "${doc.name}"?`)) return;
+                                    if (isTestnet) {
+                                      toast.success(`Document "${doc.name}" removed`);
+                                      return;
+                                    }
+                                    const userId = await getUserId();
+                                    if (!userId) return;
+                                    const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
+                                    await supabase.from("transaction_milestones").update({
+                                      uploaded_documents: remaining,
+                                    } as any).eq("id", ms.id);
+                                    toast.success(`Document "${doc.name}" removed`);
+                                  }}
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </Button>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>
