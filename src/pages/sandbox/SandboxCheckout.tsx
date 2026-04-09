@@ -414,10 +414,30 @@ const SandboxCheckout = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Step 1 — Invoice Review
+                    <FileText className="w-4 h-4" /> {isMilestone ? "Step 3" : "Step 1"} — Invoice Review
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Agreed Milestones Summary (if negotiated) */}
+                  {agreedMilestones && agreedMilestones.length > 0 && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <p className="text-xs font-semibold text-foreground">Locked Milestone Schedule</p>
+                        <Badge className="text-[9px] bg-primary/10 text-primary">{agreedMilestones.length} stages</Badge>
+                      </div>
+                      <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                      <div className="space-y-1">
+                        {agreedMilestones.map((m, i) => (
+                          <div key={m.id} className="flex justify-between text-[10px]">
+                            <span>{i + 1}. {m.title}</span>
+                            <span className="font-medium">{m.percentage}% · ${((subtotal * m.percentage) / 100).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                     <p className="text-xs font-medium text-foreground">Vendor: {config.vendorName}</p>
                     <p className="text-[10px] text-muted-foreground">Industry: {config.label}</p>
