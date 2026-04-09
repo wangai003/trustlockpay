@@ -257,12 +257,52 @@ const SandboxCheckout = () => {
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
                   </div>
 
-                  {/* Hardcoded corridor info */}
+                  {/* Trade Scope Selector — buyer chooses domestic/regional/international */}
+                  <TradeScopeSelector
+                    value={tradeScope}
+                    onChange={handleScopeChange}
+                    buyerCountry={buyerCountry}
+                    vendorCountry={vendorCountry}
+                    autoSet={false}
+                  />
+
+                  {/* Dynamic corridor info based on scope */}
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                     <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor (Sandbox Demo)</p>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Buyer Location</span><span>🇺🇸 United States</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Vendor Location</span><span>🇳🇬 Nigeria</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Trade Scope</span><Badge variant="outline" className="text-[9px]">International</Badge></div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Buyer Location</span>
+                      <span>{buyerCountry === "NG" ? "🇳🇬 Nigeria" : buyerCountry === "GH" ? "🇬🇭 Ghana" : "🇺🇸 United States"}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Vendor Location</span>
+                      <span>🇳🇬 Nigeria</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Trade Scope</span>
+                      <Badge variant="outline" className="text-[9px] capitalize">{tradeScope}</Badge>
+                    </div>
+                    {tradeScope === "regional" && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Trade Bloc</span>
+                        <Badge className="text-[9px] bg-accent/20 text-accent">ECOWAS — Tariff Reduced</Badge>
+                      </div>
+                    )}
+                    {tradeScope === "domestic" && (
+                      <p className="text-[9px] text-muted-foreground mt-1">✅ Domestic trade — minimal docs, no import duties.</p>
+                    )}
+                    {tradeScope === "hybrid" && (
+                      <p className="text-[9px] text-muted-foreground mt-1">⚙️ Hybrid — domestic sale with imported inputs. External fee tracker enabled.</p>
+                    )}
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-muted-foreground">Tax Rate ({config.label})</span>
+                      <span className="font-medium">{(taxRate * 100).toFixed(1)}%</span>
+                    </div>
+                    {remittanceFee > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Remittance Fee</span>
+                        <span>${remittanceFee.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
