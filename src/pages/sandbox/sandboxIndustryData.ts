@@ -70,7 +70,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Legal & Title Transfer Fees", qty: 1, unit: "flat", unitPrice: 3500 },
     ],
     milestones: [
-      { title: "Deposit Secured in Escrow", percentage: 0 },
       { title: "Title Search & Due Diligence", percentage: 20, documentGate: "Title Search Report" },
       { title: "Construction / Inspection Phase", percentage: 35, documentGate: "Structural Inspection Certificate" },
       { title: "Final Inspection & Handover", percentage: 30, documentGate: "Completion Certificate" },
