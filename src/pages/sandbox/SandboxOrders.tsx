@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import MilestoneTimeline from "@/components/shared/MilestoneTimeline";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
@@ -42,6 +43,11 @@ const SandboxOrders = () => {
   const [orders, setOrders] = useState<SandboxLiveOrder[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const selectedId = searchParams.get("detail");
+
+  // Milestone negotiation state (per order, keyed by order id)
+  const [negotiationStatus, setNegotiationStatus] = useState<Record<string, "drafting" | "proposed" | "agreed">>({});
+  const [negotiationProposer, setNegotiationProposer] = useState<Record<string, "buyer" | "vendor">>({});
+  const [negotiationMilestones, setNegotiationMilestones] = useState<Record<string, MilestoneDraft[]>>({});
 
   const refreshOrders = useCallback(() => {
     const all = getSandboxLiveOrders();
@@ -152,14 +158,45 @@ const SandboxOrders = () => {
         {/* Industry Blueprint */}
         <IndustryBlueprintCard industry={selectedOrder.industryKey} />
 
+        {/* Milestone Negotiation Panel (pre-escrow agreement) */}
+        {selectedOrder.status === "escrow_locked" && (
+          <MilestoneNegotiation
+            role={session.role as "buyer" | "vendor"}
+            txId={selectedOrder.orderNumber}
+            industry={selectedOrder.industryLabel}
+            orderAmount={selectedOrder.subtotal}
+            buyerName={selectedOrder.buyerName}
+            vendorName={selectedOrder.vendorName}
+            status={negotiationStatus[selectedOrder.id] || "drafting"}
+            proposedBy={negotiationProposer[selectedOrder.id]}
+            existingMilestones={negotiationMilestones[selectedOrder.id] || selectedOrder.milestones.map((m, i) => ({
+              id: `ms-seed-${i}`,
+              title: m.title,
+              description: "",
+              percentage: m.percentage,
+              estimatedDays: 7,
+              documentRequired: !!m.documentGate,
+              documentName: m.documentGate || "",
+            }))}
+            onSubmitDraft={(milestones) => {
+              setNegotiationMilestones(prev => ({ ...prev, [selectedOrder.id]: milestones }));
+              setNegotiationProposer(prev => ({ ...prev, [selectedOrder.id]: session.role as "buyer" | "vendor" }));
+              setNegotiationStatus(prev => ({ ...prev, [selectedOrder.id]: "proposed" }));
+              toast.success("Milestone proposal submitted to counterparty");
+            }}
+            onApproveDraft={() => {
+              setNegotiationStatus(prev => ({ ...prev, [selectedOrder.id]: "agreed" }));
+              toast.success("Milestone agreement locked! Schedule is now final.");
+            }}
+            onRequestChanges={(note) => {
+              setNegotiationStatus(prev => ({ ...prev, [selectedOrder.id]: "drafting" }));
+              toast.info(`Change requested: "${note}". Milestone draft reopened.`);
+            }}
+          />
+        )}
+
         {/* Milestone Timeline (visual Gantt) */}
         <MilestoneTimeline industry={selectedOrder.industryKey} status={mappedStatus} />
-
-        {/* Milestone list format (collapsible) */}
-        <details className="text-xs">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">View list format</summary>
-          <MilestoneProgress industry={selectedOrder.industryKey} status={mappedStatus} />
-        </details>
 
         {/* Full Work Order Panel */}
         <MilestoneWorkOrderPanel

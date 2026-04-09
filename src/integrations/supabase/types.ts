@@ -2131,6 +2131,62 @@ export type Database = {
           },
         ]
       }
+      milestone_agreements: {
+        Row: {
+          agreed_at: string | null
+          change_notes: string | null
+          created_at: string
+          id: string
+          locked_by_buyer: boolean
+          locked_by_vendor: boolean
+          milestones: Json
+          proposed_by: string
+          proposer_role: string
+          status: string
+          transaction_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          agreed_at?: string | null
+          change_notes?: string | null
+          created_at?: string
+          id?: string
+          locked_by_buyer?: boolean
+          locked_by_vendor?: boolean
+          milestones?: Json
+          proposed_by: string
+          proposer_role: string
+          status?: string
+          transaction_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          agreed_at?: string | null
+          change_notes?: string | null
+          created_at?: string
+          id?: string
+          locked_by_buyer?: boolean
+          locked_by_vendor?: boolean
+          milestones?: Json
+          proposed_by?: string
+          proposer_role?: string
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_agreements_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_counter_proposals: {
         Row: {
           buyer_country_code: string | null
