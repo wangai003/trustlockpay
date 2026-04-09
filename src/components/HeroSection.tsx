@@ -1,89 +1,155 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, CheckCircle, Globe, Shield, FileCheck } from "lucide-react";
+import { ArrowRight, Lock, CheckCircle, Globe, Shield, FileCheck, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PortalPicker from "@/components/shared/PortalPicker";
-import heroImage from "@/assets/hero-craftsman.jpg";
+import GlowOrb from "@/components/landing/GlowOrb";
 
 const HeroSection = () => {
   const [portalOpen, setPortalOpen] = useState(false);
 
   return (
     <>
-      <section className="pt-28 pb-16 lg:pt-36 lg:pb-24 bg-background overflow-hidden">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left */}
+      <section className="relative pt-28 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-[hsl(160,20%,6%)]">
+        {/* Glow orbs */}
+        <GlowOrb color="primary" size={600} top="-200px" left="-200px" delay={0} />
+        <GlowOrb color="accent" size={400} top="100px" right="-100px" delay={1.5} />
+        <GlowOrb color="emerald" size={500} bottom="-200px" left="40%" delay={0.8} />
+
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: "linear-gradient(hsl(152,52%,40%) 1px, transparent 1px), linear-gradient(90deg, hsl(152,52%,40%) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        <div className="container mx-auto px-4 lg:px-8 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 mb-8"
+              >
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-medium text-primary">Blockchain-Secured Escrow Infrastructure</span>
+              </motion.div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight">
+                <span className="text-[hsl(0,0%,95%)]">The Escrow OS for</span>
+                <br />
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Global Trade
+                </span>
+              </h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.7 }}
+                className="mt-6 text-lg lg:text-xl text-[hsl(160,5%,60%)] max-w-2xl mx-auto leading-relaxed"
+              >
+                Replace Letters of Credit with milestone-based smart contract escrow — securing cross-border transactions from Purchase Order to final delivery.
+              </motion.p>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-3 text-sm text-[hsl(160,5%,46%)] max-w-xl mx-auto"
+              >
+                Built for importers, exporters, and SMEs trading across any corridor.
+              </motion.p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="mt-10 flex flex-wrap justify-center gap-4"
+            >
+              <Button
+                size="lg"
+                className="rounded-full px-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_30px_hsl(152,52%,24%/0.3)] hover:shadow-[0_0_40px_hsl(152,52%,24%/0.5)] transition-all duration-300"
+                onClick={() => setPortalOpen(true)}
+              >
+                Start Free <ArrowRight className="ml-1 w-4 h-4" />
+              </Button>
+              <Button
+                size="lg"
+                className="rounded-full px-8 border-2 border-[hsl(160,15%,18%)] text-[hsl(0,0%,95%)] bg-transparent hover:bg-[hsl(160,15%,15%)] hover:border-primary/30 transition-all duration-300"
+                asChild
+              >
+                <a href="#how-it-works">See How It Works</a>
+              </Button>
+            </motion.div>
+
+            {/* Trust badges */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="mt-12 flex flex-wrap justify-center gap-8 text-xs text-[hsl(160,5%,46%)]"
+            >
+              <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-primary" /> Blockchain-verified</span>
+              <span className="flex items-center gap-2"><FileCheck className="w-4 h-4 text-primary" /> Document-gated milestones</span>
+              <span className="flex items-center gap-2"><Globe className="w-4 h-4 text-primary" /> Multi-currency settlement</span>
+            </motion.div>
+
+            {/* Animated escrow flow visual */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
+              transition={{ delay: 1.1, duration: 0.8 }}
+              className="mt-16 max-w-lg mx-auto"
             >
-              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-                <span className="text-foreground">The Escrow OS for</span>
-                <br />
-                <span className="text-accent">Global Trade</span>
-              </h1>
-              <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed">
-                TrustLock replaces Letters of Credit with milestone-based smart contract escrow — securing cross-border transactions from Purchase Order to final delivery.
-              </p>
-              <p className="mt-2 text-base text-muted-foreground max-w-lg">
-                Built for importers, exporters, and SMEs trading across any corridor — from US-Nigeria to EU-China and beyond.
-              </p>
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(160,15%,15%)] border border-[hsl(160,15%,22%)]">
+                  <Globe className="w-4 h-4 text-[hsl(160,5%,60%)]" />
+                  <span className="text-sm font-medium text-[hsl(0,0%,95%)]">Buyer</span>
+                </div>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Button variant="hero" size="lg" className="rounded-full px-8" onClick={() => setPortalOpen(true)}>
-                  Start Free <ArrowRight className="ml-1 w-4 h-4" />
-                </Button>
-                <Button variant="hero-outline" size="lg" className="rounded-full px-8" asChild>
-                  <a href="#how-it-works">See How It Works</a>
-                </Button>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-6 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Blockchain-verified</span>
-                <span className="flex items-center gap-1.5"><FileCheck className="w-3.5 h-3.5 text-primary" /> Document-gated milestones</span>
-                <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-primary" /> Multi-currency settlement</span>
-              </div>
-            </motion.div>
-
-            {/* Right - Hero Image */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src={heroImage}
-                  alt="Global trade commerce with secure escrow protection"
-                  className="w-full h-[280px] sm:h-[400px] lg:h-[480px] object-cover"
-                  loading="eager"
-                />
-
-                {/* Escrow badge overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm rounded-full px-6 py-3 flex items-center gap-3 shadow-lg">
-                  <Lock className="w-5 h-5 text-primary" />
-                  <div className="w-16 h-1 bg-muted rounded-full relative overflow-hidden">
-                    <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-accent border-2 border-background" />
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ x: [0, 8, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-8 h-[2px] bg-gradient-to-r from-primary/50 to-primary"
+                  />
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-primary" />
                   </div>
-                  <CheckCircle className="w-5 h-5 text-primary" />
+                  <motion.div
+                    animate={{ x: [0, 8, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                    className="w-8 h-[2px] bg-gradient-to-r from-primary to-accent/50"
+                  />
                 </div>
 
-                {/* Corridor badges */}
-                <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm shadow-md">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Buyer</span>
-                </div>
-                <div className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm shadow-md">
-                  <Globe className="w-4 h-4 text-accent" />
-                  <span className="font-medium text-foreground">Vendor</span>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(160,15%,15%)] border border-[hsl(160,15%,22%)]">
+                  <CheckCircle className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium text-[hsl(0,0%,95%)]">Vendor</span>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2"
+        >
+          <ChevronDown className="w-5 h-5 text-[hsl(160,5%,30%)]" />
+        </motion.div>
       </section>
       <PortalPicker open={portalOpen} onOpenChange={setPortalOpen} mode="signup" />
     </>

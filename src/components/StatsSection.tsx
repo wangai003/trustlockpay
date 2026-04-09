@@ -11,7 +11,7 @@ const stats = [
 
 const StatsSection = () => {
   return (
-    <section className="py-16 lg:py-20 bg-primary">
+    <section className="relative py-16 lg:py-20 bg-[hsl(160,20%,8%)] border-y border-[hsl(160,15%,14%)]">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -19,10 +19,10 @@ const StatsSection = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[hsl(0,0%,95%)]">
             Built for Global Cross-Border Commerce
           </h2>
-          <p className="mt-3 text-primary-foreground/70 text-lg">
+          <p className="mt-3 text-[hsl(160,5%,50%)] text-lg">
             A trade finance escrow platform designed for importers, exporters, and SMEs worldwide.
           </p>
         </motion.div>
@@ -35,10 +35,12 @@ const StatsSection = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="text-center"
+              className="text-center group"
             >
-              <div className="text-3xl lg:text-4xl font-extrabold text-accent">{stat.value}</div>
-              <p className="text-sm text-primary-foreground/70 mt-2">{stat.label}</p>
+              <div className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                {stat.value}
+              </div>
+              <p className="text-sm text-[hsl(160,5%,50%)] mt-2">{stat.label}</p>
             </motion.div>
           ))}
         </div>

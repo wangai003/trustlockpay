@@ -9,10 +9,12 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import WidgetPromoSection from "@/components/WidgetPromoSection";
 import CtaSection from "@/components/CtaSection";
 import Footer from "@/components/Footer";
+import AnimatedBackground from "@/components/landing/AnimatedBackground";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(160,20%,6%)]">
+      <AnimatedBackground />
       <Navbar />
       <HeroSection />
       <RiskSection />

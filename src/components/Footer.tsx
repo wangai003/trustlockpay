@@ -11,7 +11,7 @@ const legalLinks = [
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
-    <footer ref={ref} className="py-10 bg-foreground">
+    <footer ref={ref} className="py-10 bg-[hsl(160,20%,4%)] border-t border-[hsl(160,15%,12%)]">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -22,13 +22,13 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               <Link
                 key={l.to}
                 to={l.to}
-                className="text-xs text-background/50 hover:text-background/80 transition-colors"
+                className="text-xs text-[hsl(160,5%,40%)] hover:text-[hsl(160,5%,70%)] transition-colors"
               >
                 {l.label}
               </Link>
             ))}
           </div>
-          <p className="text-sm text-background/50">
+          <p className="text-sm text-[hsl(160,5%,35%)]">
             © {new Date().getFullYear()} Azix. All rights reserved.
           </p>
         </div>
