@@ -71,7 +71,7 @@ interface Props {
 }
 
 const OnboardingTaskCard = ({ role }: Props) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const tasks = role === "vendor" ? vendorTasks : role === "buyer" ? buyerTasks : adminTasks;

@@ -58,7 +58,7 @@ const storageKey = (role: string) => `tl_testnet_guide_${role}`;
 const TestnetGuide = ({ role }: TestnetGuideProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const { resetTestnetData } = useTestnetData();
   const [completed, setCompleted] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(storageKey(role)) || "[]"); } catch { return []; }
