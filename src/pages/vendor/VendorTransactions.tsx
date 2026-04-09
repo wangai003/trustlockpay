@@ -145,10 +145,12 @@ const VendorTransactions = () => {
   const handleTrackingSaved = async (tracking: string, legs?: any[]) => {
     const txId = trackDialog;
     if (!txId) return;
+    const tx = allTx.find((t) => t.id === txId);
+    const isAlreadyShipped = tx?.status === "shipped";
     if (isTestnet) {
       testnet.addTracking(txId, tracking);
     } else {
-      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs });
+      await addTrackingHook.mutateAsync({ txId, tracking, transportLegs: legs, updateOnly: isAlreadyShipped });
     }
     setTrackDialog(null);
   };
