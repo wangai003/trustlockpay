@@ -40,6 +40,19 @@ const BuyerDisputes = () => {
   const fileDispute = useFileDispute();
   const testnet = useTestnetData();
 
+  // Pre-fill from milestone work order "Raise Dispute" link
+  useEffect(() => {
+    const txParam = searchParams.get("tx");
+    const milestoneParam = searchParams.get("milestone");
+    if (txParam) {
+      setTxIdInput(txParam);
+      setShowNewDispute(true);
+      if (milestoneParam) {
+        setDescInput(`Dispute raised for milestone: ${milestoneParam}`);
+      }
+    }
+  }, [searchParams]);
+
   const disputes = isTestnet
     ? testnet.disputes.map(d => ({
         dbId: d.id || d.dispute_id,
