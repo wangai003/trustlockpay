@@ -710,6 +710,8 @@ const VendorTransactions = () => {
             onSave={handleTrackingSaved}
             txId={tx?.id || trackDialog}
             industry={tx?.industry}
+            existingLegs={tx?.transportLegs}
+            isUpdate={tx?.status === "shipped"}
           />
         );
       })()}
