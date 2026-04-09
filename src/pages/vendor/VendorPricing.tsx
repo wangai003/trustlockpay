@@ -293,6 +293,39 @@ const VendorPricing = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={cancellingPlan} onOpenChange={setCancellingPlan}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel {PLANS[planState.currentPlan]?.name} Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your plan will remain active until the current billing period ends
+              {planState.expiresAt ? ` on ${planState.expiresAt.toLocaleDateString()}` : ""}.
+              After that, your account will automatically downgrade to the Basic plan ({PLANS.basic.orderMin}–{PLANS.basic.orderMax} orders/month).
+              <br /><br />
+              <strong>Your data, order history, and documents will be preserved.</strong> You can re-subscribe at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Plan</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                // Mark plan as cancelled — it stays active until expiry
+                localStorage.setItem("tl_vendor_plan_cancelled", "true");
+                toast.success(
+                  `Plan cancellation scheduled. You'll keep ${PLANS[planState.currentPlan]?.name} access until ${
+                    planState.expiresAt ? planState.expiresAt.toLocaleDateString() : "the end of your billing period"
+                  }.`
+                );
+                setCancellingPlan(false);
+              }}
+            >
+              Confirm Cancellation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
