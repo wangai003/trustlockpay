@@ -396,6 +396,7 @@ const MilestoneWorkOrderPanel = ({
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
   const { anchor: anchorProof } = useBlockchainAnchor();
+  const navigate = useNavigate();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
