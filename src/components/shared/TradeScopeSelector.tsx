@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Globe, MapPin, Building2, Info, Shuffle } from "lucide-react";
+import { Globe, MapPin, Building2, Info, Shuffle, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { detectTradeScope } from "@/lib/tradeBlocs";
 
