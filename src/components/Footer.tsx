@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { Link } from "react-router-dom";
-import azixLogo from "@/assets/azix-logo.png";
+
 
 const legalLinks = [
   { label: "Privacy Policy", to: "/privacy-policy" },
