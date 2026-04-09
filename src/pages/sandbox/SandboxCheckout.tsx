@@ -56,17 +56,50 @@ const SandboxCheckout = () => {
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
 
+  // GPS-enforced Trade Scope
+  const { position: gpsPosition, loading: gpsLoading, capturePosition } = useGeolocation();
+  const [gpsCountry, setGpsCountry] = useState<GpsCountryResult | null>(null);
+  const [gpsDetecting, setGpsDetecting] = useState(false);
+  const [scopeLocked, setScopeLocked] = useState(false);
+
+  // Auto-trigger GPS on mount
+  useEffect(() => {
+    handleGpsDetection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleGpsDetection = useCallback(async () => {
+    setGpsDetecting(true);
+    const pos = await capturePosition();
+    if (pos) {
+      const result = await reverseGeocodeToCountry(pos.latitude, pos.longitude);
+      if (result) {
+        setGpsCountry(result);
+        setBuyerCountry(result.countryCode);
+        // Auto-detect scope from GPS country vs vendor country
+        const detected = detectTradeScope(result.countryCode, vendorCountry);
+        setTradeScope(detected.scope);
+        setScopeLocked(true);
+        toast.success(`📍 Location verified: ${result.countryName} — Trade scope auto-set to "${detected.scope}"`);
+      } else {
+        toast.warning("Could not determine your country from GPS. Please select trade scope manually.");
+      }
+    }
+    setGpsDetecting(false);
+  }, [capturePosition, vendorCountry]);
+
   const handleScopeChange = useCallback((scope: TradeScope) => {
+    if (scopeLocked) return; // Prevent manual override when GPS-locked
     setTradeScope(scope);
     // Auto-adjust buyer country to match scope for demo purposes
     if (scope === "domestic") {
-      setBuyerCountry("NG"); // Same as vendor
+      setBuyerCountry("NG");
     } else if (scope === "regional") {
-      setBuyerCountry("GH"); // ECOWAS member
+      setBuyerCountry("GH");
     } else {
-      setBuyerCountry("US"); // International default
+      setBuyerCountry("US");
     }
-  }, []);
+  }, [scopeLocked]);
 
   // Map selected provider to legacy paymentMethod string
   const derivedPaymentMethod = useMemo(() => {
