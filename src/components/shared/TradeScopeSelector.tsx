@@ -122,7 +122,13 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
         <div className="flex items-center gap-1.5">
           <Globe className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold">Trade Scope</span>
-          {isOverridden && (
+          {locked && (
+            <Badge className="text-[7px] px-1.5 py-0 bg-primary/10 text-primary border border-primary/30">
+              <Lock className="w-2.5 h-2.5 mr-0.5" />
+              {lockedLabel || "GPS-Verified"}
+            </Badge>
+          )}
+          {!locked && isOverridden && (
             <Badge variant="outline" className="text-[7px] border-accent/30 text-accent">
               Overridden
             </Badge>
