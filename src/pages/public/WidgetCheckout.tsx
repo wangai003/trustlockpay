@@ -401,6 +401,7 @@ const WidgetCheckout = () => {
           </Card>
         )}
 
+        {step === "form" && (
           <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
               {/* Vendor header */}
