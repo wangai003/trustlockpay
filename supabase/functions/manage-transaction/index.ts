@@ -137,6 +137,25 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "update_tracking": {
+        // Update tracking details WITHOUT changing order status
+        const updatePayload: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (tracking) updatePayload.tracking = tracking;
+        if (transportLegs) updatePayload.transport_legs = transportLegs;
+
+        const { data, error } = await supabase
+          .from("transactions")
+          .update(updatePayload)
+          .eq("tx_id", txId)
+          .select()
+          .single();
+        if (error) throw error;
+        result = data;
+        break;
+      }
+
       case "mark_delivered": {
         const { data, error } = await supabase
           .from("transactions")

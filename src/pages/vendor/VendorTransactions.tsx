@@ -440,9 +440,15 @@ const VendorTransactions = () => {
                                   </>
                                 )}
                                 {tx.status === "shipped" && (
-                                  <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
-                                    <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
-                                      <PackageCheck className="w-3 h-3 mr-1" /> Delivered
+                                  <>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-UPDATE-TRACK")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleAddTracking(tx.id)} title="Update tracking details">
+                                        <Truck className="w-3 h-3 mr-1" /> Update Tracking
+                                      </Button>
+                                    </TLId>
+                                    <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
+                                      <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
+                                        <PackageCheck className="w-3 h-3 mr-1" /> Delivered
                                     </Button>
                                   </TLId>
                                 )}
