@@ -68,6 +68,7 @@ const BuyerBillPayments = lazy(() => import("./pages/buyer/BuyerBillPayments"));
 const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlaybook"));
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
 const BuyerMessages = lazy(() => import("./pages/buyer/BuyerMessages"));
+const BuyerVendorLookup = lazy(() => import("./pages/buyer/BuyerVendorLookup"));
 
 // Vendor
 const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
@@ -97,6 +98,7 @@ const VendorMarketplaceOrders = lazy(() => import("./pages/vendor/VendorMarketpl
 const VendorCRM = lazy(() => import("./pages/vendor/VendorCRM"));
 const VendorDisputes = lazy(() => import("./pages/vendor/VendorDisputes"));
 const VendorFeeSimulator = lazy(() => import("./pages/vendor/VendorFeeSimulator"));
+const VendorBuyerLookup = lazy(() => import("./pages/vendor/VendorBuyerLookup"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
@@ -213,6 +215,7 @@ const App = () => (
                 <Route path="crm" element={<VendorCRM />} />
                 <Route path="disputes" element={<VendorDisputes />} />
                 <Route path="fee-simulator" element={<VendorFeeSimulator />} />
+                <Route path="buyer-lookup" element={<VendorBuyerLookup />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
@@ -242,6 +245,7 @@ const App = () => (
                 <Route path="teams" element={<BuyerTeams />} />
                 <Route path="messages" element={<BuyerMessages />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
+                <Route path="vendor-lookup" element={<BuyerVendorLookup />} />
                 <Route path="settings" element={<BuyerSettings />} />
               </Route>
 
