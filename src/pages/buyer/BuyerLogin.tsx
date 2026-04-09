@@ -129,20 +129,25 @@ const BuyerLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Link to="/" className="absolute top-4 left-4 p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Subtle background accents */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-accent/5 blur-[100px]" />
+      </div>
+      <Link to="/trustlock" className="absolute top-4 left-4 p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-10">
         <ArrowLeft className="w-5 h-5" />
       </Link>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="w-full max-w-md relative z-10">
+        <motion.div className="flex items-center justify-center gap-3 mb-8" initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: "spring", stiffness: 200 }}>
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <ShoppingBag className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
             <p className="text-xs text-muted-foreground">Buyer Portal</p>
           </div>
-        </div>
+        </motion.div>
 
         <div className="flex items-center justify-center gap-3 mb-6">
           <span className={`text-sm font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Testnet</span>
@@ -177,7 +182,7 @@ const BuyerLogin = () => {
           </motion.div>
         )}
 
-        <Card>
+        <Card className="border-border/50 shadow-xl shadow-black/5 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-lg">Buyer Sign In</CardTitle>
             <CardDescription>{isTestnet ? "Use testnet credentials to explore" : "Enter your credentials"}</CardDescription>
