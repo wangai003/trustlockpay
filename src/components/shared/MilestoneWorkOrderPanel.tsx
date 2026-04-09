@@ -914,11 +914,31 @@ const MilestoneWorkOrderPanel = ({
 
                 {/* ── Expanded Content ── */}
                 {expanded && !isDeleted && (
-                  <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3 ml-9">
+                  <div className="px-3 pb-3 border-t border-border/50 pt-3 ml-9">
                     {/* Amount */}
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-[11px] text-muted-foreground mb-2">
                       Amount: ${Number(ms.payment_amount || 0).toLocaleString()}
                     </div>
+
+                    <Tabs defaultValue="actions" className="w-full">
+                      <TabsList className="w-full h-8 grid grid-cols-3 mb-3">
+                        <TabsTrigger value="actions" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          ⚡ Actions
+                        </TabsTrigger>
+                        <TabsTrigger value="docs" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          📄 Docs {(requiredDocs.length + optionalDocs.length > 0) && (
+                            <Badge variant="outline" className="text-[7px] h-3.5 px-1 ml-0.5">
+                              {uploadedDocs.length}/{requiredDocs.length}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="notes" className="text-[10px] h-6 data-[state=active]:text-primary">
+                          📝 Notes
+                        </TabsTrigger>
+                      </TabsList>
+
+                      {/* ═══ ACTIONS TAB ═══ */}
+                      <TabsContent value="actions" className="space-y-3 mt-0">
 
                     {/* GPS Location Card */}
                     {ms.gps_latitude && (
