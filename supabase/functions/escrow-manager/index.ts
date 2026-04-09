@@ -983,10 +983,12 @@ async function updateMilestone(body: Record<string, unknown>) {
     }
   }
 
+  let newDocCount = 0;
   if (uploaded_documents) {
     // Merge new documents with existing
     const existingDocs = Array.isArray(milestone.uploaded_documents) ? milestone.uploaded_documents : [];
     const newDocs = Array.isArray(uploaded_documents) ? uploaded_documents : [uploaded_documents];
+    newDocCount = newDocs.length;
     updatePayload.uploaded_documents = [...existingDocs, ...newDocs];
   }
 
@@ -1039,6 +1041,23 @@ async function updateMilestone(body: Record<string, unknown>) {
       type: "info",
       related_entity_type: "milestone",
       related_entity_id: String(milestone_id),
+    });
+  }
+
+  // Notify counterparty when documents are uploaded
+  if (newDocCount > 0 && !status) {
+    const counterpartyId = role === "vendor" ? String(txData.buyer_id) : String(txData.vendor_id);
+    const fromRole = role === "vendor" ? "Vendor" : "Buyer";
+    const docNames = (Array.isArray(uploaded_documents) ? uploaded_documents : [uploaded_documents])
+      .map((d: any) => d?.name || d?.document_type || "Document").slice(0, 3).join(", ");
+    await supabase.from("notifications").insert({
+      user_id: counterpartyId,
+      title: `📄 ${fromRole} uploaded ${newDocCount} document${newDocCount > 1 ? "s" : ""}`,
+      message: `${fromRole} uploaded ${docNames} to milestone "${milestone.title || "Untitled"}". Review the documents in your Work Order Log.`,
+      type: "info",
+      related_entity_type: "milestone",
+      related_entity_id: String(milestone_id),
+      action_url: role === "vendor" ? "/trustlock/buyer/orders" : "/trustlock/vendor/transactions",
     });
   }
 

@@ -943,54 +943,78 @@ const MilestoneWorkOrderPanel = ({
                     {uploadedDocs.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-[10px] font-semibold">Uploaded Documents</p>
-                        <div className="space-y-1">
-                          {uploadedDocs.map((doc: any, i: number) => (
-                            <div key={i} className="flex items-center gap-1.5 rounded border border-border p-1.5 text-[10px]">
-                              <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
-                              <div className="flex-1 min-w-0">
-                                <span className="truncate block">
-                                  {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
-                                  {doc.name}
-                                </span>
-                                {doc.uploaded_by_role && (
-                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                    <User className="w-2 h-2" />{doc.uploaded_by_role}
-                                    {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
-                                  </span>
-                                )}
-                              </div>
-                              {doc.url && (
-                                <Button
-                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]"
-                                  onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}
-                                >
-                                  <Eye className="w-2.5 h-2.5 mr-0.5" /> View
-                                </Button>
-                              )}
-                              {!isAdmin && !isDone && doc.uploaded_by_role === role && (
-                                <Button
-                                  variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (!confirm(`Remove "${doc.name}"?`)) return;
-                                    if (isTestnet) {
-                                      toast.success(`Document "${doc.name}" removed`);
-                                      return;
-                                    }
-                                    const userId = await getUserId();
-                                    if (!userId) return;
-                                    const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
-                                    await supabase.from("transaction_milestones").update({
-                                      uploaded_documents: remaining,
-                                    } as any).eq("id", ms.id);
-                                    toast.success(`Document "${doc.name}" removed`);
-                                  }}
-                                >
-                                  <Trash2 className="w-2.5 h-2.5" />
-                                </Button>
+                        {/* Counterparty document summary */}
+                        {(() => {
+                          const counterpartyDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role && d.uploaded_by_role !== role);
+                          const myDocs = uploadedDocs.filter((d: any) => d.uploaded_by_role === role);
+                          return counterpartyDocs.length > 0 ? (
+                            <div className="flex items-center gap-1.5 rounded border border-accent/30 bg-accent/5 px-2 py-1 text-[10px]">
+                              <Shield className="w-3 h-3 text-accent shrink-0" />
+                              <span className="text-accent font-medium">
+                                {counterpartyDocs.length} document{counterpartyDocs.length > 1 ? "s" : ""} from {role === "vendor" ? "Buyer" : "Vendor"}
+                              </span>
+                              {myDocs.length > 0 && (
+                                <span className="text-muted-foreground ml-auto">{myDocs.length} from you</span>
                               )}
                             </div>
-                          ))}
+                          ) : null;
+                        })()}
+                        <div className="space-y-1">
+                          {uploadedDocs.map((doc: any, i: number) => {
+                            const isCounterparty = doc.uploaded_by_role && doc.uploaded_by_role !== role;
+                            return (
+                              <div key={i} className={`flex items-center gap-1.5 rounded border p-1.5 text-[10px] ${
+                                isCounterparty ? "border-accent/30 bg-accent/5" : "border-border"
+                              }`}>
+                                <FileText className={`w-3 h-3 shrink-0 ${isCounterparty ? "text-accent" : "text-muted-foreground"}`} />
+                                <div className="flex-1 min-w-0">
+                                  <span className="truncate block">
+                                    {doc.document_type && doc.document_type !== "general" && <span className="font-semibold">[{doc.document_type}] </span>}
+                                    {doc.name}
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                    <User className="w-2 h-2" />
+                                    {isCounterparty ? (
+                                      <span className="text-accent font-medium">{doc.uploaded_by_role === "vendor" ? "Vendor" : "Buyer"}</span>
+                                    ) : (
+                                      <span>You ({doc.uploaded_by_role})</span>
+                                    )}
+                                    {doc.uploadedAt && <> · {new Date(doc.uploadedAt).toLocaleDateString()}</>}
+                                  </span>
+                                </div>
+                                {doc.url && (
+                                  <Button
+                                    variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]"
+                                    onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}
+                                  >
+                                    <Eye className="w-2.5 h-2.5 mr-0.5" /> View
+                                  </Button>
+                                )}
+                                {!isAdmin && !isDone && doc.uploaded_by_role === role && (
+                                  <Button
+                                    variant="ghost" size="sm" className="h-5 px-1.5 text-[9px] text-destructive hover:text-destructive"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!confirm(`Remove "${doc.name}"?`)) return;
+                                      if (isTestnet) {
+                                        toast.success(`Document "${doc.name}" removed`);
+                                        return;
+                                      }
+                                      const userId = await getUserId();
+                                      if (!userId) return;
+                                      const remaining = uploadedDocs.filter((_: any, j: number) => j !== i);
+                                      await supabase.from("transaction_milestones").update({
+                                        uploaded_documents: remaining,
+                                      } as any).eq("id", ms.id);
+                                      toast.success(`Document "${doc.name}" removed`);
+                                    }}
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
