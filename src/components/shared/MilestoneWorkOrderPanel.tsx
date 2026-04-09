@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   CheckCircle2, Copy, FileText, Loader2, MapPin, StickyNote, Trash2,
   UserPlus, X, AlertTriangle, User, ShieldCheck, RotateCcw, FileWarning,
   ChevronDown, ChevronRight, Shield, Layers, Eye, Lock, Unlock, Milestone as MilestoneIcon, Globe, Receipt,
-  Upload, PenLine, Banknote, PackageCheck, Send, ClipboardCheck,
+  Upload, PenLine, Banknote, PackageCheck, Send, ClipboardCheck, Scale,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -395,6 +396,7 @@ const MilestoneWorkOrderPanel = ({
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
   const { anchor: anchorProof } = useBlockchainAnchor();
+  const navigate = useNavigate();
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
@@ -1339,6 +1341,24 @@ const MilestoneWorkOrderPanel = ({
                           <Badge className="text-[10px] bg-primary/15 text-primary">
                             <CheckCircle2 className="w-3 h-3 mr-0.5" /> Payment Released
                           </Badge>
+                        )}
+
+                        {/* Raise Dispute — contextual, appears when vendor fulfilled but buyer hasn't released, or vice versa */}
+                        {!isAdmin && !isDisputed && ms.status !== "released" && ms.status !== "deleted" && ms.status !== "pending" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 text-xs ml-auto"
+                            onClick={() => {
+                              const disputePath = role === "buyer"
+                                ? `/trustlock/buyer/disputes`
+                                : `/trustlock/vendor/disputes`;
+                              navigate(`${disputePath}?tx=${encodeURIComponent(txId)}&milestone=${encodeURIComponent(ms.title)}&step=${row}`);
+                              toast.info(`Opening dispute form for milestone "${ms.title}"`);
+                            }}
+                          >
+                            <Scale className="w-3 h-3 mr-1" /> Raise Dispute
+                          </Button>
                         )}
                       </div>
                     </div>

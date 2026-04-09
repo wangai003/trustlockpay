@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 const VendorDisputes = () => {
   const { isTestnet } = useVendor();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showNewDispute, setShowNewDispute] = useState(false);
   const [txIdInput, setTxIdInput] = useState("");
   const [reasonInput, setReasonInput] = useState("Buyer refuses to confirm delivery");
@@ -37,6 +38,19 @@ const VendorDisputes = () => {
   const { data: rawDisputes = [] } = useDisputes();
   const fileDispute = useFileDispute();
   const testnet = useTestnetData();
+
+  // Pre-fill from milestone work order "Raise Dispute" link
+  useEffect(() => {
+    const txParam = searchParams.get("tx");
+    const milestoneParam = searchParams.get("milestone");
+    if (txParam) {
+      setTxIdInput(txParam);
+      setShowNewDispute(true);
+      if (milestoneParam) {
+        setDescInput(`Dispute raised for milestone: ${milestoneParam}`);
+      }
+    }
+  }, [searchParams]);
 
   const disputes = isTestnet
     ? testnet.disputes.map((d: any) => ({
