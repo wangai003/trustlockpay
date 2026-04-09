@@ -93,6 +93,7 @@ const VendorTransactions = () => {
         type: tx.type,
         buyerLocation: tx.buyer_location,
         vendorLocation: tx.vendor_location,
+        transportLegs: null as any[] | null,
       }))
     : rawTransactions.map((tx, i) => ({
         dbId: tx.id,
