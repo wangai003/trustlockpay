@@ -25,10 +25,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SANDBOX_INDUSTRIES, createSandboxOrder, SandboxLiveOrder } from "./sandboxIndustryData";
 import { toast } from "sonner";
 import { selectProcessor, PROCESSORS, type ProcessorId, type PaymentMethod as FeePaymentMethod } from "@/lib/feeEngine";
+import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
+import { isMilestoneIndustryByKey } from "@/lib/industryList";
 
-type Step = "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
+type Step = "intent" | "negotiation" | "invoice" | "compliance" | "acknowledgement" | "contract" | "blueprint" | "payment" | "processing" | "confirmation";
 
 const STEP_LABELS: { key: Step; label: string }[] = [
+  { key: "intent", label: "Intent" },
+  { key: "negotiation", label: "Negotiate" },
   { key: "invoice", label: "Invoice" },
   { key: "compliance", label: "Compliance" },
   { key: "acknowledgement", label: "Acknowledgement" },
