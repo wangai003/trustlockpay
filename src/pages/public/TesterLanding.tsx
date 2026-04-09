@@ -92,6 +92,14 @@ const TesterLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Back Button */}
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+        </div>
+      </div>
       {/* Hero */}
       <div className="bg-gradient-to-b from-primary/5 to-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-12 text-center space-y-4">
