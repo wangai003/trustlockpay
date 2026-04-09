@@ -57,6 +57,9 @@ const VendorDocuments = () => {
         <DocumentUpload label="Upload Documents (Receipts, Proof of Shipment, etc.)" />
         </TLId>
 
+        {/* ── Document Vault ─── */}
+        <VendorDocumentVault />
+
         {/* ── Acknowledgement Form Preview ─── */}
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
