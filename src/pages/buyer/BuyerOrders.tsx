@@ -494,7 +494,18 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             )}
             {order.status === "shipped" && (
               <TLId code={dynTLId("B", "BO", row, "BTN-TRACK")} inline>
-                <Button variant="outline" size="sm">Track</Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const legs = order.transportLegs;
+                  if (legs && legs.length > 0) {
+                    const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
+                    if (firstUrl) window.open(firstUrl, "_blank");
+                    else setExpandedOrder(order.id);
+                  } else if (order.tracking) {
+                    setExpandedOrder(order.id);
+                  }
+                }}>
+                  <ExternalLink className="w-3 h-3 mr-1" /> Track
+                </Button>
               </TLId>
             )}
             {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
@@ -549,6 +560,10 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
         {expandedOrder === order.id && (
           <div className="mt-3 border-t border-border pt-3 space-y-3">
             <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
+            {/* Transport Legs Viewer */}
+            {order.transportLegs && order.transportLegs.length > 0 && (
+              <TransportLegsViewer legs={order.transportLegs} compact />
+            )}
             <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
