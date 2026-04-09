@@ -54,7 +54,7 @@ interface MilestoneWorkOrderPanelProps {
   onTestnetAddDocument?: (milestoneId: string, doc: { name: string; url: string }) => void;
   onTestnetInviteObserver?: (milestoneId: string, name: string, email: string) => string | void;
   onTestnetRelease?: (milestoneId: string) => void;
-  onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number) => void;
+  onTestnetAddGps?: (milestoneId: string, lat: number, lng: number, accuracy: number, address?: string, city?: string, country?: string) => void;
 }
 
 const FUNDS_LOCKED_STATUSES = new Set([
