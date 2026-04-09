@@ -834,16 +834,31 @@ const MilestoneWorkOrderPanel = ({
                 {/* ── Expanded Content ── */}
                 {expanded && !isDeleted && (
                   <div className="px-3 pb-3 space-y-3 border-t border-border/50 pt-3 ml-9">
-                    {/* Amount + GPS */}
+                    {/* Amount */}
                     <div className="text-[11px] text-muted-foreground">
                       Amount: ${Number(ms.payment_amount || 0).toLocaleString()}
-                      {ms.gps_latitude && (
-                        <span className="ml-2 inline-flex items-center gap-0.5">
-                          <MapPin className="w-3 h-3 text-primary" />
-                          {Number(ms.gps_latitude).toFixed(4)}, {Number(ms.gps_longitude).toFixed(4)}
-                        </span>
-                      )}
                     </div>
+
+                    {/* GPS Location Card */}
+                    {ms.gps_latitude && (
+                      <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
+                        <p className="text-[10px] font-semibold flex items-center gap-1 text-primary">
+                          <MapPin className="w-3.5 h-3.5" /> GPS Verification
+                        </p>
+                        {ms.gps_address && (
+                          <p className="text-[11px] font-medium">{ms.gps_address}</p>
+                        )}
+                        <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                          <span>Lat: {Number(ms.gps_latitude).toFixed(6)}</span>
+                          <span>Lng: {Number(ms.gps_longitude).toFixed(6)}</span>
+                          {ms.gps_accuracy && <span>Accuracy: ±{Number(ms.gps_accuracy).toFixed(0)}m</span>}
+                          {ms.gps_captured_at && <span>Captured: {new Date(ms.gps_captured_at).toLocaleString()}</span>}
+                        </div>
+                        {ms.gps_city && ms.gps_country && (
+                          <p className="text-[10px] text-muted-foreground">{ms.gps_city}, {ms.gps_country}</p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Description */}
                     {ms.description && <p className="text-[11px] text-muted-foreground italic">{ms.description}</p>}
