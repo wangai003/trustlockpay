@@ -24,14 +24,14 @@ const TrustLock = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-heading font-bold text-sm">TL</span>
               </div>
-              <span className="font-heading font-bold text-base sm:text-lg text-foreground">TrustLock</span>
+              <span className="font-heading font-bold text-base sm:text-lg text-[hsl(0,0%,95%)]">TrustLock</span>
             </div>
           </div>
           <div className="hidden lg:flex items-center gap-6">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Live Demo</a>
-            <a href="#dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
-            <a href="#integrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Integrate</a>
+            <a href="#features" className="text-sm text-[hsl(160,5%,50%)] hover:text-[hsl(0,0%,95%)] transition-colors">Features</a>
+            <a href="#demo" className="text-sm text-[hsl(160,5%,50%)] hover:text-[hsl(0,0%,95%)] transition-colors">Live Demo</a>
+            <a href="#dashboard" className="text-sm text-[hsl(160,5%,50%)] hover:text-[hsl(0,0%,95%)] transition-colors">Dashboard</a>
+            <a href="#integrate" className="text-sm text-[hsl(160,5%,50%)] hover:text-[hsl(0,0%,95%)] transition-colors">Integrate</a>
             <Link to="/test-widget" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Test Widget</Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
