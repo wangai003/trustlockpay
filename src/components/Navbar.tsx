@@ -23,7 +23,7 @@ const Navbar = () => {
         <div className="container mx-auto flex items-center justify-between h-16 px-4 lg:px-8">
           <TLId code="TL-S-NAV-LOGO" inline>
             <a href="/" className="flex items-center gap-2">
-              <img src={trustlockLogo} alt="TrustLock Pay logo" className="w-9 h-9 sm:w-11 sm:h-11 rounded-md object-contain" />
+              <img src={trustlockLogo} alt="TrustLock Pay logo" className="w-10 h-10 sm:w-12 sm:h-12 rounded-md object-contain" />
               <span className="font-heading font-bold text-xl text-[hsl(0,0%,95%)]">TrustLock</span>
             </a>
           </TLId>
