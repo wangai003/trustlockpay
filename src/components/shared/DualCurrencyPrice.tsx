@@ -32,19 +32,13 @@ const DualCurrencyPrice = ({
   label,
   className = "",
 }: DualCurrencyPriceProps) => {
-  const { currency, localAmount, localFormatted, isUsd } = useMemo(() => {
-    let currency: CurrencyInfo;
-    if (currencyCode) {
-      // Find by currency code — scan registry
-      const { getCurrencyForCountry: get } = require("@/lib/globalCurrencies");
-      currency = countryCode ? get(countryCode) : { code: currencyCode, name: currencyCode, symbol: currencyCode, rate: 1, region: "Unknown" };
-    } else {
-      currency = getCurrencyForCountry(countryCode || "US");
-    }
+  const { currency, localFormatted, isUsd } = useMemo(() => {
+    const cc = countryCode || "US";
+    const currency = getCurrencyForCountry(cc);
     const isUsd = currency.code === "USD";
-    const local = toLocalCurrency(amount, countryCode || "US");
-    return { currency, localAmount: local.amount, localFormatted: local.formatted, isUsd };
-  }, [amount, countryCode, currencyCode]);
+    const local = toLocalCurrency(amount, cc);
+    return { currency, localFormatted: local.formatted, isUsd };
+  }, [amount, countryCode]);
 
   const usdFormatted = `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
