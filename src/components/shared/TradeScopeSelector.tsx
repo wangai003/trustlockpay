@@ -83,14 +83,18 @@ const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, comp
             <TooltipProvider key={opt.value}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => onChange(opt.value)}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40"
-                    }`}
+                    <button
+                      type="button"
+                      onClick={() => !locked && onChange(opt.value)}
+                      disabled={locked}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
+                        locked ? "cursor-not-allowed opacity-60" : ""
+                      } ${
+                        isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
                   >
                     <Icon className="w-3 h-3" />
                     {opt.label}
