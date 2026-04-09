@@ -20,36 +20,35 @@ interface TestnetGuideProps {
 }
 
 const vendorSteps: GuideStep[] = [
-  { id: "v1", title: "View Plans & Pricing", description: "Browse available subscription plans to find one that fits your order volume.", route: "/trustlock/vendor/pricing", action: "Navigate to Plans & Pricing" },
-  { id: "v2", title: "Select a Plan", description: "Choose the Starter plan (highlighted in blue) and tap 'Get Starter' to proceed to checkout.", route: "/trustlock/vendor/pricing", action: "Click the highlighted plan" },
-  { id: "v3", title: "Pay via TrustLock OS Pay", description: "On the TrustLock OS Pay page, select a payment method, enter any amount, and tap Pay.", route: "/trustlock/vendor/os-pay", action: "Complete the payment flow" },
-  { id: "v4", title: "Review Dashboard", description: "After payment, you'll return to the dashboard. Check your plan status and order usage in the overview.", route: "/trustlock/vendor", action: "Review your dashboard stats" },
-  { id: "v5", title: "View Transactions", description: "Go to Transactions to see your orders queue. Try adding tracking to a locked order.", route: "/trustlock/vendor/transactions", action: "Explore transaction actions" },
-  { id: "v6", title: "Download a Report", description: "Navigate to Analytics & Reports to download a revenue statement with TrustLock Pay branding.", route: "/trustlock/vendor/analytics", action: "Download a report" },
-  { id: "v7", title: "Browse Archives", description: "Open the Archives tab in Analytics to view historical reports sorted by date.", route: "/trustlock/vendor/analytics", action: "Open archives and select a date" },
-  { id: "v8", title: "Try TrustLock Assist", description: "Open TrustLock Assist AI and ask a question about fulfillment or escrow.", route: "/trustlock/vendor/assistant", action: "Send a message to the assistant" },
-  { id: "v9", title: "Check Settings", description: "Review auto-delivery toggle and TrustLock Pay widget settings.", route: "/trustlock/vendor/settings", action: "Toggle a setting" },
+  { id: "v1", title: "Explore Plans & Pricing", description: "Compare subscription tiers — from free Basic to unlimited Enterprise — and pick the plan that matches your transaction volume.", route: "/trustlock/vendor/pricing", action: "Navigate to Plans & Pricing" },
+  { id: "v2", title: "Subscribe to a Plan", description: "Select a plan and complete payment via TrustLock OS Pay. Your dashboard updates instantly with plan limits and features.", route: "/trustlock/vendor/pricing", action: "Select and pay for a plan" },
+  { id: "v3", title: "Connect Your Store", description: "Link your Shopify, WooCommerce, or custom e-commerce site so buyers can pay through TrustLock escrow.", route: "/trustlock/vendor/sites", action: "Add a site" },
+  { id: "v4", title: "Install the TrustLock Widget", description: "Copy the embed code and add it to your storefront — buyers see a secure checkout badge and pay directly.", route: "/trustlock/vendor/widget", action: "Configure and install widget" },
+  { id: "v5", title: "Configure Payout Preferences", description: "Choose your payout method — fiat bank transfer, mobile money, or crypto self-custody — for released escrow funds.", route: "/trustlock/vendor/payouts", action: "Set up payouts" },
+  { id: "v6", title: "Review a Transaction", description: "Go to Transactions and explore order actions: add tracking, upload shipping docs, and mark orders as shipped.", route: "/trustlock/vendor/transactions", action: "Interact with an order" },
+  { id: "v7", title: "Download a Report", description: "Navigate to Analytics & Reports and export a revenue statement or transaction summary.", route: "/trustlock/vendor/analytics", action: "Download a report" },
+  { id: "v8", title: "Chat with TrustLock Assist", description: "Ask the AI assistant about escrow flows, dispute handling, milestone setup, or cross-border compliance.", route: "/trustlock/vendor/assistant", action: "Send a message" },
+  { id: "v9", title: "Review Settings & Auto-Delivery", description: "Check auto-delivery rules (industry-dependent), notification preferences, and widget theme settings.", route: "/trustlock/vendor/settings", action: "Toggle a setting" },
 ];
 
 const buyerSteps: GuideStep[] = [
-  { id: "b1", title: "Review Dashboard", description: "Check your active orders, funds in escrow, and action items.", route: "/trustlock/buyer", action: "Review the overview" },
-  { id: "b2", title: "View Orders", description: "Go to My Orders to see order statuses. Try confirming delivery on a delivered order.", route: "/trustlock/buyer/orders", action: "Interact with an order" },
-  { id: "b3", title: "File a Test Dispute", description: "Navigate to Disputes and review how the dispute filing process works.", route: "/trustlock/buyer/disputes", action: "Review dispute flow" },
-  { id: "b4", title: "Pay for Analytics Report", description: "Go to TrustLock OS Pay and purchase an analytics report download.", route: "/trustlock/buyer/os-pay", action: "Complete a payment" },
-  { id: "b5", title: "Use Support Assistant", description: "Open the Support Assistant AI and ask about buyer protections.", route: "/trustlock/buyer/assistant", action: "Send a message" },
-  { id: "b6", title: "Download a Statement", description: "Navigate to Analytics to download a purchase history statement.", route: "/trustlock/buyer/analytics", action: "Download a report" },
-  { id: "b7", title: "Check Documents", description: "Review the reference library for buyer protection policies.", route: "/trustlock/buyer/documents", action: "Browse documents" },
+  { id: "b1", title: "Review Your Dashboard", description: "Check active orders, total funds in escrow, pending confirmations, and any action items requiring attention.", route: "/trustlock/buyer", action: "Review the overview" },
+  { id: "b2", title: "Browse Your Orders", description: "View order statuses — locked, shipped, delivered. Try confirming delivery on a delivered order to release vendor funds.", route: "/trustlock/buyer/orders", action: "Interact with an order" },
+  { id: "b3", title: "Explore the Dispute Flow", description: "Navigate to Disputes and see how to file a claim, upload evidence, and track resolution — including arbitrator proposals.", route: "/trustlock/buyer/disputes", action: "Review dispute process" },
+  { id: "b4", title: "Make a Test Payment", description: "Go to TrustLock OS Pay and complete a payment using card, bank transfer, mobile money, or crypto.", route: "/trustlock/buyer/os-pay", action: "Complete a payment" },
+  { id: "b5", title: "Chat with Support AI", description: "Open the Support Assistant and ask about buyer protections, auto-release windows, or refund policies.", route: "/trustlock/buyer/assistant", action: "Send a message" },
+  { id: "b6", title: "Download a Statement", description: "Navigate to Analytics and export your purchase history or payment receipts.", route: "/trustlock/buyer/analytics", action: "Download a report" },
+  { id: "b7", title: "Review Protection Documents", description: "Browse the Documents section for escrow terms, acknowledgement forms, and signed contracts.", route: "/trustlock/buyer/documents", action: "Browse documents" },
 ];
 
 const adminSteps: GuideStep[] = [
-  { id: "a1", title: "Review Platform Overview", description: "Check transaction volume, dispute stats, and Emmanuel AI status.", route: "/trustlock/admin", action: "Review dashboard metrics" },
-  { id: "a2", title: "Monitor Transactions", description: "View all platform transactions across vendors and buyers.", route: "/trustlock/admin/transactions", action: "Browse transactions" },
-  { id: "a3", title: "Review Disputes", description: "Check active disputes and Emmanuel AI recommendations.", route: "/trustlock/admin/disputes", action: "Review a dispute case" },
-  { id: "a4", title: "Process a Refund", description: "Go to TrustLock OS Pay, select Refund, enter recipient details and process.", route: "/trustlock/admin/os-pay", action: "Execute a test refund" },
-  { id: "a5", title: "Process a Split Payment", description: "Use TrustLock OS Pay Split Pay feature to divide funds between parties.", route: "/trustlock/admin/os-pay", action: "Execute a split payment" },
-  { id: "a6", title: "Vendor Management", description: "View vendor list, plan statuses, and KYC compliance.", route: "/trustlock/admin/vendors", action: "Check vendor details" },
-  { id: "a7", title: "Platform Analytics", description: "Deep-dive into analytics charts and download platform reports.", route: "/trustlock/admin/analytics", action: "Download a report" },
-  { id: "a8", title: "Browse Archives", description: "Open archives to view historical reports by date range.", route: "/trustlock/admin/analytics", action: "Select archive date range" },
+  { id: "a1", title: "Review Platform Metrics", description: "Check global transaction volume, active escrows, dispute rates, and Emmanuel AI system status.", route: "/trustlock/admin", action: "Review dashboard metrics" },
+  { id: "a2", title: "Monitor All Transactions", description: "Browse platform-wide transactions across vendors, buyers, and payment corridors.", route: "/trustlock/admin/transactions", action: "Browse transactions" },
+  { id: "a3", title: "Manage Active Disputes", description: "Review open disputes, AI-generated recommendations, arbitrator assignments, and ruling status.", route: "/trustlock/admin/disputes", action: "Review a dispute case" },
+  { id: "a4", title: "Process a Refund or Split Pay", description: "Use TrustLock OS Pay to execute refunds, split payments between parties, or process manual payouts.", route: "/trustlock/admin/os-pay", action: "Execute a payment action" },
+  { id: "a5", title: "Review Vendor Compliance", description: "Check vendor KYC tiers, plan statuses, consent forms, and sanctions screening results.", route: "/trustlock/admin/vendors", action: "Audit a vendor" },
+  { id: "a6", title: "Generate Platform Reports", description: "Export compliance reports, transaction summaries, and dispute analytics for regulatory filing.", route: "/trustlock/admin/analytics", action: "Download a report" },
+  { id: "a7", title: "Review Audit Trail", description: "Inspect the blockchain proof chain, admin action logs, and department workflow history.", route: "/trustlock/admin/audit", action: "Browse audit logs" },
 ];
 
 const stepsMap = { vendor: vendorSteps, buyer: buyerSteps, admin: adminSteps };
