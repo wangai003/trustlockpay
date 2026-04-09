@@ -436,10 +436,10 @@ export function useTestnetData() {
     toast.success(`💰 Milestone payment of $${ms?.payment_amount?.toLocaleString() || "0"} released to vendor`);
   }, [milestones, persistMilestones]);
 
-  const addGpsToMilestone = useCallback((milestoneId: string, lat: number, lng: number, accuracy: number) => {
+  const addGpsToMilestone = useCallback((milestoneId: string, lat: number, lng: number, accuracy: number, address?: string, city?: string, country?: string) => {
     const updated = milestones.map(ms =>
       ms.id === milestoneId
-        ? { ...ms, gps_latitude: lat, gps_longitude: lng, gps_accuracy: accuracy, gps_captured_at: new Date().toISOString() }
+        ? { ...ms, gps_latitude: lat, gps_longitude: lng, gps_accuracy: accuracy, gps_captured_at: new Date().toISOString(), gps_address: address || null, gps_city: city || null, gps_country: country || null }
         : ms
     );
     persistMilestones(updated);

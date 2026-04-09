@@ -91,7 +91,7 @@ const SandboxOrders = () => {
     toast.success("Milestone payment released!");
   }, [selectedId, refreshOrders]);
 
-  const handleAddGps = useCallback((_milestoneId: string, lat: number, lng: number, accuracy: number) => {
+  const handleAddGps = useCallback((_milestoneId: string, lat: number, lng: number, accuracy: number, _address?: string, _city?: string, _country?: string) => {
     toast.success(`GPS captured: ${lat.toFixed(4)}, ${lng.toFixed(4)} ±${accuracy.toFixed(0)}m`);
   }, []);
 
