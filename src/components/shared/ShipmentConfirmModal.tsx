@@ -26,20 +26,28 @@ interface ShipmentConfirmModalProps {
   tradeScope?: string;
 }
 
-function getShippingDocRequirements(industry: string | null | undefined): { docs: string[]; mode: string } {
-  if (!industry) return { docs: [], mode: "none" };
+/** Collect ALL required documents from every milestone stage up to and including shipping */
+interface CumulativeDocGate {
+  stages: { name: string; docs: string[]; mode: string }[];
+  allRequiredDocs: string[];
+}
+
+function getCumulativeDocRequirements(industry: string | null | undefined): CumulativeDocGate {
+  if (!industry) return { stages: [], allRequiredDocs: [] };
   const templates = INDUSTRY_MILESTONE_MAP[industry as keyof typeof INDUSTRY_MILESTONE_MAP];
-  if (!templates) return { docs: [], mode: "none" };
-  const shippingStage = templates.find(
-    (m) =>
-      m.name.toLowerCase().includes("ship") ||
-      m.name.toLowerCase().includes("dispatch") ||
-      m.name.toLowerCase().includes("transit") ||
-      m.name.toLowerCase().includes("logistics") ||
-      m.name.toLowerCase().includes("export")
-  );
-  if (!shippingStage) return { docs: [], mode: "none" };
-  return { docs: shippingStage.documents, mode: shippingStage.documentMode };
+  if (!templates) return { stages: [], allRequiredDocs: [] };
+
+  const stages: CumulativeDocGate["stages"] = [];
+  const allRequiredDocs: string[] = [];
+
+  for (const m of templates) {
+    if (m.documentMode === "required" && m.documents.length > 0) {
+      stages.push({ name: m.name, docs: m.documents, mode: m.documentMode });
+      allRequiredDocs.push(...m.documents);
+    }
+  }
+
+  return { stages, allRequiredDocs };
 }
 
 const CONFIRM_PHRASE = "CONFIRM SHIPMENT";
@@ -53,8 +61,8 @@ export default function ShipmentConfirmModal({
 
   const { data: dbMilestones } = useTransactionMilestones(transactionId || undefined);
 
-  const { docs, mode: docMode } = useMemo(() => getShippingDocRequirements(industry), [industry]);
-  const hasRequiredDocs = docMode === "required" && docs.length > 0;
+  const { stages, allRequiredDocs } = useMemo(() => getCumulativeDocRequirements(industry), [industry]);
+  const hasRequiredDocs = allRequiredDocs.length > 0;
   const isConfirmed = typed.trim().toUpperCase() === CONFIRM_PHRASE;
 
   const uploadedDocNames = useMemo(() => {
@@ -70,18 +78,23 @@ export default function ShipmentConfirmModal({
     return names;
   }, [dbMilestones]);
 
-  const missingDocs = useMemo(() => {
+  // Check each required doc across ALL stages
+  const missingByStage = useMemo(() => {
     if (!hasRequiredDocs) return [];
-    return docs.filter((doc) => {
-      const docLower = doc.toLowerCase();
-      for (const uploaded of uploadedDocNames) {
-        if (uploaded.includes(docLower) || docLower.includes(uploaded.replace(/\.[^.]+$/, ""))) return false;
-      }
-      return true;
-    });
-  }, [docs, uploadedDocNames, hasRequiredDocs]);
+    return stages.map((stage) => {
+      const missing = stage.docs.filter((doc) => {
+        const docLower = doc.toLowerCase();
+        for (const uploaded of uploadedDocNames) {
+          if (uploaded.includes(docLower) || docLower.includes(uploaded.replace(/\.[^.]+$/, ""))) return false;
+        }
+        return true;
+      });
+      return { ...stage, missing };
+    }).filter((s) => s.missing.length > 0);
+  }, [stages, uploadedDocNames, hasRequiredDocs]);
 
-  const isDocGateBlocked = hasRequiredDocs && missingDocs.length > 0;
+  const totalMissing = missingByStage.reduce((sum, s) => sum + s.missing.length, 0);
+  const isDocGateBlocked = hasRequiredDocs && totalMissing > 0;
   const hasAtLeastOneTracking = legs.some((l) => l.trackingNumber.trim().length > 0);
 
   const handleClose = () => {
@@ -133,7 +146,7 @@ export default function ShipmentConfirmModal({
             )}
           </div>
 
-          {/* Document Gate */}
+          {/* Cumulative Document Gate */}
           {hasRequiredDocs && (
             <div className={`rounded-lg border p-3 space-y-2 ${
               isDocGateBlocked ? "border-destructive/40 bg-destructive/5" : "border-primary/30 bg-primary/5"
@@ -146,27 +159,38 @@ export default function ShipmentConfirmModal({
                 )}
                 <div>
                   <p className={`text-sm font-semibold ${isDocGateBlocked ? "text-destructive" : "text-primary"}`}>
-                    {isDocGateBlocked ? "⛔ Document Gate — BLOCKED" : "✅ Document Gate — Passed"}
+                    {isDocGateBlocked
+                      ? `⛔ Cumulative Document Gate — ${totalMissing} doc${totalMissing > 1 ? "s" : ""} missing`
+                      : "✅ All Milestone Documents — Verified"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {isDocGateBlocked
-                      ? "Upload required documents before confirming shipment:"
-                      : "All required shipping documents uploaded."}
+                      ? "ALL required documents across every milestone stage must be uploaded before dispatch:"
+                      : "All required documents across all milestone stages have been uploaded."}
                   </p>
                 </div>
               </div>
               {isDocGateBlocked && (
-                <div className="space-y-1 pl-6">
-                  {docs.map((doc) => {
-                    const isMissing = missingDocs.includes(doc);
-                    return (
-                      <div key={doc} className="flex items-center gap-1.5 text-xs">
-                        {isMissing ? <XCircle className="w-3 h-3 text-destructive shrink-0" /> : <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
-                        <span className={isMissing ? "text-destructive font-medium" : "text-muted-foreground line-through"}>{doc}</span>
-                        {isMissing && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">Missing</Badge>}
+                <div className="space-y-2.5 pl-6">
+                  {missingByStage.map((stage) => (
+                    <div key={stage.name}>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        {stage.name}
+                      </p>
+                      <div className="space-y-0.5">
+                        {stage.docs.map((doc) => {
+                          const isMissing = stage.missing.includes(doc);
+                          return (
+                            <div key={doc} className="flex items-center gap-1.5 text-xs">
+                              {isMissing ? <XCircle className="w-3 h-3 text-destructive shrink-0" /> : <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
+                              <span className={isMissing ? "text-destructive font-medium" : "text-muted-foreground line-through"}>{doc}</span>
+                              {isMissing && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">Missing</Badge>}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
