@@ -261,7 +261,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "12-Month Warranty & Support", qty: 1, unit: "flat", unitPrice: 2000 },
     ],
     milestones: [
-      { title: "Order Placed & Specs Confirmed", percentage: 0 },
       { title: "Manufacturing & Assembly", percentage: 30, documentGate: "Factory Test Report" },
       { title: "Quality Assurance & Certification", percentage: 20, documentGate: "ISO Compliance Certificate" },
       { title: "Shipment & Delivery", percentage: 25, documentGate: "Bill of Lading" },
