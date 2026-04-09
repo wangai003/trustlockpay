@@ -557,9 +557,15 @@ const SandboxCheckout = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Link to={`/sandbox/store/${config.key}`}>
-                      <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back</Button>
-                    </Link>
+                    {isMilestone ? (
+                      <Button variant="outline" size="sm" onClick={() => setStep(agreedMilestones ? "negotiation" : "intent")}>
+                        <ArrowLeft className="w-3 h-3 mr-1" />Back
+                      </Button>
+                    ) : (
+                      <Link to={`/sandbox/store/${config.key}`}>
+                        <Button variant="outline" size="sm"><ArrowLeft className="w-3 h-3 mr-1" />Back</Button>
+                      </Link>
+                    )}
                     <Button onClick={handleProceedFromInvoice} disabled={!buyerName.trim() || !buyerEmail.trim()} className="flex-1">
                       Continue → Compliance Screening
                     </Button>
