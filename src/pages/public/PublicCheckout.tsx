@@ -356,8 +356,8 @@ const PublicCheckout = () => {
             </div>
           );
         })()}
-          ))}
-        </div>
+
+
 
         {/* Invoice Step */}
         {step === "invoice" && (
