@@ -43,7 +43,7 @@ interface LinkData {
 const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"loading" | "invoice" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
+  const [step, setStep] = useState<"loading" | "invoice" | "negotiation" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
   const [linkData, setLinkData] = useState<LinkData | null>(null);
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
@@ -55,6 +55,9 @@ const PublicCheckout = () => {
   const [autoSignResult, setAutoSignResult] = useState<{ auto_signed: boolean; contract_id?: string } | null>(null);
   const [lockedVendorName, setLockedVendorName] = useState("");
   const [buyerRecognized, setBuyerRecognized] = useState(false);
+  // Milestone negotiation state
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
 
   // Load link data from DB
   useEffect(() => {
