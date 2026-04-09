@@ -6,41 +6,59 @@ import VendorHeader from "@/components/vendor/VendorHeader";
 import UserLookupFilters, { LookupFilters, EMPTY_FILTERS } from "@/components/shared/UserLookupFilters";
 import UserLookupCard, { LookupUser } from "@/components/shared/UserLookupCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+const PAGE_SIZE = 20;
 
 const VendorBuyerLookup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [filters, setFilters] = useState<LookupFilters>(EMPTY_FILTERS);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const { data: buyers, isLoading } = useQuery({
     queryKey: ["buyer-lookup", user?.id],
     queryFn: async () => {
-      // Get all user IDs with the buyer role
-      const { data: roles } = await supabase
+      // Get all buyer role user IDs
+      const { data: buyerRoles } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "buyer");
 
-      if (!roles?.length) return [];
+      if (!buyerRoles?.length) return [];
 
-      const buyerIds = roles
+      // Get vendor role user IDs to exclude dual-role users who are also vendors
+      const { data: vendorRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "vendor");
+
+      const vendorIdSet = new Set((vendorRoles || []).map((r) => r.user_id));
+
+      // Exclude: self AND any user who also holds a vendor role
+      const buyerOnlyIds = buyerRoles
         .map((r) => r.user_id)
-        .filter((id) => id !== user?.id); // exclude self
+        .filter((id) => id !== user?.id && !vendorIdSet.has(id));
 
-      if (!buyerIds.length) return [];
+      // Also include dual-role users who are NOT the current user
+      // Actually: we want pure buyers only — users who have buyer role but NOT vendor role
+      // This prevents a vendor from finding themselves as a buyer
+      if (!buyerOnlyIds.length) return [];
 
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, company_name, entity_type, location, onboarding_industry, corridor, avatar_url")
-        .in("id", buyerIds)
+        .in("id", buyerOnlyIds)
         .eq("status", "active");
 
       return (profiles || []) as LookupUser[];
     },
     enabled: !!user?.id,
   });
+
+  const hasAnyFilters = !!(filters.search || filters.country || filters.corridor || filters.industry || filters.entityType || filters.advancedQuery);
 
   const filtered = useMemo(() => {
     if (!buyers) return [];
@@ -75,8 +93,17 @@ const VendorBuyerLookup = () => {
     return list;
   }, [buyers, filters]);
 
+  // Reset pagination when filters change
+  const paginatedResults = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
+
   const handleMessage = (targetUserId: string) => {
     navigate(`/trustlock/vendor/messages?to=${targetUserId}`);
+  };
+
+  const handleFilterChange = (newFilters: LookupFilters) => {
+    setFilters(newFilters);
+    setVisibleCount(PAGE_SIZE);
   };
 
   return (
@@ -88,7 +115,7 @@ const VendorBuyerLookup = () => {
           <span>Browse and connect with buyers on the TrustLock network</span>
         </div>
 
-        <UserLookupFilters filters={filters} onChange={setFilters} targetRole="buyer" />
+        <UserLookupFilters filters={filters} onChange={handleFilterChange} targetRole="buyer" />
 
         {isLoading ? (
           <div className="space-y-3">
@@ -99,15 +126,31 @@ const VendorBuyerLookup = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No buyers found</p>
-            <p className="text-xs mt-1">Try adjusting your filters or search terms</p>
+            {hasAnyFilters ? (
+              <>
+                <p className="font-medium">No buyers match your filters</p>
+                <p className="text-xs mt-1">Try broadening your search or clearing some filters</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium">No buyers on the network yet</p>
+                <p className="text-xs mt-1">Buyers will appear here once they join and complete their profile</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">{filtered.length} buyer{filtered.length !== 1 ? "s" : ""} found</p>
-            {filtered.map((u) => (
+            {paginatedResults.map((u) => (
               <UserLookupCard key={u.id} user={u} onMessage={handleMessage} />
             ))}
+            {hasMore && (
+              <div className="flex justify-center pt-3">
+                <Button variant="outline" size="sm" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
+                  Show more ({filtered.length - visibleCount} remaining)
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
