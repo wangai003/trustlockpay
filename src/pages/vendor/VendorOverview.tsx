@@ -6,6 +6,7 @@ import { useVendor } from "@/contexts/VendorContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeftRight, DollarSign, Clock, TrendingUp, CheckCircle,
   AlertTriangle, Eye, Lock, ArrowUpCircle, Shield, PenLine, Check, X
@@ -26,6 +27,16 @@ const statusColors: Record<string, string> = {
   disputed: "bg-destructive/15 text-destructive",
 };
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
 const VendorOverview = () => {
   const { vendor } = useVendor();
   const navigate = useNavigate();
@@ -33,9 +44,8 @@ const VendorOverview = () => {
   const planState = getVendorPlanState();
   const isUnlimited = planState.orderMax === -1;
   const planConfig = PLANS[planState.currentPlan];
-  const { data: transactions = [] } = useTransactions();
+  const { data: transactions = [], isLoading: txLoading } = useTransactions();
 
-  // Work Log: pending contracts
   const [pendingContracts, setPendingContracts] = useState<any[]>([]);
   const [workLogLoading, setWorkLogLoading] = useState(false);
 
@@ -112,16 +122,24 @@ const VendorOverview = () => {
   const pendingPayout = transactions.filter(t => t.status === "locked").reduce((s, t) => s + Number(t.amount), 0);
   const orderCount = transactions.length;
 
+  const statCards = [
+    { label: "Active Escrows", value: String(activeEscrows), icon: Clock, change: "+3 this week", color: "text-accent" },
+    { label: "Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month", color: "text-primary" },
+    { label: "Pending", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d", color: "text-accent" },
+    { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited" : `${Math.round((orderCount / planState.orderMax) * 100)}% used`, color: "text-primary" },
+  ];
+
   return (
     <div>
       <VendorHeader title="Dashboard" />
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <TLId code="TL-V-OVW-CRD-ONBOARDING"><OnboardingTaskCard role="vendor" /></TLId>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <TLId code="TL-V-OVW-CRD-WELCOME">
-          <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
-            <CardContent className="p-4 sm:p-6">
+          <Card className="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border-primary/20 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent pointer-events-none" />
+            <CardContent className="p-4 sm:p-6 relative">
               <h2 className="font-heading text-base sm:text-xl font-bold">Welcome back, {vendor.name}</h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">Here's your escrow activity summary</p>
               <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -141,135 +159,163 @@ const VendorOverview = () => {
           </TLId>
         </motion.div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-          {[
-            { label: "Active Escrows", value: String(activeEscrows), icon: Clock, change: "+3 this week" },
-            { label: "Released", value: `$${totalReleased.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: DollarSign, change: "+$2,400 this month" },
-            { label: "Pending", value: `$${pendingPayout.toLocaleString("en-US", { minimumFractionDigits: 0 })}`, icon: TrendingUp, change: "Next payout in 2d" },
-            { label: "Plan Usage", value: isUnlimited ? "∞" : `${orderCount}/${planState.orderMax}`, icon: ArrowUpCircle, change: isUnlimited ? "Unlimited" : `${Math.round((orderCount / planState.orderMax) * 100)}% used` },
-          ].map((stat, i) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
-                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
-                  </div>
-                  <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{stat.value}</div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{stat.change}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
+        >
+          {txLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[100px] rounded-xl" />
+            ))
+          ) : (
+            statCards.map((stat) => (
+              <motion.div key={stat.label} variants={item}>
+                <Card className="group hover:border-primary/30 transition-all duration-300 hover:shadow-[0_0_20px_hsl(152,52%,24%/0.08)]">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <stat.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.label}</span>
+                    </div>
+                    <div className={`text-lg sm:text-2xl font-bold truncate ${stat.color}`}>{stat.value}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{stat.change}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </motion.div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Recent Transactions</CardTitle>
-            <TLId code="TL-V-OVW-BTN-VIEW-ALL-TX" inline><Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/trustlock/vendor/transactions")}>View All →</Button></TLId>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left p-4 font-semibold text-muted-foreground">ID</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground">Buyer</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground hidden md:table-cell">Item</th>
-                    <th className="text-right p-4 font-semibold text-muted-foreground">Amount</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground">Status</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground hidden sm:table-cell">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTx.map((tx) => {
-                    const grayed = !isUnlimited && tx.order > planState.orderMax;
-                    return (
-                      <tr key={tx.id} className={`border-b border-border last:border-0 transition-colors ${grayed ? "opacity-40 bg-muted/10" : "hover:bg-muted/20"}`}>
-                        <td className="p-4 font-mono text-xs">{tx.id}</td>
-                        <td className="p-4">{tx.buyer}</td>
-                        <td className="p-4 hidden md:table-cell text-muted-foreground">{tx.item}</td>
-                        <td className="p-4 text-right font-semibold">{tx.amount}</td>
-                        <td className="p-4 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[tx.status] || ""}`}>
-                            {tx.status === "locked" && <Clock className="w-3 h-3" />}
-                            {tx.status === "released" && <CheckCircle className="w-3 h-3" />}
-                            {tx.status === "disputed" && <AlertTriangle className="w-3 h-3" />}
-                            {tx.status}
-                          </span>
-                          {grayed && (
-                            <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
-                          )}
-                        </td>
-                        <td className="p-4 text-center hidden sm:table-cell">
-                          {grayed ? (
-                            <Button variant="outline" size="sm" className="text-xs text-accent" onClick={() => navigate("/trustlock/vendor/pricing")}>
-                              <Lock className="w-3 h-3 mr-1" /> Upgrade
-                            </Button>
-                          ) : (
-                            <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-        {/* Work Log Section */}
-        {pendingContracts.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base">Work Log</CardTitle>
-                <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
-              </div>
-              <div className="flex gap-2">
-                <TLId code="TL-V-OVW-BTN-ACCEPT-CONTRACT" inline>
-                <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
-                  <Check className="w-3 h-3" /> Accept All
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between bg-muted/20">
+              <CardTitle className="text-base">Recent Transactions</CardTitle>
+              <TLId code="TL-V-OVW-BTN-VIEW-ALL-TX" inline>
+                <Button variant="ghost" size="sm" className="text-xs hover:text-primary" onClick={() => navigate("/trustlock/vendor/transactions")}>
+                  View All →
                 </Button>
-                </TLId>
-              </div>
+              </TLId>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Order</th>
-                      <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Industry</th>
-                      <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Amount</th>
-                      <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Date</th>
-                      <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendingContracts.map((c: any) => (
-                      <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                        <td className="p-3 text-xs font-mono">{c.order_number || "—"}</td>
-                        <td className="p-3 text-xs hidden sm:table-cell text-muted-foreground">{c.industry || "—"}</td>
-                        <td className="p-3 text-xs text-right font-semibold">${Number(c.order_amount || 0).toLocaleString()}</td>
-                        <td className="p-3 text-xs text-center text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleWorkLogAction("sign_single", c.id)}>
-                              <PenLine className="w-3 h-3" /> Sign
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => handleWorkLogAction("reject", c.id, "Vendor declined")}>
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </td>
+              {txLoading ? (
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full rounded" />
+                  ))}
+                </div>
+              ) : recentTx.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <ArrowLeftRight className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm font-medium">No transactions yet</p>
+                  <p className="text-xs mt-1">Your escrow activity will appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left p-4 font-semibold text-muted-foreground text-xs">ID</th>
+                        <th className="text-left p-4 font-semibold text-muted-foreground text-xs">Buyer</th>
+                        <th className="text-left p-4 font-semibold text-muted-foreground text-xs hidden md:table-cell">Item</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground text-xs">Amount</th>
+                        <th className="text-center p-4 font-semibold text-muted-foreground text-xs">Status</th>
+                        <th className="text-center p-4 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {recentTx.map((tx) => {
+                        const grayed = !isUnlimited && tx.order > planState.orderMax;
+                        return (
+                          <tr key={tx.id} className={`border-b border-border last:border-0 transition-colors ${grayed ? "opacity-40 bg-muted/10" : "hover:bg-muted/20"}`}>
+                            <td className="p-4 font-mono text-xs">{tx.id}</td>
+                            <td className="p-4 text-sm">{tx.buyer}</td>
+                            <td className="p-4 hidden md:table-cell text-muted-foreground text-sm">{tx.item}</td>
+                            <td className="p-4 text-right font-semibold">{tx.amount}</td>
+                            <td className="p-4 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[tx.status] || ""}`}>
+                                {tx.status === "locked" && <Clock className="w-3 h-3" />}
+                                {tx.status === "released" && <CheckCircle className="w-3 h-3" />}
+                                {tx.status === "disputed" && <AlertTriangle className="w-3 h-3" />}
+                                {tx.status}
+                              </span>
+                              {grayed && (
+                                <Badge variant="outline" className="ml-1 text-[8px] border-accent/30 text-accent">Over Limit</Badge>
+                              )}
+                            </td>
+                            <td className="p-4 text-center hidden sm:table-cell">
+                              {grayed ? (
+                                <Button variant="outline" size="sm" className="text-xs text-accent" onClick={() => navigate("/trustlock/vendor/pricing")}>
+                                  <Lock className="w-3 h-3 mr-1" /> Upgrade
+                                </Button>
+                              ) : (
+                                <Button variant="ghost" size="sm" className="hover:text-primary"><Eye className="w-4 h-4" /></Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
+        </motion.div>
+
+        {pendingContracts.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="border-accent/20">
+              <CardHeader className="flex flex-row items-center justify-between bg-accent/5">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">Work Log</CardTitle>
+                  <Badge variant="destructive" className="text-[10px]">{pendingContracts.length} pending</Badge>
+                </div>
+                <TLId code="TL-V-OVW-BTN-ACCEPT-CONTRACT" inline>
+                  <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleWorkLogAction("accept_all")}>
+                    <Check className="w-3 h-3" /> Accept All
+                  </Button>
+                </TLId>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left p-3 font-semibold text-muted-foreground text-xs">Order</th>
+                        <th className="text-left p-3 font-semibold text-muted-foreground text-xs hidden sm:table-cell">Industry</th>
+                        <th className="text-right p-3 font-semibold text-muted-foreground text-xs">Amount</th>
+                        <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Date</th>
+                        <th className="text-center p-3 font-semibold text-muted-foreground text-xs">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingContracts.map((c: any) => (
+                        <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-3 text-xs font-mono">{c.order_number || "—"}</td>
+                          <td className="p-3 text-xs hidden sm:table-cell text-muted-foreground">{c.industry || "—"}</td>
+                          <td className="p-3 text-xs text-right font-semibold">${Number(c.order_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 text-xs text-center text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
+                          <td className="p-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 hover:text-primary" onClick={() => handleWorkLogAction("sign_single", c.id)}>
+                                <PenLine className="w-3 h-3" /> Sign
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => handleWorkLogAction("reject", c.id, "Vendor declined")}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
       </div>
     </div>
