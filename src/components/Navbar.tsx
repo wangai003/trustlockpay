@@ -1,4 +1,5 @@
 import { useState } from "react";
+import trustlockLogo from "@/assets/trustlock-pay-logo.png";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
