@@ -146,7 +146,7 @@ export default function ShipmentConfirmModal({
             )}
           </div>
 
-          {/* Document Gate */}
+          {/* Cumulative Document Gate */}
           {hasRequiredDocs && (
             <div className={`rounded-lg border p-3 space-y-2 ${
               isDocGateBlocked ? "border-destructive/40 bg-destructive/5" : "border-primary/30 bg-primary/5"
@@ -159,27 +159,38 @@ export default function ShipmentConfirmModal({
                 )}
                 <div>
                   <p className={`text-sm font-semibold ${isDocGateBlocked ? "text-destructive" : "text-primary"}`}>
-                    {isDocGateBlocked ? "⛔ Document Gate — BLOCKED" : "✅ Document Gate — Passed"}
+                    {isDocGateBlocked
+                      ? `⛔ Cumulative Document Gate — ${totalMissing} doc${totalMissing > 1 ? "s" : ""} missing`
+                      : "✅ All Milestone Documents — Verified"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {isDocGateBlocked
-                      ? "Upload required documents before confirming shipment:"
-                      : "All required shipping documents uploaded."}
+                      ? "ALL required documents across every milestone stage must be uploaded before dispatch:"
+                      : "All required documents across all milestone stages have been uploaded."}
                   </p>
                 </div>
               </div>
               {isDocGateBlocked && (
-                <div className="space-y-1 pl-6">
-                  {docs.map((doc) => {
-                    const isMissing = missingDocs.includes(doc);
-                    return (
-                      <div key={doc} className="flex items-center gap-1.5 text-xs">
-                        {isMissing ? <XCircle className="w-3 h-3 text-destructive shrink-0" /> : <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
-                        <span className={isMissing ? "text-destructive font-medium" : "text-muted-foreground line-through"}>{doc}</span>
-                        {isMissing && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">Missing</Badge>}
+                <div className="space-y-2.5 pl-6">
+                  {missingByStage.map((stage) => (
+                    <div key={stage.name}>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        {stage.name}
+                      </p>
+                      <div className="space-y-0.5">
+                        {stage.docs.map((doc) => {
+                          const isMissing = stage.missing.includes(doc);
+                          return (
+                            <div key={doc} className="flex items-center gap-1.5 text-xs">
+                              {isMissing ? <XCircle className="w-3 h-3 text-destructive shrink-0" /> : <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
+                              <span className={isMissing ? "text-destructive font-medium" : "text-muted-foreground line-through"}>{doc}</span>
+                              {isMissing && <Badge variant="destructive" className="text-[8px] h-3.5 px-1">Missing</Badge>}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
