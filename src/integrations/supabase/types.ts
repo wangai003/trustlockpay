@@ -5353,7 +5353,87 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      arbitrator_sessions_safe: {
+        Row: {
+          access_count: number | null
+          access_token: string | null
+          arbitrator_email: string | null
+          arbitrator_name: string | null
+          case_bundle_generated: boolean | null
+          case_bundle_url: string | null
+          created_at: string | null
+          dispute_id: string | null
+          expires_at: string | null
+          id: string | null
+          last_accessed_at: string | null
+          ruling_anchored: boolean | null
+          ruling_distributed: boolean | null
+          ruling_file_name: string | null
+          ruling_file_url: string | null
+          ruling_uploaded_at: string | null
+          status: string | null
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          access_token?: string | null
+          arbitrator_email?: string | null
+          arbitrator_name?: string | null
+          case_bundle_generated?: boolean | null
+          case_bundle_url?: string | null
+          created_at?: string | null
+          dispute_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          last_accessed_at?: string | null
+          ruling_anchored?: boolean | null
+          ruling_distributed?: boolean | null
+          ruling_file_name?: string | null
+          ruling_file_url?: string | null
+          ruling_uploaded_at?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          access_token?: string | null
+          arbitrator_email?: string | null
+          arbitrator_name?: string | null
+          case_bundle_generated?: boolean | null
+          case_bundle_url?: string | null
+          created_at?: string | null
+          dispute_id?: string | null
+          expires_at?: string | null
+          id?: string | null
+          last_accessed_at?: string | null
+          ruling_anchored?: boolean | null
+          ruling_distributed?: boolean | null
+          ruling_file_name?: string | null
+          ruling_file_url?: string | null
+          ruling_uploaded_at?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arbitrator_sessions_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arbitrator_sessions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_admin_account: {
