@@ -319,25 +319,43 @@ const PublicCheckout = () => {
         <ReturningBuyerBanner onRecognized={setBuyerRecognized} />
 
         {/* Steps indicator */}
-        <div className="flex items-center gap-2 justify-center flex-wrap">
-          {[
-            { key: "invoice", label: "Invoice", num: 1 },
-            { key: "compliance", label: "Compliance", num: 2 },
-            { key: "acknowledge", label: "Acknowledge", num: 3 },
-            { key: "contract", label: "Sign Contract", num: 4 },
-            { key: "pay", label: "Pay", num: 5 },
-          ].map((s, i) => (
-            <div key={s.key} className="flex items-center gap-1.5">
-              <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  step === s.key ? "bg-primary text-primary-foreground" :
-                  ["invoice","compliance","acknowledge","contract","pay"].indexOf(s.key) < ["invoice","compliance","acknowledge","contract","pay"].indexOf(step) ? "bg-primary text-primary-foreground" :
-                  "bg-muted text-muted-foreground"
-                }`}>{s.num}</span>
-                <span className="hidden sm:inline">{s.label}</span>
-              </div>
-              {i < 4 && <div className="w-4 sm:w-8 h-px bg-border" />}
+        {(() => {
+          const isMilestone = isMilestoneIndustryByKey(linkData?.industry || "");
+          const allSteps = isMilestone
+            ? [
+                { key: "invoice", label: "Invoice", num: 1 },
+                { key: "negotiation", label: "Negotiate", num: 2 },
+                { key: "compliance", label: "Compliance", num: 3 },
+                { key: "acknowledge", label: "Acknowledge", num: 4 },
+                { key: "contract", label: "Sign Contract", num: 5 },
+                { key: "pay", label: "Pay", num: 6 },
+              ]
+            : [
+                { key: "invoice", label: "Invoice", num: 1 },
+                { key: "compliance", label: "Compliance", num: 2 },
+                { key: "acknowledge", label: "Acknowledge", num: 3 },
+                { key: "contract", label: "Sign Contract", num: 4 },
+                { key: "pay", label: "Pay", num: 5 },
+              ];
+          const stepKeys = allSteps.map(s => s.key);
+          return (
+            <div className="flex items-center gap-2 justify-center flex-wrap">
+              {allSteps.map((s, i) => (
+                <div key={s.key} className="flex items-center gap-1.5">
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${step === s.key ? "text-primary" : "text-muted-foreground"}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      step === s.key ? "bg-primary text-primary-foreground" :
+                      stepKeys.indexOf(s.key) < stepKeys.indexOf(step) ? "bg-primary text-primary-foreground" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{s.num}</span>
+                    <span className="hidden sm:inline">{s.label}</span>
+                  </div>
+                  {i < allSteps.length - 1 && <div className="w-4 sm:w-8 h-px bg-border" />}
+                </div>
+              ))}
             </div>
+          );
+        })()}
           ))}
         </div>
 
