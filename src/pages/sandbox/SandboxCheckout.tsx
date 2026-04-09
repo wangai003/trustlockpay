@@ -1,11 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CreditCard, Wallet, Copy, Check, ArrowLeft, CheckCircle,
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
-  Phone, Building2
+  Phone, Building2, Lock, Navigation
 } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocodeToCountry, type GpsCountryResult } from "@/lib/gpsCountryDetect";
+import { detectTradeScope } from "@/lib/tradeBlocs";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
