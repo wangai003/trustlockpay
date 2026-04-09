@@ -52,7 +52,7 @@ const SCOPE_OPTIONS: { value: TradeScope; label: string; icon: typeof Globe; des
   },
 ];
 
-const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false, autoSet = true }: TradeScopeSelectorProps) => {
+const TradeScopeSelector = ({ value, onChange, buyerCountry, vendorCountry, compact = false, autoSet = true, locked = false, lockedLabel }: TradeScopeSelectorProps) => {
   const detected = useMemo(
     () => detectTradeScope(buyerCountry || "", vendorCountry || ""),
     [buyerCountry, vendorCountry]
