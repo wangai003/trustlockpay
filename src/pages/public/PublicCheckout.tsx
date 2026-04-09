@@ -469,7 +469,84 @@ const PublicCheckout = () => {
           </div>
         )}
 
-        {/* Compliance Step */}
+        {/* Milestone Negotiation Step */}
+        {step === "negotiation" && linkData && (
+          <div className="space-y-4">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => setStep("invoice")}>
+              <ArrowLeft className="w-4 h-4" /> Back to Invoice
+            </Button>
+
+            {agreedMilestones ? (
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Handshake className="w-4 h-4 text-primary" /> Milestone Schedule Agreed
+                  </p>
+                  <MilestoneNegotiationGantt milestones={agreedMilestones} />
+                  <div className="space-y-1">
+                    {agreedMilestones.filter(m => m.percentage > 0).map((m) => (
+                      <div key={m.id} className="flex justify-between text-[10px]">
+                        <span className="text-muted-foreground">{m.title}</span>
+                        <span className="font-medium">{m.percentage}% · ${(linkData.grand_total * m.percentage / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button className="w-full gap-2" onClick={() => setStep("compliance")}>
+                    Proceed to Compliance <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <MilestoneNegotiation
+                role="buyer"
+                txId={linkData.link_id}
+                industry={linkData.industry}
+                orderAmount={linkData.grand_total}
+                buyerName="Buyer"
+                vendorName={linkData.vendor_name}
+                status={negotiationStatus}
+                proposedBy="vendor"
+                existingMilestones={(() => {
+                  const key = linkData.industry.replace(/_/g, "-");
+                  const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[linkData.industry] || [];
+                  return templates.map((m, i) => ({
+                    id: `ms-${i}`,
+                    title: m.name,
+                    description: m.description || "",
+                    percentage: m.percentage,
+                    estimatedDays: 14,
+                    documentRequired: true,
+                    documentName: "",
+                  }));
+                })()}
+                onSubmitDraft={(milestones) => {
+                  setAgreedMilestones(milestones);
+                  setNegotiationStatus("agreed");
+                  toast.success("Milestone schedule locked — proceed to compliance.");
+                }}
+                onApproveDraft={() => {
+                  setNegotiationStatus("agreed");
+                  const key = linkData.industry.replace(/_/g, "-");
+                  const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[linkData.industry] || [];
+                  setAgreedMilestones(templates.map((m, i) => ({
+                    id: `ms-${i}`,
+                    title: m.name,
+                    description: m.description || "",
+                    percentage: m.percentage,
+                    estimatedDays: 14,
+                    documentRequired: true,
+                    documentName: "",
+                  })));
+                  toast.success("Vendor schedule accepted!");
+                }}
+                onRequestChanges={(note) => {
+                  toast.info(`Change requested: ${note}`);
+                }}
+              />
+            )}
+          </div>
+        )}
+
         {step === "compliance" && (invoiceData || linkData) && (
           <div className="space-y-4">
             <Button
