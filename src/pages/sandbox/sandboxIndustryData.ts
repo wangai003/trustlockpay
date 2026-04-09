@@ -127,7 +127,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Tank Farm Storage (14 Days)", qty: 1, unit: "flat", unitPrice: 2800 },
     ],
     milestones: [
-      { title: "Allocation Verified & PO Signed", percentage: 0, documentGate: "NNPC Allocation Letter" },
       { title: "Quality Inspection (SGS/Intertek)", percentage: 20, documentGate: "SGS Inspection Report" },
       { title: "Product Loaded at Depot", percentage: 30 },
       { title: "In-Transit (GPS Tracked)", percentage: 25, documentGate: "Waybill & GPS Log" },
