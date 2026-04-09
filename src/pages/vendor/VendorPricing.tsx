@@ -131,6 +131,26 @@ const VendorPricing = () => {
           </div>
         )}
 
+        {/* Active paid plan — cancel button */}
+        {!planState.isTrialActive && !planState.isExpired && planState.currentPlan !== "basic" && (
+          <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 flex items-center gap-3">
+            <Shield className="w-5 h-5 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold">
+                {PLANS[planState.currentPlan].name} Plan Active
+                {planState.daysUntilExpiry !== null && ` — ${planState.daysUntilExpiry} days remaining`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Cancel anytime. You'll keep full access until your current billing period ends
+                {planState.expiresAt ? ` on ${planState.expiresAt.toLocaleDateString()}` : ""}.
+                After that, you'll fall back to the Basic plan.
+              </p>
+            </div>
+            <Button size="sm" variant="destructive" onClick={() => setCancellingPlan(true)}>
+              Cancel Plan
+            </Button>
+          </div>
+
         <div className="flex items-center justify-center gap-1 p-1 bg-muted rounded-lg w-fit mx-auto">
           <button
             onClick={() => setBilling("monthly")}
