@@ -16,9 +16,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-heading font-bold text-lg">T</span>
-            </div>
+            <img src={trustlockLogo} alt="TrustLock Pay logo" className="w-8 h-8 rounded-md object-contain" />
             <span className="font-heading font-bold text-base text-[hsl(0,0%,85%)]">TrustLock</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4">
