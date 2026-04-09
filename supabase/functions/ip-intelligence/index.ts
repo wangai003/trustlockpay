@@ -161,16 +161,18 @@ Deno.serve(async (req) => {
 
     const {
       user_id,
-      declared_country, // ISO 2-letter code buyer declared
-      gps_country,      // ISO 2-letter code from GPS reverse-geocoding
+      client_ip,         // Real IP captured from browser via ipify
+      declared_country,  // ISO 2-letter code buyer declared
+      gps_country,       // ISO 2-letter code from GPS reverse-geocoding
       gps_lat,
       gps_lng,
       transaction_id,
       amount,
     } = body;
 
-    const clientIP = extractClientIP(req);
-    const intel = await queryIPIntelligence(clientIP);
+    // Prefer browser-captured IP; fall back to request headers
+    const resolvedIP = (client_ip && client_ip !== "unknown") ? client_ip : extractClientIP(req);
+    const intel = await queryIPIntelligence(resolvedIP);
 
     const riskSignals: string[] = [...(intel.risk_signals || [])];
     let riskScore = 0;
