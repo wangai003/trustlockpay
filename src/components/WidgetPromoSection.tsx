@@ -17,10 +17,10 @@ const WidgetPromoSection = () => {
             <Shield className="w-7 h-7 text-primary" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Are You a Vendor? Add Escrow to Your Website
+            Add Escrow to Any Website in Minutes
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
-            Embed the TrustLock Pay widget on your Shopify, WordPress, Wix, or custom site. Give your customers buyer protection in one line of code — no account required to test.
+            Embed the TrustLock Pay widget on your Shopify, WordPress, Wix, or custom site. Give your customers buyer protection with one line of code — no account required to test.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

@@ -4,23 +4,23 @@ import { Shield, Lock, Globe, Zap } from "lucide-react";
 const promises = [
   {
     icon: Shield,
-    title: "Buyer Protection First",
-    text: "Every transaction is held in escrow until you confirm the goods or services meet your expectations. No more sending money into the unknown.",
+    title: "Buyer & Vendor Protection",
+    text: "Every transaction is held in escrow with milestone-based release. Buyers don't pay until conditions are met; vendors see guaranteed funds before shipping.",
   },
   {
     icon: Lock,
-    title: "Blockchain-Verified Trust",
-    text: "Each escrow event is anchored on-chain, creating an immutable proof trail that both parties — and auditors — can verify at any time.",
+    title: "Blockchain-Verified Proofs",
+    text: "Every escrow event — from payment lock to document upload to final release — is anchored on-chain, creating an immutable audit trail for both parties and regulators.",
   },
   {
     icon: Globe,
-    title: "Built for Cross-Border",
-    text: "Whether you're in Dallas sending to Nairobi, or London to Lagos — Azix handles multi-currency, compliance, and settlement so you don't have to.",
+    title: "Any Corridor, Any Currency",
+    text: "Whether it's Dallas to Lagos, London to Shenzhen, or Dubai to Nairobi — TrustLock handles multi-currency settlement, compliance, and off-ramp in local currency.",
   },
   {
     icon: Zap,
-    title: "Low-Cost, Transparent Fees",
-    text: "Our 1.5% all-in fee is a fraction of what banks, wire services, and traditional escrow charge. No hidden costs, ever.",
+    title: "LC Alternative for SMEs",
+    text: "Traditional Letters of Credit require bank relationships and large collateral. TrustLock provides the same escrow guarantee at 1.5% — accessible to any business.",
   },
 ];
 
@@ -35,7 +35,7 @@ const TestimonialsSection = () => {
           className="text-center max-w-2xl mx-auto"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-            Why Diaspora Buyers & African Vendors Choose Azix
+            Why Buyers & Vendors Choose TrustLock
           </h2>
           <p className="mt-3 text-muted-foreground text-lg">
             Trust isn't claimed — it's engineered into every layer of the platform.

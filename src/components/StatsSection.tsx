@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
-import { Target, Globe, Shield, TrendingDown, Users } from "lucide-react";
+import { Target, Globe, Shield, TrendingDown, Building2 } from "lucide-react";
 
 const stats = [
-  { value: "54", label: "African Markets Targeted", icon: Globe },
+  { value: "50+", label: "Trade Corridors Supported", icon: Globe },
   { value: "1.5%", label: "All-In Escrow Fee", icon: TrendingDown },
   { value: "100%", label: "Blockchain-Verified Proofs", icon: Shield },
-  { value: "15+", label: "Industries Supported", icon: Target },
-  { value: "∞", label: "Vendors Welcome", icon: Users },
+  { value: "25+", label: "Industry Document Gates", icon: Target },
+  { value: "∞", label: "SMEs Welcome", icon: Building2 },
 ];
 
 const StatsSection = () => {
@@ -20,10 +20,10 @@ const StatsSection = () => {
           className="text-center mb-12"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground">
-            Built for Global African Commerce
+            Built for Global Cross-Border Commerce
           </h2>
           <p className="mt-3 text-primary-foreground/70 text-lg">
-            A platform designed from the ground up to serve diaspora buyers and African vendors.
+            A trade finance escrow platform designed for importers, exporters, and SMEs worldwide.
           </p>
         </motion.div>
 

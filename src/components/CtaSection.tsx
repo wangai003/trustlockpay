@@ -18,13 +18,13 @@ const CtaSection = () => {
             className="max-w-2xl mx-auto"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground">
-              The Future of Diaspora Commerce Starts Here
+              The Future of Cross-Border Trade Starts Here
             </h2>
 
             <div className="mt-8 flex flex-wrap justify-center gap-6 text-primary-foreground/80 text-sm">
-              <span className="flex items-center gap-2"><Shield className="w-4 h-4" /> Secure payments</span>
-              <span className="flex items-center gap-2"><BadgeCheck className="w-4 h-4" /> Verified vendors</span>
-              <span className="flex items-center gap-2"><Lock className="w-4 h-4" /> Protected transactions</span>
+              <span className="flex items-center gap-2"><Shield className="w-4 h-4" /> Smart contract escrow</span>
+              <span className="flex items-center gap-2"><BadgeCheck className="w-4 h-4" /> Document-verified milestones</span>
+              <span className="flex items-center gap-2"><Lock className="w-4 h-4" /> Blockchain-anchored proofs</span>
             </div>
 
             <div className="mt-8">
