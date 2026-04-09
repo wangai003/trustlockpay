@@ -36,17 +36,17 @@ const TrustLock = () => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <Link to="/trustlock/admin/login">
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3 border-[hsl(160,15%,20%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(160,15%,15%)] hover:text-[hsl(0,0%,95%)]">
                 <Shield className="w-3.5 h-3.5 shrink-0" /> Admin
               </Button>
             </Link>
             <Link to="/trustlock/vendor/login">
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3 border-[hsl(160,15%,20%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(160,15%,15%)] hover:text-[hsl(0,0%,95%)]">
                 <Store className="w-3.5 h-3.5 shrink-0" /> Vendor
               </Button>
             </Link>
             <Link to="/trustlock/buyer/login">
-              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3">
+              <Button variant="outline" size="sm" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-3 border-[hsl(160,15%,20%)] text-[hsl(0,0%,85%)] hover:bg-[hsl(160,15%,15%)] hover:text-[hsl(0,0%,95%)]">
                 <ShoppingBag className="w-3.5 h-3.5 shrink-0" /> Buyer
               </Button>
             </Link>
