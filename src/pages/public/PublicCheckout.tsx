@@ -21,15 +21,8 @@ import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
 import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
-import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
-import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
-import SanctionsGate from "@/components/shared/SanctionsGate";
-import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
-import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
-import { supabase } from "@/integrations/supabase/client";
-import type { TaxLineItem } from "@/components/shared/TaxBreakdown";
-import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
-import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
+
+
 
 interface LinkData {
   link_id: string;
