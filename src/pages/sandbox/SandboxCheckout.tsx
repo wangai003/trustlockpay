@@ -246,22 +246,29 @@ const SandboxCheckout = () => {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Progress stepper */}
-        <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
-          {STEP_LABELS.map((s, i) => (
-            <div key={s.key} className="flex items-center gap-1 shrink-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                i < effectiveStepIdx ? "bg-primary text-primary-foreground" :
-                i === effectiveStepIdx ? "bg-primary text-primary-foreground" :
-                "bg-muted text-muted-foreground"
-              }`}>
-                {i < effectiveStepIdx ? "✓" : i + 1}
-              </div>
-              <span className={`text-[10px] ${i <= effectiveStepIdx ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</span>
-              {i < STEP_LABELS.length - 1 && <div className="w-4 h-px bg-border mx-0.5" />}
+        {/* Progress stepper — filter out intent/negotiation for non-milestone industries */}
+        {(() => {
+          const visibleSteps = isMilestone ? STEP_LABELS : STEP_LABELS.filter(s => s.key !== "intent" && s.key !== "negotiation");
+          const currentIdx = visibleSteps.findIndex(s => s.key === step);
+          const activeIdx = step === "processing" ? visibleSteps.findIndex(s => s.key === "payment") : currentIdx;
+          return (
+            <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+              {visibleSteps.map((s, i) => (
+                <div key={s.key} className="flex items-center gap-1 shrink-0">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                    i < activeIdx ? "bg-primary text-primary-foreground" :
+                    i === activeIdx ? "bg-primary text-primary-foreground" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {i < activeIdx ? "✓" : i + 1}
+                  </div>
+                  <span className={`text-[10px] ${i <= activeIdx ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</span>
+                  {i < visibleSteps.length - 1 && <div className="w-4 h-px bg-border mx-0.5" />}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         <AnimatePresence mode="wait">
           {/* ─── PRE-STEP: Order Intent Router (Milestone Industries Only) ─── */}
