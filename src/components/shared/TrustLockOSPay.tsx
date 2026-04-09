@@ -40,7 +40,7 @@ import InternationalBankSelector from "@/components/shared/InternationalBankSele
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
-import { AFRICAN_CURRENCIES, RATE_LOCK_DURATION_MS } from "@/lib/africanCurrencies";
+import { GLOBAL_CURRENCIES, RATE_LOCK_DURATION_MS, getCurrencyForCountry, type CurrencyInfo } from "@/lib/globalCurrencies";
 
 type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "paypal" | null;
 type AdminAction = "refund" | "split" | null;
@@ -214,7 +214,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const parsedAmount = amount ? parseFloat(amount) : 0;
 
   // ── Rate Lock: auto-lock when country selected + amount entered in Africa mode ──
-  const currencyInfo = selectedCountry ? AFRICAN_CURRENCIES[selectedCountry] : null;
+  const currencyInfo = selectedCountry ? (GLOBAL_CURRENCIES[selectedCountry] ?? null) : null;
 
   const lockRate = () => {
     if (!currencyInfo || parsedAmount <= 0) return;
@@ -759,12 +759,12 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               className={cn("mt-1 text-lg font-bold", isAmountLocked && "bg-muted cursor-not-allowed")}
             />
             {/* Dual-currency display: show local equivalent when country selected */}
-            {payMode === "local" && selectedCountry && parsedAmount > 0 && AFRICAN_CURRENCIES[selectedCountry] && !rateLockActive && (
+            {payMode === "local" && selectedCountry && parsedAmount > 0 && GLOBAL_CURRENCIES[selectedCountry] && !rateLockActive && (
               <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                 <Globe className="w-3 h-3" />
-                ≈ {AFRICAN_CURRENCIES[selectedCountry].symbol}
-                {(parsedAmount * AFRICAN_CURRENCIES[selectedCountry].rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {" "}{AFRICAN_CURRENCIES[selectedCountry].code}
+                ≈ {GLOBAL_CURRENCIES[selectedCountry].symbol}
+                {(parsedAmount * GLOBAL_CURRENCIES[selectedCountry].rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {" "}{GLOBAL_CURRENCIES[selectedCountry].code}
                 <span className="text-muted-foreground/60 ml-1">(indicative)</span>
               </p>
             )}
