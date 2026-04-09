@@ -207,7 +207,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "Export Logistics (CIF Rotterdam)", qty: 1, unit: "flat", unitPrice: 2200 },
     ],
     milestones: [
-      { title: "Purchase Order Confirmed", percentage: 0 },
       { title: "Quality Inspection & Grading", percentage: 20, documentGate: "Quality Certificate" },
       { title: "Phytosanitary & Export Clearance", percentage: 15, documentGate: "Phytosanitary Certificate" },
       { title: "Loaded & Shipped (Bill of Lading)", percentage: 35, documentGate: "Bill of Lading" },
