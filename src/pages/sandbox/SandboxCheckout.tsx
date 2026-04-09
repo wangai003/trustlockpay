@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,6 +6,7 @@ import {
   FileText, AlertTriangle, PenTool, BookOpen, Loader2, Globe, MapPin,
   Phone, Building2
 } from "lucide-react";
+import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
@@ -41,7 +42,9 @@ const SandboxCheckout = () => {
   const [step, setStep] = useState<Step>("invoice");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerCountry] = useState("US"); // Hardcoded: USA buyer
+  const [buyerCountry, setBuyerCountry] = useState("US");
+  const [vendorCountry] = useState("NG"); // Sandbox vendor is always Nigeria
+  const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [payMode, setPayMode] = useState<"africa" | "international">("international");
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
@@ -49,6 +52,18 @@ const SandboxCheckout = () => {
   const [order, setOrder] = useState<SandboxLiveOrder | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
+
+  const handleScopeChange = useCallback((scope: TradeScope) => {
+    setTradeScope(scope);
+    // Auto-adjust buyer country to match scope for demo purposes
+    if (scope === "domestic") {
+      setBuyerCountry("NG"); // Same as vendor
+    } else if (scope === "regional") {
+      setBuyerCountry("GH"); // ECOWAS member
+    } else {
+      setBuyerCountry("US"); // International default
+    }
+  }, []);
 
   // Map selected provider to legacy paymentMethod string
   const derivedPaymentMethod = useMemo(() => {
@@ -84,17 +99,26 @@ const SandboxCheckout = () => {
 
   const subtotal = config.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
 
-  // USA-Nigeria international corridor tax/tariff estimate
-  const SANDBOX_TAX_RATES: Record<string, number> = {
-    ecommerce: 0.075,      // 7.5% VAT
-    real_estate: 0.05,      // 5% property transfer tax
-    mining: 0.12,           // 12% royalty + export levy
-    energy: 0.10,           // 10% petroleum levy
-    freelance: 0.025,       // 2.5% withholding tax
+  // Dynamic tax rates based on trade scope + industry
+  const SANDBOX_TAX_RATES: Record<string, Record<TradeScope, number>> = {
+    ecommerce:     { domestic: 0.075, regional: 0.05, international: 0.075, hybrid: 0.06 },
+    real_estate:   { domestic: 0.05, regional: 0.035, international: 0.05, hybrid: 0.045 },
+    mining:        { domestic: 0.08, regional: 0.06, international: 0.12, hybrid: 0.10 },
+    energy:        { domestic: 0.05, regional: 0.04, international: 0.10, hybrid: 0.08 },
+    freelance:     { domestic: 0.025, regional: 0.02, international: 0.025, hybrid: 0.025 },
+    agriculture:   { domestic: 0.03, regional: 0.015, international: 0.08, hybrid: 0.05 },
+    construction:  { domestic: 0.075, regional: 0.05, international: 0.10, hybrid: 0.08 },
+    logistics:     { domestic: 0.05, regional: 0.03, international: 0.08, hybrid: 0.06 },
+    automotive:    { domestic: 0.075, regional: 0.05, international: 0.14, hybrid: 0.10 },
+    telecommunications: { domestic: 0.075, regional: 0.05, international: 0.075, hybrid: 0.06 },
   };
-  const taxRate = SANDBOX_TAX_RATES[config.key] || 0.05;
+  const scopeRates = SANDBOX_TAX_RATES[config.key] || { domestic: 0.05, regional: 0.03, international: 0.05, hybrid: 0.04 };
+  const taxRate = scopeRates[tradeScope];
+  // Regional scope gets tariff reduction (trade bloc benefit)
+  const tariffReduction = tradeScope === "regional" ? 0.85 : tradeScope === "domestic" ? 1.0 : 0;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
-  const remittanceFee = Math.round(taxAmount * 0.02 * 100) / 100; // 2% remittance processing
+  // Remittance fee: only for cross-border
+  const remittanceFee = tradeScope === "domestic" ? 0 : Math.round(taxAmount * 0.02 * 100) / 100;
   const isCryptoPayment = derivedPaymentMethod === "usdc" || derivedPaymentMethod === "usdt";
 
   // Dynamic processor selection based on buyer country and payment method
@@ -233,12 +257,52 @@ const SandboxCheckout = () => {
                     <Input type="email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} placeholder="jane@example.com" />
                   </div>
 
-                  {/* Hardcoded corridor info */}
+                  {/* Trade Scope Selector — buyer chooses domestic/regional/international */}
+                  <TradeScopeSelector
+                    value={tradeScope}
+                    onChange={handleScopeChange}
+                    buyerCountry={buyerCountry}
+                    vendorCountry={vendorCountry}
+                    autoSet={false}
+                  />
+
+                  {/* Dynamic corridor info based on scope */}
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                     <p className="text-[10px] font-semibold text-foreground">🌍 Trade Corridor (Sandbox Demo)</p>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Buyer Location</span><span>🇺🇸 United States</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Vendor Location</span><span>🇳🇬 Nigeria</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Trade Scope</span><Badge variant="outline" className="text-[9px]">International</Badge></div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Buyer Location</span>
+                      <span>{buyerCountry === "NG" ? "🇳🇬 Nigeria" : buyerCountry === "GH" ? "🇬🇭 Ghana" : "🇺🇸 United States"}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Vendor Location</span>
+                      <span>🇳🇬 Nigeria</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Trade Scope</span>
+                      <Badge variant="outline" className="text-[9px] capitalize">{tradeScope}</Badge>
+                    </div>
+                    {tradeScope === "regional" && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Trade Bloc</span>
+                        <Badge className="text-[9px] bg-accent/20 text-accent">ECOWAS — Tariff Reduced</Badge>
+                      </div>
+                    )}
+                    {tradeScope === "domestic" && (
+                      <p className="text-[9px] text-muted-foreground mt-1">✅ Domestic trade — minimal docs, no import duties.</p>
+                    )}
+                    {tradeScope === "hybrid" && (
+                      <p className="text-[9px] text-muted-foreground mt-1">⚙️ Hybrid — domestic sale with imported inputs. External fee tracker enabled.</p>
+                    )}
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="text-muted-foreground">Tax Rate ({config.label})</span>
+                      <span className="font-medium">{(taxRate * 100).toFixed(1)}%</span>
+                    </div>
+                    {remittanceFee > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Remittance Fee</span>
+                        <span>${remittanceFee.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
