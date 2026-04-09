@@ -38,7 +38,7 @@ const WidgetCheckout = () => {
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
 
-  const [step, setStep] = useState<"loading" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
+  const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
@@ -55,8 +55,9 @@ const WidgetCheckout = () => {
   const [confirmationCode, setConfirmationCode] = useState("");
   const rfqEligible = isRFQEligible(vendor.industry);
   const rfqTerms = getRFQTerms(vendor.industry);
-  const [scheduleAccepted, setScheduleAccepted] = useState(false);
-  const [agreedSchedule, setAgreedSchedule] = useState<ScheduleItem[] | null>(null);
+  // Milestone negotiation state (replaces old scheduleAccepted)
+  const [negotiationStatus, setNegotiationStatus] = useState<"drafting" | "proposed" | "agreed">("drafting");
+  const [agreedMilestones, setAgreedMilestones] = useState<MilestoneDraft[] | null>(null);
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
