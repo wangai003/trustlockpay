@@ -10,6 +10,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { reverseGeocodeToCountry, type GpsCountryResult } from "@/lib/gpsCountryDetect";
 import { detectTradeScope } from "@/lib/tradeBlocs";
 import TradeScopeSelector, { type TradeScope } from "@/components/shared/TradeScopeSelector";
+import DualCurrencyPrice from "@/components/shared/DualCurrencyPrice";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
