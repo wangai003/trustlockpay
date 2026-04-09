@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, FileWarning, Globe, Landmark } from "lucide-react";
+import GlowOrb from "@/components/landing/GlowOrb";
 
 const risks = [
   { icon: AlertTriangle, title: "Non-Delivery Risk", desc: "Goods paid for but never shipped — or substituted on arrival" },
@@ -16,19 +17,21 @@ const stats = [
 
 const RiskSection = () => {
   return (
-    <section className="py-20 lg:py-28 bg-secondary">
-      <div className="container mx-auto px-4 lg:px-8">
+    <section className="relative py-20 lg:py-28 bg-[hsl(160,20%,8%)] overflow-hidden">
+      <GlowOrb color="accent" size={350} top="50%" right="-100px" delay={1} />
+
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[hsl(0,0%,95%)]">
             Cross-Border Trade Is Broken
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
-            Whether you're importing machinery from China, exporting cocoa from Ghana, or purchasing real estate across borders — the same problems persist: counterparty risk, document fraud, and zero recourse.
+          <p className="mt-4 text-[hsl(160,5%,60%)] text-lg leading-relaxed">
+            Whether you're importing machinery from China, exporting cocoa from Ghana, or purchasing real estate across borders — the same problems persist.
           </p>
         </motion.div>
 
@@ -36,17 +39,17 @@ const RiskSection = () => {
           {risks.map((risk, i) => (
             <motion.div
               key={risk.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="bg-background rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow"
+              className="rounded-xl p-6 bg-[hsl(160,15%,10%)] border border-[hsl(160,15%,16%)] hover:border-destructive/30 transition-all group"
             >
-              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center mb-4 group-hover:bg-destructive/20 transition-colors">
                 <risk.icon className="w-6 h-6 text-destructive" />
               </div>
-              <h3 className="font-heading font-semibold text-foreground">{risk.title}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{risk.desc}</p>
+              <h3 className="font-heading font-semibold text-[hsl(0,0%,95%)]">{risk.title}</h3>
+              <p className="text-sm text-[hsl(160,5%,50%)] mt-1">{risk.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -62,7 +65,7 @@ const RiskSection = () => {
               className="text-center"
             >
               <div className="text-3xl lg:text-4xl font-extrabold text-primary">{stat.value}</div>
-              <p className="text-sm text-muted-foreground mt-2">{stat.label}</p>
+              <p className="text-sm text-[hsl(160,5%,50%)] mt-2">{stat.label}</p>
             </motion.div>
           ))}
         </div>
