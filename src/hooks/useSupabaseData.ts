@@ -63,11 +63,13 @@ export function useTransaction(txId: string) {
 export function useAddTracking() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { txId: string; tracking: string; transportLegs?: any[] }) =>
-      callEdgeFunction("manage-transaction", { action: "add_tracking", ...params }),
+    mutationFn: (params: { txId: string; tracking: string; transportLegs?: any[]; updateOnly?: boolean }) => {
+      const action = params.updateOnly ? "update_tracking" : "add_tracking";
+      return callEdgeFunction("manage-transaction", { action, txId: params.txId, tracking: params.tracking, transportLegs: params.transportLegs });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Tracking added successfully");
+      toast.success("Tracking updated successfully");
     },
     onError: (e: Error) => toast.error(e.message),
   });
