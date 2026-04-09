@@ -28,7 +28,7 @@ const VendorHeader = ({ title }: { title: string }) => {
   return (
     <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30 px-4 sm:px-6">
       <div className="flex items-center justify-between h-14 sm:h-16">
-        <h1 className="font-heading font-bold text-sm sm:text-lg text-foreground pl-10 lg:pl-0 truncate max-w-[120px] sm:max-w-none">{title}</h1>
+        <h1 className="font-heading font-bold text-sm sm:text-lg text-foreground pl-10 lg:pl-0 truncate max-w-[100px] xs:max-w-[140px] sm:max-w-none">{title}</h1>
 
         <div className="flex items-center gap-2 sm:gap-4">
           <TLId code="TL-V-HDR-TGL-NETWORK" inline>

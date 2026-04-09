@@ -41,6 +41,7 @@ interface Props {
 
 const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const set = (key: keyof LookupFilters, value: string) =>
     onChange({ ...filters, [key]: value });
@@ -62,10 +63,32 @@ const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
         />
       </div>
 
-      {/* Filter row */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Mobile filter toggle */}
+      <div className="flex items-center gap-2 sm:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-9 gap-1.5 text-xs"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="w-3.5 h-3.5" />
+          Filters
+          {activeCount > 0 && (
+            <Badge variant="secondary" className="text-[9px] px-1.5 ml-1">{activeCount}</Badge>
+          )}
+          {showFilters ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+        </Button>
+        {activeCount > 0 && (
+          <Button variant="ghost" size="sm" className="h-9 text-xs text-destructive shrink-0" onClick={clearAll}>
+            <X className="w-3 h-3 mr-1" /> Clear
+          </Button>
+        )}
+      </div>
+
+      {/* Filter row — hidden on mobile unless toggled */}
+      <div className={`${showFilters ? "flex" : "hidden"} sm:flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap`}>
         <Select value={filters.country} onValueChange={(v) => set("country", v === "__all" ? "" : v)}>
-          <SelectTrigger className="w-[160px] h-9 text-xs">
+          <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs">
             <SelectValue placeholder="Country" />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +100,7 @@ const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
         </Select>
 
         <Select value={filters.corridor} onValueChange={(v) => set("corridor", v === "__all" ? "" : v)}>
-          <SelectTrigger className="w-[180px] h-9 text-xs">
+          <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs">
             <SelectValue placeholder="Trade Corridor" />
           </SelectTrigger>
           <SelectContent>
@@ -89,7 +112,7 @@ const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
         </Select>
 
         <Select value={filters.industry} onValueChange={(v) => set("industry", v === "__all" ? "" : v)}>
-          <SelectTrigger className="w-[200px] h-9 text-xs">
+          <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs">
             <SelectValue placeholder="Industry / Sector" />
           </SelectTrigger>
           <SelectContent>
@@ -101,7 +124,7 @@ const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
         </Select>
 
         <Select value={filters.entityType} onValueChange={(v) => set("entityType", v === "__all" ? "" : v)}>
-          <SelectTrigger className="w-[150px] h-9 text-xs">
+          <SelectTrigger className="w-full sm:w-[150px] h-9 text-xs">
             <SelectValue placeholder="Entity Type" />
           </SelectTrigger>
           <SelectContent>
@@ -112,23 +135,37 @@ const UserLookupFilters = ({ filters, onChange, targetRole }: Props) => {
           </SelectContent>
         </Select>
 
+        <div className="hidden sm:flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1 text-xs"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            Advanced
+            {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </Button>
+
+          {activeCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-9 gap-1 text-xs text-destructive" onClick={clearAll}>
+              <X className="w-3 h-3" />
+              Clear ({activeCount})
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile advanced toggle */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-9 gap-1 text-xs"
+          className="h-9 gap-1 text-xs sm:hidden"
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <Filter className="w-3.5 h-3.5" />
-          Advanced
+          Advanced Search
           {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </Button>
-
-        {activeCount > 0 && (
-          <Button variant="ghost" size="sm" className="h-9 gap-1 text-xs text-destructive" onClick={clearAll}>
-            <X className="w-3 h-3" />
-            Clear ({activeCount})
-          </Button>
-        )}
       </div>
 
       {/* Active filter badges */}
