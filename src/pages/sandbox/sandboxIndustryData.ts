@@ -155,7 +155,6 @@ export const SANDBOX_INDUSTRIES: SandboxIndustryConfig[] = [
       { name: "2 Rounds of Revisions", qty: 1, unit: "flat", unitPrice: 400 },
     ],
     milestones: [
-      { title: "Project Brief Approved", percentage: 0 },
       { title: "First Draft / Mockup Delivered", percentage: 35, documentGate: "Mockup Files" },
       { title: "Revisions Completed", percentage: 30 },
       { title: "Final Delivery & Handoff", percentage: 35, documentGate: "Source Files Package" },
