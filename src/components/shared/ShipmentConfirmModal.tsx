@@ -61,8 +61,8 @@ export default function ShipmentConfirmModal({
 
   const { data: dbMilestones } = useTransactionMilestones(transactionId || undefined);
 
-  const { docs, mode: docMode } = useMemo(() => getShippingDocRequirements(industry), [industry]);
-  const hasRequiredDocs = docMode === "required" && docs.length > 0;
+  const { stages, allRequiredDocs } = useMemo(() => getCumulativeDocRequirements(industry), [industry]);
+  const hasRequiredDocs = allRequiredDocs.length > 0;
   const isConfirmed = typed.trim().toUpperCase() === CONFIRM_PHRASE;
 
   const uploadedDocNames = useMemo(() => {
@@ -78,18 +78,23 @@ export default function ShipmentConfirmModal({
     return names;
   }, [dbMilestones]);
 
-  const missingDocs = useMemo(() => {
+  // Check each required doc across ALL stages
+  const missingByStage = useMemo(() => {
     if (!hasRequiredDocs) return [];
-    return docs.filter((doc) => {
-      const docLower = doc.toLowerCase();
-      for (const uploaded of uploadedDocNames) {
-        if (uploaded.includes(docLower) || docLower.includes(uploaded.replace(/\.[^.]+$/, ""))) return false;
-      }
-      return true;
-    });
-  }, [docs, uploadedDocNames, hasRequiredDocs]);
+    return stages.map((stage) => {
+      const missing = stage.docs.filter((doc) => {
+        const docLower = doc.toLowerCase();
+        for (const uploaded of uploadedDocNames) {
+          if (uploaded.includes(docLower) || docLower.includes(uploaded.replace(/\.[^.]+$/, ""))) return false;
+        }
+        return true;
+      });
+      return { ...stage, missing };
+    }).filter((s) => s.missing.length > 0);
+  }, [stages, uploadedDocNames, hasRequiredDocs]);
 
-  const isDocGateBlocked = hasRequiredDocs && missingDocs.length > 0;
+  const totalMissing = missingByStage.reduce((sum, s) => sum + s.missing.length, 0);
+  const isDocGateBlocked = hasRequiredDocs && totalMissing > 0;
   const hasAtLeastOneTracking = legs.some((l) => l.trackingNumber.trim().length > 0);
 
   const handleClose = () => {
