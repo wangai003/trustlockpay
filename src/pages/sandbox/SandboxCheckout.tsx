@@ -185,8 +185,7 @@ const SandboxCheckout = () => {
   const grandTotal = Math.round((subtotal + totalFees + totalTaxes) * 100) / 100;
   const fee = totalFees + totalTaxes;
 
-  const currentStepIdx = STEP_LABELS.findIndex(s => s.key === step);
-  const effectiveStepIdx = step === "processing" ? 5 : currentStepIdx;
+  // Step index calculation moved to inline stepper render
 
   const handleProceedFromInvoice = () => {
     if (!buyerName.trim() || !buyerEmail.trim()) return;
