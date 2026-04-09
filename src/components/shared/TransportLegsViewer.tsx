@@ -37,7 +37,7 @@ export default function TransportLegsViewer({ legs, compact = false }: Transport
       </h4>
       <div className={`space-y-1.5 ${compact ? "" : "grid grid-cols-1 gap-2"}`}>
         {validLegs.map((leg, i) => {
-          const modeInfo = TRANSPORT_MODES.find((m) => m.value === leg.mode);
+          const modeInfo = TRANSPORT_METHODS.find((m) => m.key === leg.mode);
           const Icon = modeIcons[leg.mode] || Truck;
 
           return (
