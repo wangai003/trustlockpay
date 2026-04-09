@@ -72,6 +72,18 @@ const SanctionsGate = ({
         const { data: { user } } = await supabase.auth.getUser();
         const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
 
+        // ── Phase 0: Capture real client IP from browser ──
+        let clientIP = "unknown";
+        try {
+          const ipResp = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(4000) });
+          if (ipResp.ok) {
+            const ipJson = await ipResp.json();
+            clientIP = ipJson.ip || "unknown";
+          }
+        } catch (e) {
+          console.warn("Client IP capture failed (will use edge fallback):", e);
+        }
+
         // ── Phase 1: IP Intelligence Check ──
         setScreeningPhase("ip");
         let ipResult: Partial<IPIntelResult> = {};
@@ -80,6 +92,7 @@ const SanctionsGate = ({
             body: {
               action: "check",
               user_id: userId,
+              client_ip: clientIP,
               declared_country: buyerCountry,
               gps_country: gpsCountry,
               gps_lat: gpsLat,
