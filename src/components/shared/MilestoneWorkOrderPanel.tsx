@@ -1342,6 +1342,24 @@ const MilestoneWorkOrderPanel = ({
                             <CheckCircle2 className="w-3 h-3 mr-0.5" /> Payment Released
                           </Badge>
                         )}
+
+                        {/* Raise Dispute — contextual, appears when vendor fulfilled but buyer hasn't released, or vice versa */}
+                        {!isAdmin && !isDisputed && ms.status !== "released" && ms.status !== "deleted" && ms.status !== "pending" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 text-xs ml-auto"
+                            onClick={() => {
+                              const disputePath = role === "buyer"
+                                ? `/trustlock/buyer/disputes`
+                                : `/trustlock/vendor/disputes`;
+                              navigate(`${disputePath}?tx=${encodeURIComponent(txId)}&milestone=${encodeURIComponent(ms.title)}&step=${row}`);
+                              toast.info(`Opening dispute form for milestone "${ms.title}"`);
+                            }}
+                          >
+                            <Scale className="w-3 h-3 mr-1" /> Raise Dispute
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
