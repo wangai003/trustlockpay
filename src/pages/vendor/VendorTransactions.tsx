@@ -32,6 +32,7 @@ import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContra
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
+import TrackingDetailsModal from "@/components/shared/TrackingDetailsModal";
 import TLId from "@/components/shared/TLId";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
@@ -60,6 +61,7 @@ const VendorTransactions = () => {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [upgradeDialog, setUpgradeDialog] = useState(false);
   const [shipDialog, setShipDialog] = useState<string | null>(null);
+  const [trackDialog, setTrackDialog] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardScenario, setWizardScenario] = useState<PayoutScenario>("vendor_full_release");
 
@@ -136,15 +138,19 @@ const VendorTransactions = () => {
     setRejectDialog(false);
   };
 
-  const handleAddTracking = async (txId: string) => {
-    const tracking = prompt("Enter tracking number:");
-    if (tracking) {
-      if (isTestnet) {
-        testnet.addTracking(txId, tracking);
-      } else {
-        await addTrackingHook.mutateAsync({ txId, tracking });
-      }
+  const handleAddTracking = (txId: string) => {
+    setTrackDialog(txId);
+  };
+
+  const handleTrackingSaved = async (tracking: string) => {
+    const txId = trackDialog;
+    if (!txId) return;
+    if (isTestnet) {
+      testnet.addTracking(txId, tracking);
+    } else {
+      await addTrackingHook.mutateAsync({ txId, tracking });
     }
+    setTrackDialog(null);
   };
 
   const handleMarkShipped = (txId: string) => {
@@ -683,6 +689,20 @@ const VendorTransactions = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Tracking Details Modal */}
+      {trackDialog && (() => {
+        const tx = allTx.find((t) => t.id === trackDialog);
+        return (
+          <TrackingDetailsModal
+            open={!!trackDialog}
+            onClose={() => setTrackDialog(null)}
+            onSave={handleTrackingSaved}
+            txId={tx?.id || trackDialog}
+            industry={tx?.industry}
+          />
+        );
+      })()}
 
       {/* Shipment Confirmation Modal */}
       {shipDialog && (() => {
