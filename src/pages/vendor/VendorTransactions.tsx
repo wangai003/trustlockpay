@@ -108,6 +108,7 @@ const VendorTransactions = () => {
         type: tx.type || "product",
         buyerLocation: tx.buyer_location || "—",
         vendorLocation: tx.vendor_location || "—",
+        transportLegs: (tx as any).transport_legs as any[] | null,
       }));
 
   const allTx = sourceData;
