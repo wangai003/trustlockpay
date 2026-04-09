@@ -449,8 +449,9 @@ const VendorTransactions = () => {
                                     <TLId code={dynTLId("V", "TX", row, "BTN-DELIVERED")} inline>
                                       <Button variant="outline" size="sm" className="text-[10px] h-7 px-2" onClick={() => handleMarkDelivered(tx.id)} title="Mark as delivered">
                                         <PackageCheck className="w-3 h-3 mr-1" /> Delivered
-                                    </Button>
-                                  </TLId>
+                                      </Button>
+                                    </TLId>
+                                  </>
                                 )}
                                 {(tx.status === "locked" || tx.status === "shipped") && (
                                   <TLId code={dynTLId("V", "TX", row, "BTN-WORKORDER")} inline>
