@@ -475,3 +475,11 @@ Veridia inherits and extends the same document intelligence used by the existing
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
 - [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
+- [ ] `lender_disbursement_records` RLS: lender CRUD own, admin SELECT all
+- [ ] AI document extraction for disbursement records validated with confidence thresholds
+- [ ] `financing_application_items` RLS: vendor owns, lender reads assigned, admin reads all
+- [ ] Itemized application dual-currency calculations verified against `globalCurrencies.ts` rates
+- [ ] PDF export for lender financial reports includes logo letterhead + watermark
+- [ ] CSV export sanitized — no internal IDs or sensitive metadata exposed
+- [ ] Lender logo displayed in all lookup cards and contract headers
+- [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
