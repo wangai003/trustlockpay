@@ -2024,6 +2024,69 @@ export type Database = {
         }
         Relationships: []
       }
+      lender_certificates: {
+        Row: {
+          blockchain_proof_id: string | null
+          certificate_metadata: Json | null
+          created_at: string
+          download_count: number
+          expires_at: string
+          file_url: string | null
+          generation_status: string
+          id: string
+          status: string
+          transaction_id: string
+          updated_at: string
+          vendor_id: string
+          verification_token: string
+        }
+        Insert: {
+          blockchain_proof_id?: string | null
+          certificate_metadata?: Json | null
+          created_at?: string
+          download_count?: number
+          expires_at?: string
+          file_url?: string | null
+          generation_status?: string
+          id?: string
+          status?: string
+          transaction_id: string
+          updated_at?: string
+          vendor_id: string
+          verification_token?: string
+        }
+        Update: {
+          blockchain_proof_id?: string | null
+          certificate_metadata?: Json | null
+          created_at?: string
+          download_count?: number
+          expires_at?: string
+          file_url?: string | null
+          generation_status?: string
+          id?: string
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+          vendor_id?: string
+          verification_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_certificates_blockchain_proof_id_fkey"
+            columns: ["blockchain_proof_id"]
+            isOneToOne: false
+            referencedRelation: "blockchain_proofs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_certificates_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_threads: {
         Row: {
           case_status: string
