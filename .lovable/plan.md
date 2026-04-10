@@ -12,7 +12,7 @@
 - **Hard Logo Gate**: Lenders blocked from dashboard until logo uploaded
 - **Auto-Bridging**: Vendor lender lookup auto-populates from `user_roles` + `lender_profiles`
 - **Mandatory Logo**: Displayed in vendor-side lender lookup alongside institution name, verified badge, operating regions
-- **Single Lender AI**: One combined assistant ("Oba") handles research, document forensics, AND platform Q&A — no separate Veridia
+- **Single Lender AI**: One combined assistant ("FlashVet AI") handles research, document forensics, AND platform Q&A — no separate Veridia
 
 ---
 
@@ -102,7 +102,7 @@
 - **Blockchain Explorer**: Read-only `BlockchainExplorerPanel`
 - **Documents**: KYB docs, generated contracts, compliance records, **liability contract archive**
 - **Analytics**: Portfolio performance, sector concentration, geographic exposure (depth gated by tier)
-- **Oba AI**: Combined lender intelligence assistant (research + document forensics + platform Q&A)
+- **FlashVet AI**: Combined lender intelligence assistant (research + document forensics + platform Q&A)
 - **KYB Verification**: Upload/manage KYB documents, view tier status, apply for tier upgrade
 - **Settings**: Profile management, logo update, website (mandatory), social links, terms template, notifications
 
@@ -115,7 +115,7 @@
 6. Documents
 7. Blockchain Explorer
 8. Analytics
-9. Oba AI
+9. FlashVet AI
 10. KYB Verification
 11. Settings
 
@@ -220,19 +220,20 @@ All status changes trigger vendor notifications.
 
 ---
 
-### Phase 6: Oba AI — Combined Lender Intelligence Assistant
+### Phase 6: FlashVet AI — Combined Lender Intelligence Assistant
 
 **6A. Identity & Purpose**
-- Name: **Oba** (meaning "ruler/leader" in Yoruba — fitting for financial oversight)
+- Name: **FlashVet AI** — "Flash" (speed/instant analysis) + "Vet" (vetting/verification) — conveys rapid, thorough due diligence
+- Tagline: "Instant Vetting. Informed Lending."
 - Role: **Single combined 24/7 AI assistant** for lenders — handles ALL lender AI needs:
-  1. **Vendor Research & Due Diligence** (formerly Oba-only)
-  2. **Document Authenticity Analysis** (formerly Veridia)
+  1. **Vendor Research & Due Diligence**
+  2. **Document Authenticity Analysis**
   3. **Platform Q&A** — soft inquiries about TrustLock safety protocols, how escrow works, platform security measures, dispute resolution process, any non-sensitive operational questions
 - Differentiation from other assistants:
   - **Amani** (buyer): consumer protection, order tracking, delivery guidance
   - **Zawadi** (vendor): sales optimization, fulfillment, payout guidance
   - **Emmanuel** (admin): compliance, disputes, platform-wide strategy
-  - **Oba** (lender): creditworthiness, document forensics, industry research, portfolio risk, vendor due diligence, TrustLock platform Q&A
+  - **FlashVet AI** (lender): creditworthiness, document forensics, industry research, portfolio risk, vendor due diligence, TrustLock platform Q&A
 
 **6B. Research & Due Diligence Capabilities**
 1. **Vendor Due Diligence**: Query TrustLock database for vendor completion rates, average days-to-release, dispute history, order volume trends, KYC/KYB status, industry classification
@@ -244,7 +245,7 @@ All status changes trigger vendor notifications.
 7. **Repayment Tracking Intelligence**: Monitor milestone releases linked to financed transactions, alert on delayed milestones, calculate projected repayment timelines
 
 **6C. Document Authenticity Analysis Capabilities (Integrated)**
-Oba includes all document forensics capabilities (formerly Veridia), triggered when lender uploads/attaches a document for analysis:
+FlashVet AI includes all document forensics capabilities, triggered when lender uploads/attaches a document for analysis:
 
 1. **Multi-Dimension Authenticity Scoring** (percentage-based confidence):
    - **Visual Consistency** (15%): Font uniformity, alignment, layout professionalism, resolution quality
@@ -262,12 +263,12 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
    - **50–69%**: 🔶 Low Confidence — "Significant anomalies detected, further investigation strongly advised"
    - **Below 50%**: 🚨 Very Low Confidence — "Multiple red flags detected, proceed with extreme caution"
 
-3. **Live Analysis Progress**: While analyzing, Oba streams progress updates for each dimension
+3. **Live Analysis Progress**: While analyzing, FlashVet AI streams progress updates for each dimension
 
 4. **Post-Analysis Output**: Summary card, dimension breakdown, key observations, methods disclosure, **mandatory due diligence reminder**
 
-**6D. Platform Q&A Capabilities (NEW)**
-- Oba answers soft inquiries about TrustLock including:
+**6D. Platform Q&A Capabilities**
+- FlashVet AI answers soft inquiries about TrustLock including:
   - How escrow protection works
   - Safety protocols and security measures
   - Dispute resolution process overview
@@ -275,10 +276,10 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
   - Platform compliance and regulatory posture
   - How lender certificates are generated and verified
   - General platform FAQs
-- **Boundary**: Oba will NOT disclose internal architecture, database schemas, fee formulas, or proprietary logic (same confidentiality protocol as other assistants)
+- **Boundary**: FlashVet AI will NOT disclose internal architecture, database schemas, fee formulas, or proprietary logic (same confidentiality protocol as other assistants)
 
 **6E. Tool Calling (Edge Function)**
-- `oba-chat` edge function with 8+ analytical tools:
+- `flashvet-chat` edge function with 8+ analytical tools:
   - `vendor_profile_lookup` — fetch vendor's TrustLock history, completion rate, dispute ratio, volume
   - `portfolio_exposure` — lender's current sector/corridor/vendor concentration
   - `industry_risk_brief` — industry-specific risk factors, typical margins, seasonal patterns
@@ -298,22 +299,22 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
   - Never reveal information about OTHER lenders' portfolios or terms
   - Lender can only query vendors who have PUBLIC profiles or are in active transactions with them
 
-**6G. Oba UI Design — Distinctive Visual Identity**
+**6G. FlashVet AI UI Design — Distinctive Visual Identity**
 - **Card Container**: Dark-green blended border (`border-emerald-700/60`) with subtle gradient glow effect
 - **Interior**: Clean white/light background (`bg-white dark:bg-slate-950`) — high contrast for readability
-- **Header**: Oba name + custom avatar (crown/brain icon with emerald accent) + tagline "Your Lending Intelligence Advisor"
-- **Welcome Message**: Brief greeting + short summary of capabilities: research, document analysis, platform Q&A
+- **Header**: FlashVet AI name + custom avatar (lightning bolt + shield icon with emerald accent) + tagline "Instant Vetting. Informed Lending."
+- **Welcome Message**: Brief greeting + short summary of capabilities: research, document analysis, platform Q&A + guidance on how to use each feature
 - **Accent Color**: Emerald-green (`emerald-600/700`) instead of primary blue — differentiates from Amani/Zawadi
-- **Document Analysis Mode**: When a document is uploaded, Oba switches to analysis mode with:
+- **Document Analysis Mode**: When a document is uploaded, FlashVet AI switches to analysis mode with:
   - Large circular confidence gauge with animated fill on completion
   - Emerald-themed step indicators for each analysis dimension
   - Score display with color-coded badges
-- **Message Bubbles**: User messages in emerald tint, Oba's responses in white with thin emerald-left-border
+- **Message Bubbles**: User messages in emerald tint, FlashVet AI's responses in white with thin emerald-left-border
 - **Quick Action Cards**: "Analyze Vendor", "Check Document", "Review Application", "Portfolio Risk Check", "Industry Brief", "Platform FAQ"
 - **Overall Feel**: Professional forensics-lab aesthetic — clean, precise, trustworthy
 
 **6H. Analysis History**
-- `oba_document_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
+- `flashvet_document_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
 - Lenders can view past analyses in Documents section
 - RLS: lender sees only own analyses; admin sees all
 
