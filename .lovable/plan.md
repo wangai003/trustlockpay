@@ -178,18 +178,19 @@
 
 ---
 
-### Phase 6: Lender AI Assistant — "Oba"
+### Phase 6: Lender AI Assistants — "Oba" + "Veridia"
 
-**6A. Identity & Purpose**
+**6A. Oba — Chief Lending Intelligence Advisor**
 - Name: **Oba** (meaning "ruler/leader" in Yoruba — fitting for financial oversight)
-- Role: Chief Lending Intelligence Advisor — 24/7 AI research assistant purpose-built for lenders
+- Role: 24/7 AI research assistant purpose-built for lenders
 - Differentiation from other assistants:
   - **Amani** (buyer assistant): consumer protection, order tracking, delivery guidance
   - **Zawadi** (vendor assistant): sales optimization, fulfillment, payout guidance
   - **Emmanuel** (admin advisor): compliance, disputes, platform-wide strategy
   - **Oba** (lender assistant): creditworthiness analysis, industry research, portfolio risk, vendor due diligence
+  - **Veridia** (lender document forensics): document authenticity analysis, fraud detection, confidence scoring
 
-**6B. Core Capabilities**
+**6B. Oba Core Capabilities**
 1. **Vendor Due Diligence**: Query TrustLock database for vendor completion rates, average days-to-release, dispute history, order volume trends, KYC/KYB status, industry classification
 2. **Industry Intelligence**: Deep knowledge of all 25 supported industries — typical margins, seasonal patterns, common risks, regulatory requirements per corridor
 3. **External Research**: Leverage web search (via Lovable AI) to find publicly available company information — registration records, news mentions, social media presence, industry reputation — to supplement TrustLock internal data
@@ -198,7 +199,7 @@
 6. **Regulatory Guidance**: Provide corridor-specific lending regulations, cross-border compliance requirements, and reporting obligations
 7. **Repayment Tracking Intelligence**: Monitor milestone releases linked to financed transactions, alert on delayed milestones, calculate projected repayment timelines
 
-**6C. Tool Calling (Edge Function)**
+**6C. Oba Tool Calling (Edge Function)**
 - `oba-chat` edge function with 6+ analytical tools:
   - `vendor_profile_lookup` — fetch vendor's TrustLock history, completion rate, dispute ratio, volume
   - `portfolio_exposure` — lender's current sector/corridor/vendor concentration
@@ -208,7 +209,7 @@
   - `milestone_tracker` — status of milestones on financed transactions
   - `repayment_projection` — projected repayment dates based on milestone schedule
 
-**6D. Security & Confidentiality Protocol**
+**6D. Security & Confidentiality Protocol (Shared by Oba + Veridia)**
 - Same hardened security as Amani/Zawadi/Emmanuel:
   - Server-side role verification: JWT validated against `user_roles` table, must have `lender` role
   - Rate limiting: 10 queries/minute per user
@@ -218,10 +219,86 @@
   - Never reveal information about OTHER lenders' portfolios or terms
   - Lender can only query vendors who have PUBLIC profiles or are in active transactions with them
 
-**6E. UI Integration**
+**6E. Oba UI Integration**
 - Sidebar item: "Oba AI" with brain/crown icon
 - Chat interface: same pattern as Amani/Zawadi with markdown rendering, streaming responses
 - Quick action cards: "Analyze Vendor", "Review Application", "Portfolio Risk Check", "Industry Brief"
+
+---
+
+### Phase 6B: Veridia — Document Authenticity AI
+
+**6F. Identity & Purpose**
+- Name: **Veridia** (from *Verify* + *Fidia* — Swahili for "redeem/compensate")
+- Tagline: "Your Document Intelligence Analyst"
+- Role: Specialized AI focused exclusively on document authenticity analysis, forgery detection, and confidence scoring
+- **Personality**: Professional, methodical, reassuring — always explains her reasoning transparently
+- **Welcome Message**: Brief greeting explaining she specializes in document analysis, guiding lenders on how to use her (upload documents via attachment, describe what they need verified, she'll run a live authenticity check)
+
+**6G. Core Document Analysis Capabilities**
+Veridia inherits and extends the same document intelligence used by the existing `validate-document-pages` and `document-scanner` edge functions (Gemini Vision AI), adapted for lender-facing use:
+
+1. **Multi-Dimension Authenticity Scoring** (percentage-based confidence):
+   - **Visual Consistency** (15%): Font uniformity, alignment, layout professionalism, resolution quality
+   - **Registration Markers** (15%): Presence of official stamps, seals, registration numbers, barcodes, QR codes
+   - **Date & Expiry Validation** (10%): Logical date sequences, expiry not passed, issue dates consistent with document age
+   - **Issuer Verification** (15%): Cross-reference issuer name/logo against known templates for that document type and jurisdiction
+   - **Content Coherence** (15%): Internal consistency — names match across pages, amounts align, no contradictions
+   - **Metadata Analysis** (10%): File creation date vs claimed issue date, editing tool signatures, compression artifacts
+   - **Jurisdictional Compliance** (10%): Document format matches expected format for claimed country/region
+   - **Tampering Indicators** (10%): Pixel-level anomaly detection for cut/paste artifacts, font mismatches, color inconsistencies
+
+2. **Composite Confidence Score**: Weighted average across all dimensions, displayed as:
+   - **90–100%**: ✅ High Confidence — "Document appears authentic with strong indicators"
+   - **70–89%**: ⚠️ Moderate Confidence — "Document shows some concerns, manual verification recommended"
+   - **50–69%**: 🔶 Low Confidence — "Significant anomalies detected, further investigation strongly advised"
+   - **Below 50%**: 🚨 Very Low Confidence — "Multiple red flags detected, proceed with extreme caution"
+
+3. **Live Analysis Progress**: While analyzing, Veridia streams progress updates:
+   - "🔍 Scanning visual consistency..."
+   - "📋 Checking registration markers..."
+   - "🔐 Analyzing tampering indicators..."
+   - "📊 Calculating confidence score..."
+   - Each step completes with a mini-result before moving to next
+
+4. **Post-Analysis Output**:
+   - **Summary Card**: Document type, issuer, date, overall confidence score with color badge
+   - **Dimension Breakdown**: Each of the 8 dimensions with individual scores and brief findings
+   - **Key Observations**: Bullet list of notable findings (positive and negative)
+   - **Methods Disclosure**: Transparent explanation of HOW Veridia determined each score — "I analyzed the font consistency across 3 pages and found uniform serif typeface consistent with official government documents from [jurisdiction]"
+   - **Due Diligence Reminder**: ALWAYS concludes with: "This analysis is AI-assisted and should complement — not replace — your own due diligence. I recommend verifying critical findings through independent channels regardless of the confidence score."
+
+**6H. Veridia Edge Function**
+- `veridia-chat` edge function:
+  - Accepts: messages array + attachments (images as base64, documents as extracted text + image)
+  - Uses Gemini Vision AI (`google/gemini-2.5-pro`) for image-based document analysis
+  - For images: sends base64 data directly to Gemini Vision for pixel-level analysis
+  - For text documents: extracts content + runs structural/coherence analysis
+  - For PDFs: uses existing `validate-document-pages` pipeline + additional authenticity dimensions
+  - Streams responses with live progress indicators
+  - Tool calling for structured score output: `document_authenticity_report` tool
+  - Same security protocol as Oba (JWT validation, rate limiting, injection filtering)
+
+**6I. Veridia UI Design — Distinctive Visual Identity**
+- **Card Container**: Dark-green blended border (`border-emerald-700/60`) with subtle gradient glow effect
+- **Interior**: Clean white/light background (`bg-white dark:bg-slate-950`) — high contrast for readability
+- **Header**: Veridia name + custom avatar (document shield icon with green accent) + tagline
+- **Accent Color**: Emerald-green (`emerald-600/700`) instead of primary blue — differentiates from Amani/Zawadi/Oba
+- **Score Display**: Large circular confidence gauge with animated fill on completion
+- **Progress Indicators**: Emerald-themed step indicators that illuminate as each analysis dimension completes
+- **Message Bubbles**: Slightly different styling — user messages in emerald tint, Veridia's responses in white with thin emerald-left-border
+- **Attachment Preview**: Enlarged document thumbnails with emerald overlay showing "Analyzing..." state
+- **Overall Feel**: Professional forensics lab aesthetic — clean, precise, trustworthy
+
+**6J. Veridia Sidebar Integration**
+- Sidebar item: "Veridia" with shield-check icon (differentiated from Oba's brain icon)
+- Positioned directly below "Oba AI" in lender sidebar
+- Badge: shows count of recent analyses (last 24h)
+
+**6K. Analysis History**
+- `veridia_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
+- Lenders can view past analyses in Documents section
+- RLS: lender sees only own analyses; admin sees all
 
 ---
 
@@ -321,6 +398,7 @@
 - Pre-populated portfolio data, sample certificates, demo financing applications
 - 8+ mock lender profiles in sandbox data for vendor lookup demo
 - Mock Oba AI chat with pre-scripted responses
+- Mock Veridia AI with sample document analysis demo (pre-loaded confidence score output)
 - Mock liability contract signing flow
 - Mock KYB verification with tier assignment demo
 
@@ -331,7 +409,8 @@
 - Notification trigger validation
 - Security scan after all schema changes
 - Input validation on all edge functions (Zod schemas)
-- Oba AI confidentiality protocol verification
+- Oba AI + Veridia AI confidentiality protocol verification
+- Veridia analysis history RLS verification
 
 ---
 
@@ -352,7 +431,10 @@
 - [ ] Vendor social/website requirement enforced (new + existing accounts)
 - [ ] Lender tiers implemented with KYB-gated max facility limits
 - [ ] Oba AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
+- [ ] Veridia AI hardened with same confidentiality + injection filtering protocol
+- [ ] Veridia analyses stored in `veridia_analyses` with lender-only RLS
+- [ ] Veridia confidence scoring calibrated with transparent methodology disclosure
 - [ ] No raw SQL or user-provided SQL in edge functions
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features for presentation readiness
+- [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
