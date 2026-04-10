@@ -578,16 +578,15 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   // Create new thread
   const handleCompose = async () => {
     if (!composeRecipient || !composeBody.trim() || !userId) return;
-    const contact = contacts.find((c) => c.id === composeRecipient);
+    const contact = contacts.find((c) => c.id === composeRecipient) || recipientResults.find((c) => c.id === composeRecipient);
     // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const linkedTxId = contact?.transaction_id || transactionId || null;
 
-    // Determine recipient role from contacts
-    const recipientContact = contacts.find((c) => c.id === composeRecipient);
+    // Determine recipient role from search results or contacts
     const myRole = role === "admin" ? "admin" : role;
-    const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (recipientContact?.label?.includes("(Lender)") ? "lender" : recipientContact?.label?.includes("(Vendor)") ? "vendor" : undefined);
+    const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (contact?.roleTag?.toLowerCase() || null);
 
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
