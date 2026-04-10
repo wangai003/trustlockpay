@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowLeft, Send, Plus, Shield, Search, Paperclip, FileText, Image, X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MessageTranslateButton from "@/components/shared/MessageTranslateButton";
 
 /* ──────── Demo contacts per role ──────── */
 interface DemoContact { id: string; name: string; email: string; role: string; badge: string; tlId?: string; company?: string; }
@@ -267,6 +268,11 @@ const SandboxMessages = () => {
             <Button variant="ghost" size="icon" className="w-9 h-9 shrink-0 self-end" title="Attach files (demo)">
               <Paperclip className="w-4 h-4" />
             </Button>
+            <MessageTranslateButton
+              fields={[{ value: newMessage, setValue: setNewMessage }]}
+              sandbox
+              className="shrink-0 self-end"
+            />
             <Textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -397,9 +403,18 @@ const SandboxMessages = () => {
                 </Button>
                 <p className="text-[9px] text-muted-foreground mt-1">PDF, JPEG, PNG · Max 10MB each · Up to 5 files</p>
               </div>
-              <Button onClick={handleCompose} className="w-full" disabled={!composeRecipient || !composeBody.trim()}>
-                Send Message
-              </Button>
+              <div className="flex items-center gap-2">
+                <MessageTranslateButton
+                  fields={[
+                    { value: composeSubject, setValue: setComposeSubject, label: "Subject" },
+                    { value: composeBody, setValue: setComposeBody, label: "Body" },
+                  ]}
+                  sandbox
+                />
+                <Button onClick={handleCompose} className="flex-1" disabled={!composeRecipient || !composeBody.trim()}>
+                  Send Message
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
