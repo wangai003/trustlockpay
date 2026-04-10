@@ -624,6 +624,8 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     setComposeSubject("");
     setComposeCategory("general");
     setComposeBody("");
+    setRecipientSearch("");
+    setRecipientResults([]);
     loadThreads();
     setSelectedThread(thread as Thread);
     loadMessages(thread.id);
