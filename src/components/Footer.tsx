@@ -1,14 +1,7 @@
 import { forwardRef } from "react";
-import { Link } from "react-router-dom";
 import trustlockLogo from "@/assets/trustlock-pay-logo.png";
 
 
-const legalLinks = [
-  { label: "Privacy Policy", to: "/privacy-policy" },
-  { label: "Cookie Policy", to: "/cookie-policy" },
-  { label: "Data Rights", to: "/data-rights" },
-  { label: "Dispute Policy", to: "/dispute-policy" },
-];
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
@@ -18,17 +11,6 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
           <div className="flex items-center gap-2">
             <img src={trustlockLogo} alt="TrustLock Pay logo" className="w-12 h-12 sm:w-14 sm:h-14 rounded-md object-contain" />
             <span className="font-heading font-bold text-base text-[hsl(0,0%,85%)]">TrustLock</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {legalLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="text-xs text-[hsl(160,5%,40%)] hover:text-[hsl(160,5%,70%)] transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
           </div>
           <p className="text-sm text-[hsl(160,5%,35%)]">
             © {new Date().getFullYear()} TrustLock. All rights reserved.
