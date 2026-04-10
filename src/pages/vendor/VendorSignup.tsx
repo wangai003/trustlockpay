@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Store, Eye, EyeOff, ArrowLeft, CheckCircle, Globe, Facebook, Linkedin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,10 @@ import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityT
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
+const isValidUrl = (v: string) => {
+  if (!v.trim()) return false;
+  try { new URL(v.startsWith("http") ? v : `https://${v}`); return true; } catch { return false; }
+};
 
 const VendorSignup = () => {
   const navigate = useNavigate();
@@ -30,6 +34,12 @@ const VendorSignup = () => {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [entityType, setEntityType] = useState<EntityType>("individual");
   const [companyName, setCompanyName] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialX, setSocialX] = useState("");
+
+  const hasWebPresence = websiteUrl.trim() || socialFacebook.trim() || socialLinkedin.trim() || socialX.trim();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,12 +61,29 @@ const VendorSignup = () => {
       return;
     }
 
+    if (!hasWebPresence) {
+      setError("Please provide at least a website URL or one social media link");
+      return;
+    }
+
+    if (websiteUrl.trim() && !isValidUrl(websiteUrl)) {
+      setError("Please enter a valid website URL");
+      return;
+    }
+
     setLoading(true);
+    const socialLinks: Record<string, string> = {};
+    if (socialFacebook.trim()) socialLinks.facebook = socialFacebook.trim();
+    if (socialLinkedin.trim()) socialLinks.linkedin = socialLinkedin.trim();
+    if (socialX.trim()) socialLinks.x = socialX.trim();
+
     const { error } = await signUp(email, password, {
       full_name: fullName,
       role: "vendor",
       entity_type: entityType,
       company_name: entityType !== "individual" ? companyName.trim() : undefined,
+      website_url: websiteUrl.trim() || undefined,
+      social_links: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
     });
     setLoading(false);
 
@@ -67,13 +94,11 @@ const VendorSignup = () => {
         setError(error.message);
       }
     } else {
-      // Store ToS acceptance flag for recording after login
       localStorage.setItem("tl_pending_tos", JSON.stringify({
         version: CURRENT_TOS_VERSION,
         userAgent: navigator.userAgent,
         acceptedAt: new Date().toISOString(),
       }));
-      // Redirect — Supabase session is already active, no localStorage auth flag needed
       localStorage.setItem("tl_vendor_network", "mainnet");
       navigate("/trustlock/vendor");
     }
@@ -166,6 +191,42 @@ const VendorSignup = () => {
                 onCompanyNameChange={setCompanyName}
                 role="vendor"
               />
+
+              {/* Website & Social Media */}
+              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/20">
+                <div>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5" /> Web Presence
+                    <span className="text-destructive text-[10px]">*at least one required</span>
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Required for vendor verification and lender due diligence</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="websiteUrl" className="text-xs">Website URL</Label>
+                  <Input id="websiteUrl" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://yourstore.com" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Social Media Links</Label>
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <Facebook className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input value={socialFacebook} onChange={(e) => setSocialFacebook(e.target.value)} placeholder="Facebook page URL" className="h-8 text-sm pl-8" />
+                    </div>
+                    <div className="relative">
+                      <Linkedin className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input value={socialLinkedin} onChange={(e) => setSocialLinkedin(e.target.value)} placeholder="LinkedIn profile URL" className="h-8 text-sm pl-8" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-xs text-muted-foreground font-bold">𝕏</span>
+                      <Input value={socialX} onChange={(e) => setSocialX(e.target.value)} placeholder="X (Twitter) profile URL" className="h-8 text-sm pl-8" />
+                    </div>
+                  </div>
+                </div>
+                {!hasWebPresence && (
+                  <p className="text-[10px] text-amber-600">Provide a website URL or at least one social media link to proceed.</p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
