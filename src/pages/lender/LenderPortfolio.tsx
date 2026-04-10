@@ -259,12 +259,12 @@ const LenderPortfolio = () => {
                               <Badge variant="outline" className="text-xs">
                                 {facility.tenure_days} days
                               </Badge>
-                              {isMaturingSoon && (
-                                <Badge className="bg-yellow-500/15 text-yellow-600 text-xs">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  Maturing in {daysUntil} days
-                                </Badge>
-                              )}
+                {isMaturingSoon && (
+                  <Badge className="bg-destructive/15 text-destructive text-xs">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Maturing in {daysUntil} days
+                  </Badge>
+                )}
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -292,7 +292,7 @@ const LenderPortfolio = () => {
                           </div>
 
                           <div className="text-right">
-                            <Badge className="bg-green-500/15 text-green-600">Active</Badge>
+                    <Badge className="bg-primary/15 text-primary">Active</Badge>
                           </div>
                         </div>
                       </div>
@@ -306,7 +306,7 @@ const LenderPortfolio = () => {
 
         {/* Risk Indicators */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <Card className="border-yellow-500/20">
+          <Card className="border-destructive/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Shield className="w-5 h-5" />

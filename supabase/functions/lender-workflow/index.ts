@@ -283,6 +283,60 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "get_portfolio": {
+        // Get lender exposure data
+        const { data: exposureData, error: expError } = await supabase
+          .from("lender_exposure")
+          .select("*")
+          .eq("lender_id", lenderId)
+          .single();
+
+        if (expError && expError.code !== "PGRST116") throw expError;
+
+        // Get approved applications as facilities
+        const { data: apps, error: appsError } = await supabase
+          .from("financing_applications")
+          .select(`
+            id,
+            vendor_id,
+            approved_amount,
+            interest_rate_percent,
+            approved_tenure_days,
+            decision_at,
+            profiles:vendor_id (company_name)
+          `)
+          .eq("status", "approved")
+          .eq("decided_by", lenderId);
+
+        if (appsError) throw appsError;
+
+        const limit = exposureData?.exposure_limit || 1000000;
+        const totalApproved = apps?.reduce((sum: number, a: any) => sum + (a.approved_amount || 0), 0) || 0;
+
+        // Transform to facilities
+        const facilities = (apps || []).map((app: any) => ({
+          id: app.id,
+          vendor_name: app.profiles?.company_name || "Unknown",
+          approved_amount: app.approved_amount || 0,
+          interest_rate: app.interest_rate_percent || 0,
+          tenure_days: app.approved_tenure_days || 0,
+          start_date: app.decision_at,
+          maturity_date: new Date(new Date(app.decision_at).getTime() + (app.approved_tenure_days || 0) * 24 * 60 * 60 * 1000).toISOString(),
+        }));
+
+        result = {
+          success: true,
+          data: {
+            total_exposure: exposureData?.total_exposure || totalApproved,
+            exposure_limit: limit,
+            active_facilities: exposureData?.active_facilities || apps?.length || 0,
+            utilization_percent: (totalApproved / limit) * 100,
+            facilities,
+          }
+        };
+        break;
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }
