@@ -389,11 +389,11 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       setRecipientSearching(true);
       const term = `%${query.trim()}%`;
 
-      // Search profiles by name or email
+      // Search profiles by name, email, or company name
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .select("id, full_name, email, company_name")
+        .or(`full_name.ilike.${term},email.ilike.${term},company_name.ilike.${term}`)
         .neq("id", userId || "")
         .limit(15);
 
@@ -442,8 +442,9 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         const userRole = roleMap[p.id];
         const tag = userRole === "vendor" ? "Vendor" : userRole === "buyer" ? "Buyer" : userRole === "lender" ? "Lender" : undefined;
         const institution = institutionMap[p.id];
+        const companyName = institution || p.company_name;
         const labelParts = [p.full_name || "No name"];
-        if (institution) labelParts.push(institution);
+        if (companyName) labelParts.push(companyName);
         labelParts.push(p.email || p.id.slice(0, 8));
         return {
           id: p.id,
