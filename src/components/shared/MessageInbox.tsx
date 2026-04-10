@@ -53,6 +53,7 @@ const formatFileSize = (bytes: number) => {
 const isImageType = (type: string) => type.startsWith("image/");
 
 interface Thread {
+  id: string;
   participant_1: string;
   participant_2: string;
   transaction_id: string | null;
