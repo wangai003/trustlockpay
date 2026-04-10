@@ -4752,7 +4752,9 @@ export type Database = {
           admin_account_id: string
           body: string
           created_at: string
+          encryption_version: number | null
           id: string
+          is_encrypted: boolean
           thread_id: string
           updated_at: string
         }
@@ -4760,7 +4762,9 @@ export type Database = {
           admin_account_id: string
           body: string
           created_at?: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           thread_id: string
           updated_at?: string
         }
@@ -4768,7 +4772,9 @@ export type Database = {
           admin_account_id?: string
           body?: string
           created_at?: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           thread_id?: string
           updated_at?: string
         }
