@@ -890,8 +890,46 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                   className="min-h-[100px] text-sm"
                 />
               </div>
-              <Button onClick={handleCompose} className="w-full" disabled={!composeRecipient || !composeBody.trim()}>
-                Send Message
+              {/* Compose attachments */}
+              <div>
+                <input
+                  ref={composeFileInputRef}
+                  type="file"
+                  accept={ACCEPTED_EXTENSIONS}
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { addFiles(e.target.files, setComposeAttachments, composeAttachments); e.target.value = ""; }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8"
+                  onClick={() => composeFileInputRef.current?.click()}
+                  disabled={composeAttachments.length >= MAX_FILES}
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  Attach Files
+                  <span className="text-muted-foreground">({composeAttachments.length}/{MAX_FILES})</span>
+                </Button>
+                <p className="text-[9px] text-muted-foreground mt-1">PDF, JPEG, PNG · Max 10MB each · Up to 5 files</p>
+                {composeAttachments.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {composeAttachments.map((f, i) => (
+                      <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px]">
+                        {isImageType(f.type) ? <Image className="w-3 h-3 shrink-0 text-muted-foreground" /> : <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                        <span className="truncate max-w-[100px]">{f.name}</span>
+                        <span className="text-muted-foreground">{formatFileSize(f.size)}</span>
+                        <button onClick={() => setComposeAttachments((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleCompose} className="w-full" disabled={(!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0)) || uploading}>
+                {uploading ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Uploading...</> : "Send Message"}
               </Button>
             </div>
           </DialogContent>
