@@ -304,6 +304,131 @@ class PDFBuilder {
   }
 
   // ═══════════════════════════════════════════════════
+  //  LENDER-FACING ESCROW CERTIFICATE
+  // ═══════════════════════════════════════════════════
+
+  generateLenderCertificate(meta: Record<string, any>, docId: string, verificationToken: string): Uint8Array {
+    const siteUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+    const verifyUrl = `${siteUrl}/verify/${verificationToken}`;
+    const now = new Date();
+    const expiresAt = meta.expires_at ? new Date(meta.expires_at) : new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    this.newPage();
+
+    // ─── Premium Header ───────────────────────────
+    this.drawRect(0, 800, 595, 42, `${this.brandGreen}`);
+    this.drawText("TrustLock", 60, 812, 16, true);
+    this.content.push("BT /F1 10 Tf 1 1 1 rg 160 814 Td (Escrow Platform) Tj 0 0 0 rg ET");
+    this.content.push("BT /F1 8 Tf 1 1 1 rg 400 814 Td (LENDER CERTIFICATE) Tj 0 0 0 rg ET");
+
+    // Title
+    this.drawText("Lender-Facing Escrow Certificate", 60, 775, 16, true);
+    this.drawText("Proof of Guaranteed Payment — For Third-Party Financiers", 60, 758, 9);
+    this.drawLine(60, 748, 535, 748, 1.5, this.brandGreen);
+    this.currentY = 730;
+
+    // ─── Validity Banner ──────────────────────────
+    this.drawRect(55, this.currentY - 4, 480, 22, "0.93 0.97 0.93");
+    this.content.push(`BT /F2 9 Tf ${this.brandGreen} rg 65 ${this.currentY + 2} Td (VALID: ${now.toISOString().slice(0, 10)}  to  ${expiresAt.toISOString().slice(0, 10)}  |  90-Day Certificate) Tj 0 0 0 rg ET`);
+    this.currentY -= 30;
+
+    // ─── Certificate ID ──────────────────────────
+    this.currentY = this.drawRow("Certificate ID", docId.slice(0, 8).toUpperCase(), this.currentY);
+    this.currentY = this.drawRow("Verification Token", verificationToken.slice(0, 16) + "...", this.currentY);
+
+    // ─── Transaction Details ─────────────────────
+    this.drawSection("Escrow Transaction Details");
+    this.currentY = this.drawRow("Transaction ID", meta.tx_id || docId, this.currentY);
+    this.currentY = this.drawRow("Escrow Amount", `$${Number(meta.amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, this.currentY);
+    this.currentY = this.drawRow("Escrow Status", "LOCKED — Funds Held in Trust", this.currentY);
+    this.currentY = this.drawRow("Lock Date", now.toISOString().slice(0, 10), this.currentY);
+    this.currentY = this.drawRow("Industry", meta.industry || "General", this.currentY);
+
+    // ─── Full Disclosure: Parties ────────────────
+    this.drawSection("Transaction Parties (Full Disclosure)");
+    this.currentY = this.drawRow("Vendor (Seller)", meta.vendor_name || "N/A", this.currentY);
+    this.currentY = this.drawRow("Buyer (Purchaser)", meta.buyer_name || "N/A", this.currentY);
+    if (meta.buyer_email) {
+      this.currentY = this.drawRow("Buyer Contact", meta.buyer_email, this.currentY);
+    }
+
+    // ─── Milestone Schedule ──────────────────────
+    const milestones = meta.milestones;
+    if (milestones && Array.isArray(milestones) && milestones.length > 0) {
+      this.drawSection("Milestone Payment Schedule");
+      for (let i = 0; i < milestones.length; i++) {
+        const ms = milestones[i];
+        const label = `Milestone ${i + 1}: ${ms.label || ms.title || "Phase " + (i + 1)}`;
+        const pct = ms.percentage ? `${ms.percentage}%` : "N/A";
+        const amt = meta.amount && ms.percentage ? `$${(Number(meta.amount) * Number(ms.percentage) / 100).toFixed(2)}` : "";
+        this.currentY = this.drawRow(label, `${pct}  ${amt}`, this.currentY);
+        if (this.currentY < 100) {
+          this.newPage();
+          this.currentY = 750;
+        }
+      }
+    }
+
+    // ─── Blockchain Verification ─────────────────
+    this.drawSection("Blockchain Verification");
+    if (meta.blockchain_tx_hash) {
+      this.currentY = this.drawRow("Polygon TX Hash", meta.blockchain_tx_hash, this.currentY);
+      this.currentY = this.drawRow("Verify on Polygonscan", `polygonscan.com/tx/${meta.blockchain_tx_hash}`, this.currentY);
+    } else {
+      this.currentY = this.drawRow("Chain Status", "Pending Anchor — Will be anchored to Polygon", this.currentY);
+    }
+
+    // ─── QR Verification ─────────────────────────
+    this.drawSection("Online Verification");
+    this.currentY -= 5;
+    const qrLines = [
+      "Lenders can independently verify this certificate at:",
+      verifyUrl,
+      "",
+      "This URL provides real-time escrow status (locked, released,",
+      "or disputed) without requiring a TrustLock account.",
+    ];
+    for (const line of qrLines) {
+      this.drawText(line, 60, this.currentY, line === verifyUrl ? 9 : 10, line === verifyUrl);
+      this.currentY -= 16;
+    }
+
+    // ─── Legal Certification ─────────────────────
+    if (this.currentY < 180) {
+      this.newPage();
+      this.currentY = 750;
+    }
+    this.drawSection("Certification Statement");
+    this.currentY -= 5;
+    const cert = [
+      "This certificate confirms that the above funds have been received",
+      "and locked in TrustLock escrow. The funds are held in trust and",
+      "will be released to the vendor only upon verified completion of",
+      "contractual milestones or by administrative ruling.",
+      "",
+      "Neither party may unilaterally withdraw escrowed funds. This",
+      "document may be presented to third-party financiers as proof",
+      "of guaranteed payment to support pre-production financing,",
+      "trade credit, or working capital applications.",
+      "",
+      "This certificate is valid for 90 days from the date of issue.",
+      "Lenders should verify current status using the URL above.",
+    ];
+    for (const line of cert) {
+      this.drawText(line, 60, this.currentY, 9);
+      this.currentY -= 14;
+    }
+
+    // ─── Footer ──────────────────────────────────
+    this.drawLine(60, 50, 535, 50, 0.5, "0.8 0.8 0.8");
+    this.drawText(`Certificate ID: ${docId}`, 60, 38, 7);
+    this.drawText(`Generated by TrustLock  |  trustlockpay.lovable.app  |  ${now.toISOString().slice(0, 10)}`, 60, 28, 7);
+    this.drawText("Retained for 7 years per compliance policy  |  Valid for 90 days", 60, 18, 7);
+
+    return this.build();
+  }
+
+  // ═══════════════════════════════════════════════════
   //  PDF Binary Builder
   // ═══════════════════════════════════════════════════
 
