@@ -397,23 +397,57 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         .neq("id", userId || "")
         .limit(15);
 
-      // Also look up user_roles to tag results
+      // Also search lender_profiles by institution name to find lenders by company
+      const { data: lenderHits } = await supabase
+        .from("lender_profiles")
+        .select("user_id, institution_name")
+        .ilike("institution_name", term)
+        .eq("is_verified", true)
+        .limit(10);
+
+      // Merge lender user_ids that weren't already found via profiles
       const profileIds = (profiles || []).map((p) => p.id);
+      const lenderOnlyIds = (lenderHits || [])
+        .map((l: any) => l.user_id)
+        .filter((id: string) => id && !profileIds.includes(id));
+
+      // Fetch profiles for lender-only hits
+      let lenderProfiles: any[] = [];
+      if (lenderOnlyIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", lenderOnlyIds);
+        lenderProfiles = data || [];
+      }
+
+      const allProfiles = [...(profiles || []), ...lenderProfiles];
+      const allProfileIds = allProfiles.map((p) => p.id);
+
+      // Build institution name map for lenders
+      const institutionMap: Record<string, string> = {};
+      (lenderHits || []).forEach((l: any) => { if (l.user_id) institutionMap[l.user_id] = l.institution_name; });
+
+      // Look up user_roles to tag results
       let roleMap: Record<string, string> = {};
-      if (profileIds.length > 0) {
+      if (allProfileIds.length > 0) {
         const { data: roles } = await supabase
           .from("user_roles")
           .select("user_id, role")
-          .in("user_id", profileIds);
+          .in("user_id", allProfileIds);
         roles?.forEach((r: any) => { roleMap[r.user_id] = r.role; });
       }
 
-      const results: Contact[] = (profiles || []).map((p) => {
+      const results: Contact[] = allProfiles.map((p) => {
         const userRole = roleMap[p.id];
         const tag = userRole === "vendor" ? "Vendor" : userRole === "buyer" ? "Buyer" : userRole === "lender" ? "Lender" : undefined;
+        const institution = institutionMap[p.id];
+        const labelParts = [p.full_name || "No name"];
+        if (institution) labelParts.push(institution);
+        labelParts.push(p.email || p.id.slice(0, 8));
         return {
           id: p.id,
-          label: `${p.full_name || "No name"} — ${p.email || p.id.slice(0, 8)}`,
+          label: labelParts.join(" — "),
           type: "counterparty" as const,
           roleTag: tag,
         };
