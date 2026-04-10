@@ -10,6 +10,7 @@ import WidgetPromoSection from "@/components/WidgetPromoSection";
 import CtaSection from "@/components/CtaSection";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/landing/AnimatedBackground";
+import TrilemmaSection from "@/components/TrilemmaSection";
 
 const Index = () => {
   return (
@@ -17,6 +18,7 @@ const Index = () => {
       <AnimatedBackground />
       <Navbar />
       <HeroSection />
+      <TrilemmaSection />
       <RiskSection />
       <HowItWorksSection />
       <StatsSection />
