@@ -12,7 +12,7 @@
 - **Hard Logo Gate**: Lenders blocked from dashboard until logo uploaded
 - **Auto-Bridging**: Vendor lender lookup auto-populates from `user_roles` + `lender_profiles`
 - **Mandatory Logo**: Displayed in vendor-side lender lookup alongside institution name, verified badge, operating regions
-- **Single Lender AI**: One combined assistant ("Oba") handles research, document forensics, AND platform Q&A — no separate Veridia
+- **Single Lender AI**: One combined assistant ("FlashVet AI") handles research, document forensics, AND platform Q&A — no separate Veridia
 
 ---
 
@@ -102,7 +102,7 @@
 - **Blockchain Explorer**: Read-only `BlockchainExplorerPanel`
 - **Documents**: KYB docs, generated contracts, compliance records, **liability contract archive**
 - **Analytics**: Portfolio performance, sector concentration, geographic exposure (depth gated by tier)
-- **Oba AI**: Combined lender intelligence assistant (research + document forensics + platform Q&A)
+- **FlashVet AI**: Combined lender intelligence assistant (research + document forensics + platform Q&A)
 - **KYB Verification**: Upload/manage KYB documents, view tier status, apply for tier upgrade
 - **Settings**: Profile management, logo update, website (mandatory), social links, terms template, notifications
 
@@ -115,7 +115,7 @@
 6. Documents
 7. Blockchain Explorer
 8. Analytics
-9. Oba AI
+9. FlashVet AI
 10. KYB Verification
 11. Settings
 
@@ -162,6 +162,88 @@ Notifications at every status transition.
 - Lender sees the full itemized breakdown when reviewing applications — gives granular visibility into what funds cover
 - Generated contract PDF includes the itemized schedule as an appendix
 - Exportable: vendor and lender can download/print the itemized application as a standalone summary PDF (via `generate-pdf` engine)
+
+**4E. Hybrid Application Form Architecture (Core + Industry-Specific)**
+
+The financing application uses a **standardized core** with **dynamic industry-specific add-ons** that appear based on the vendor's selected industry and trade scope (domestic/regional/international).
+
+*SECTION A — Core Fields (All Industries, All Geographies):*
+1. **Business Identity**
+   - Registered business name, trading name (if different)
+   - Business registration number / Tax ID
+   - Entity type (sole proprietor, LLC, corporation, cooperative, etc.)
+   - Year established
+   - Country of incorporation + operating country (if different)
+   - Business address (street, city, state/province, postal code, country)
+   - Website URL or social media link (auto-pulled from profile)
+2. **Contact & Signatory**
+   - Primary contact name, title/position, email, phone
+   - Authorized signatory (if different from contact)
+3. **Financial Overview**
+   - Annual revenue (USD equivalent) — dropdown ranges: <$10K, $10K–$50K, $50K–$250K, $250K–$1M, $1M–$5M, $5M+
+   - Number of employees — dropdown ranges: 1–5, 6–20, 21–50, 51–200, 200+
+   - Existing debt obligations (yes/no, if yes: approximate total outstanding)
+   - Bank name + account type (for verification, not for payout — payout handled separately)
+4. **Financing Request**
+   - Requested amount (USD) — auto-populated from itemized breakdown (Phase 4D)
+   - Purpose of funds (dropdown: working capital, inventory purchase, equipment, project execution, trade finance, other)
+   - Expected repayment timeline (dropdown: 30/60/90/120/180/360 days)
+   - Linked TrustLock certificate ID (if applicable)
+5. **Documents — Universal Requirements**
+   - Business registration certificate (PDF/JPEG)
+   - Government-issued ID of signatory (PDF/JPEG — front + back)
+   - Most recent bank statement (3 months minimum) (PDF)
+   - Proof of address (utility bill, bank statement, or government letter within 3 months) (PDF/JPEG)
+
+*SECTION B — Industry-Specific Add-Ons (Dynamic):*
+Triggered by vendor's `industry` field from `industryList.ts`. Each industry adds 2–5 extra document/field requirements.
+
+| Industry | Additional Documents | Additional Fields |
+|---|---|---|
+| **Mining & Minerals** | Mining license/permit, Assay report, End-user certificate, Environmental compliance cert | Commodity type, Estimated tonnage, Export destination |
+| **Agriculture & Export** | Phytosanitary certificate, Fumigation cert, Certificate of origin, Export license | Crop/product type, Harvest season, Storage facility details |
+| **Construction** | Building permit, Project plan/blueprint, Insurance certificate, Engineer's report | Project location (GPS), Project timeline, Subcontractor count |
+| **Real Estate** | Title deed, Land survey, Valuation report, Building compliance certificate | Property type, Property location, Estimated market value |
+| **Energy / Oil & Gas** | NNPC/regulatory license, Environmental impact assessment, Tank farm receipt | Product type, Volume (barrels/MT), Delivery terminal |
+| **Logistics & Cross-Border** | Carrier license, Insurance certificate, Customs broker registration | Fleet size, Route corridors, Cargo types |
+| **Pharmaceuticals** | GMP certificate, NAFDAC/FDA approval, Cold chain compliance cert | Drug classification, Storage requirements, Distribution license |
+| **Manufacturing** | Factory inspection report, Quality certification (ISO/CE), Equipment list | Production capacity, Raw material sources, Export markets |
+| **Freelance / Professional** | Portfolio/past work samples, Professional certification/license | Service category, Average project size, Client references |
+| **Education & Training** | Accreditation certificate, Curriculum approval | Program type, Student capacity, Certification body |
+| **Telecommunications** | Telecom license, Spectrum allocation cert | Service type, Coverage area, Subscriber base |
+| **Renewable Energy / Solar** | Installation license, Grid connection approval, Environmental cert | System capacity (kW/MW), Project site, Grid/off-grid |
+| **Textiles & Apparel** | Factory compliance cert, Textile testing report | Product range, MOQ capability, Export markets |
+| **Marine & Fisheries** | Fishing license, Vessel registration, Cold storage cert | Catch type, Vessel capacity, Processing facility |
+| **Automotive** | Import license, Vehicle inspection cert, Customs clearance | Vehicle types, Import origin, Dealership registration |
+| **Aviation** | AOC (Air Operator Certificate), Maintenance org approval | Aircraft type, Route network, Passenger/cargo capacity |
+| **Food & Beverage** | Food safety certification (HACCP/ISO 22000), Health inspection | Product categories, Shelf life, Distribution network |
+| **Water & Sanitation** | Government project approval, Environmental compliance | Infrastructure type, Capacity, Service area |
+| **Waste Management** | Waste handling license, Environmental permit | Waste types, Processing capacity, Disposal methods |
+| **Insurance** | Regulatory license, Reinsurance treaty (if applicable) | Coverage types, Underwriting capacity, Claims ratio |
+| **Legal Services** | Bar association membership, Practice license | Practice areas, Jurisdictions, Retainer structures |
+| **Media & Entertainment** | Production license (if applicable), Distribution agreements | Production type, Distribution channels, IP portfolio |
+| **Tourism & Hospitality** | Tourism board registration, Safety/health compliance | Property count, Star rating, Seasonal patterns |
+| **E-Commerce / Retail** | Business registration (standard), Platform seller verification | Monthly GMV, Product categories, Fulfillment method |
+| **Project Management** | PMP/PRINCE2 certification, Past project portfolio | Average project value, Team size, Sector expertise |
+
+*SECTION C — Trade Scope Add-Ons (Dynamic):*
+Triggered by `TradeScopeSelector` value. Reuses `documentScopeFilter.ts` logic.
+
+| Scope | Additional Requirements |
+|---|---|
+| **Domestic** | Local tax compliance certificate, Local business permit (if applicable) |
+| **Regional** | Regional trade bloc documentation (AfCFTA, ECOWAS, SADC, etc.), Transit waybill template, Cross-border trade registration |
+| **International** | Bill of lading / Airway bill (template or sample), Import/export license, Letter of credit (if available), Customs declaration template, AML declaration |
+| **Hybrid** | Supplier import receipts, Domestic registration + import license |
+
+*Form UX:*
+- Sections A is always visible
+- Sections B and C animate in/out based on industry and trade scope selection
+- Each document upload slot shows: accepted formats (from `documentFileRules.ts`), max files, format hint
+- Progress indicator shows completion percentage across all sections
+- "Save Draft" available at any point — vendor can return later
+- "Submit for Review" only enabled when all required fields and documents are provided
+- Lender sees the complete application with all sections clearly labeled and organized
 
 **4E. Vendor Sidebar Navigation — Updated Order**
 1. Overview
@@ -220,19 +302,20 @@ All status changes trigger vendor notifications.
 
 ---
 
-### Phase 6: Oba AI — Combined Lender Intelligence Assistant
+### Phase 6: FlashVet AI — Combined Lender Intelligence Assistant
 
 **6A. Identity & Purpose**
-- Name: **Oba** (meaning "ruler/leader" in Yoruba — fitting for financial oversight)
+- Name: **FlashVet AI** — "Flash" (speed/instant analysis) + "Vet" (vetting/verification) — conveys rapid, thorough due diligence
+- Tagline: "Instant Vetting. Informed Lending."
 - Role: **Single combined 24/7 AI assistant** for lenders — handles ALL lender AI needs:
-  1. **Vendor Research & Due Diligence** (formerly Oba-only)
-  2. **Document Authenticity Analysis** (formerly Veridia)
+  1. **Vendor Research & Due Diligence**
+  2. **Document Authenticity Analysis**
   3. **Platform Q&A** — soft inquiries about TrustLock safety protocols, how escrow works, platform security measures, dispute resolution process, any non-sensitive operational questions
 - Differentiation from other assistants:
   - **Amani** (buyer): consumer protection, order tracking, delivery guidance
   - **Zawadi** (vendor): sales optimization, fulfillment, payout guidance
   - **Emmanuel** (admin): compliance, disputes, platform-wide strategy
-  - **Oba** (lender): creditworthiness, document forensics, industry research, portfolio risk, vendor due diligence, TrustLock platform Q&A
+  - **FlashVet AI** (lender): creditworthiness, document forensics, industry research, portfolio risk, vendor due diligence, TrustLock platform Q&A
 
 **6B. Research & Due Diligence Capabilities**
 1. **Vendor Due Diligence**: Query TrustLock database for vendor completion rates, average days-to-release, dispute history, order volume trends, KYC/KYB status, industry classification
@@ -244,7 +327,7 @@ All status changes trigger vendor notifications.
 7. **Repayment Tracking Intelligence**: Monitor milestone releases linked to financed transactions, alert on delayed milestones, calculate projected repayment timelines
 
 **6C. Document Authenticity Analysis Capabilities (Integrated)**
-Oba includes all document forensics capabilities (formerly Veridia), triggered when lender uploads/attaches a document for analysis:
+FlashVet AI includes all document forensics capabilities, triggered when lender uploads/attaches a document for analysis:
 
 1. **Multi-Dimension Authenticity Scoring** (percentage-based confidence):
    - **Visual Consistency** (15%): Font uniformity, alignment, layout professionalism, resolution quality
@@ -262,12 +345,12 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
    - **50–69%**: 🔶 Low Confidence — "Significant anomalies detected, further investigation strongly advised"
    - **Below 50%**: 🚨 Very Low Confidence — "Multiple red flags detected, proceed with extreme caution"
 
-3. **Live Analysis Progress**: While analyzing, Oba streams progress updates for each dimension
+3. **Live Analysis Progress**: While analyzing, FlashVet AI streams progress updates for each dimension
 
 4. **Post-Analysis Output**: Summary card, dimension breakdown, key observations, methods disclosure, **mandatory due diligence reminder**
 
-**6D. Platform Q&A Capabilities (NEW)**
-- Oba answers soft inquiries about TrustLock including:
+**6D. Platform Q&A Capabilities**
+- FlashVet AI answers soft inquiries about TrustLock including:
   - How escrow protection works
   - Safety protocols and security measures
   - Dispute resolution process overview
@@ -275,10 +358,10 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
   - Platform compliance and regulatory posture
   - How lender certificates are generated and verified
   - General platform FAQs
-- **Boundary**: Oba will NOT disclose internal architecture, database schemas, fee formulas, or proprietary logic (same confidentiality protocol as other assistants)
+- **Boundary**: FlashVet AI will NOT disclose internal architecture, database schemas, fee formulas, or proprietary logic (same confidentiality protocol as other assistants)
 
 **6E. Tool Calling (Edge Function)**
-- `oba-chat` edge function with 8+ analytical tools:
+- `flashvet-chat` edge function with 8+ analytical tools:
   - `vendor_profile_lookup` — fetch vendor's TrustLock history, completion rate, dispute ratio, volume
   - `portfolio_exposure` — lender's current sector/corridor/vendor concentration
   - `industry_risk_brief` — industry-specific risk factors, typical margins, seasonal patterns
@@ -298,22 +381,22 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
   - Never reveal information about OTHER lenders' portfolios or terms
   - Lender can only query vendors who have PUBLIC profiles or are in active transactions with them
 
-**6G. Oba UI Design — Distinctive Visual Identity**
+**6G. FlashVet AI UI Design — Distinctive Visual Identity**
 - **Card Container**: Dark-green blended border (`border-emerald-700/60`) with subtle gradient glow effect
 - **Interior**: Clean white/light background (`bg-white dark:bg-slate-950`) — high contrast for readability
-- **Header**: Oba name + custom avatar (crown/brain icon with emerald accent) + tagline "Your Lending Intelligence Advisor"
-- **Welcome Message**: Brief greeting + short summary of capabilities: research, document analysis, platform Q&A
+- **Header**: FlashVet AI name + custom avatar (lightning bolt + shield icon with emerald accent) + tagline "Instant Vetting. Informed Lending."
+- **Welcome Message**: Brief greeting + short summary of capabilities: research, document analysis, platform Q&A + guidance on how to use each feature
 - **Accent Color**: Emerald-green (`emerald-600/700`) instead of primary blue — differentiates from Amani/Zawadi
-- **Document Analysis Mode**: When a document is uploaded, Oba switches to analysis mode with:
+- **Document Analysis Mode**: When a document is uploaded, FlashVet AI switches to analysis mode with:
   - Large circular confidence gauge with animated fill on completion
   - Emerald-themed step indicators for each analysis dimension
   - Score display with color-coded badges
-- **Message Bubbles**: User messages in emerald tint, Oba's responses in white with thin emerald-left-border
+- **Message Bubbles**: User messages in emerald tint, FlashVet AI's responses in white with thin emerald-left-border
 - **Quick Action Cards**: "Analyze Vendor", "Check Document", "Review Application", "Portfolio Risk Check", "Industry Brief", "Platform FAQ"
 - **Overall Feel**: Professional forensics-lab aesthetic — clean, precise, trustworthy
 
 **6H. Analysis History**
-- `oba_document_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
+- `flashvet_document_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
 - Lenders can view past analyses in Documents section
 - RLS: lender sees only own analyses; admin sees all
 
@@ -437,7 +520,7 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
 - `/trustlock/sandbox/lender-overview` with mock lender dashboard
 - Pre-populated portfolio data, sample certificates, demo financing applications
 - 8+ mock lender profiles in sandbox data for vendor lookup demo
-- Mock Oba AI chat with pre-scripted responses (including document analysis demo + platform Q&A demo)
+- Mock FlashVet AI chat with pre-scripted responses (including document analysis demo + platform Q&A demo)
 - Mock liability contract signing flow
 - Mock KYB verification with tier assignment demo
 
@@ -448,7 +531,7 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
 - Notification trigger validation
 - Security scan after all schema changes
 - Input validation on all edge functions (Zod schemas)
-- Oba AI confidentiality protocol verification (research, forensics, AND platform Q&A modes)
+- FlashVet AI confidentiality protocol verification (research, forensics, AND platform Q&A modes)
 - Document analysis history RLS verification
 
 ---
@@ -469,14 +552,14 @@ Oba includes all document forensics capabilities (formerly Veridia), triggered w
 - [ ] Vendor cancellation/rejection → lender notification rewiring complete
 - [ ] Vendor social/website requirement enforced (new + existing accounts)
 - [ ] Lender tiers implemented with KYB-gated max facility limits
-- [ ] Oba AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
-- [ ] Oba document forensics integrated with 8-dimension scoring + mandatory due diligence disclaimer
-- [ ] `oba_document_analyses` stored with lender-only RLS
+- [ ] FlashVet AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
+- [ ] FlashVet AI document forensics integrated with 8-dimension scoring + mandatory due diligence disclaimer
+- [ ] `flashvet_document_analyses` stored with lender-only RLS
 - [ ] Confidence scoring calibrated with transparent methodology disclosure
 - [ ] No raw SQL or user-provided SQL in edge functions
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features + Oba mock (research + forensics + Q&A) for presentation readiness
+- [ ] Sandbox demo includes lender features + FlashVet AI mock (research + forensics + Q&A) for presentation readiness
 - [ ] `lender_disbursement_records` RLS: lender CRUD own, admin SELECT all
 - [ ] Auto-disbursement logging on application approval verified
 - [ ] `financing_application_items` RLS: vendor owns, lender reads assigned, admin reads all
