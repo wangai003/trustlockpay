@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Plus, Shield, LinkIcon, Languages, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Send, Plus, Shield, LinkIcon, Languages, Loader2, Search, Paperclip, FileText, Image, X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -39,6 +39,18 @@ const CONTACT_REASONS = [
   { value: "general", label: "General Inquiry" },
   { value: "other", label: "Other" },
 ];
+const ACCEPTED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const ACCEPTED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png";
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 5;
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const isImageType = (type: string) => type.startsWith("image/");
 
 interface Thread {
   id: string;
@@ -52,6 +64,13 @@ interface Thread {
   created_at: string;
 }
 
+interface Attachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 interface Message {
   id: string;
   thread_id: string;
@@ -60,6 +79,7 @@ interface Message {
   is_read: boolean;
   created_at: string;
   admin_account_id?: string | null;
+  attachments?: Attachment[] | null;
 }
 
 interface Contact {
@@ -122,11 +142,39 @@ const MessageBubble = ({ msg, isMine, role: viewerRole, adminAliasMap, adminName
             {adminLabel}
           </p>
         )}
-        <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+        {sanitized.trim() && <p className="whitespace-pre-wrap break-words">{sanitized}</p>}
         {hadLinks && (
           <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
             <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
           </span>
+        )}
+        {/* Attachment rendering */}
+        {msg.attachments && msg.attachments.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {msg.attachments.map((att, idx) => {
+              const isImg = isImageType(att.type);
+              return (
+                <div key={idx} className={cn("rounded-md overflow-hidden", isImg ? "" : "flex items-center gap-2 py-1")}>
+                  {isImg ? (
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                      <img src={att.url} alt={att.name} className="max-w-[200px] max-h-[160px] rounded-md object-cover" />
+                      <span className={cn("text-[9px] mt-0.5 block", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>{att.name}</span>
+                    </a>
+                  ) : (
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" className={cn(
+                      "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] transition-colors",
+                      isMine ? "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground" : "bg-foreground/5 hover:bg-foreground/10 text-foreground"
+                    )}>
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate max-w-[140px]">{att.name}</span>
+                      <span className="text-[8px] opacity-60 shrink-0">{formatFileSize(att.size)}</span>
+                      <Download className="w-3 h-3 shrink-0 opacity-60" />
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
         <div className={cn("flex items-center gap-1.5 mt-1", isMine ? "justify-end" : "justify-start")}>
           <p className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
@@ -187,6 +235,59 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [adminNameMap, setAdminNameMap] = useState<Record<string, string>>({});
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
+  const composeFileInputRef = useRef<HTMLInputElement>(null);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Validate & add files to a given setter
+  const addFiles = (files: FileList | null, setter: React.Dispatch<React.SetStateAction<File[]>>, existing: File[]) => {
+    if (!files) return;
+    const newFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (!ACCEPTED_FILE_TYPES.includes(f.type)) {
+        toast.error(`${f.name}: Only PDF, JPEG, and PNG files are allowed`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        toast.error(`${f.name}: File exceeds 10MB limit`);
+        continue;
+      }
+      if (existing.length + newFiles.length >= MAX_FILES) {
+        toast.error(`Maximum ${MAX_FILES} files per message`);
+        break;
+      }
+      newFiles.push(f);
+    }
+    if (newFiles.length > 0) setter((prev) => [...prev, ...newFiles]);
+  };
+
+  // Upload files and return attachment metadata
+  const uploadFiles = async (files: File[]): Promise<Attachment[]> => {
+    if (!userId || files.length === 0) return [];
+    const results: Attachment[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("message-attachments").upload(path, file, { contentType: file.type });
+      if (error) {
+        toast.error(`Failed to upload ${file.name}`);
+        continue;
+      }
+      const { data: urlData } = supabase.storage.from("message-attachments").getPublicUrl(path);
+      // Since bucket is private, use signed URL
+      const { data: signedData } = await supabase.storage.from("message-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
+      results.push({
+        url: signedData?.signedUrl || urlData.publicUrl,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+    }
+    return results;
+  };
 
   const isChiefAdmin = (() => {
     if (role !== "admin") return false;
@@ -476,7 +577,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       .select("*")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
-    if (data) setMessages(data as Message[]);
+    if (data) setMessages(data as unknown as Message[]);
 
     // Mark unread messages as read
     // For admin: messages NOT sent by sentinel are from users → mark read
@@ -581,45 +682,45 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
   const getUnreadCount = (threadId: string) => unreadCounts[threadId] || 0;
 
-  // Send message
+  // Send message (with optional attachments)
   const handleSend = async () => {
-    if (!newMessage.trim() || !selectedThread || !userId) return;
-    // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
+    if ((!newMessage.trim() && replyAttachments.length === 0) || !selectedThread || !userId) return;
     const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
-    // Get admin_account_id from localStorage for admin senders
     let adminAccountId: string | null = null;
     if (role === "admin") {
-      try {
-        const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
-        adminAccountId = auth.id || null;
-      } catch { /* ignore */ }
+      try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
     }
 
-    const { error } = await supabase.from("messages").insert({
+    setUploading(true);
+    const attachments = await uploadFiles(replyAttachments);
+    setUploading(false);
+
+    const insertData: any = {
       thread_id: selectedThread.id,
       sender_id: senderId,
-      body: newMessage.trim(),
+      body: newMessage.trim() || (attachments.length > 0 ? `📎 ${attachments.length} file${attachments.length > 1 ? "s" : ""} attached` : ""),
       admin_account_id: adminAccountId,
-    });
+    };
+    if (attachments.length > 0) insertData.attachments = attachments;
+
+    const { error } = await supabase.from("messages").insert(insertData);
     if (error) {
       toast.error("Failed to send message");
       return;
     }
     await supabase.from("message_threads").update({ last_message_at: new Date().toISOString() }).eq("id", selectedThread.id);
     setNewMessage("");
+    setReplyAttachments([]);
   };
 
   // Create new thread
   const handleCompose = async () => {
-    if (!composeRecipient || !composeBody.trim() || !userId) return;
+    if (!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0) || !userId) return;
     const contact = contacts.find((c) => c.id === composeRecipient) || recipientResults.find((c) => c.id === composeRecipient);
-    // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const linkedTxId = contact?.transaction_id || transactionId || null;
-
-    // Determine recipient role from search results or contacts
     const myRole = role === "admin" ? "admin" : role;
     const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (contact?.roleTag?.toLowerCase() || null);
 
@@ -642,23 +743,31 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       return;
     }
 
+    setUploading(true);
+    const attachments = await uploadFiles(composeAttachments);
+    setUploading(false);
+
     let adminAccountId: string | null = null;
     if (role === "admin") {
       try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
     }
 
-    await supabase.from("messages").insert({
+    const insertData: any = {
       thread_id: thread.id,
       sender_id: myParticipantId,
-      body: composeBody.trim(),
+      body: composeBody.trim() || (attachments.length > 0 ? `📎 ${attachments.length} file${attachments.length > 1 ? "s" : ""} attached` : ""),
       admin_account_id: adminAccountId,
-    });
+    };
+    if (attachments.length > 0) insertData.attachments = attachments;
+
+    await supabase.from("messages").insert(insertData);
 
     setComposeOpen(false);
     setComposeRecipient("");
     setComposeSubject("");
     setComposeCategory("general");
     setComposeBody("");
+    setComposeAttachments([]);
     setRecipientSearch("");
     setRecipientResults([]);
     loadThreads();
@@ -781,8 +890,46 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                   className="min-h-[100px] text-sm"
                 />
               </div>
-              <Button onClick={handleCompose} className="w-full" disabled={!composeRecipient || !composeBody.trim()}>
-                Send Message
+              {/* Compose attachments */}
+              <div>
+                <input
+                  ref={composeFileInputRef}
+                  type="file"
+                  accept={ACCEPTED_EXTENSIONS}
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { addFiles(e.target.files, setComposeAttachments, composeAttachments); e.target.value = ""; }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8"
+                  onClick={() => composeFileInputRef.current?.click()}
+                  disabled={composeAttachments.length >= MAX_FILES}
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  Attach Files
+                  <span className="text-muted-foreground">({composeAttachments.length}/{MAX_FILES})</span>
+                </Button>
+                <p className="text-[9px] text-muted-foreground mt-1">PDF, JPEG, PNG · Max 10MB each · Up to 5 files</p>
+                {composeAttachments.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {composeAttachments.map((f, i) => (
+                      <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px]">
+                        {isImageType(f.type) ? <Image className="w-3 h-3 shrink-0 text-muted-foreground" /> : <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                        <span className="truncate max-w-[100px]">{f.name}</span>
+                        <span className="text-muted-foreground">{formatFileSize(f.size)}</span>
+                        <button onClick={() => setComposeAttachments((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleCompose} className="w-full" disabled={(!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0)) || uploading}>
+                {uploading ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Uploading...</> : "Send Message"}
               </Button>
             </div>
           </DialogContent>
@@ -897,22 +1044,58 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             <p className="text-xs text-muted-foreground">This conversation has been locked.</p>
           </div>
         ) : (
-          <div className="p-3 border-t border-border flex gap-2">
-            <Textarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="min-h-[40px] max-h-[120px] text-sm resize-none flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            <Button size="icon" onClick={handleSend} disabled={!newMessage.trim()} className="shrink-0 self-end">
-              <Send className="w-4 h-4" />
-            </Button>
+          <div className="p-3 border-t border-border space-y-2">
+            {/* Attachment previews */}
+            {replyAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {replyAttachments.map((f, i) => (
+                  <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px]">
+                    {isImageType(f.type) ? <Image className="w-3 h-3 shrink-0 text-muted-foreground" /> : <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                    <span className="truncate max-w-[80px]">{f.name}</span>
+                    <span className="text-muted-foreground">{formatFileSize(f.size)}</span>
+                    <button onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                ref={replyFileInputRef}
+                type="file"
+                accept={ACCEPTED_EXTENSIONS}
+                multiple
+                className="hidden"
+                onChange={(e) => { addFiles(e.target.files, setReplyAttachments, replyAttachments); e.target.value = ""; }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="w-9 h-9 shrink-0 self-end"
+                onClick={() => replyFileInputRef.current?.click()}
+                disabled={replyAttachments.length >= MAX_FILES}
+                title={`Attach files (${replyAttachments.length}/${MAX_FILES})`}
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="min-h-[40px] max-h-[120px] text-sm resize-none flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+              <Button size="icon" onClick={handleSend} disabled={(!newMessage.trim() && replyAttachments.length === 0) || uploading} className="shrink-0 self-end">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         )}
       </div>

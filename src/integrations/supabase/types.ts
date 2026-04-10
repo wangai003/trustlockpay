@@ -2672,6 +2672,7 @@ export type Database = {
           admin_account_id: string | null
           attachment_name: string | null
           attachment_url: string | null
+          attachments: Json | null
           body: string
           created_at: string
           id: string
@@ -2683,6 +2684,7 @@ export type Database = {
           admin_account_id?: string | null
           attachment_name?: string | null
           attachment_url?: string | null
+          attachments?: Json | null
           body: string
           created_at?: string
           id?: string
@@ -2694,6 +2696,7 @@ export type Database = {
           admin_account_id?: string | null
           attachment_name?: string | null
           attachment_url?: string | null
+          attachments?: Json | null
           body?: string
           created_at?: string
           id?: string
