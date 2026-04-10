@@ -138,7 +138,21 @@
 - Settings page: editable website + social links section
 - Enforcement: soft gate via persistent notification + badge on Settings sidebar item (not blocking)
 
-**4D. Vendor Sidebar Navigation — Updated Order**
+**4D. Itemized Loan Application (Invoice-Powered)**
+- Vendors requesting financing fill out an **itemized application** that mirrors the existing `InvoiceFeeCalculator` and `feeEngine` logic:
+  - Line-item builder: description, quantity, unit price (USD), category (goods/services/materials/equipment/transport)
+  - Each line auto-calculates: subtotal, applicable tax (via `tax-resolve` engine using vendor + buyer country corridor), currency conversion to vendor's local currency
+  - **Dual-currency display**: USD (for escrow/lending settlement) alongside vendor's local currency equivalent (using `globalCurrencies.ts` registry rates)
+  - Running totals: subtotal, total taxes/tariffs, total requested amount
+  - Tax breakdown component reuses `TaxBreakdown` for per-line and aggregate tax/tariff visibility
+  - Industry-aware: auto-suggests common line items based on vendor's industry (e.g., "Raw Materials", "Freight CIF", "Customs Clearance" for mining/agriculture)
+- `financing_application_items` table: `id`, `application_id`, `description`, `quantity`, `unit_price_usd`, `category`, `tax_amount`, `local_currency_code`, `local_currency_amount`, `exchange_rate_snapshot`, `sort_order`, timestamps
+- RLS: same as `financing_applications` — vendor owns, lender reads assigned, admin reads all
+- Lender sees the full itemized breakdown when reviewing applications — gives granular visibility into what funds cover
+- Generated contract PDF includes the itemized schedule as an appendix
+- Exportable: vendor and lender can download/print the itemized application as a standalone summary PDF (via `generate-pdf` engine)
+
+**4E. Vendor Sidebar Navigation — Updated Order**
 1. Overview
 2. Lender Lookup
 3. Request Financing (prominent)
