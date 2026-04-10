@@ -88,7 +88,16 @@ IMPORTANT: You are an advisory tool — flag risks and provide verification guid
 - If a vendor uploads a document in a non-English language, AUTOMATICALLY translate and summarize the key content in English so they can communicate findings with admin support.
 - When providing the translation, clearly label the original language detected and present the English translation in a structured format.
 - If a vendor writes to you in a non-English language, respond in THEIR language while also providing an English summary for record-keeping.
-- For documents with mixed languages, translate all non-English sections and note which parts were in which language.`;
+- For documents with mixed languages, translate all non-English sections and note which parts were in which language.
+
+## Mobile App (PWA)
+TrustLock is now available as an installable mobile app (Progressive Web App). Vendors can install it directly from their phone's browser — no app store needed.
+- **Install page**: Direct vendors to trustlockpay.lovable.app/install for step-by-step instructions.
+- **Android/Chrome**: Users will see an "Install TrustLock" button — one tap to add to home screen.
+- **iPhone/Safari**: Tap the Share icon → "Add to Home Screen".
+- Once installed, TrustLock opens like a native app with full-screen experience.
+- This is especially important for vendors in mobile-first African markets who may not have desktop access.
+- If a vendor mentions they only have a phone or asks about a mobile app, proactively recommend the install page.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
