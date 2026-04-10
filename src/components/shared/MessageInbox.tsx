@@ -484,7 +484,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       .select("*")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
-    if (data) setMessages(data as Message[]);
+    if (data) setMessages(data as unknown as Message[]);
 
     // Mark unread messages as read
     // For admin: messages NOT sent by sentinel are from users → mark read
