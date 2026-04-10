@@ -163,7 +163,7 @@ const SandboxMessages = () => {
 
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [localReplies, setLocalReplies] = useState<Record<string, { sender: "me"; body: string; time: string }[]>>({});
+  const [localReplies, setLocalReplies] = useState<Record<string, { sender: "me"; body: string; time: string; attachments?: { name: string; type: string; size: string }[] }[]>>({});
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeRecipient, setComposeRecipient] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
