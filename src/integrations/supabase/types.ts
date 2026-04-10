@@ -2598,6 +2598,48 @@ export type Database = {
         }
         Relationships: []
       }
+      liability_contracts: {
+        Row: {
+          contract_version: number
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          lender_id: string
+          metadata: Json | null
+          signature_text: string
+          signed_at: string
+          title_position: string | null
+          updated_at: string
+        }
+        Insert: {
+          contract_version?: number
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          lender_id: string
+          metadata?: Json | null
+          signature_text: string
+          signed_at?: string
+          title_position?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contract_version?: number
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          lender_id?: string
+          metadata?: Json | null
+          signature_text?: string
+          signed_at?: string
+          title_position?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_threads: {
         Row: {
           case_status: string
@@ -3357,6 +3399,24 @@ export type Database = {
           platform_name?: string
           settings?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
