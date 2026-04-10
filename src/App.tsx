@@ -48,6 +48,7 @@ const AdminDepartments = lazy(() => import("./pages/admin/AdminDepartments"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
+const AdminLenderKYB = lazy(() => import("./pages/admin/AdminLenderKYB"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -123,7 +124,7 @@ const LenderOverview = lazy(() => import("./pages/lender/LenderOverview"));
 const LenderPortfolio = lazy(() => import("./pages/lender/LenderPortfolio"));
 const LenderApplications = lazy(() => import("./pages/lender/LenderApplications"));
 
-const LenderVendorLookup = lazy(() => import("./pages/lender/LenderVendorLookup"));
+const LenderRepayments = lazy(() => import("./pages/lender/LenderRepayments"));
 const LenderMessages = lazy(() => import("./pages/lender/LenderMessages"));
 const LenderDocuments = lazy(() => import("./pages/lender/LenderDocuments"));
 const LenderBlockchain = lazy(() => import("./pages/lender/LenderBlockchain"));
