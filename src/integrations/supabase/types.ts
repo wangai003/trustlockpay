@@ -2123,6 +2123,122 @@ export type Database = {
           },
         ]
       }
+      financing_order_events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          event_data: Json | null
+          event_type: string
+          financing_order_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          event_data?: Json | null
+          event_type: string
+          financing_order_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          event_data?: Json | null
+          event_type?: string
+          financing_order_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_order_events_financing_order_id_fkey"
+            columns: ["financing_order_id"]
+            isOneToOne: false
+            referencedRelation: "financing_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financing_orders: {
+        Row: {
+          application_id: string | null
+          created_at: string | null
+          disbursed_at: string | null
+          disbursed_by: string | null
+          disbursement_tx_hash: string | null
+          expected_repayment_amount: number | null
+          id: string
+          interest_rate_percent: number
+          lender_id: string | null
+          maturity_date: string
+          principal_amount: number
+          repaid_at: string | null
+          repayment_amount: number | null
+          repayment_tx_hash: string | null
+          status: string | null
+          tenure_days: number
+          transaction_id: string | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string | null
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          disbursement_tx_hash?: string | null
+          expected_repayment_amount?: number | null
+          id?: string
+          interest_rate_percent: number
+          lender_id?: string | null
+          maturity_date: string
+          principal_amount: number
+          repaid_at?: string | null
+          repayment_amount?: number | null
+          repayment_tx_hash?: string | null
+          status?: string | null
+          tenure_days: number
+          transaction_id?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string | null
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          disbursement_tx_hash?: string | null
+          expected_repayment_amount?: number | null
+          id?: string
+          interest_rate_percent?: number
+          lender_id?: string | null
+          maturity_date?: string
+          principal_amount?: number
+          repaid_at?: string | null
+          repayment_amount?: number | null
+          repayment_tx_hash?: string | null
+          status?: string | null
+          tenure_days?: number
+          transaction_id?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_orders_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "financing_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financing_orders_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gas_reserve_ledger: {
         Row: {
           converted_at: string | null
@@ -5120,6 +5236,7 @@ export type Database = {
           created_at: string
           delivered_date: string | null
           fee: number | null
+          financing_order_id: string | null
           id: string
           incoterm: string | null
           industry: string | null
@@ -5168,6 +5285,7 @@ export type Database = {
           created_at?: string
           delivered_date?: string | null
           fee?: number | null
+          financing_order_id?: string | null
           id?: string
           incoterm?: string | null
           industry?: string | null
@@ -5216,6 +5334,7 @@ export type Database = {
           created_at?: string
           delivered_date?: string | null
           fee?: number | null
+          financing_order_id?: string | null
           id?: string
           incoterm?: string | null
           industry?: string | null
@@ -5247,6 +5366,13 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_transactions_financing_order"
+            columns: ["financing_order_id"]
+            isOneToOne: false
+            referencedRelation: "financing_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_platform_id_fkey"
             columns: ["platform_id"]
