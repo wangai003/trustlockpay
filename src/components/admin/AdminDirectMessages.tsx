@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { serverEncrypt, serverDecryptBatch } from "@/lib/cryptoUtils";
+import MessageTranslateButton from "@/components/shared/MessageTranslateButton";
 
 interface AdminStaff {
   id: string;
@@ -224,6 +225,10 @@ const AdminDirectMessages = () => {
         </ScrollArea>
 
         <div className="p-3 border-t border-border flex gap-2">
+          <MessageTranslateButton
+            fields={[{ value: newMessage, setValue: setNewMessage }]}
+            className="shrink-0 self-end"
+          />
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
