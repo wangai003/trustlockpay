@@ -85,7 +85,6 @@ const LenderRepayments = () => {
       message: action === "acknowledged"
         ? `Your repayment of $${selected.amount_usd.toLocaleString()} has been acknowledged by the lender.`
         : `Your repayment of $${selected.amount_usd.toLocaleString()} has been disputed. ${responseNote || ""}`,
-      data: { confirmation_id: selected.id },
     });
 
     toast.success(action === "acknowledged" ? "Repayment acknowledged" : "Repayment disputed");

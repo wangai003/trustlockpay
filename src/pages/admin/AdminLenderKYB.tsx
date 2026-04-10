@@ -132,7 +132,6 @@ const AdminLenderKYB = () => {
       message: action === "approve"
         ? `Your KYB has been approved. You are now assigned ${TIER_LABELS[tier || 1]?.label || "Tier 1"}.`
         : `Your KYB has been rejected. ${reviewNotes || "Please contact support for details."}`,
-      data: { tier },
     });
 
     toast.success(action === "approve" ? "Lender KYB approved" : "Lender KYB rejected");
