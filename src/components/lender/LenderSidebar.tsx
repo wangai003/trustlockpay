@@ -1,31 +1,55 @@
-import { useState, useEffect, useMemo } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Landmark, Briefcase, ClipboardList, Search, MessageSquare,
   FileText, Link2, BarChart3, Bot, ShieldCheck, Settings, LogOut, Home,
-  Menu, X, Info, Store, DollarSign
+  Menu, X, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
+import SidebarAccordionNav, { type SidebarNavGroup } from "@/components/shared/SidebarAccordionNav";
 import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 
-const navItems = [
-  { label: "Overview", icon: LayoutDashboard, to: "/trustlock/lender", tip: "Portfolio metrics and key indicators", badgeKey: null as string | null },
-  { label: "Portfolio", icon: Briefcase, to: "/trustlock/lender/portfolio", tip: "Browse escrow certificates and active financing", badgeKey: null },
-  { label: "Applications", icon: ClipboardList, to: "/trustlock/lender/applications", tip: "Incoming financing requests from vendors", badgeKey: null },
-  { label: "Vendor Lookup", icon: Search, to: "/trustlock/lender/vendor-lookup", tip: "Search and discover verified vendors", badgeKey: null },
-  { label: "Messages", icon: MessageSquare, to: "/trustlock/lender/messages", tip: "Encrypted messaging with vendors", badgeKey: "messages" },
-  { label: "Documents", icon: FileText, to: "/trustlock/lender/documents", tip: "KYB docs, contracts, compliance records", badgeKey: null },
-  { label: "Blockchain Explorer", icon: Link2, to: "/trustlock/lender/blockchain", tip: "Read-only SHA-256 proof chain verification", badgeKey: null },
-  { label: "Analytics", icon: BarChart3, to: "/trustlock/lender/analytics", tip: "Portfolio performance, sector concentration", badgeKey: null },
-  { label: "FlashVet AI", icon: Bot, to: "/trustlock/lender/flashvet", tip: "AI-powered research, forensics, and platform Q&A", badgeKey: null },
-  { label: "Repayments", icon: DollarSign, to: "/trustlock/lender/repayments", tip: "Review offline repayment confirmations from vendors", badgeKey: null },
-  { label: "KYB Verification", icon: ShieldCheck, to: "/trustlock/lender/kyb", tip: "Upload KYB documents and manage tier status", badgeKey: null },
-  { label: "Settings", icon: Settings, to: "/trustlock/lender/settings", tip: "Profile, logo, website, notification preferences", badgeKey: null },
+const navGroups: SidebarNavGroup[] = [
+  {
+    label: "Dashboard",
+    items: [
+      { label: "Overview", icon: LayoutDashboard, to: "/trustlock/lender", tip: "Portfolio metrics and key indicators" },
+    ],
+  },
+  {
+    label: "Portfolio & Lending",
+    items: [
+      { label: "Portfolio", icon: Briefcase, to: "/trustlock/lender/portfolio", tip: "Browse escrow certificates and active financing" },
+      { label: "Applications", icon: ClipboardList, to: "/trustlock/lender/applications", tip: "Incoming financing requests from vendors" },
+      { label: "Repayments", icon: DollarSign, to: "/trustlock/lender/repayments", tip: "Review offline repayment confirmations" },
+    ],
+  },
+  {
+    label: "Network",
+    items: [
+      { label: "Vendor Lookup", icon: Search, to: "/trustlock/lender/vendor-lookup", tip: "Search and discover verified vendors" },
+      { label: "Messages", icon: MessageSquare, to: "/trustlock/lender/messages", tip: "Encrypted messaging with vendors", badgeKey: "messages" },
+    ],
+  },
+  {
+    label: "Tools & Intelligence",
+    items: [
+      { label: "Documents", icon: FileText, to: "/trustlock/lender/documents", tip: "KYB docs, contracts, compliance records" },
+      { label: "Blockchain Explorer", icon: Link2, to: "/trustlock/lender/blockchain", tip: "Read-only SHA-256 proof chain verification" },
+      { label: "Analytics", icon: BarChart3, to: "/trustlock/lender/analytics", tip: "Portfolio performance, sector concentration" },
+      { label: "FlashVet AI", icon: Bot, to: "/trustlock/lender/flashvet", tip: "AI-powered research and forensics" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "KYB Verification", icon: ShieldCheck, to: "/trustlock/lender/kyb", tip: "Upload KYB documents and manage tier status" },
+      { label: "Settings", icon: Settings, to: "/trustlock/lender/settings", tip: "Profile, logo, website, notification preferences" },
+    ],
+  },
 ];
 
 const LenderSidebar = () => {
@@ -74,45 +98,13 @@ const LenderSidebar = () => {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navItems.map((item) => {
-            const badgeCount = item.badgeKey ? (badgeCounts[item.badgeKey] || 0) : 0;
-            return (
-              <div key={item.to} className="flex items-center gap-1">
-                <NavLink
-                  to={item.to}
-                  end={item.to === "/trustlock/lender"}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )
-                  }
-                >
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  {item.label}
-                  {badgeCount > 0 && (
-                    <Badge className="ml-auto text-[9px] px-1.5 min-w-[18px] justify-center bg-destructive text-destructive-foreground">
-                      {badgeCount}
-                    </Badge>
-                  )}
-                </NavLink>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0">
-                      <Info className="w-3 h-3" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent side="right" className="max-w-[200px] text-xs p-2">
-                    {item.tip}
-                  </PopoverContent>
-                </Popover>
-              </div>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-3 px-3">
+          <SidebarAccordionNav
+            groups={navGroups}
+            basePath="/trustlock/lender"
+            badgeCounts={badgeCounts}
+            onItemClick={() => setOpen(false)}
+          />
         </nav>
 
         <SidebarLegalLinks />
