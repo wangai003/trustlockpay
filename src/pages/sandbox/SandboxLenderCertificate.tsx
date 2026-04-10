@@ -58,7 +58,7 @@ const SandboxLenderCertificate = ({ order }: Props) => {
               </p>
             </div>
           </div>
-          <Badge variant="default" className="gap-1 text-[9px] px-2 py-0.5 bg-emerald-600/90 hover:bg-emerald-600">
+          <Badge variant="default" className="gap-1 text-[9px] px-2 py-0.5">
             <Lock className="h-2.5 w-2.5" />
             Funds Verified & Locked
           </Badge>
@@ -144,7 +144,7 @@ const SandboxLenderCertificate = ({ order }: Props) => {
 
           {/* Blockchain proof indicator */}
           <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/50 border border-border">
-            <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+            <CheckCircle className="h-3 w-3 text-primary shrink-0" />
             <p className="text-[9px] text-muted-foreground">
               <span className="font-medium text-foreground">SHA-256 hash chain anchored to Polygon</span> · 14 proof record types · 7-year forensic retention
             </p>

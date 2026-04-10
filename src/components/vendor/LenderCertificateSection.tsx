@@ -62,7 +62,7 @@ const LenderCertificateSection = () => {
     if (status === "revoked") {
       return { icon: <AlertTriangle className="h-2.5 w-2.5" />, label: "Revoked", variant: "destructive" as const, bg: "bg-destructive/90" };
     }
-    return { icon: <Lock className="h-2.5 w-2.5" />, label: "Funds Verified & Locked", variant: "default" as const, bg: "bg-emerald-600/90 hover:bg-emerald-600" };
+    return { icon: <Lock className="h-2.5 w-2.5" />, label: "Funds Verified & Locked", variant: "default" as const, bg: "" };
   };
 
   if (isLoading) {
@@ -189,7 +189,7 @@ const LenderCertificateSection = () => {
 
                 {/* Blockchain proof indicator */}
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/50 border border-border">
-                  <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                  <CheckCircle className="h-3 w-3 text-primary shrink-0" />
                   <p className="text-[9px] text-muted-foreground">
                     <span className="font-medium text-foreground">SHA-256 hash chain anchored to Polygon</span> · 14 proof types · 7-year retention
                   </p>
