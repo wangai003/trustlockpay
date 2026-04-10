@@ -2019,62 +2019,109 @@ export type Database = {
       financing_applications: {
         Row: {
           approved_amount: number | null
+          approved_tenure_days: number | null
           certificate_id: string | null
+          counter_amount: number | null
+          counter_offered_at: string | null
+          counter_offered_by: string | null
+          counter_rate_percent: number | null
+          counter_tenure_days: number | null
           created_at: string
+          decided_by: string | null
           decision_at: string | null
           id: string
           industry: string | null
+          interest_rate_percent: number | null
           lender_decision_note: string | null
           lender_id: string
           lender_notes: string | null
+          lender_target_id: string | null
           proposed_terms: Json | null
+          rejection_reason: string | null
           requested_amount: number
+          review_started_at: string | null
+          reviewing_lender_id: string | null
           status: string
           trade_scope: string | null
           transaction_id: string | null
           updated_at: string
           vendor_id: string
           vendor_notes: string | null
+          visibility: string | null
         }
         Insert: {
           approved_amount?: number | null
+          approved_tenure_days?: number | null
           certificate_id?: string | null
+          counter_amount?: number | null
+          counter_offered_at?: string | null
+          counter_offered_by?: string | null
+          counter_rate_percent?: number | null
+          counter_tenure_days?: number | null
           created_at?: string
+          decided_by?: string | null
           decision_at?: string | null
           id?: string
           industry?: string | null
+          interest_rate_percent?: number | null
           lender_decision_note?: string | null
           lender_id: string
           lender_notes?: string | null
+          lender_target_id?: string | null
           proposed_terms?: Json | null
+          rejection_reason?: string | null
           requested_amount?: number
+          review_started_at?: string | null
+          reviewing_lender_id?: string | null
           status?: string
           trade_scope?: string | null
           transaction_id?: string | null
           updated_at?: string
           vendor_id: string
           vendor_notes?: string | null
+          visibility?: string | null
         }
         Update: {
           approved_amount?: number | null
+          approved_tenure_days?: number | null
           certificate_id?: string | null
+          counter_amount?: number | null
+          counter_offered_at?: string | null
+          counter_offered_by?: string | null
+          counter_rate_percent?: number | null
+          counter_tenure_days?: number | null
           created_at?: string
+          decided_by?: string | null
           decision_at?: string | null
           id?: string
           industry?: string | null
+          interest_rate_percent?: number | null
           lender_decision_note?: string | null
           lender_id?: string
           lender_notes?: string | null
+          lender_target_id?: string | null
           proposed_terms?: Json | null
+          rejection_reason?: string | null
           requested_amount?: number
+          review_started_at?: string | null
+          reviewing_lender_id?: string | null
           status?: string
           trade_scope?: string | null
           transaction_id?: string | null
           updated_at?: string
           vendor_id?: string
           vendor_notes?: string | null
+          visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_financing_applications_lender_target"
+            columns: ["lender_target_id"]
+            isOneToOne: false
+            referencedRelation: "lender_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gas_reserve_ledger: {
         Row: {
@@ -2385,6 +2432,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lender_exposure: {
+        Row: {
+          active_facilities: number | null
+          exposure_limit: number | null
+          id: string
+          lender_id: string
+          total_exposure: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_facilities?: number | null
+          exposure_limit?: number | null
+          id?: string
+          lender_id: string
+          total_exposure?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_facilities?: number | null
+          exposure_limit?: number | null
+          id?: string
+          lender_id?: string
+          total_exposure?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       lender_kyb_queue: {
         Row: {
@@ -6183,6 +6257,10 @@ export type Database = {
       }
       hash_arbitrator_password: { Args: { _password: string }; Returns: string }
       hash_password: { Args: { _password: string }; Returns: string }
+      increment_lender_exposure: {
+        Args: { p_amount: number; p_lender_id: string }
+        Returns: undefined
+      }
       route_department_alert: {
         Args: {
           _admin_id?: string
