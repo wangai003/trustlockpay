@@ -142,11 +142,39 @@ const MessageBubble = ({ msg, isMine, role: viewerRole, adminAliasMap, adminName
             {adminLabel}
           </p>
         )}
-        <p className="whitespace-pre-wrap break-words">{sanitized}</p>
+        {sanitized.trim() && <p className="whitespace-pre-wrap break-words">{sanitized}</p>}
         {hadLinks && (
           <span className={cn("flex items-center gap-1 text-[9px] mt-0.5", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>
             <LinkIcon className="w-2.5 h-2.5" /> Links removed for security
           </span>
+        )}
+        {/* Attachment rendering */}
+        {msg.attachments && msg.attachments.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {msg.attachments.map((att, idx) => {
+              const isImg = isImageType(att.type);
+              return (
+                <div key={idx} className={cn("rounded-md overflow-hidden", isImg ? "" : "flex items-center gap-2 py-1")}>
+                  {isImg ? (
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                      <img src={att.url} alt={att.name} className="max-w-[200px] max-h-[160px] rounded-md object-cover" />
+                      <span className={cn("text-[9px] mt-0.5 block", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}>{att.name}</span>
+                    </a>
+                  ) : (
+                    <a href={att.url} target="_blank" rel="noopener noreferrer" className={cn(
+                      "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] transition-colors",
+                      isMine ? "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground" : "bg-foreground/5 hover:bg-foreground/10 text-foreground"
+                    )}>
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate max-w-[140px]">{att.name}</span>
+                      <span className="text-[8px] opacity-60 shrink-0">{formatFileSize(att.size)}</span>
+                      <Download className="w-3 h-3 shrink-0 opacity-60" />
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
         <div className={cn("flex items-center gap-1.5 mt-1", isMine ? "justify-end" : "justify-start")}>
           <p className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
