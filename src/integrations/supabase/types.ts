@@ -1833,6 +1833,163 @@ export type Database = {
           },
         ]
       }
+      financing_application_documents: {
+        Row: {
+          application_id: string
+          created_at: string
+          document_type: string
+          file_name: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          document_type: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "financing_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financing_application_items: {
+        Row: {
+          application_id: string
+          category: string
+          created_at: string
+          description: string
+          exchange_rate_snapshot: number | null
+          id: string
+          local_currency_amount: number | null
+          local_currency_code: string | null
+          quantity: number
+          sort_order: number
+          tax_amount: number | null
+          unit_price_usd: number
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          category?: string
+          created_at?: string
+          description: string
+          exchange_rate_snapshot?: number | null
+          id?: string
+          local_currency_amount?: number | null
+          local_currency_code?: string | null
+          quantity?: number
+          sort_order?: number
+          tax_amount?: number | null
+          unit_price_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          exchange_rate_snapshot?: number | null
+          id?: string
+          local_currency_amount?: number | null
+          local_currency_code?: string | null
+          quantity?: number
+          sort_order?: number
+          tax_amount?: number | null
+          unit_price_usd?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_application_items_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "financing_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financing_applications: {
+        Row: {
+          approved_amount: number | null
+          certificate_id: string | null
+          created_at: string
+          decision_at: string | null
+          id: string
+          industry: string | null
+          lender_decision_note: string | null
+          lender_id: string
+          lender_notes: string | null
+          proposed_terms: Json | null
+          requested_amount: number
+          status: string
+          trade_scope: string | null
+          transaction_id: string | null
+          updated_at: string
+          vendor_id: string
+          vendor_notes: string | null
+        }
+        Insert: {
+          approved_amount?: number | null
+          certificate_id?: string | null
+          created_at?: string
+          decision_at?: string | null
+          id?: string
+          industry?: string | null
+          lender_decision_note?: string | null
+          lender_id: string
+          lender_notes?: string | null
+          proposed_terms?: Json | null
+          requested_amount?: number
+          status?: string
+          trade_scope?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id: string
+          vendor_notes?: string | null
+        }
+        Update: {
+          approved_amount?: number | null
+          certificate_id?: string | null
+          created_at?: string
+          decision_at?: string | null
+          id?: string
+          industry?: string | null
+          lender_decision_note?: string | null
+          lender_id?: string
+          lender_notes?: string | null
+          proposed_terms?: Json | null
+          requested_amount?: number
+          status?: string
+          trade_scope?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+          vendor_id?: string
+          vendor_notes?: string | null
+        }
+        Relationships: []
+      }
       gas_reserve_ledger: {
         Row: {
           converted_at: string | null
@@ -2086,6 +2243,167 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lender_disbursement_records: {
+        Row: {
+          amount_usd: number
+          application_id: string | null
+          created_at: string
+          disbursed_at: string
+          id: string
+          lender_id: string
+          local_currency_amount: number | null
+          local_currency_code: string | null
+          notes: string | null
+          source: string
+          status: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          application_id?: string | null
+          created_at?: string
+          disbursed_at?: string
+          id?: string
+          lender_id: string
+          local_currency_amount?: number | null
+          local_currency_code?: string | null
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          application_id?: string | null
+          created_at?: string
+          disbursed_at?: string
+          id?: string
+          lender_id?: string
+          local_currency_amount?: number | null
+          local_currency_code?: string | null
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_disbursement_records_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "financing_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_kyb_queue: {
+        Row: {
+          approved_tier: number | null
+          created_at: string
+          id: string
+          lender_id: string
+          review_notes: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_documents: Json | null
+          updated_at: string
+        }
+        Insert: {
+          approved_tier?: number | null
+          created_at?: string
+          id?: string
+          lender_id: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_documents?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          approved_tier?: number | null
+          created_at?: string
+          id?: string
+          lender_id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_documents?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lender_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          facility_limit: number | null
+          id: string
+          institution_name: string
+          institution_type: string
+          is_verified: boolean
+          kyb_status: string
+          lender_tier: number
+          lending_license_number: string | null
+          license_jurisdiction: string | null
+          logo_url: string | null
+          operating_regions: string[] | null
+          sector_focus: string[] | null
+          social_links: Json | null
+          status: string
+          terms_template: Json | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          facility_limit?: number | null
+          id?: string
+          institution_name: string
+          institution_type?: string
+          is_verified?: boolean
+          kyb_status?: string
+          lender_tier?: number
+          lending_license_number?: string | null
+          license_jurisdiction?: string | null
+          logo_url?: string | null
+          operating_regions?: string[] | null
+          sector_focus?: string[] | null
+          social_links?: Json | null
+          status?: string
+          terms_template?: Json | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          facility_limit?: number | null
+          id?: string
+          institution_name?: string
+          institution_type?: string
+          is_verified?: boolean
+          kyb_status?: string
+          lender_tier?: number
+          lending_license_number?: string | null
+          license_jurisdiction?: string | null
+          logo_url?: string | null
+          operating_regions?: string[] | null
+          sector_focus?: string[] | null
+          social_links?: Json | null
+          status?: string
+          terms_template?: Json | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
       }
       message_threads: {
         Row: {
@@ -3021,10 +3339,12 @@ export type Database = {
           phone_country_code: string | null
           preferred_currency: string | null
           preferred_language: string | null
+          social_links: Json | null
           status: string
           updated_at: string
           wallet_address: string | null
           wallet_verified: boolean | null
+          website_url: string | null
         }
         Insert: {
           account_type?: string | null
@@ -3048,10 +3368,12 @@ export type Database = {
           phone_country_code?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
+          social_links?: Json | null
           status?: string
           updated_at?: string
           wallet_address?: string | null
           wallet_verified?: boolean | null
+          website_url?: string | null
         }
         Update: {
           account_type?: string | null
@@ -3075,10 +3397,12 @@ export type Database = {
           phone_country_code?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
+          social_links?: Json | null
           status?: string
           updated_at?: string
           wallet_address?: string | null
           wallet_verified?: boolean | null
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -5799,7 +6123,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "vendor" | "buyer"
+      app_role: "admin" | "vendor" | "buyer" | "lender"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5927,7 +6251,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "vendor", "buyer"],
+      app_role: ["admin", "vendor", "buyer", "lender"],
     },
   },
 } as const
