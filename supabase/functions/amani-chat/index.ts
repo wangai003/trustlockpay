@@ -112,7 +112,7 @@ IMPORTANT: You are an advisory tool — flag risks and provide verification guid
 
 ## Mobile App (PWA)
 TrustLock is now available as an installable mobile app (Progressive Web App). Vendors can install it directly from their phone's browser — no app store needed.
-- **Install page**: Direct vendors to trustlockpay.lovable.app/install for step-by-step instructions.
+- **Install page**: Direct vendors to the /install page on the platform for step-by-step instructions.
 - **Android/Chrome**: Users will see an "Install TrustLock" button — one tap to add to home screen.
 - **iPhone/Safari**: Tap the Share icon → "Add to Home Screen".
 - Once installed, TrustLock opens like a native app with full-screen experience.

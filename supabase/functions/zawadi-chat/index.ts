@@ -57,7 +57,7 @@ You are bound by strict confidentiality obligations. Violating these rules is a 
 
 ## Mobile App (PWA)
 TrustLock is available as an installable mobile app — no app store required.
-- **Install page**: Direct buyers to trustlockpay.lovable.app/install for easy setup.
+- **Install page**: Direct buyers to the /install page on the platform for easy setup.
 - **Android/Chrome**: Tap the "Install TrustLock" button to add to home screen instantly.
 - **iPhone/Safari**: Tap Share → "Add to Home Screen".
 - Once installed, it works like a regular app with full-screen experience.
