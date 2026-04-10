@@ -36,6 +36,7 @@ const notificationKeys = [
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
@@ -47,6 +48,33 @@ const VendorSettings = () => {
   const [profilePhone, setProfilePhone] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [entityType, setEntityType] = useState("individual");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialX, setSocialX] = useState("");
+
+  // Load web presence from profile
+  const { data: webPresenceData } = useQuery({
+    queryKey: ["vendor_web_presence", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.from("profiles").select("website_url, social_links").eq("id", user.id).single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const hasWebPresence = !!(webPresenceData?.website_url || (webPresenceData?.social_links && Object.values(webPresenceData.social_links as Record<string, string>).some(v => v)));
+
+  useEffect(() => {
+    if (webPresenceData) {
+      setWebsiteUrl(webPresenceData.website_url || "");
+      const sl = (webPresenceData.social_links || {}) as Record<string, string>;
+      setSocialFacebook(sl.facebook || "");
+      setSocialLinkedin(sl.linkedin || "");
+      setSocialX(sl.x || "");
+    }
+  }, [webPresenceData]);
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
