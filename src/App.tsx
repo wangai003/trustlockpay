@@ -100,6 +100,8 @@ const VendorCRM = lazy(() => import("./pages/vendor/VendorCRM"));
 const VendorDisputes = lazy(() => import("./pages/vendor/VendorDisputes"));
 const VendorFeeSimulator = lazy(() => import("./pages/vendor/VendorFeeSimulator"));
 const VendorBuyerLookup = lazy(() => import("./pages/vendor/VendorBuyerLookup"));
+const VendorLenderLookup = lazy(() => import("./pages/vendor/VendorLenderLookup"));
+const VendorRequestFinancing = lazy(() => import("./pages/vendor/VendorRequestFinancing"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
@@ -237,6 +239,8 @@ const App = () => (
                 <Route path="disputes" element={<VendorDisputes />} />
                 <Route path="fee-simulator" element={<VendorFeeSimulator />} />
                 <Route path="buyer-lookup" element={<VendorBuyerLookup />} />
+                <Route path="lender-lookup" element={<VendorLenderLookup />} />
+                <Route path="request-financing" element={<VendorRequestFinancing />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
