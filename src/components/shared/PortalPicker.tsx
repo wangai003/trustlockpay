@@ -29,6 +29,14 @@ const portals = [
     signupPath: "/trustlock/buyer/signup",
   },
   {
+    role: "lender",
+    label: "Lender",
+    desc: "Finance vendors & manage loan portfolios",
+    icon: Landmark,
+    loginPath: "/trustlock/lender/login",
+    signupPath: "/trustlock/lender/signup",
+  },
+  {
     role: "admin",
     label: "Admin",
     desc: "Manage platform operations & compliance",
