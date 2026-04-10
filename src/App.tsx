@@ -246,6 +246,7 @@ const App = () => (
                 <Route path="buyer-lookup" element={<VendorBuyerLookup />} />
                 <Route path="lender-lookup" element={<VendorLenderLookup />} />
                 <Route path="request-financing" element={<VendorRequestFinancing />} />
+                <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
