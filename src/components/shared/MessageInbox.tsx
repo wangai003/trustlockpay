@@ -374,35 +374,65 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     setContacts(contactList);
   }, [userId, role]);
 
-  // Admin: search profiles by name, email, or user ID
-  const handleAdminSearch = useCallback((query: string) => {
-    setAdminContactSearch(query);
+  // Universal recipient search — searches profiles by name, email, or user ID
+  const handleRecipientSearch = useCallback((query: string) => {
+    setRecipientSearch(query);
     setComposeRecipient("");
     if (adminSearchTimeout.current) clearTimeout(adminSearchTimeout.current);
 
     if (!query.trim() || query.trim().length < 2) {
-      setAdminSearchResults([]);
+      setRecipientResults([]);
       return;
     }
 
     adminSearchTimeout.current = setTimeout(async () => {
-      setAdminSearching(true);
+      setRecipientSearching(true);
       const term = `%${query.trim()}%`;
-      const { data } = await supabase
+
+      // Search profiles by name or email
+      const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, email")
         .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .neq("id", userId || "")
         .limit(15);
 
-      const results: Contact[] = (data || []).map((p) => ({
-        id: p.id,
-        label: `${p.full_name || "No name"} — ${p.email}`,
-        type: "counterparty" as const,
-      }));
-      setAdminSearchResults(results);
-      setAdminSearching(false);
+      // Also look up user_roles to tag results
+      const profileIds = (profiles || []).map((p) => p.id);
+      let roleMap: Record<string, string> = {};
+      if (profileIds.length > 0) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", profileIds);
+        roles?.forEach((r: any) => { roleMap[r.user_id] = r.role; });
+      }
+
+      const results: Contact[] = (profiles || []).map((p) => {
+        const userRole = roleMap[p.id];
+        const tag = userRole === "vendor" ? "Vendor" : userRole === "buyer" ? "Buyer" : userRole === "lender" ? "Lender" : undefined;
+        return {
+          id: p.id,
+          label: `${p.full_name || "No name"} — ${p.email || p.id.slice(0, 8)}`,
+          type: "counterparty" as const,
+          roleTag: tag,
+        };
+      });
+
+      // For non-admin roles, also match "admin" or "trustlock" queries to the admin sentinel
+      if (role !== "admin" && ("admin".includes(query.trim().toLowerCase()) || "trustlock".includes(query.trim().toLowerCase()))) {
+        results.unshift({
+          id: ADMIN_SENTINEL_ID,
+          label: "TrustLock Admin Support",
+          type: "admin",
+          roleTag: "Admin",
+        });
+      }
+
+      setRecipientResults(results);
+      setRecipientSearching(false);
     }, 300);
-  }, []);
+  }, [userId, role]);
 
   // Load messages for a thread
   const loadMessages = useCallback(async (threadId: string) => {
