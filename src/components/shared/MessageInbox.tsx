@@ -66,6 +66,7 @@ interface Contact {
   id: string;
   label: string;
   type: "admin" | "counterparty";
+  roleTag?: string;
   transaction_id?: string;
 }
 
@@ -179,9 +180,9 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [composeCategory, setComposeCategory] = useState("general");
   const [composeBody, setComposeBody] = useState("");
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
-  const [adminContactSearch, setAdminContactSearch] = useState("");
-  const [adminSearchResults, setAdminSearchResults] = useState<Contact[]>([]);
-  const [adminSearching, setAdminSearching] = useState(false);
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [recipientResults, setRecipientResults] = useState<Contact[]>([]);
+  const [recipientSearching, setRecipientSearching] = useState(false);
   const [adminAliasMap, setAdminAliasMap] = useState<Record<string, string>>({});
   const [adminNameMap, setAdminNameMap] = useState<Record<string, string>>({});
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -373,35 +374,65 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     setContacts(contactList);
   }, [userId, role]);
 
-  // Admin: search profiles by name, email, or user ID
-  const handleAdminSearch = useCallback((query: string) => {
-    setAdminContactSearch(query);
+  // Universal recipient search — searches profiles by name, email, or user ID
+  const handleRecipientSearch = useCallback((query: string) => {
+    setRecipientSearch(query);
     setComposeRecipient("");
     if (adminSearchTimeout.current) clearTimeout(adminSearchTimeout.current);
 
     if (!query.trim() || query.trim().length < 2) {
-      setAdminSearchResults([]);
+      setRecipientResults([]);
       return;
     }
 
     adminSearchTimeout.current = setTimeout(async () => {
-      setAdminSearching(true);
+      setRecipientSearching(true);
       const term = `%${query.trim()}%`;
-      const { data } = await supabase
+
+      // Search profiles by name or email
+      const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, email")
         .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .neq("id", userId || "")
         .limit(15);
 
-      const results: Contact[] = (data || []).map((p) => ({
-        id: p.id,
-        label: `${p.full_name || "No name"} — ${p.email}`,
-        type: "counterparty" as const,
-      }));
-      setAdminSearchResults(results);
-      setAdminSearching(false);
+      // Also look up user_roles to tag results
+      const profileIds = (profiles || []).map((p) => p.id);
+      let roleMap: Record<string, string> = {};
+      if (profileIds.length > 0) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", profileIds);
+        roles?.forEach((r: any) => { roleMap[r.user_id] = r.role; });
+      }
+
+      const results: Contact[] = (profiles || []).map((p) => {
+        const userRole = roleMap[p.id];
+        const tag = userRole === "vendor" ? "Vendor" : userRole === "buyer" ? "Buyer" : userRole === "lender" ? "Lender" : undefined;
+        return {
+          id: p.id,
+          label: `${p.full_name || "No name"} — ${p.email || p.id.slice(0, 8)}`,
+          type: "counterparty" as const,
+          roleTag: tag,
+        };
+      });
+
+      // For non-admin roles, also match "admin" or "trustlock" queries to the admin sentinel
+      if (role !== "admin" && ("admin".includes(query.trim().toLowerCase()) || "trustlock".includes(query.trim().toLowerCase()))) {
+        results.unshift({
+          id: ADMIN_SENTINEL_ID,
+          label: "TrustLock Admin Support",
+          type: "admin",
+          roleTag: "Admin",
+        });
+      }
+
+      setRecipientResults(results);
+      setRecipientSearching(false);
     }, 300);
-  }, []);
+  }, [userId, role]);
 
   // Load messages for a thread
   const loadMessages = useCallback(async (threadId: string) => {
@@ -547,16 +578,15 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   // Create new thread
   const handleCompose = async () => {
     if (!composeRecipient || !composeBody.trim() || !userId) return;
-    const contact = contacts.find((c) => c.id === composeRecipient);
+    const contact = contacts.find((c) => c.id === composeRecipient) || recipientResults.find((c) => c.id === composeRecipient);
     // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const linkedTxId = contact?.transaction_id || transactionId || null;
 
-    // Determine recipient role from contacts
-    const recipientContact = contacts.find((c) => c.id === composeRecipient);
+    // Determine recipient role from search results or contacts
     const myRole = role === "admin" ? "admin" : role;
-    const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (recipientContact?.label?.includes("(Lender)") ? "lender" : recipientContact?.label?.includes("(Vendor)") ? "vendor" : undefined);
+    const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (contact?.roleTag?.toLowerCase() || null);
 
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
@@ -594,6 +624,8 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     setComposeSubject("");
     setComposeCategory("general");
     setComposeBody("");
+    setRecipientSearch("");
+    setRecipientResults([]);
     loadThreads();
     setSelectedThread(thread as Thread);
     loadMessages(thread.id);
@@ -625,59 +657,63 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
               )}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">To</label>
-                {role === "admin" ? (
-                  <div className="space-y-1.5">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
-                      <Input
-                        value={adminContactSearch}
-                        onChange={(e) => handleAdminSearch(e.target.value)}
-                        placeholder="Search by name, email, or ID..."
-                        className="h-9 text-sm pl-8"
-                      />
-                      {adminSearching && <Loader2 className="absolute right-2.5 top-2.5 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-                    </div>
-                    {composeRecipient && (
-                      <div className="flex items-center gap-1.5 p-1.5 rounded bg-primary/10 text-xs">
-                        <Shield className="w-3 h-3 text-primary" />
-                        <span className="truncate">{adminSearchResults.find(c => c.id === composeRecipient)?.label || contacts.find(c => c.id === composeRecipient)?.label || composeRecipient.slice(0, 12)}</span>
-                        <button onClick={() => { setComposeRecipient(""); setAdminContactSearch(""); }} className="ml-auto text-muted-foreground hover:text-foreground text-[10px]">✕</button>
-                      </div>
-                    )}
-                    {adminContactSearch.trim().length >= 2 && adminSearchResults.length > 0 && !composeRecipient && (
-                      <ScrollArea className="max-h-36 border border-border rounded-md">
-                        {adminSearchResults.map((c) => (
-                          <button
-                            key={c.id}
-                            onClick={() => { setComposeRecipient(c.id); setAdminContactSearch(""); }}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors border-b border-border last:border-0 truncate"
-                          >
-                            {c.label}
-                          </button>
-                        ))}
-                      </ScrollArea>
-                    )}
-                    {adminContactSearch.trim().length >= 2 && adminSearchResults.length === 0 && !adminSearching && (
-                      <p className="text-[10px] text-muted-foreground px-1">No users found</p>
-                    )}
+                <div className="space-y-1.5">
+                  {/* Admin auto-suggestion chip for non-admin roles */}
+                  {role !== "admin" && !composeRecipient && !recipientSearch.trim() && (
+                    <button
+                      onClick={() => { setComposeRecipient(ADMIN_SENTINEL_ID); setRecipientSearch(""); setRecipientResults([]); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-primary/10 text-xs hover:bg-primary/20 transition-colors border border-primary/20 w-full text-left"
+                    >
+                      <Shield className="w-3 h-3 text-primary shrink-0" />
+                      <span>TrustLock Admin Support</span>
+                      <span className="ml-auto text-[9px] text-muted-foreground">click to select</span>
+                    </button>
+                  )}
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      value={recipientSearch}
+                      onChange={(e) => handleRecipientSearch(e.target.value)}
+                      placeholder="Search by name, email, or ID..."
+                      className="h-9 text-sm pl-8"
+                    />
+                    {recipientSearching && <Loader2 className="absolute right-2.5 top-2.5 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
                   </div>
-                ) : (
-                  <Select value={composeRecipient} onValueChange={setComposeRecipient}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select recipient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contacts.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          <span className="flex items-center gap-2">
-                            {c.type === "admin" && <Shield className="w-3 h-3 text-primary" />}
-                            {c.label}
-                          </span>
-                        </SelectItem>
+                  {composeRecipient && (
+                    <div className="flex items-center gap-1.5 p-1.5 rounded bg-primary/10 text-xs">
+                      <Shield className="w-3 h-3 text-primary" />
+                      <span className="truncate">
+                        {composeRecipient === ADMIN_SENTINEL_ID
+                          ? "TrustLock Admin Support"
+                          : recipientResults.find(c => c.id === composeRecipient)?.label || contacts.find(c => c.id === composeRecipient)?.label || composeRecipient.slice(0, 12)}
+                      </span>
+                      {recipientResults.find(c => c.id === composeRecipient)?.roleTag && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{recipientResults.find(c => c.id === composeRecipient)?.roleTag}</Badge>
+                      )}
+                      <button onClick={() => { setComposeRecipient(""); setRecipientSearch(""); }} className="ml-auto text-muted-foreground hover:text-foreground text-[10px]">✕</button>
+                    </div>
+                  )}
+                  {recipientSearch.trim().length >= 2 && recipientResults.length > 0 && !composeRecipient && (
+                    <ScrollArea className="max-h-40 border border-border rounded-md">
+                      {recipientResults.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => { setComposeRecipient(c.id); setRecipientSearch(""); }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors border-b border-border last:border-0 flex items-center gap-2"
+                        >
+                          {c.type === "admin" && <Shield className="w-3 h-3 text-primary shrink-0" />}
+                          <span className="truncate flex-1">{c.label}</span>
+                          {c.roleTag && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">{c.roleTag}</Badge>
+                          )}
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                    </ScrollArea>
+                  )}
+                  {recipientSearch.trim().length >= 2 && recipientResults.length === 0 && !recipientSearching && (
+                    <p className="text-[10px] text-muted-foreground px-1">No users found</p>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Reason</label>
