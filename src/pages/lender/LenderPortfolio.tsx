@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import LenderHeader from "@/components/lender/LenderHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,40 +10,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Wallet, TrendingUp, Shield, AlertTriangle, Building2,
-  DollarSign, Percent, Clock, ArrowUpRight, ArrowDownRight
+  DollarSign, Percent, Clock, ArrowUpRight
 } from "lucide-react";
-
-interface ExposureData {
-  total_exposure: number;
-  active_facilities: number;
-  exposure_limit: number;
-  utilization_percent: number;
-  by_industry: Record<string, number>;
-  by_tenure: {
-    short_term: number; // 0-90 days
-    medium_term: number; // 91-180 days
-    long_term: number; // 180+ days
-  };
-}
 
 interface Facility {
   id: string;
   vendor_name: string;
   approved_amount: number;
-  disbursed_amount: number;
-  outstanding_principal: number;
   interest_rate: number;
   tenure_days: number;
   start_date: string;
   maturity_date: string;
-  status: string;
+}
+
+interface PortfolioData {
+  total_exposure: number;
+  exposure_limit: number;
+  active_facilities: number;
+  utilization_percent: number;
+  facilities: Facility[];
 }
 
 const LenderPortfolio = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [exposure, setExposure] = useState<ExposureData | null>(null);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [data, setData] = useState<PortfolioData | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -54,67 +44,40 @@ const LenderPortfolio = () => {
   const loadPortfolioData = async () => {
     setLoading(true);
     try {
-      // Fetch exposure data
-      const { data: exposureData, error: expError } = await supabase
-        .from("lender_exposure")
-        .select("*")
-        .eq("lender_id", user?.id)
-        .single();
-
-      if (expError && expError.code !== "PGRST116") throw expError;
-
-      // Fetch approved applications as facilities
-      const { data: apps, error: appsError } = await supabase
-        .from("financing_applications")
-        .select(`
-          id,
-          vendor_id,
-          approved_amount,
-          interest_rate_percent,
-          approved_tenure_days,
-          decision_at,
-          status,
-          profiles:vendor_id (company_name)
-        `)
-        .eq("status", "approved")
-        .eq("decided_by", user?.id);
-
-      if (appsError) throw appsError;
-
-      // Calculate exposure metrics
-      const totalApproved = apps?.reduce((sum, a) => sum + (a.approved_amount || 0), 0) || 0;
-      const limit = 1000000; // Default $1M limit, should come from lender profile
-      
-      setExposure({
-        total_exposure: exposureData?.total_exposure || totalApproved,
-        active_facilities: exposureData?.active_facilities || apps?.length || 0,
-        exposure_limit: exposureData?.exposure_limit || limit,
-        utilization_percent: (totalApproved / limit) * 100,
-        by_industry: {}, // Would aggregate from applications
-        by_tenure: {
-          short_term: 0,
-          medium_term: 0,
-          long_term: 0,
-        },
-      });
-
-      // Transform to facilities
-      const facilityList: Facility[] = (apps || []).map((app: any) => ({
-        id: app.id,
-        vendor_name: app.profiles?.company_name || "Unknown",
-        approved_amount: app.approved_amount,
-        disbursed_amount: 0, // Would come from actual disbursements
-        outstanding_principal: app.approved_amount,
-        interest_rate: app.interest_rate_percent,
-        tenure_days: app.approved_tenure_days,
-        start_date: app.decision_at,
-        maturity_date: new Date(new Date(app.decision_at).getTime() + app.approved_tenure_days * 24 * 60 * 60 * 1000).toISOString(),
-        status: "active",
-      }));
-
-      setFacilities(facilityList);
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lender-workflow`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({ action: "get_portfolio" }),
+        }
+      );
+      const result = await resp.json();
+      if (result.success && result.data) {
+        setData(result.data);
+      } else {
+        // Use default empty state
+        setData({
+          total_exposure: 0,
+          exposure_limit: 1000000,
+          active_facilities: 0,
+          utilization_percent: 0,
+          facilities: [],
+        });
+      }
     } catch (err) {
       toast.error("Failed to load portfolio data");
+      setData({
+        total_exposure: 0,
+        exposure_limit: 1000000,
+        active_facilities: 0,
+        utilization_percent: 0,
+        facilities: [],
+      });
     }
     setLoading(false);
   };
@@ -124,6 +87,15 @@ const LenderPortfolio = () => {
     if (utilization < 80) return "text-yellow-600";
     return "text-red-600";
   };
+
+  const exposure = data || {
+    total_exposure: 0,
+    exposure_limit: 1000000,
+    active_facilities: 0,
+    utilization_percent: 0,
+  };
+
+  const facilities = data?.facilities || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -153,13 +125,13 @@ const LenderPortfolio = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Total Exposure</p>
                       <p className="text-3xl font-bold">
-                        ${exposure?.total_exposure.toLocaleString() || "0"}
+                        ${exposure.total_exposure.toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Limit</p>
                       <p className="text-xl font-semibold">
-                        ${exposure?.exposure_limit.toLocaleString() || "1,000,000"}
+                        ${exposure.exposure_limit.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -167,16 +139,16 @@ const LenderPortfolio = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Utilization</span>
-                      <span className={getRiskColor(exposure?.utilization_percent || 0)}>
-                        {exposure?.utilization_percent.toFixed(1) || "0"}%
+                      <span className={getRiskColor(exposure.utilization_percent)}>
+                        {exposure.utilization_percent.toFixed(1)}%
                       </span>
                     </div>
                     <Progress 
-                      value={exposure?.utilization_percent || 0} 
+                      value={exposure.utilization_percent} 
                       className="h-2"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Available capacity: ${((exposure?.exposure_limit || 1000000) - (exposure?.total_exposure || 0)).toLocaleString()}
+                      Available capacity: ${(exposure.exposure_limit - exposure.total_exposure).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -204,7 +176,7 @@ const LenderPortfolio = () => {
                         <Building2 className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold">{exposure?.active_facilities || 0}</p>
+                        <p className="font-semibold">{exposure.active_facilities}</p>
                         <p className="text-xs text-muted-foreground">Active Facilities</p>
                       </div>
                     </div>
