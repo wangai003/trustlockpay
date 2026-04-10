@@ -112,6 +112,22 @@ const DataRights = lazy(() => import("./pages/public/DataRights"));
 const ArbitratorPortal = lazy(() => import("./pages/public/ArbitratorPortal"));
 const VerifyCertificate = lazy(() => import("./pages/public/VerifyCertificate"));
 const ForgotPassword = lazy(() => import("./pages/shared/ForgotPassword"));
+
+// Lender
+const LenderLogin = lazy(() => import("./pages/lender/LenderLogin"));
+const LenderSignup = lazy(() => import("./pages/lender/LenderSignup"));
+const LenderLayout = lazy(() => import("./pages/lender/LenderLayout"));
+const LenderOverview = lazy(() => import("./pages/lender/LenderOverview"));
+const LenderPortfolio = lazy(() => import("./pages/lender/LenderPortfolio"));
+const LenderApplications = lazy(() => import("./pages/lender/LenderApplications"));
+const LenderVendorLookup = lazy(() => import("./pages/lender/LenderVendorLookup"));
+const LenderMessages = lazy(() => import("./pages/lender/LenderMessages"));
+const LenderDocuments = lazy(() => import("./pages/lender/LenderDocuments"));
+const LenderBlockchain = lazy(() => import("./pages/lender/LenderBlockchain"));
+const LenderAnalytics = lazy(() => import("./pages/lender/LenderAnalytics"));
+const LenderFlashVet = lazy(() => import("./pages/lender/LenderFlashVet"));
+const LenderKYB = lazy(() => import("./pages/lender/LenderKYB"));
+const LenderSettings = lazy(() => import("./pages/lender/LenderSettings"));
 const ResetPassword = lazy(() => import("./pages/shared/ResetPassword"));
 
 // Sandbox
