@@ -2192,6 +2192,7 @@ export type Database = {
           buyer_country_code: string | null
           buyer_email: string
           buyer_full_name: string
+          buyer_id: string | null
           buyer_phone: string | null
           created_at: string
           id: string
@@ -2212,6 +2213,7 @@ export type Database = {
           buyer_country_code?: string | null
           buyer_email: string
           buyer_full_name: string
+          buyer_id?: string | null
           buyer_phone?: string | null
           created_at?: string
           id?: string
@@ -2232,6 +2234,7 @@ export type Database = {
           buyer_country_code?: string | null
           buyer_email?: string
           buyer_full_name?: string
+          buyer_id?: string | null
           buyer_phone?: string | null
           created_at?: string
           id?: string
@@ -5553,6 +5556,56 @@ export type Database = {
           },
         ]
       }
+      transaction_observers_safe: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          invite_accepted: boolean | null
+          invited_by: string | null
+          milestone_ids: string[] | null
+          observer_email: string | null
+          observer_name: string | null
+          observer_role: string | null
+          permissions: string[] | null
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invite_accepted?: boolean | null
+          invited_by?: string | null
+          milestone_ids?: string[] | null
+          observer_email?: string | null
+          observer_name?: string | null
+          observer_role?: string | null
+          permissions?: string[] | null
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invite_accepted?: boolean | null
+          invited_by?: string | null
+          milestone_ids?: string[] | null
+          observer_email?: string | null
+          observer_name?: string | null
+          observer_role?: string | null
+          permissions?: string[] | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_observers_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_admin_account: {
@@ -5568,6 +5621,10 @@ export type Database = {
       get_industry_release_days: {
         Args: { p_industry: string }
         Returns: number
+      }
+      get_masked_arbitrator_proposals: {
+        Args: { _dispute_id: string; _user_id: string }
+        Returns: Json[]
       }
       get_vendor_claim_by_token: {
         Args: { p_token: string }

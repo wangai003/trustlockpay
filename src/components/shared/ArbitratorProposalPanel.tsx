@@ -57,12 +57,16 @@ const ArbitratorProposalPanel = ({ disputeId: propDisputeId, transactionId, role
   const { data: proposals = [] } = useQuery({
     queryKey: ["arbitrator-proposals", disputeId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("arbitrator_proposals")
-        .select("*")
-        .eq("dispute_id", disputeId!)
-        .order("created_at", { ascending: false });
-      return data || [];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase.rpc("get_masked_arbitrator_proposals", {
+        _dispute_id: disputeId!,
+        _user_id: user.id,
+      });
+      const rows = (data || []).map((d: any) => d as Record<string, any>);
+      return rows.sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     },
     enabled: !!disputeId,
   });

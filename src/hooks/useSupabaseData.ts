@@ -175,8 +175,9 @@ export function useTransactionObservers(transactionId?: string) {
   return useQuery({
     queryKey: ["transaction_observers", transactionId],
     queryFn: async () => {
+      // Use safe view to exclude access_token from results
       const { data, error } = await supabase
-        .from("transaction_observers")
+        .from("transaction_observers_safe" as any)
         .select("*")
         .eq("transaction_id", transactionId!)
         .order("created_at", { ascending: false });
