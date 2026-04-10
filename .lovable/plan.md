@@ -398,6 +398,7 @@ Veridia inherits and extends the same document intelligence used by the existing
 - Pre-populated portfolio data, sample certificates, demo financing applications
 - 8+ mock lender profiles in sandbox data for vendor lookup demo
 - Mock Oba AI chat with pre-scripted responses
+- Mock Veridia AI with sample document analysis demo (pre-loaded confidence score output)
 - Mock liability contract signing flow
 - Mock KYB verification with tier assignment demo
 
@@ -408,7 +409,8 @@ Veridia inherits and extends the same document intelligence used by the existing
 - Notification trigger validation
 - Security scan after all schema changes
 - Input validation on all edge functions (Zod schemas)
-- Oba AI confidentiality protocol verification
+- Oba AI + Veridia AI confidentiality protocol verification
+- Veridia analysis history RLS verification
 
 ---
 
