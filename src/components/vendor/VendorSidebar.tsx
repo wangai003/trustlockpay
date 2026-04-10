@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle, Search
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, Info, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle, Search, Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 
 const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW", badgeKey: null as string | null },
+  { label: "Lender Lookup", icon: Landmark, to: "/trustlock/vendor/lender-lookup", tip: "Browse verified lenders and request financing", tlId: "TL-V-SB-NAV-LENDER-LOOKUP", badgeKey: null },
+  { label: "Request Financing", icon: ClipboardList, to: "/trustlock/vendor/request-financing", tip: "Submit a financing application to a lender", tlId: "TL-V-SB-NAV-REQ-FINANCE", badgeKey: null },
   { label: "Buyer Lookup", icon: Search, to: "/trustlock/vendor/buyer-lookup", tip: "Search and connect with buyers on the TrustLock network", tlId: "TL-V-SB-NAV-BUYER-LOOKUP", badgeKey: null },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY", badgeKey: null },
   { label: "Direct Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "Orders from your own website widget, standalone payment links, or TrustLock OS Pay — transactions you initiate and manage directly", tlId: "TL-V-SB-NAV-TRANSACTIONS", badgeKey: null },
