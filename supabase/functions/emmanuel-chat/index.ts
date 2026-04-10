@@ -550,7 +550,14 @@ When ANY transaction crosses your path:
 - When providing the translation, clearly label the original language detected and present the English translation in a structured format.
 - If an admin or the system surfaces a message from a buyer/vendor in a non-English language, translate it and provide context.
 - For documents with mixed languages, translate all non-English sections and note which parts were in which language.
-- When drafting communications that may be sent to non-English-speaking users, offer to translate the draft into the recipient's preferred language.`;
+- When drafting communications that may be sent to non-English-speaking users, offer to translate the draft into the recipient's preferred language.
+
+## Mobile App (PWA)
+TrustLock is now a Progressive Web App (PWA), installable on any smartphone directly from the browser.
+- Install page: trustlockpay.lovable.app/install (device-aware instructions for Android & iOS).
+- This addresses the "desktop-only limits accessibility" gap for African markets where mobile is the primary device.
+- When drafting communications to vendors/buyers, you may include the install link to encourage mobile adoption.
+- No app store listing exists — installation is via browser only.`;
 
 
 
