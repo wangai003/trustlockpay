@@ -507,21 +507,27 @@ export type Database = {
           body: string
           created_at: string
           department_slug: string
+          encryption_version: number | null
           id: string
+          is_encrypted: boolean
           sender_id: string
         }
         Insert: {
           body: string
           created_at?: string
           department_slug: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           sender_id: string
         }
         Update: {
           body?: string
           created_at?: string
           department_slug?: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           sender_id?: string
         }
         Relationships: [
@@ -538,7 +544,9 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          encryption_version: number | null
           id: string
+          is_encrypted: boolean
           is_read: boolean
           recipient_id: string
           sender_id: string
@@ -546,7 +554,9 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           is_read?: boolean
           recipient_id: string
           sender_id: string
@@ -554,7 +564,9 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          encryption_version?: number | null
           id?: string
+          is_encrypted?: boolean
           is_read?: boolean
           recipient_id?: string
           sender_id?: string
@@ -1667,6 +1679,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      encrypted_messages: {
+        Row: {
+          created_at: string
+          encrypted_body: string
+          encryption_version: number
+          id: string
+          is_read: boolean
+          nonce: string
+          recipient_id: string
+          sender_id: string
+          sender_public_key_id: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          encrypted_body: string
+          encryption_version?: number
+          id?: string
+          is_read?: boolean
+          nonce: string
+          recipient_id: string
+          sender_id: string
+          sender_public_key_id?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          encrypted_body?: string
+          encryption_version?: number
+          id?: string
+          is_read?: boolean
+          nonce?: string
+          recipient_id?: string
+          sender_id?: string
+          sender_public_key_id?: string | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encrypted_messages_sender_public_key_id_fkey"
+            columns: ["sender_public_key_id"]
+            isOneToOne: false
+            referencedRelation: "encryption_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encryption_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_version: number
+          public_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_version?: number
+          public_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_version?: number
+          public_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       escrow_extensions: {
         Row: {
