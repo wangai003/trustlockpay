@@ -120,7 +120,7 @@ const VerifyCertificate = () => {
 
               <div className="pt-3 border-t border-border text-center">
                 <p className="text-[10px] text-muted-foreground">
-                  Verified by TrustLock Escrow Platform · trustlockpay.lovable.app
+                  Verified by TrustLock Escrow Platform
                 </p>
               </div>
             </CardContent>
