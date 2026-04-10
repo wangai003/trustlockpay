@@ -335,7 +335,10 @@ const SandboxMessages = () => {
                         <Download className="w-3 h-3 opacity-60" />
                       </div>
                     ))}
-                    <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground")}>{msg.time}</p>
+                    <div className={cn("flex items-center gap-1.5 mt-1", isMine ? "justify-end" : "justify-start")}>
+                      <p className={cn("text-[9px]", isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>{msg.time}</p>
+                    </div>
+                    <SandboxBubbleTranslate body={msg.body} isMine={isMine} />
                   </div>
                 </div>
               );
