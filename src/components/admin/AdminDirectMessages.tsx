@@ -5,10 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Users } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { serverEncrypt, serverDecryptBatch } from "@/lib/cryptoUtils";
 
 interface AdminStaff {
   id: string;
@@ -25,30 +26,30 @@ interface DM {
   recipient_id: string;
   body: string;
   is_read: boolean;
+  is_encrypted: boolean;
+  encryption_version: number | null;
   created_at: string;
 }
 
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}"); } catch { return {}; }
+}
+
 const AdminDirectMessages = () => {
+  const auth = getAuth();
+  const currentAdminId = auth.id || null;
+  const isChief = auth.isChief === true;
+  const myDeptSlug = auth.departmentSlug || null;
+
   const [staffList, setStaffList] = useState<AdminStaff[]>([]);
   const [selectedPeer, setSelectedPeer] = useState<AdminStaff | null>(null);
   const [messages, setMessages] = useState<DM[]>([]);
+  const [decryptedBodies, setDecryptedBodies] = useState<Record<string, string>>({});
   const [newMessage, setNewMessage] = useState("");
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentAdminId = (() => {
-    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { return null; }
-  })();
-
-  const isChief = (() => {
-    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").isChief === true; } catch { return false; }
-  })();
-
-  const myDeptSlug = (() => {
-    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").departmentSlug || null; } catch { return null; }
-  })();
-
-  // Load staff list
   const loadStaff = useCallback(async () => {
     if (!currentAdminId) return;
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`, {
@@ -58,25 +59,21 @@ const AdminDirectMessages = () => {
     });
     const json = await res.json();
     if (json.accounts) {
-      // Also load aliases
       const { data: aliases } = await supabase.from("admin_aliases").select("*");
       const aliasMap = Object.fromEntries((aliases || []).map((a: any) => [a.admin_id, a.alias]));
       let list: AdminStaff[] = (json.accounts || [])
         .filter((s: any) => s.id !== currentAdminId && !s.is_deleted)
         .map((s: any) => ({ ...s, alias: aliasMap[s.id] }));
 
-      // Department isolation: non-executive staff can only see same-department + executive
       if (!isChief && myDeptSlug && myDeptSlug !== "executive") {
         list = list.filter((s: AdminStaff) =>
           s.department_slug === myDeptSlug || s.department_slug === "executive" || s.is_chief
         );
       }
-
       setStaffList(list);
     }
-  }, [currentAdminId]);
+  }, [currentAdminId, isChief, myDeptSlug]);
 
-  // Load unread counts
   const loadUnreadCounts = useCallback(async () => {
     if (!currentAdminId) return;
     const { data } = await supabase
@@ -89,7 +86,23 @@ const AdminDirectMessages = () => {
     setUnreadCounts(counts);
   }, [currentAdminId]);
 
-  // Load conversation with a peer
+  const decryptMessages = useCallback(async (msgs: DM[]) => {
+    const encrypted = msgs.filter(m => m.is_encrypted);
+    if (encrypted.length === 0) return;
+    try {
+      const toDecrypt = encrypted.map(m => {
+        try {
+          const parsed = JSON.parse(m.body);
+          return { id: m.id, body: parsed.ciphertext, nonce: parsed.nonce };
+        } catch { return { id: m.id, body: m.body, nonce: "" }; }
+      }).filter(m => m.nonce);
+      if (toDecrypt.length > 0) {
+        const results = await serverDecryptBatch(toDecrypt);
+        setDecryptedBodies(prev => ({ ...prev, ...results }));
+      }
+    } catch {}
+  }, []);
+
   const loadConversation = useCallback(async (peerId: string) => {
     if (!currentAdminId) return;
     const { data } = await supabase
@@ -97,22 +110,23 @@ const AdminDirectMessages = () => {
       .select("*")
       .or(`and(sender_id.eq.${currentAdminId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${currentAdminId})`)
       .order("created_at", { ascending: true });
-    if (data) setMessages(data as DM[]);
+    if (data) {
+      const msgs = data as DM[];
+      setMessages(msgs);
+      decryptMessages(msgs);
+    }
 
-    // Mark as read
     await supabase
       .from("admin_direct_messages")
       .update({ is_read: true })
       .eq("sender_id", peerId)
       .eq("recipient_id", currentAdminId)
       .eq("is_read", false);
-
     loadUnreadCounts();
-  }, [currentAdminId, loadUnreadCounts]);
+  }, [currentAdminId, loadUnreadCounts, decryptMessages]);
 
   useEffect(() => { loadStaff(); loadUnreadCounts(); }, [loadStaff, loadUnreadCounts]);
 
-  // Realtime subscription for incoming DMs
   useEffect(() => {
     if (!currentAdminId) return;
     const channel = supabase
@@ -122,6 +136,7 @@ const AdminDirectMessages = () => {
         if (msg.recipient_id === currentAdminId || msg.sender_id === currentAdminId) {
           if (selectedPeer && (msg.sender_id === selectedPeer.id || msg.recipient_id === selectedPeer.id)) {
             setMessages((prev) => [...prev, msg]);
+            if (msg.is_encrypted) decryptMessages([msg]);
             if (msg.sender_id !== currentAdminId) {
               supabase.from("admin_direct_messages").update({ is_read: true }).eq("id", msg.id).then(() => {});
             }
@@ -131,25 +146,42 @@ const AdminDirectMessages = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [currentAdminId, selectedPeer, loadUnreadCounts]);
+  }, [currentAdminId, selectedPeer, loadUnreadCounts, decryptMessages]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !selectedPeer || !currentAdminId) return;
-    const { error } = await supabase.from("admin_direct_messages").insert({
-      sender_id: currentAdminId,
-      recipient_id: selectedPeer.id,
-      body: newMessage.trim(),
-    });
-    if (error) { toast.error("Failed to send"); return; }
-    setNewMessage("");
-    loadConversation(selectedPeer.id);
+    if (!newMessage.trim() || !selectedPeer || !currentAdminId || sending) return;
+    setSending(true);
+    try {
+      const { ciphertext, nonce } = await serverEncrypt(newMessage.trim());
+      const encryptedBody = JSON.stringify({ ciphertext, nonce });
+
+      const { error } = await supabase.from("admin_direct_messages").insert({
+        sender_id: currentAdminId,
+        recipient_id: selectedPeer.id,
+        body: encryptedBody,
+        is_encrypted: true,
+        encryption_version: 1,
+      });
+      if (error) { toast.error("Failed to send"); return; }
+      setNewMessage("");
+    } catch {
+      toast.error("Encryption failed");
+    } finally {
+      setSending(false);
+    }
   };
 
   const getPeerLabel = (peer: AdminStaff) => {
     if (isChief) return `${peer.alias || peer.username} (${peer.name})`;
     return peer.alias || peer.username;
+  };
+
+  const getDisplayBody = (msg: DM) => {
+    if (!msg.is_encrypted) return msg.body;
+    if (decryptedBodies[msg.id]) return decryptedBodies[msg.id];
+    return "🔒 Decrypting...";
   };
 
   if (selectedPeer) {
@@ -159,9 +191,10 @@ const AdminDirectMessages = () => {
           <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => { setSelectedPeer(null); loadUnreadCounts(); }}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
+          <div className="flex items-center gap-2">
             <p className="text-sm font-medium">{getPeerLabel(selectedPeer)}</p>
             {selectedPeer.is_chief && <Badge variant="default" className="text-[9px]">Chief</Badge>}
+            <Lock className="w-3 h-3 text-green-500" />
           </div>
         </div>
 
@@ -178,7 +211,7 @@ const AdminDirectMessages = () => {
                     "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                     isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                   )}>
-                    <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                    <p className="whitespace-pre-wrap break-words">{getDisplayBody(msg)}</p>
                     <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground")}>
                       {format(new Date(msg.created_at), "MMM d, h:mm a")}
                     </p>
@@ -198,7 +231,7 @@ const AdminDirectMessages = () => {
             className="min-h-[40px] max-h-[100px] text-sm resize-none flex-1"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           />
-          <Button size="icon" className="shrink-0 self-end" onClick={handleSend} disabled={!newMessage.trim()}>
+          <Button size="icon" className="shrink-0 self-end" onClick={handleSend} disabled={!newMessage.trim() || sending}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
@@ -212,6 +245,8 @@ const AdminDirectMessages = () => {
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Users className="w-4 h-4" /> Admin Team ({staffList.length})
+            <Lock className="w-3 h-3 text-green-500 ml-auto" />
+            <span className="text-[9px] text-green-600 font-normal">Encrypted</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
