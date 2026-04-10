@@ -935,6 +935,13 @@ export type Database = {
             referencedRelation: "audit_sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "audit_access_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       audit_sessions: {
@@ -5556,6 +5563,54 @@ export type Database = {
           },
         ]
       }
+      audit_sessions_safe: {
+        Row: {
+          access_count: number | null
+          access_token: string | null
+          allowed_tables: string[] | null
+          auditor_email: string | null
+          auditor_name: string | null
+          can_export: boolean | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string | null
+          is_active: boolean | null
+          last_accessed_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          access_token?: string | null
+          allowed_tables?: string[] | null
+          auditor_email?: string | null
+          auditor_name?: string | null
+          can_export?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          access_token?: string | null
+          allowed_tables?: string[] | null
+          auditor_email?: string | null
+          auditor_name?: string | null
+          can_export?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transaction_observers_safe: {
         Row: {
           created_at: string | null
@@ -5635,6 +5690,11 @@ export type Database = {
           vendor_name: string
         }[]
       }
+      get_vendor_counter_proposals: {
+        Args: { _vendor_id: string }
+        Returns: Json[]
+      }
+      get_vendor_rfq_requests: { Args: { _vendor_id: string }; Returns: Json[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
