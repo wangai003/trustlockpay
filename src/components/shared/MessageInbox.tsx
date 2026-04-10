@@ -66,6 +66,7 @@ interface Contact {
   id: string;
   label: string;
   type: "admin" | "counterparty";
+  roleTag?: string;
   transaction_id?: string;
 }
 
