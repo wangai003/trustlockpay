@@ -229,6 +229,8 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   // Admin uses the sentinel ID for thread participation
   const effectiveUserId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
   const isLender = role === "lender";
+  const contactReasons = isLender ? LENDER_CONTACT_REASONS : CONTACT_REASONS;
+  const allReasons = [...CONTACT_REASONS, ...LENDER_CONTACT_REASONS];
 
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
