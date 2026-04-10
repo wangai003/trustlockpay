@@ -52,6 +52,13 @@ interface Thread {
   created_at: string;
 }
 
+interface Attachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 interface Message {
   id: string;
   thread_id: string;
@@ -60,6 +67,7 @@ interface Message {
   is_read: boolean;
   created_at: string;
   admin_account_id?: string | null;
+  attachments?: Attachment[] | null;
 }
 
 interface Contact {
