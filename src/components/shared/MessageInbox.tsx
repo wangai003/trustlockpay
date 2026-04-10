@@ -716,14 +716,11 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
   // Create new thread
   const handleCompose = async () => {
-    if (!composeRecipient || !composeBody.trim() || !userId) return;
+    if (!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0) || !userId) return;
     const contact = contacts.find((c) => c.id === composeRecipient) || recipientResults.find((c) => c.id === composeRecipient);
-    // Admin uses sentinel ID as their participant identity
     const myParticipantId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
     const linkedTxId = contact?.transaction_id || transactionId || null;
-
-    // Determine recipient role from search results or contacts
     const myRole = role === "admin" ? "admin" : role;
     const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (contact?.roleTag?.toLowerCase() || null);
 
@@ -746,23 +743,31 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       return;
     }
 
+    setUploading(true);
+    const attachments = await uploadFiles(composeAttachments);
+    setUploading(false);
+
     let adminAccountId: string | null = null;
     if (role === "admin") {
       try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
     }
 
-    await supabase.from("messages").insert({
+    const insertData: any = {
       thread_id: thread.id,
       sender_id: myParticipantId,
-      body: composeBody.trim(),
+      body: composeBody.trim() || (attachments.length > 0 ? `📎 ${attachments.length} file${attachments.length > 1 ? "s" : ""} attached` : ""),
       admin_account_id: adminAccountId,
-    });
+    };
+    if (attachments.length > 0) insertData.attachments = attachments;
+
+    await supabase.from("messages").insert(insertData);
 
     setComposeOpen(false);
     setComposeRecipient("");
     setComposeSubject("");
     setComposeCategory("general");
     setComposeBody("");
+    setComposeAttachments([]);
     setRecipientSearch("");
     setRecipientResults([]);
     loadThreads();
