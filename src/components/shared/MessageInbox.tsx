@@ -682,33 +682,36 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
   const getUnreadCount = (threadId: string) => unreadCounts[threadId] || 0;
 
-  // Send message
+  // Send message (with optional attachments)
   const handleSend = async () => {
-    if (!newMessage.trim() || !selectedThread || !userId) return;
-    // Admin sends as ADMIN_SENTINEL_ID so RLS thread-participant check passes
+    if ((!newMessage.trim() && replyAttachments.length === 0) || !selectedThread || !userId) return;
     const senderId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
 
-    // Get admin_account_id from localStorage for admin senders
     let adminAccountId: string | null = null;
     if (role === "admin") {
-      try {
-        const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
-        adminAccountId = auth.id || null;
-      } catch { /* ignore */ }
+      try { adminAccountId = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").id || null; } catch { /* ignore */ }
     }
 
-    const { error } = await supabase.from("messages").insert({
+    setUploading(true);
+    const attachments = await uploadFiles(replyAttachments);
+    setUploading(false);
+
+    const insertData: any = {
       thread_id: selectedThread.id,
       sender_id: senderId,
-      body: newMessage.trim(),
+      body: newMessage.trim() || (attachments.length > 0 ? `📎 ${attachments.length} file${attachments.length > 1 ? "s" : ""} attached` : ""),
       admin_account_id: adminAccountId,
-    });
+    };
+    if (attachments.length > 0) insertData.attachments = attachments;
+
+    const { error } = await supabase.from("messages").insert(insertData);
     if (error) {
       toast.error("Failed to send message");
       return;
     }
     await supabase.from("message_threads").update({ last_message_at: new Date().toISOString() }).eq("id", selectedThread.id);
     setNewMessage("");
+    setReplyAttachments([]);
   };
 
   // Create new thread
