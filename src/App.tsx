@@ -122,7 +122,7 @@ const LenderLayout = lazy(() => import("./pages/lender/LenderLayout"));
 const LenderOverview = lazy(() => import("./pages/lender/LenderOverview"));
 const LenderPortfolio = lazy(() => import("./pages/lender/LenderPortfolio"));
 const LenderApplications = lazy(() => import("./pages/lender/LenderApplications"));
-const LenderOrders = lazy(() => import("./pages/lender/LenderOrders"));
+
 const LenderVendorLookup = lazy(() => import("./pages/lender/LenderVendorLookup"));
 const LenderMessages = lazy(() => import("./pages/lender/LenderMessages"));
 const LenderDocuments = lazy(() => import("./pages/lender/LenderDocuments"));
@@ -261,7 +261,7 @@ const App = () => (
                 <Route index element={<LenderOverview />} />
                 <Route path="portfolio" element={<LenderPortfolio />} />
                 <Route path="applications" element={<LenderApplications />} />
-                <Route path="orders" element={<LenderOrders />} />
+                
                 <Route path="vendor-lookup" element={<LenderVendorLookup />} />
                 <Route path="messages" element={<LenderMessages />} />
                 <Route path="documents" element={<LenderDocuments />} />
