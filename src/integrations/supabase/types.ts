@@ -2123,6 +2123,39 @@ export type Database = {
           },
         ]
       }
+      flashvet_document_analyses: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          dimension_scores: Json | null
+          document_name: string
+          document_type: string | null
+          findings_summary: string | null
+          id: string
+          lender_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          dimension_scores?: Json | null
+          document_name: string
+          document_type?: string | null
+          findings_summary?: string | null
+          id?: string
+          lender_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          dimension_scores?: Json | null
+          document_name?: string
+          document_type?: string | null
+          findings_summary?: string | null
+          id?: string
+          lender_id?: string
+        }
+        Relationships: []
+      }
       gas_reserve_ledger: {
         Row: {
           converted_at: string | null
