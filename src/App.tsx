@@ -110,6 +110,7 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy"));
 const DataRights = lazy(() => import("./pages/public/DataRights"));
 const ArbitratorPortal = lazy(() => import("./pages/public/ArbitratorPortal"));
+const VerifyCertificate = lazy(() => import("./pages/public/VerifyCertificate"));
 const ForgotPassword = lazy(() => import("./pages/shared/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/shared/ResetPassword"));
 
@@ -264,6 +265,7 @@ const App = () => (
               <Route path="/test-widget" element={<TesterLanding />} />
               <Route path="/trustlock/audit/:token" element={<AuditPortal />} />
               <Route path="/arbitrator/:token" element={<ArbitratorPortal />} />
+              <Route path="/verify/:token" element={<VerifyCertificate />} />
 
               {/* Sandbox Demo */}
               <Route path="/sandbox" element={<Navigate to="/sandbox/store" replace />} />

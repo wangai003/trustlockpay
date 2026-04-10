@@ -586,6 +586,84 @@ Deno.serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════
+    //  ACTION: generate_lender_certificate
+    // ═══════════════════════════════════════════
+    if (action === "generate_lender_certificate") {
+      const { certificateId } = body;
+      if (!certificateId) return json({ error: "certificateId required" }, 400);
+
+      const { data: cert, error: certErr } = await supabase
+        .from("lender_certificates")
+        .select("*")
+        .eq("id", certificateId)
+        .single();
+
+      if (certErr || !cert) {
+        return json({ error: "Certificate not found", details: certErr?.message }, 404);
+      }
+
+      if (cert.generation_status === "generated" && cert.file_url) {
+        return json({ success: true, fileUrl: cert.file_url, alreadyGenerated: true });
+      }
+
+      await supabase
+        .from("lender_certificates")
+        .update({ generation_status: "generating" })
+        .eq("id", certificateId);
+
+      const meta = (cert.certificate_metadata as Record<string, any>) || {};
+
+      // Fetch blockchain proof if available
+      const { data: proofs } = await supabase
+        .from("blockchain_proofs")
+        .select("polygon_tx_hash")
+        .eq("transaction_id", cert.transaction_id)
+        .eq("record_type", "escrow_lock")
+        .limit(1);
+
+      if (proofs && proofs.length > 0 && proofs[0].polygon_tx_hash) {
+        meta.blockchain_tx_hash = proofs[0].polygon_tx_hash;
+      }
+
+      meta.expires_at = cert.expires_at;
+
+      const builder = new PDFBuilder();
+      const pdfBytes = builder.generateLenderCertificate(meta, cert.id, cert.verification_token);
+
+      const filePath = `lender-certificates/${cert.transaction_id}/${cert.id}.pdf`;
+      const { error: uploadErr } = await supabase.storage
+        .from("protection-documents")
+        .upload(filePath, pdfBytes, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+
+      if (uploadErr) {
+        await supabase
+          .from("lender_certificates")
+          .update({ generation_status: "failed" })
+          .eq("id", certificateId);
+        return json({ error: "Upload failed", details: uploadErr.message }, 500);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("protection-documents")
+        .getPublicUrl(filePath);
+
+      const fileUrl = urlData?.publicUrl || filePath;
+
+      await supabase
+        .from("lender_certificates")
+        .update({
+          file_url: fileUrl,
+          generation_status: "generated",
+        })
+        .eq("id", certificateId);
+
+      return json({ success: true, fileUrl });
+    }
+
+    // ═══════════════════════════════════════════
     //  ACTION: generate_batch — Auto-generate pending docs
     // ═══════════════════════════════════════════
     if (action === "generate_batch") {
