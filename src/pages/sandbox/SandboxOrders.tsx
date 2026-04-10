@@ -21,6 +21,7 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
+import SandboxLenderCertificate from "./SandboxLenderCertificate";
 import type { MockMilestone } from "@/hooks/useTestnetData";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -218,6 +219,11 @@ const SandboxOrders = () => {
 
         {/* External Fee Summary */}
         <ExternalFeeSummary transactionId={selectedOrder.id} escrowAmount={selectedOrder.subtotal} />
+
+        {/* Lender Certificate (for vendor view, locked/in_progress orders) */}
+        {session.role === "vendor" && (
+          <SandboxLenderCertificate order={selectedOrder} />
+        )}
 
         {/* Transaction Documents */}
         <TransactionDocuments
