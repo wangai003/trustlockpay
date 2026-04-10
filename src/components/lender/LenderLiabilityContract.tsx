@@ -59,7 +59,7 @@ const LenderLiabilityContract = ({ userId, onSigned }: LenderLiabilityContractPr
       } catch {}
 
       // Insert liability contract
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("liability_contracts")
         .insert({
           lender_id: userId,
@@ -79,7 +79,7 @@ const LenderLiabilityContract = ({ userId, onSigned }: LenderLiabilityContractPr
       if (error) throw error;
 
       // Archive to protection_documents for admin
-      await supabase.from("protection_documents").insert({
+      await (supabase as any).from("protection_documents").insert({
         document_type: "liability_contract",
         title: `Lender Liability Contract — ${institutionName}`,
         user_id: userId,
@@ -100,7 +100,7 @@ const LenderLiabilityContract = ({ userId, onSigned }: LenderLiabilityContractPr
       });
 
       // Send notification to lender
-      await supabase.from("notifications").insert({
+      await (supabase as any).from("notifications").insert({
         user_id: userId,
         type: "liability_contract_signed",
         title: "✅ Liability Contract Signed",
