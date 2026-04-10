@@ -11,7 +11,9 @@ import { ArrowLeft, Send, Plus, Shield, Search, Paperclip, FileText, Image, X, D
 import { cn } from "@/lib/utils";
 
 /* ──────── Demo contacts per role ──────── */
-const DEMO_CONTACTS = {
+interface DemoContact { id: string; name: string; email: string; role: string; badge: string; tlId?: string; company?: string; }
+
+const DEMO_CONTACTS: Record<string, DemoContact[]> = {
   vendor: [
     { id: "demo-admin", name: "TrustLock Admin Support", email: "support@trustlock.app", role: "Admin", badge: "Admin" },
     { id: "demo-buyer-1", name: "Michael Evans", email: "michael@sandbox.test", role: "Buyer", badge: "Buyer", tlId: "TL-B-0042" },
