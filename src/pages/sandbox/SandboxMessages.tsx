@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +8,89 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Send, Plus, Shield, Search, Paperclip, FileText, Image, X, Download } from "lucide-react";
+import { ArrowLeft, Send, Plus, Shield, Search, Paperclip, FileText, Image, X, Download, Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import MessageTranslateButton from "@/components/shared/MessageTranslateButton";
+
+/* ──────── Per-bubble translate for sandbox ──────── */
+const SANDBOX_TRANSLATE_LANGS = [
+  { code: "en", label: "English" }, { code: "fr", label: "French" }, { code: "es", label: "Spanish" },
+  { code: "sw", label: "Swahili" }, { code: "ar", label: "Arabic" }, { code: "pt", label: "Portuguese" },
+  { code: "zh", label: "Chinese" }, { code: "de", label: "German" }, { code: "am", label: "Amharic" },
+  { code: "yo", label: "Yoruba" }, { code: "ha", label: "Hausa" }, { code: "hi", label: "Hindi" },
+];
+
+const SandboxBubbleTranslate = ({ body, isMine }: { body: string; isMine: boolean }) => {
+  const [translated, setTranslated] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const handleTranslate = async (langLabel: string) => {
+    setShowMenu(false);
+    if (translated) { setTranslated(null); return; }
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate", {
+        body: { text: body, targetLanguage: langLabel },
+      });
+      if (error) throw error;
+      setTranslated(data?.translated || body);
+    } catch {
+      toast.error("Translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  return (
+    <>
+      {translated && <p className="whitespace-pre-wrap break-words">{translated}</p>}
+      <div className={cn("flex items-center gap-1 mt-0.5", isMine ? "justify-end" : "justify-start")}>
+        {showMenu ? (
+          <div className="flex flex-wrap gap-1">
+            {SANDBOX_TRANSLATE_LANGS.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => handleTranslate(l.label)}
+                className={cn("text-[8px] px-1.5 py-0.5 rounded-full border transition-colors",
+                  isMine ? "border-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/10" : "border-border text-muted-foreground hover:bg-muted")}
+              >
+                {l.code.toUpperCase()}
+              </button>
+            ))}
+            <button
+              onClick={() => { setShowMenu(false); if (translated) setTranslated(null); }}
+              className={cn("text-[8px] px-1.5 py-0.5 rounded-full", isMine ? "text-primary-foreground/60" : "text-muted-foreground")}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => translated ? setTranslated(null) : setShowMenu(true)}
+            disabled={translating}
+            className={cn(
+              "inline-flex items-center gap-0.5 text-[9px] rounded px-1 py-0.5 transition-colors",
+              isMine
+                ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10",
+              translated && "underline"
+            )}
+          >
+            {translating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Languages className="w-2.5 h-2.5" />}
+            {translated ? "Original" : "Translate"}
+          </button>
+        )}
+      </div>
+      {translated && (
+        <p className={cn("text-[9px] italic mt-0.5", isMine ? "text-primary-foreground/50" : "text-muted-foreground/70")}>
+          Translated
+        </p>
+      )}
+    </>
+  );
+};
 
 /* ──────── Demo contacts per role ──────── */
 interface DemoContact { id: string; name: string; email: string; role: string; badge: string; tlId?: string; company?: string; }
