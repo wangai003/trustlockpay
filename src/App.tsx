@@ -103,6 +103,7 @@ const VendorFeeSimulator = lazy(() => import("./pages/vendor/VendorFeeSimulator"
 const VendorBuyerLookup = lazy(() => import("./pages/vendor/VendorBuyerLookup"));
 const VendorLenderLookup = lazy(() => import("./pages/vendor/VendorLenderLookup"));
 const VendorRequestFinancing = lazy(() => import("./pages/vendor/VendorRequestFinancing"));
+const VendorRepayments = lazy(() => import("./pages/vendor/VendorRepayments"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
