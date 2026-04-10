@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ThreadInternalNotes from "@/components/admin/ThreadInternalNotes";
+import MessageTranslateButton from "@/components/shared/MessageTranslateButton";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -944,9 +945,17 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                   </div>
                 )}
               </div>
-              <Button onClick={handleCompose} className="w-full" disabled={(!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0)) || uploading}>
-                {uploading ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Uploading...</> : "Send Message"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <MessageTranslateButton
+                  fields={[
+                    { value: composeSubject, setValue: setComposeSubject, label: "Subject" },
+                    { value: composeBody, setValue: setComposeBody, label: "Body" },
+                  ]}
+                />
+                <Button onClick={handleCompose} className="flex-1" disabled={(!composeRecipient || (!composeBody.trim() && composeAttachments.length === 0)) || uploading}>
+                  {uploading ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Uploading...</> : "Send Message"}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1096,6 +1105,10 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
+              <MessageTranslateButton
+                fields={[{ value: newMessage, setValue: setNewMessage }]}
+                className="shrink-0 self-end"
+              />
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
