@@ -520,7 +520,7 @@ FlashVet AI includes all document forensics capabilities, triggered when lender 
 - `/trustlock/sandbox/lender-overview` with mock lender dashboard
 - Pre-populated portfolio data, sample certificates, demo financing applications
 - 8+ mock lender profiles in sandbox data for vendor lookup demo
-- Mock Oba AI chat with pre-scripted responses (including document analysis demo + platform Q&A demo)
+- Mock FlashVet AI chat with pre-scripted responses (including document analysis demo + platform Q&A demo)
 - Mock liability contract signing flow
 - Mock KYB verification with tier assignment demo
 
@@ -531,7 +531,7 @@ FlashVet AI includes all document forensics capabilities, triggered when lender 
 - Notification trigger validation
 - Security scan after all schema changes
 - Input validation on all edge functions (Zod schemas)
-- Oba AI confidentiality protocol verification (research, forensics, AND platform Q&A modes)
+- FlashVet AI confidentiality protocol verification (research, forensics, AND platform Q&A modes)
 - Document analysis history RLS verification
 
 ---
@@ -552,14 +552,14 @@ FlashVet AI includes all document forensics capabilities, triggered when lender 
 - [ ] Vendor cancellation/rejection → lender notification rewiring complete
 - [ ] Vendor social/website requirement enforced (new + existing accounts)
 - [ ] Lender tiers implemented with KYB-gated max facility limits
-- [ ] Oba AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
-- [ ] Oba document forensics integrated with 8-dimension scoring + mandatory due diligence disclaimer
-- [ ] `oba_document_analyses` stored with lender-only RLS
+- [ ] FlashVet AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
+- [ ] FlashVet AI document forensics integrated with 8-dimension scoring + mandatory due diligence disclaimer
+- [ ] `flashvet_document_analyses` stored with lender-only RLS
 - [ ] Confidence scoring calibrated with transparent methodology disclosure
 - [ ] No raw SQL or user-provided SQL in edge functions
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features + Oba mock (research + forensics + Q&A) for presentation readiness
+- [ ] Sandbox demo includes lender features + FlashVet AI mock (research + forensics + Q&A) for presentation readiness
 - [ ] `lender_disbursement_records` RLS: lender CRUD own, admin SELECT all
 - [ ] Auto-disbursement logging on application approval verified
 - [ ] `financing_application_items` RLS: vendor owns, lender reads assigned, admin reads all
