@@ -39,6 +39,20 @@ const CONTACT_REASONS = [
   { value: "general", label: "General Inquiry" },
   { value: "other", label: "Other" },
 ];
+
+const LENDER_CONTACT_REASONS = [
+  { value: "financing_status", label: "Financing Status Update" },
+  { value: "repayment", label: "Repayment Inquiry" },
+  { value: "disbursement", label: "Disbursement Confirmation" },
+  { value: "exposure_review", label: "Exposure / Portfolio Review" },
+  { value: "kyb", label: "KYB / Verification" },
+  { value: "certificate", label: "Lender Certificate" },
+  { value: "dispute", label: "Dispute — Financed Order" },
+  { value: "compliance", label: "Compliance Hold Query" },
+  { value: "document", label: "Document Request" },
+  { value: "general", label: "General Inquiry" },
+  { value: "other", label: "Other" },
+];
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ACCEPTED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
