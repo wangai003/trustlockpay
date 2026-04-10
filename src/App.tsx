@@ -11,6 +11,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 const Index = lazy(() => import("./pages/Index"));
 const TrustLock = lazy(() => import("./pages/TrustLock"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Install = lazy(() => import("./pages/Install"));
 
 // Admin
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -143,6 +144,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/trustlock" element={<TrustLock />} />
+              <Route path="/install" element={<Install />} />
 
               {/* Admin Dashboard */}
               <Route path="/trustlock/admin/login" element={<AdminLogin />} />
