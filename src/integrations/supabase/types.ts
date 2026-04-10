@@ -2608,7 +2608,9 @@ export type Database = {
           id: string
           last_message_at: string | null
           participant_1: string
+          participant_1_role: string | null
           participant_2: string
+          participant_2_role: string | null
           status: string
           subject: string | null
           transaction_id: string | null
@@ -2623,7 +2625,9 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           participant_1: string
+          participant_1_role?: string | null
           participant_2: string
+          participant_2_role?: string | null
           status?: string
           subject?: string | null
           transaction_id?: string | null
@@ -2638,7 +2642,9 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           participant_1?: string
+          participant_1_role?: string | null
           participant_2?: string
+          participant_2_role?: string | null
           status?: string
           subject?: string | null
           transaction_id?: string | null
