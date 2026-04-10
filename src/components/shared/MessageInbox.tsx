@@ -39,8 +39,20 @@ const CONTACT_REASONS = [
   { value: "general", label: "General Inquiry" },
   { value: "other", label: "Other" },
 ];
+const ACCEPTED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const ACCEPTED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png";
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 5;
 
-interface Thread {
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const isImageType = (type: string) => type.startsWith("image/");
+
+
   id: string;
   participant_1: string;
   participant_2: string;
