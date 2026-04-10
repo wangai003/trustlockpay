@@ -1,5 +1,4 @@
 import { forwardRef } from "react";
-import { Link } from "react-router-dom";
 import trustlockLogo from "@/assets/trustlock-pay-logo.png";
 
 
