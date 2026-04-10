@@ -397,15 +397,38 @@ Veridia inherits and extends the same document intelligence used by the existing
 
 ---
 
-### Phase 10: Analytics, Sandbox & Final Wiring
+### Phase 10: Analytics Hub, Sandbox & Final Wiring
 
-**10A. Lender Analytics**
-- Portfolio performance: completion rates by industry/corridor
-- Average days-to-release trends
-- Sector concentration with threshold alerts
-- Geographic exposure (all 115+ jurisdictions)
-- Facility utilization tracking
-- Tier-gated depth (Tier 1 sees basic, Tier 3+ sees full analytics)
+**10A. Lender Analytics Hub — Full Financial Intelligence**
+
+*Data Ingestion (3 Sources):*
+1. **Auto-captured**: All on-platform escrow releases, milestone completions, repayment confirmations, and financing application outcomes are automatically ingested into analytics
+2. **Manual Entry**: Lenders can manually log offline fund disbursements via a quick-entry form: recipient vendor, amount (USD + local currency), disbursement date, reference number, notes
+3. **Document Upload → AI Extraction**: Lenders upload disbursement letters, bank transfer confirmations, or payment receipts. The system uses Gemini Vision AI to extract: amount, date, recipient, reference number, currency — then auto-populates a `lender_disbursement_records` entry for lender review/confirmation before committing
+
+*`lender_disbursement_records` table*: `id`, `lender_id`, `vendor_id` (nullable — linked if vendor exists in TrustLock), `amount_usd`, `local_currency_code`, `local_currency_amount`, `exchange_rate_snapshot`, `disbursement_date`, `reference_number`, `source` (auto/manual/document_extract), `document_url` (nullable), `extraction_confidence` (nullable — AI confidence %), `status` (pending_review/confirmed/rejected), `notes`, timestamps
+- RLS: lender CRUD own; admin SELECT all
+
+*Dashboard Analytics Panels:*
+- **Total Funds Disbursed**: aggregate by month/quarter/year, on-platform vs offline, with trend charts
+- **Portfolio Performance**: completion rates by industry/corridor/vendor, average days-to-release, default/cancellation rates
+- **Sector Concentration**: pie/donut chart with threshold alerts (>40% single sector = warning)
+- **Geographic Exposure**: map/table view across 115+ jurisdictions
+- **Facility Utilization**: current exposure vs tier max, remaining capacity gauge
+- **Vendor Risk Scorecard**: per-vendor summary — total lent, repayment rate, active orders, cancellation history
+- **Repayment Tracking**: expected vs actual repayment timeline, overdue amounts highlighted
+- **Currency Exposure**: breakdown of disbursements by currency with USD equivalents
+
+*Reports & Export:*
+- **Downloadable Summary Reports**: Lenders can generate and download/print PDF reports for any time period covering:
+  - Portfolio summary (total disbursed, outstanding, recovered, write-offs)
+  - Per-vendor lending history with repayment status
+  - Sector/corridor breakdown
+  - Tax implications summary (aggregate taxes from itemized applications)
+  - Risk assessment summary
+- Report generation via `generate-pdf` edge function with lender logo as letterhead
+- CSV export option for raw data (disbursements, applications, repayments)
+- Tier-gated depth: Tier 1 sees basic totals + top-3 vendors; Tier 2 adds sector/corridor charts; Tier 3+ gets full analytics + risk scorecards + custom date ranges
 
 **10B. Sandbox Demo**
 - `/trustlock/sandbox/lender-overview` with mock lender dashboard
