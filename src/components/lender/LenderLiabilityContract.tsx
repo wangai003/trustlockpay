@@ -151,6 +151,22 @@ const LenderLiabilityContract = ({ userId, onSigned }: LenderLiabilityContractPr
           </p>
         </div>
 
+        {/* Why This Matters Panel */}
+        <div className="bg-muted/50 border-b border-border px-6 py-3 shrink-0 relative z-10">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-foreground">Why this matters</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This contract establishes the legal boundaries between you (the Lender) and TrustLock's escrow platform. It protects both parties by clearly defining liability limits, compliance obligations, and data handling practices. Signing is a one-time requirement per contract version.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                📁 <span className="font-medium">Where to find it later:</span> Documents → Liability Contract (archived for 7 years)
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Scrollable Contract Body */}
         <div className="flex-1 overflow-hidden relative z-10">
           <ScrollArea className="h-full" onScrollCapture={handleScroll}>
