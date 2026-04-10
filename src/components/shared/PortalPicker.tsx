@@ -3,7 +3,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Shield, ShoppingBag, Store } from "lucide-react";
+import { Shield, ShoppingBag, Store, Landmark } from "lucide-react";
 
 interface PortalPickerProps {
   open: boolean;
@@ -27,6 +27,14 @@ const portals = [
     icon: ShoppingBag,
     loginPath: "/trustlock/buyer/login",
     signupPath: "/trustlock/buyer/signup",
+  },
+  {
+    role: "lender",
+    label: "Lender",
+    desc: "Finance vendors & manage loan portfolios",
+    icon: Landmark,
+    loginPath: "/trustlock/lender/login",
+    signupPath: "/trustlock/lender/signup",
   },
   {
     role: "admin",
