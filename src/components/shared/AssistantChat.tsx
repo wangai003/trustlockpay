@@ -140,11 +140,17 @@ const AssistantChat = ({ role, title, placeholder = "Ask a question...", assista
     let assistantSoFar = "";
 
     try {
+      // Use the user's auth session token for server-side role verification
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${authToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify(
           assistantName
