@@ -882,7 +882,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CONTACT_REASONS.map((r) => (
+                    {contactReasons.map((r) => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -989,7 +989,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
-                      {CONTACT_REASONS.find((r) => r.value === thread.category)?.label || thread.category}
+                      {allReasons.find((r) => r.value === thread.category)?.label || thread.category}
                     </Badge>
                     <span className="text-xs text-muted-foreground truncate">
                       {thread.subject || "No subject"}
@@ -1021,7 +1021,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             <p className="text-sm font-medium truncate">{getOtherParticipant(selectedThread)}</p>
             <div className="flex items-center gap-1.5">
               <p className="text-[10px] text-muted-foreground truncate">
-                {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
+                {selectedThread.subject || "No subject"} · {allReasons.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
               </p>
               {selectedThread.transaction_id && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">
