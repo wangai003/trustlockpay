@@ -5,13 +5,14 @@
 
 ---
 
-## Lender Portal — Complete Implementation Plan (Final v2)
+## Lender Portal — Complete Implementation Plan (Final v3)
 
 ### Pre-Requisites & Decisions Locked In
 - **Hybrid Encryption Model**: E2E for all peer DMs, server-side AES-256-GCM at rest for admin channels
 - **Hard Logo Gate**: Lenders blocked from dashboard until logo uploaded
 - **Auto-Bridging**: Vendor lender lookup auto-populates from `user_roles` + `lender_profiles`
 - **Mandatory Logo**: Displayed in vendor-side lender lookup alongside institution name, verified badge, operating regions
+- **Single Lender AI**: One combined assistant ("Oba") handles research, document forensics, AND platform Q&A — no separate Veridia
 
 ---
 
@@ -24,8 +25,8 @@
 - RLS: Lenders CRUD own profile; vendors SELECT verified lenders only; admins SELECT all
 
 **1B. Financing Application Tables**
-- `financing_applications`: `id`, `vendor_id`, `lender_id`, `certificate_id`, `transaction_id`, `requested_amount`, `proposed_terms` (jsonb), `status` (draft/submitted/under_review/approved/rejected/withdrawn), `lender_notes`, `vendor_notes`, `decision_at`, timestamps
-- `financing_application_documents`: `id`, `application_id`, `document_type`, `file_url`, `file_name`, `uploaded_by`, `created_at`
+- `financing_applications`: `id`, `vendor_id`, `lender_id`, `certificate_id`, `transaction_id`, `requested_amount`, `proposed_terms` (jsonb), `status` (draft/submitted/under_review/approved/rejected/withdrawn/returned), `lender_notes`, `vendor_notes`, `lender_decision_note` (reason for rejection/return), `approved_amount` (nullable — final approved amount, may differ from requested), `decision_at`, timestamps
+- `financing_application_documents`: `id`, `application_id`, `document_type`, `file_url`, `file_name`, `file_type` (jpeg/pdf), `uploaded_by`, `created_at`
 - Industry-specific required document types in `lenderDocumentRules.ts`
 - RLS: Vendor sees own apps; lender sees apps addressed to them; admin sees all
 
@@ -95,12 +96,13 @@
 **3C. Lender Dashboard Pages**
 - **Overview**: Portfolio metrics (active certificates, total exposure, completion rates, avg days-to-release), tier badge
 - **Portfolio / Certificates**: Browse escrow certificates with status, amounts, industries, blockchain proof chain
-- **Applications**: Incoming financing requests with full control panel
+- **Applications**: Incoming financing requests with full control panel (see Phase 5A)
 - **Vendor Lookup**: Browse verified vendors (same lookup pattern)
 - **Messages**: E2E encrypted messaging with vendors
 - **Blockchain Explorer**: Read-only `BlockchainExplorerPanel`
 - **Documents**: KYB docs, generated contracts, compliance records, **liability contract archive**
 - **Analytics**: Portfolio performance, sector concentration, geographic exposure (depth gated by tier)
+- **Oba AI**: Combined lender intelligence assistant (research + document forensics + platform Q&A)
 - **KYB Verification**: Upload/manage KYB documents, view tier status, apply for tier upgrade
 - **Settings**: Profile management, logo update, website (mandatory), social links, terms template, notifications
 
@@ -113,8 +115,9 @@
 6. Documents
 7. Blockchain Explorer
 8. Analytics
-9. KYB Verification
-10. Settings
+9. Oba AI
+10. KYB Verification
+11. Settings
 
 ---
 
@@ -126,10 +129,18 @@
 - Displays: logo, institution name, operating regions, sector focus, verified badge, tier badge, website link
 - Auto-updates when new lender gets KYB-approved
 
-**4B. Vendor Sidebar — "Request Financing"**
-- Application wizard: select certificate → select lender → upload industry-specific docs → propose terms → submit
+**4B. Vendor Sidebar — "Request Financing" & Application Lifecycle**
+- Application wizard: select certificate → select lender → upload industry-specific docs (JPEG or PDF) → propose terms → submit
 - Progress bar: Draft → Submitted → Under Review → Decision
-- Notifications at every status transition
+
+**Vendor Application Actions:**
+- **Submit**: Initial submission to selected lender
+- **Withdraw**: Vendor can withdraw application at any point before final decision (status → `withdrawn`)
+- **Review & Update** (after lender returns): If lender returns the application for revision, vendor receives notification → opens application in edit mode → can update items, upload additional documents (JPEG/PDF), modify notes → resubmit
+- **Reconfirm Submission**: After making changes on a returned application, vendor explicitly reconfirms before resubmission (confirmation dialog)
+- **Status Check**: Real-time status indicator always visible — Draft / Submitted / Under Review / Returned for Revision / Approved / Rejected / Withdrawn
+
+Notifications at every status transition.
 
 **4C. Vendor Social/Website Requirement (NEW)**
 - **New signups**: Signup form adds mandatory field: website URL OR at least one social media link (Facebook, LinkedIn, X)
@@ -168,23 +179,40 @@
 
 **5A. Lender Application Processing**
 - Incoming queue with filters (industry, amount, status, corridor, tier)
-- Per-application control panel: view certificate + blockchain proof, vendor history, uploaded docs
-- Actions: Approve / Reject / Request More Info
-- All status changes trigger vendor notifications
+- Per-application control panel: view certificate + blockchain proof, vendor history, uploaded docs, full itemized breakdown
 
-**5B. Contract Generation**
+**Lender Application Actions:**
+- **Approve**: Approve application with final approved amount (may differ from requested). Includes optional note. Status → `approved`. System auto-logs disbursement to lender analytics (assumes vendor received funds offline).
+- **Reject**: Reject application with mandatory `lender_decision_note` explaining reason. Status → `rejected`. Vendor notified with rejection reason.
+- **Return for Revision**: Lender finds discrepancy or missing info → returns application to vendor with note explaining what needs fixing. Status → `returned`. Vendor gets notified, can edit and resubmit without starting over.
+- **Review & Update within Application**: Lender can annotate/flag specific line items or documents within the application view before making a decision.
+
+All status changes trigger vendor notifications.
+
+**5B. Auto-Disbursement Logging (Status-Driven)**
+- When lender approves a financing application:
+  1. `financing_applications.status` → `approved`, `approved_amount` set
+  2. System automatically creates a `lender_disbursement_records` entry with:
+     - `source: 'auto'`
+     - `amount_usd`: the approved amount
+     - `status: 'confirmed'` (no manual confirmation needed — approval IS the confirmation)
+     - `vendor_id`: linked from the application
+  3. This auto-populates the lender analytics dashboard — no separate proof upload required
+- Lenders can ALSO manually log additional offline disbursements if needed (manual entry form still available)
+
+**5C. Contract Generation**
 - `generate-lender-contract` edge function (jsPDF)
 - Inputs: lender logo (letterhead/seal), financing terms, certificate data, milestone schedule, governing law
 - Output: Professional PDF with lender logo, milestone-linked repayment triggers, dual-signature blocks, governing law clause
 - Auto-archived in `protection-documents` with 7-year retention + blockchain anchor
 
-**5C. Admin KYB Review**
+**5D. Admin KYB Review**
 - Admin page: `/trustlock/admin/lender-kyb`
 - Review submitted KYB documents, assign tier, approve/reject with notes
 - On approval → `is_verified = true`, tier assigned → lender appears in vendor lookup
 - Cross-department alert from Compliance to Executive on each decision
 
-**5D. Offline Repayment Workflow**
+**5E. Offline Repayment Workflow**
 - Milestone release → auto-generated "Repayment Due Notice" PDF
 - Vendors log "Offline Repayment Confirmation" with proof upload
 - Lender acknowledges/disputes confirmation
@@ -192,65 +220,31 @@
 
 ---
 
-### Phase 6: Lender AI Assistants — "Oba" + "Veridia"
+### Phase 6: Oba AI — Combined Lender Intelligence Assistant
 
-**6A. Oba — Chief Lending Intelligence Advisor**
+**6A. Identity & Purpose**
 - Name: **Oba** (meaning "ruler/leader" in Yoruba — fitting for financial oversight)
-- Role: 24/7 AI research assistant purpose-built for lenders
+- Role: **Single combined 24/7 AI assistant** for lenders — handles ALL lender AI needs:
+  1. **Vendor Research & Due Diligence** (formerly Oba-only)
+  2. **Document Authenticity Analysis** (formerly Veridia)
+  3. **Platform Q&A** — soft inquiries about TrustLock safety protocols, how escrow works, platform security measures, dispute resolution process, any non-sensitive operational questions
 - Differentiation from other assistants:
-  - **Amani** (buyer assistant): consumer protection, order tracking, delivery guidance
-  - **Zawadi** (vendor assistant): sales optimization, fulfillment, payout guidance
-  - **Emmanuel** (admin advisor): compliance, disputes, platform-wide strategy
-  - **Oba** (lender assistant): creditworthiness analysis, industry research, portfolio risk, vendor due diligence
-  - **Veridia** (lender document forensics): document authenticity analysis, fraud detection, confidence scoring
+  - **Amani** (buyer): consumer protection, order tracking, delivery guidance
+  - **Zawadi** (vendor): sales optimization, fulfillment, payout guidance
+  - **Emmanuel** (admin): compliance, disputes, platform-wide strategy
+  - **Oba** (lender): creditworthiness, document forensics, industry research, portfolio risk, vendor due diligence, TrustLock platform Q&A
 
-**6B. Oba Core Capabilities**
+**6B. Research & Due Diligence Capabilities**
 1. **Vendor Due Diligence**: Query TrustLock database for vendor completion rates, average days-to-release, dispute history, order volume trends, KYC/KYB status, industry classification
 2. **Industry Intelligence**: Deep knowledge of all 25 supported industries — typical margins, seasonal patterns, common risks, regulatory requirements per corridor
-3. **External Research**: Leverage web search (via Lovable AI) to find publicly available company information — registration records, news mentions, social media presence, industry reputation — to supplement TrustLock internal data
+3. **External Research**: Leverage web search (via Lovable AI) to find publicly available company information — registration records, news mentions, social media presence, industry reputation
 4. **Portfolio Risk Analysis**: Analyze lender's current exposure by sector, corridor, and vendor concentration; flag over-concentration risks
 5. **Financing Application Review**: Summarize application details, compare against vendor's track record, flag discrepancies or red flags
 6. **Regulatory Guidance**: Provide corridor-specific lending regulations, cross-border compliance requirements, and reporting obligations
 7. **Repayment Tracking Intelligence**: Monitor milestone releases linked to financed transactions, alert on delayed milestones, calculate projected repayment timelines
 
-**6C. Oba Tool Calling (Edge Function)**
-- `oba-chat` edge function with 6+ analytical tools:
-  - `vendor_profile_lookup` — fetch vendor's TrustLock history, completion rate, dispute ratio, volume
-  - `portfolio_exposure` — lender's current sector/corridor/vendor concentration
-  - `industry_risk_brief` — industry-specific risk factors, typical margins, seasonal patterns
-  - `application_summary` — structured summary of a financing application
-  - `external_company_search` — web search for public company information (news, registration, social)
-  - `milestone_tracker` — status of milestones on financed transactions
-  - `repayment_projection` — projected repayment dates based on milestone schedule
-
-**6D. Security & Confidentiality Protocol (Shared by Oba + Veridia)**
-- Same hardened security as Amani/Zawadi/Emmanuel:
-  - Server-side role verification: JWT validated against `user_roles` table, must have `lender` role
-  - Rate limiting: 10 queries/minute per user
-  - Conversation context cap: 50 messages
-  - Prompt injection filtering: 15+ regex patterns
-  - **Strict IP protection**: Never disclose database schemas, table names, API paths, fee formulas, risk scoring thresholds, fraud detection patterns, wallet addresses, or internal architecture
-  - Never reveal information about OTHER lenders' portfolios or terms
-  - Lender can only query vendors who have PUBLIC profiles or are in active transactions with them
-
-**6E. Oba UI Integration**
-- Sidebar item: "Oba AI" with brain/crown icon
-- Chat interface: same pattern as Amani/Zawadi with markdown rendering, streaming responses
-- Quick action cards: "Analyze Vendor", "Review Application", "Portfolio Risk Check", "Industry Brief"
-
----
-
-### Phase 6B: Veridia — Document Authenticity AI
-
-**6F. Identity & Purpose**
-- Name: **Veridia** (from *Verify* + *Fidia* — Swahili for "redeem/compensate")
-- Tagline: "Your Document Intelligence Analyst"
-- Role: Specialized AI focused exclusively on document authenticity analysis, forgery detection, and confidence scoring
-- **Personality**: Professional, methodical, reassuring — always explains her reasoning transparently
-- **Welcome Message**: Brief greeting explaining she specializes in document analysis, guiding lenders on how to use her (upload documents via attachment, describe what they need verified, she'll run a live authenticity check)
-
-**6G. Core Document Analysis Capabilities**
-Veridia inherits and extends the same document intelligence used by the existing `validate-document-pages` and `document-scanner` edge functions (Gemini Vision AI), adapted for lender-facing use:
+**6C. Document Authenticity Analysis Capabilities (Integrated)**
+Oba includes all document forensics capabilities (formerly Veridia), triggered when lender uploads/attaches a document for analysis:
 
 1. **Multi-Dimension Authenticity Scoring** (percentage-based confidence):
    - **Visual Consistency** (15%): Font uniformity, alignment, layout professionalism, resolution quality
@@ -262,55 +256,64 @@ Veridia inherits and extends the same document intelligence used by the existing
    - **Jurisdictional Compliance** (10%): Document format matches expected format for claimed country/region
    - **Tampering Indicators** (10%): Pixel-level anomaly detection for cut/paste artifacts, font mismatches, color inconsistencies
 
-2. **Composite Confidence Score**: Weighted average across all dimensions, displayed as:
+2. **Composite Confidence Score**: Weighted average across all dimensions:
    - **90–100%**: ✅ High Confidence — "Document appears authentic with strong indicators"
    - **70–89%**: ⚠️ Moderate Confidence — "Document shows some concerns, manual verification recommended"
    - **50–69%**: 🔶 Low Confidence — "Significant anomalies detected, further investigation strongly advised"
    - **Below 50%**: 🚨 Very Low Confidence — "Multiple red flags detected, proceed with extreme caution"
 
-3. **Live Analysis Progress**: While analyzing, Veridia streams progress updates:
-   - "🔍 Scanning visual consistency..."
-   - "📋 Checking registration markers..."
-   - "🔐 Analyzing tampering indicators..."
-   - "📊 Calculating confidence score..."
-   - Each step completes with a mini-result before moving to next
+3. **Live Analysis Progress**: While analyzing, Oba streams progress updates for each dimension
 
-4. **Post-Analysis Output**:
-   - **Summary Card**: Document type, issuer, date, overall confidence score with color badge
-   - **Dimension Breakdown**: Each of the 8 dimensions with individual scores and brief findings
-   - **Key Observations**: Bullet list of notable findings (positive and negative)
-   - **Methods Disclosure**: Transparent explanation of HOW Veridia determined each score — "I analyzed the font consistency across 3 pages and found uniform serif typeface consistent with official government documents from [jurisdiction]"
-   - **Due Diligence Reminder**: ALWAYS concludes with: "This analysis is AI-assisted and should complement — not replace — your own due diligence. I recommend verifying critical findings through independent channels regardless of the confidence score."
+4. **Post-Analysis Output**: Summary card, dimension breakdown, key observations, methods disclosure, **mandatory due diligence reminder**
 
-**6H. Veridia Edge Function**
-- `veridia-chat` edge function:
-  - Accepts: messages array + attachments (images as base64, documents as extracted text + image)
-  - Uses Gemini Vision AI (`google/gemini-2.5-pro`) for image-based document analysis
-  - For images: sends base64 data directly to Gemini Vision for pixel-level analysis
-  - For text documents: extracts content + runs structural/coherence analysis
-  - For PDFs: uses existing `validate-document-pages` pipeline + additional authenticity dimensions
-  - Streams responses with live progress indicators
-  - Tool calling for structured score output: `document_authenticity_report` tool
-  - Same security protocol as Oba (JWT validation, rate limiting, injection filtering)
+**6D. Platform Q&A Capabilities (NEW)**
+- Oba answers soft inquiries about TrustLock including:
+  - How escrow protection works
+  - Safety protocols and security measures
+  - Dispute resolution process overview
+  - How milestones and releases work
+  - Platform compliance and regulatory posture
+  - How lender certificates are generated and verified
+  - General platform FAQs
+- **Boundary**: Oba will NOT disclose internal architecture, database schemas, fee formulas, or proprietary logic (same confidentiality protocol as other assistants)
 
-**6I. Veridia UI Design — Distinctive Visual Identity**
+**6E. Tool Calling (Edge Function)**
+- `oba-chat` edge function with 8+ analytical tools:
+  - `vendor_profile_lookup` — fetch vendor's TrustLock history, completion rate, dispute ratio, volume
+  - `portfolio_exposure` — lender's current sector/corridor/vendor concentration
+  - `industry_risk_brief` — industry-specific risk factors, typical margins, seasonal patterns
+  - `application_summary` — structured summary of a financing application
+  - `external_company_search` — web search for public company information (news, registration, social)
+  - `milestone_tracker` — status of milestones on financed transactions
+  - `repayment_projection` — projected repayment dates based on milestone schedule
+  - `document_authenticity_report` — structured authenticity scoring output for uploaded documents
+
+**6F. Security & Confidentiality Protocol**
+- Same hardened security as Amani/Zawadi/Emmanuel:
+  - Server-side role verification: JWT validated against `user_roles` table, must have `lender` role
+  - Rate limiting: 10 queries/minute per user
+  - Conversation context cap: 50 messages
+  - Prompt injection filtering: 15+ regex patterns
+  - **Strict IP protection**: Never disclose database schemas, table names, API paths, fee formulas, risk scoring thresholds, fraud detection patterns, wallet addresses, or internal architecture
+  - Never reveal information about OTHER lenders' portfolios or terms
+  - Lender can only query vendors who have PUBLIC profiles or are in active transactions with them
+
+**6G. Oba UI Design — Distinctive Visual Identity**
 - **Card Container**: Dark-green blended border (`border-emerald-700/60`) with subtle gradient glow effect
 - **Interior**: Clean white/light background (`bg-white dark:bg-slate-950`) — high contrast for readability
-- **Header**: Veridia name + custom avatar (document shield icon with green accent) + tagline
-- **Accent Color**: Emerald-green (`emerald-600/700`) instead of primary blue — differentiates from Amani/Zawadi/Oba
-- **Score Display**: Large circular confidence gauge with animated fill on completion
-- **Progress Indicators**: Emerald-themed step indicators that illuminate as each analysis dimension completes
-- **Message Bubbles**: Slightly different styling — user messages in emerald tint, Veridia's responses in white with thin emerald-left-border
-- **Attachment Preview**: Enlarged document thumbnails with emerald overlay showing "Analyzing..." state
-- **Overall Feel**: Professional forensics lab aesthetic — clean, precise, trustworthy
+- **Header**: Oba name + custom avatar (crown/brain icon with emerald accent) + tagline "Your Lending Intelligence Advisor"
+- **Welcome Message**: Brief greeting + short summary of capabilities: research, document analysis, platform Q&A
+- **Accent Color**: Emerald-green (`emerald-600/700`) instead of primary blue — differentiates from Amani/Zawadi
+- **Document Analysis Mode**: When a document is uploaded, Oba switches to analysis mode with:
+  - Large circular confidence gauge with animated fill on completion
+  - Emerald-themed step indicators for each analysis dimension
+  - Score display with color-coded badges
+- **Message Bubbles**: User messages in emerald tint, Oba's responses in white with thin emerald-left-border
+- **Quick Action Cards**: "Analyze Vendor", "Check Document", "Review Application", "Portfolio Risk Check", "Industry Brief", "Platform FAQ"
+- **Overall Feel**: Professional forensics-lab aesthetic — clean, precise, trustworthy
 
-**6J. Veridia Sidebar Integration**
-- Sidebar item: "Veridia" with shield-check icon (differentiated from Oba's brain icon)
-- Positioned directly below "Oba AI" in lender sidebar
-- Badge: shows count of recent analyses (last 24h)
-
-**6K. Analysis History**
-- `veridia_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
+**6H. Analysis History**
+- `oba_document_analyses` table: `id`, `lender_id`, `document_name`, `document_type`, `confidence_score`, `dimension_scores` (jsonb), `findings_summary`, `created_at`
 - Lenders can view past analyses in Documents section
 - RLS: lender sees only own analyses; admin sees all
 
@@ -402,11 +405,11 @@ Veridia inherits and extends the same document intelligence used by the existing
 **10A. Lender Analytics Hub — Full Financial Intelligence**
 
 *Data Ingestion (3 Sources):*
-1. **Auto-captured**: All on-platform escrow releases, milestone completions, repayment confirmations, and financing application outcomes are automatically ingested into analytics
-2. **Manual Entry**: Lenders can manually log offline fund disbursements via a quick-entry form: recipient vendor, amount (USD + local currency), disbursement date, reference number, notes
+1. **Auto-captured**: All on-platform escrow releases, milestone completions, repayment confirmations, and financing application outcomes (approval → auto-log disbursement) are automatically ingested into analytics
+2. **Manual Entry**: Lenders can manually log additional offline fund disbursements via a quick-entry form: recipient vendor, amount (USD + local currency), disbursement date, reference number, notes
 3. **Document Upload → AI Extraction**: Lenders upload disbursement letters, bank transfer confirmations, or payment receipts. The system uses Gemini Vision AI to extract: amount, date, recipient, reference number, currency — then auto-populates a `lender_disbursement_records` entry for lender review/confirmation before committing
 
-*`lender_disbursement_records` table*: `id`, `lender_id`, `vendor_id` (nullable — linked if vendor exists in TrustLock), `amount_usd`, `local_currency_code`, `local_currency_amount`, `exchange_rate_snapshot`, `disbursement_date`, `reference_number`, `source` (auto/manual/document_extract), `document_url` (nullable), `extraction_confidence` (nullable — AI confidence %), `status` (pending_review/confirmed/rejected), `notes`, timestamps
+*`lender_disbursement_records` table*: `id`, `lender_id`, `vendor_id` (nullable — linked if vendor exists in TrustLock), `application_id` (nullable — linked if from auto-log), `amount_usd`, `local_currency_code`, `local_currency_amount`, `exchange_rate_snapshot`, `disbursement_date`, `reference_number`, `source` (auto/manual/document_extract), `document_url` (nullable), `extraction_confidence` (nullable — AI confidence %), `status` (pending_review/confirmed/rejected), `notes`, timestamps
 - RLS: lender CRUD own; admin SELECT all
 
 *Dashboard Analytics Panels:*
@@ -434,8 +437,7 @@ Veridia inherits and extends the same document intelligence used by the existing
 - `/trustlock/sandbox/lender-overview` with mock lender dashboard
 - Pre-populated portfolio data, sample certificates, demo financing applications
 - 8+ mock lender profiles in sandbox data for vendor lookup demo
-- Mock Oba AI chat with pre-scripted responses
-- Mock Veridia AI with sample document analysis demo (pre-loaded confidence score output)
+- Mock Oba AI chat with pre-scripted responses (including document analysis demo + platform Q&A demo)
 - Mock liability contract signing flow
 - Mock KYB verification with tier assignment demo
 
@@ -446,8 +448,8 @@ Veridia inherits and extends the same document intelligence used by the existing
 - Notification trigger validation
 - Security scan after all schema changes
 - Input validation on all edge functions (Zod schemas)
-- Oba AI + Veridia AI confidentiality protocol verification
-- Veridia analysis history RLS verification
+- Oba AI confidentiality protocol verification (research, forensics, AND platform Q&A modes)
+- Document analysis history RLS verification
 
 ---
 
@@ -468,18 +470,18 @@ Veridia inherits and extends the same document intelligence used by the existing
 - [ ] Vendor social/website requirement enforced (new + existing accounts)
 - [ ] Lender tiers implemented with KYB-gated max facility limits
 - [ ] Oba AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
-- [ ] Veridia AI hardened with same confidentiality + injection filtering protocol
-- [ ] Veridia analyses stored in `veridia_analyses` with lender-only RLS
-- [ ] Veridia confidence scoring calibrated with transparent methodology disclosure
+- [ ] Oba document forensics integrated with 8-dimension scoring + mandatory due diligence disclaimer
+- [ ] `oba_document_analyses` stored with lender-only RLS
+- [ ] Confidence scoring calibrated with transparent methodology disclosure
 - [ ] No raw SQL or user-provided SQL in edge functions
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
+- [ ] Sandbox demo includes lender features + Oba mock (research + forensics + Q&A) for presentation readiness
 - [ ] `lender_disbursement_records` RLS: lender CRUD own, admin SELECT all
-- [ ] AI document extraction for disbursement records validated with confidence thresholds
+- [ ] Auto-disbursement logging on application approval verified
 - [ ] `financing_application_items` RLS: vendor owns, lender reads assigned, admin reads all
 - [ ] Itemized application dual-currency calculations verified against `globalCurrencies.ts` rates
 - [ ] PDF export for lender financial reports includes logo letterhead + watermark
 - [ ] CSV export sanitized — no internal IDs or sensitive metadata exposed
-- [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
+- [ ] Application lifecycle (submit/withdraw/return/resubmit/approve/reject) fully tested
+- [ ] Lender return-for-revision flow: vendor receives notification, can edit + upload additional docs, resubmit
