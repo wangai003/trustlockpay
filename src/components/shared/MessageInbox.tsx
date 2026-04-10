@@ -442,8 +442,9 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         const userRole = roleMap[p.id];
         const tag = userRole === "vendor" ? "Vendor" : userRole === "buyer" ? "Buyer" : userRole === "lender" ? "Lender" : undefined;
         const institution = institutionMap[p.id];
+        const companyName = institution || p.company_name;
         const labelParts = [p.full_name || "No name"];
-        if (institution) labelParts.push(institution);
+        if (companyName) labelParts.push(companyName);
         labelParts.push(p.email || p.id.slice(0, 8));
         return {
           id: p.id,
