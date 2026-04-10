@@ -17,9 +17,9 @@ const PrivacyPolicy = () => (
 
       <h2>1. Introduction</h2>
       <p>
-        TrustLock ("we", "us", "our"), operated by Azix, provides an escrow payment gateway for
+        TrustLock ("we", "us", "our") provides an escrow payment gateway for
         cross-border trade. This Privacy Policy explains how we collect, use, disclose, and protect
-        your personal data when you use our platform at trustlockpay.lovable.app and related services.
+        your personal data when you use our platform and related services.
       </p>
 
       <h2>2. Data We Collect</h2>
