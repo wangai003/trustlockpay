@@ -389,11 +389,11 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       setRecipientSearching(true);
       const term = `%${query.trim()}%`;
 
-      // Search profiles by name or email
+      // Search profiles by name, email, or company name
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .select("id, full_name, email, company_name")
+        .or(`full_name.ilike.${term},email.ilike.${term},company_name.ilike.${term}`)
         .neq("id", userId || "")
         .limit(15);
 
