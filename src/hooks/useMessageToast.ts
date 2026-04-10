@@ -9,7 +9,7 @@ const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
  * Must be mounted inside a layout that persists across pages.
  */
 export const useMessageToast = (
-  role: "vendor" | "buyer" | "admin",
+  role: "vendor" | "buyer" | "admin" | "lender",
   userId?: string,
   navigateFn?: (path: string) => void
 ) => {
@@ -65,6 +65,8 @@ export const useMessageToast = (
           const messagesPath =
             role === "admin"
               ? "/trustlock/admin/messages"
+              : role === "lender"
+              ? "/trustlock/lender/messages"
               : role === "vendor"
               ? "/trustlock/vendor/messages"
               : "/trustlock/buyer/messages";
