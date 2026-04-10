@@ -708,7 +708,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                     <Input
                       value={recipientSearch}
                       onChange={(e) => handleRecipientSearch(e.target.value)}
-                      placeholder="Search by name, email, or ID..."
+                      placeholder="Search by name, company, email, or ID..."
                       className="h-9 text-sm pl-8"
                     />
                     {recipientSearching && <Loader2 className="absolute right-2.5 top-2.5 w-3.5 h-3.5 animate-spin text-muted-foreground" />}
