@@ -43,6 +43,7 @@ const allNavItems = [
   { label: "Sandbox Leads", icon: FlaskConical, to: "/trustlock/admin/sandbox-leads", tip: "View contact info collected from sandbox testers", moduleKey: "sandbox", badgeKey: null },
   { label: "Departments", icon: Network, to: "/trustlock/admin/departments", tip: "View department divisions, workflows, and cross-department alerts", moduleKey: "staff", badgeKey: "deptAlerts" },
   { label: "Platforms", icon: Building2, to: "/trustlock/admin/platforms", tip: "Manage marketplace platform integrations, API keys, and vendor claim tokens", moduleKey: "platforms", badgeKey: null },
+  { label: "Lender KYB", icon: ShieldCheck, to: "/trustlock/admin/lender-kyb", tip: "Review and approve lender KYB verification submissions", moduleKey: "compliance", badgeKey: null },
   { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings", badgeKey: null },
 ];
 

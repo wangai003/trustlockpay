@@ -48,6 +48,7 @@ const AdminDepartments = lazy(() => import("./pages/admin/AdminDepartments"));
 const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
+const AdminLenderKYB = lazy(() => import("./pages/admin/AdminLenderKYB"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -102,6 +103,7 @@ const VendorFeeSimulator = lazy(() => import("./pages/vendor/VendorFeeSimulator"
 const VendorBuyerLookup = lazy(() => import("./pages/vendor/VendorBuyerLookup"));
 const VendorLenderLookup = lazy(() => import("./pages/vendor/VendorLenderLookup"));
 const VendorRequestFinancing = lazy(() => import("./pages/vendor/VendorRequestFinancing"));
+const VendorRepayments = lazy(() => import("./pages/vendor/VendorRepayments"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
@@ -124,6 +126,7 @@ const LenderPortfolio = lazy(() => import("./pages/lender/LenderPortfolio"));
 const LenderApplications = lazy(() => import("./pages/lender/LenderApplications"));
 
 const LenderVendorLookup = lazy(() => import("./pages/lender/LenderVendorLookup"));
+const LenderRepayments = lazy(() => import("./pages/lender/LenderRepayments"));
 const LenderMessages = lazy(() => import("./pages/lender/LenderMessages"));
 const LenderDocuments = lazy(() => import("./pages/lender/LenderDocuments"));
 const LenderBlockchain = lazy(() => import("./pages/lender/LenderBlockchain"));
@@ -204,6 +207,7 @@ const App = () => (
                 <Route path="sandbox-leads" element={<AdminSandboxLeads />} />
                 <Route path="platforms" element={<AdminPlatforms />} />
                 <Route path="platform-analytics" element={<AdminPlatformAnalytics />} />
+                <Route path="lender-kyb" element={<AdminLenderKYB />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
@@ -242,6 +246,7 @@ const App = () => (
                 <Route path="buyer-lookup" element={<VendorBuyerLookup />} />
                 <Route path="lender-lookup" element={<VendorLenderLookup />} />
                 <Route path="request-financing" element={<VendorRequestFinancing />} />
+                <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
@@ -269,6 +274,7 @@ const App = () => (
                 <Route path="analytics" element={<LenderAnalytics />} />
                 <Route path="flashvet" element={<LenderFlashVet />} />
                 <Route path="kyb" element={<LenderKYB />} />
+                <Route path="repayments" element={<LenderRepayments />} />
                 <Route path="settings" element={<LenderSettings />} />
               </Route>
 

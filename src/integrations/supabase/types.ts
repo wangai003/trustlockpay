@@ -3811,6 +3811,65 @@ export type Database = {
         }
         Relationships: []
       }
+      repayment_confirmations: {
+        Row: {
+          amount_usd: number
+          application_id: string
+          created_at: string
+          id: string
+          lender_id: string
+          lender_responded_at: string | null
+          lender_response: string
+          lender_response_note: string | null
+          notes: string | null
+          proof_file_name: string | null
+          proof_url: string | null
+          reference_number: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount_usd: number
+          application_id: string
+          created_at?: string
+          id?: string
+          lender_id: string
+          lender_responded_at?: string | null
+          lender_response?: string
+          lender_response_note?: string | null
+          notes?: string | null
+          proof_file_name?: string | null
+          proof_url?: string | null
+          reference_number?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount_usd?: number
+          application_id?: string
+          created_at?: string
+          id?: string
+          lender_id?: string
+          lender_responded_at?: string | null
+          lender_response?: string
+          lender_response_note?: string | null
+          notes?: string | null
+          proof_file_name?: string | null
+          proof_url?: string | null
+          reference_number?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repayment_confirmations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "financing_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rfq_requests: {
         Row: {
           buyer_company: string | null
