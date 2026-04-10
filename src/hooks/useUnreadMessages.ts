@@ -7,7 +7,7 @@ const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
  * Returns live unread message count for the current user.
  * For admin role, checks threads where the admin sentinel is a participant.
  */
-export const useUnreadMessages = (role: "vendor" | "buyer" | "admin", userId?: string) => {
+export const useUnreadMessages = (role: "vendor" | "buyer" | "admin" | "lender", userId?: string) => {
   const [count, setCount] = useState(0);
 
   const effectiveId = role === "admin" ? ADMIN_SENTINEL_ID : userId;

@@ -5,7 +5,7 @@ const LenderMessages = () => (
   <div>
     <LenderHeader title="Messages" />
     <div className="p-4 sm:p-6">
-      <MessageInbox role="vendor" />
+      <MessageInbox role="lender" />
     </div>
   </div>
 );
