@@ -235,6 +235,59 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   const [adminNameMap, setAdminNameMap] = useState<Record<string, string>>({});
   const adminSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
+  const composeFileInputRef = useRef<HTMLInputElement>(null);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const [composeAttachments, setComposeAttachments] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Validate & add files to a given setter
+  const addFiles = (files: FileList | null, setter: React.Dispatch<React.SetStateAction<File[]>>, existing: File[]) => {
+    if (!files) return;
+    const newFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (!ACCEPTED_FILE_TYPES.includes(f.type)) {
+        toast.error(`${f.name}: Only PDF, JPEG, and PNG files are allowed`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        toast.error(`${f.name}: File exceeds 10MB limit`);
+        continue;
+      }
+      if (existing.length + newFiles.length >= MAX_FILES) {
+        toast.error(`Maximum ${MAX_FILES} files per message`);
+        break;
+      }
+      newFiles.push(f);
+    }
+    if (newFiles.length > 0) setter((prev) => [...prev, ...newFiles]);
+  };
+
+  // Upload files and return attachment metadata
+  const uploadFiles = async (files: File[]): Promise<Attachment[]> => {
+    if (!userId || files.length === 0) return [];
+    const results: Attachment[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("message-attachments").upload(path, file, { contentType: file.type });
+      if (error) {
+        toast.error(`Failed to upload ${file.name}`);
+        continue;
+      }
+      const { data: urlData } = supabase.storage.from("message-attachments").getPublicUrl(path);
+      // Since bucket is private, use signed URL
+      const { data: signedData } = await supabase.storage.from("message-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
+      results.push({
+        url: signedData?.signedUrl || urlData.publicUrl,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+    }
+    return results;
+  };
 
   const isChiefAdmin = (() => {
     if (role !== "admin") return false;
