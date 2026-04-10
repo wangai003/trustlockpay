@@ -39,6 +39,20 @@ const CONTACT_REASONS = [
   { value: "general", label: "General Inquiry" },
   { value: "other", label: "Other" },
 ];
+
+const LENDER_CONTACT_REASONS = [
+  { value: "financing_status", label: "Financing Status Update" },
+  { value: "repayment", label: "Repayment Inquiry" },
+  { value: "disbursement", label: "Disbursement Confirmation" },
+  { value: "exposure_review", label: "Exposure / Portfolio Review" },
+  { value: "kyb", label: "KYB / Verification" },
+  { value: "certificate", label: "Lender Certificate" },
+  { value: "dispute", label: "Dispute — Financed Order" },
+  { value: "compliance", label: "Compliance Hold Query" },
+  { value: "document", label: "Document Request" },
+  { value: "general", label: "General Inquiry" },
+  { value: "other", label: "Other" },
+];
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ACCEPTED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -215,6 +229,8 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
   // Admin uses the sentinel ID for thread participation
   const effectiveUserId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
   const isLender = role === "lender";
+  const contactReasons = isLender ? LENDER_CONTACT_REASONS : CONTACT_REASONS;
+  const allReasons = [...CONTACT_REASONS, ...LENDER_CONTACT_REASONS];
 
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
@@ -731,7 +747,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         participant_2: composeRecipient,
         participant_1_role: myRole,
         participant_2_role: recipientRole || null,
-        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message"),
+        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : contactReasons.find((r) => r.value === composeCategory)?.label || "New Message"),
         category: composeCategory,
         transaction_id: linkedTxId,
       })
@@ -866,7 +882,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CONTACT_REASONS.map((r) => (
+                    {contactReasons.map((r) => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -973,7 +989,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
-                      {CONTACT_REASONS.find((r) => r.value === thread.category)?.label || thread.category}
+                      {allReasons.find((r) => r.value === thread.category)?.label || thread.category}
                     </Badge>
                     <span className="text-xs text-muted-foreground truncate">
                       {thread.subject || "No subject"}
@@ -1005,7 +1021,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             <p className="text-sm font-medium truncate">{getOtherParticipant(selectedThread)}</p>
             <div className="flex items-center gap-1.5">
               <p className="text-[10px] text-muted-foreground truncate">
-                {selectedThread.subject || "No subject"} · {CONTACT_REASONS.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
+                {selectedThread.subject || "No subject"} · {allReasons.find((r) => r.value === selectedThread.category)?.label || selectedThread.category}
               </p>
               {selectedThread.transaction_id && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">
