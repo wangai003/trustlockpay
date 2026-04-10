@@ -124,6 +124,7 @@ const LenderOverview = lazy(() => import("./pages/lender/LenderOverview"));
 const LenderPortfolio = lazy(() => import("./pages/lender/LenderPortfolio"));
 const LenderApplications = lazy(() => import("./pages/lender/LenderApplications"));
 
+const LenderVendorLookup = lazy(() => import("./pages/lender/LenderVendorLookup"));
 const LenderRepayments = lazy(() => import("./pages/lender/LenderRepayments"));
 const LenderMessages = lazy(() => import("./pages/lender/LenderMessages"));
 const LenderDocuments = lazy(() => import("./pages/lender/LenderDocuments"));
