@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Globe } from "lucide-react";
+import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Globe, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SandboxCountdown } from "./SandboxCountdown";
@@ -37,8 +37,10 @@ const SandboxLayout = () => {
   if (!session) return null;
 
   const base = `/sandbox/${session.role}`;
+  const lookupLabel = session.role === "vendor" ? "Buyer Lookup" : "Vendor Lookup";
   const links = [
     { to: base, icon: LayoutDashboard, label: "Overview" },
+    { to: `${base}/lookup`, icon: Search, label: lookupLabel },
     { to: `${base}/orders`, icon: Package, label: "Orders" },
     { to: `${base}/messages`, icon: MessageSquare, label: "Messages" },
   ];

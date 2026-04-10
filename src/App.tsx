@@ -122,6 +122,7 @@ const SandboxMessages = lazy(() => import("./pages/sandbox/SandboxMessages"));
 const SandboxStore = lazy(() => import("./pages/sandbox/SandboxStore"));
 const SandboxStorePage = lazy(() => import("./pages/sandbox/SandboxStorePage"));
 const SandboxCheckout = lazy(() => import("./pages/sandbox/SandboxCheckout"));
+const SandboxLookup = lazy(() => import("./pages/sandbox/SandboxLookup"));
 
 const queryClient = new QueryClient();
 
@@ -272,11 +273,13 @@ const App = () => (
                 <Route index element={<SandboxVendorOverview />} />
                 <Route path="orders" element={<SandboxOrders />} />
                 <Route path="messages" element={<SandboxMessages />} />
+                <Route path="lookup" element={<SandboxLookup />} />
               </Route>
               <Route path="/sandbox/buyer" element={<SandboxLayout />}>
                 <Route index element={<SandboxBuyerOverview />} />
                 <Route path="orders" element={<SandboxOrders />} />
                 <Route path="messages" element={<SandboxMessages />} />
+                <Route path="lookup" element={<SandboxLookup />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

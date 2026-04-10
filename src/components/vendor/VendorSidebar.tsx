@@ -15,6 +15,7 @@ import { useSidebarBadges } from "@/hooks/useSidebarBadges";
 
 const baseNavItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/vendor", tip: "Dashboard summary with earnings and activity", tlId: "TL-V-SB-NAV-OVERVIEW", badgeKey: null as string | null },
+  { label: "Buyer Lookup", icon: Search, to: "/trustlock/vendor/buyer-lookup", tip: "Search and connect with buyers on the TrustLock network", tlId: "TL-V-SB-NAV-BUYER-LOOKUP", badgeKey: null },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees", tlId: "TL-V-SB-NAV-BILL-PAY", badgeKey: null },
   { label: "Direct Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "Orders from your own website widget, standalone payment links, or TrustLock OS Pay — transactions you initiate and manage directly", tlId: "TL-V-SB-NAV-TRANSACTIONS", badgeKey: null },
   { label: "Marketplace Work Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders routed to you from multi-vendor platforms (Amazon, Jumia, Shopify, etc.) — where the marketplace controls checkout and splits cart orders across vendors", tlId: "TL-V-SB-NAV-MARKETPLACE", badgeKey: null },
@@ -31,7 +32,6 @@ const baseNavItems = [
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or diaspora rails", tlId: "TL-V-SB-NAV-PAYOUT", badgeKey: null },
   { label: "Teams", icon: Users, to: "/trustlock/vendor/teams", tip: "Manage work order teams, assign industry tasks to members", tlId: "TL-V-SB-NAV-TEAMS", badgeKey: null },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-V-SB-NAV-PLAYBOOK", badgeKey: null },
-  { label: "Buyer Lookup", icon: Search, to: "/trustlock/vendor/buyer-lookup", tip: "Search and connect with buyers on the TrustLock network", tlId: "TL-V-SB-NAV-BUYER-LOOKUP", badgeKey: null },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/vendor/messages", tip: "Direct messaging with buyers and admin support", tlId: "TL-V-SB-NAV-MESSAGES", badgeKey: "messages" },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/vendor/disputes", tip: "View and respond to disputes filed by buyers", tlId: "TL-V-SB-NAV-DISPUTES", badgeKey: "disputes" },
   { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notification settings", tlId: "TL-V-SB-NAV-SETTINGS", badgeKey: null },

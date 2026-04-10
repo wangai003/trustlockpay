@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, to: "/trustlock/buyer", tip: "Dashboard summary with order status and alerts", tlId: "TL-B-SB-NAV-OVERVIEW", badgeKey: null as string | null },
+  { label: "Vendor Lookup", icon: Search, to: "/trustlock/buyer/vendor-lookup", tip: "Search and connect with vendors on the TrustLock network", tlId: "TL-B-SB-NAV-VENDOR-LOOKUP", badgeKey: null },
   { label: "Bill Payments", icon: Receipt, to: "/trustlock/buyer/bill-payments", tip: "Track service fees and pay-as-you-go charges", tlId: "TL-B-SB-NAV-BILL-PAY", badgeKey: null },
   { label: "My Orders", icon: Package, to: "/trustlock/buyer/orders", tip: "View all purchases and escrow order statuses", tlId: "TL-B-SB-NAV-ORDERS", badgeKey: null },
   { label: "Disputes", icon: AlertTriangle, to: "/trustlock/buyer/disputes", tip: "File and track disputes on transactions", tlId: "TL-B-SB-NAV-DISPUTES", badgeKey: "disputes" },
@@ -23,7 +24,6 @@ const navItems = [
   { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Withdraw refunded or split funds", tlId: "TL-B-SB-NAV-PAYOUT", badgeKey: null },
   { label: "Teams", icon: Users, to: "/trustlock/buyer/teams", tip: "Manage procurement teams and coordinate buyer-side tasks", tlId: "TL-B-SB-NAV-TEAMS", badgeKey: null },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/buyer/industry-playbook", tip: "Industry workflows, capabilities, and compliance overview", tlId: "TL-B-SB-NAV-PLAYBOOK", badgeKey: null },
-  { label: "Vendor Lookup", icon: Search, to: "/trustlock/buyer/vendor-lookup", tip: "Search and connect with vendors on the TrustLock network", tlId: "TL-B-SB-NAV-VENDOR-LOOKUP", badgeKey: null },
   { label: "Messages", icon: MessageSquare, to: "/trustlock/buyer/messages", tip: "Direct messaging with vendors and admin support", tlId: "TL-B-SB-NAV-MESSAGES", badgeKey: "messages" },
   { label: "Settings", icon: Settings, to: "/trustlock/buyer/settings", tip: "Account preferences and notifications", tlId: "TL-B-SB-NAV-SETTINGS", badgeKey: null },
 ];
