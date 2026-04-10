@@ -574,7 +574,7 @@ When ANY transaction crosses your path:
 
 ## Mobile App (PWA)
 TrustLock is now a Progressive Web App (PWA), installable on any smartphone directly from the browser.
-- Install page: trustlockpay.lovable.app/install (device-aware instructions for Android & iOS).
+- Install page: /install (device-aware instructions for Android & iOS).
 - This addresses the "desktop-only limits accessibility" gap for African markets where mobile is the primary device.
 - When drafting communications to vendors/buyers, you may include the install link to encourage mobile adoption.
 - No app store listing exists — installation is via browser only.`;
