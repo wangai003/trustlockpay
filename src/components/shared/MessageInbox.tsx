@@ -70,7 +70,7 @@ interface Contact {
 }
 
 interface MessageInboxProps {
-  role: "vendor" | "buyer" | "admin";
+  role: "vendor" | "buyer" | "admin" | "lender";
   /** Pre-attach a transaction context (e.g. opened from an order page) */
   transactionId?: string;
   transactionLabel?: string;
@@ -165,6 +165,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
   // Admin uses the sentinel ID for thread participation
   const effectiveUserId = role === "admin" ? ADMIN_SENTINEL_ID : userId;
+  const isLender = role === "lender";
 
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
@@ -269,6 +270,52 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
           });
         }
       });
+    } else if (isLender) {
+      // Lender: admin support + vendors they finance + buyers on financed orders
+      contactList.push({ id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" });
+
+      // Vendors via financing_applications
+      const { data: apps } = await supabase
+        .from("financing_applications")
+        .select("vendor_id")
+        .eq("lender_id", userId)
+        .in("status", ["approved", "active", "submitted"]);
+
+      const vendorIds = [...new Set((apps || []).map((a: any) => a.vendor_id).filter(Boolean))];
+      if (vendorIds.length > 0) {
+        const { data: vendorProfiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", vendorIds);
+        vendorProfiles?.forEach((p) => {
+          contactList.push({
+            id: p.id,
+            label: `${p.full_name || p.email || p.id.slice(0, 8)} (Vendor)`,
+            type: "counterparty",
+          });
+        });
+      }
+
+      // Buyers on financed vendor transactions
+      if (vendorIds.length > 0) {
+        const { data: txns } = await supabase
+          .from("transactions")
+          .select("id, buyer_id, buyer_name, tx_id")
+          .in("vendor_id", vendorIds)
+          .not("buyer_id", "is", null);
+        const seenBuyers = new Set<string>();
+        txns?.forEach((tx: any) => {
+          if (tx.buyer_id && !seenBuyers.has(tx.buyer_id) && !vendorIds.includes(tx.buyer_id)) {
+            seenBuyers.add(tx.buyer_id);
+            contactList.push({
+              id: tx.buyer_id,
+              label: `${tx.buyer_name || "Buyer"} (${tx.tx_id || tx.id.slice(0, 8)})`,
+              type: "counterparty",
+              transaction_id: tx.id,
+            });
+          }
+        });
+      }
     } else {
       // Buyer/Vendor: add admin as first contact
       contactList.push({ id: ADMIN_SENTINEL_ID, label: "TrustLock Admin Support", type: "admin" });
@@ -297,6 +344,29 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
               transaction_id: tx.id,
             });
           }
+        }
+      }
+
+      // For vendors/buyers: also show lenders they have financing relationships with
+      if (role === "vendor") {
+        const { data: lenderApps } = await supabase
+          .from("financing_applications")
+          .select("lender_id")
+          .eq("vendor_id", userId)
+          .in("status", ["approved", "active"]);
+        const lenderIds = [...new Set((lenderApps || []).map((a: any) => a.lender_id).filter(Boolean))];
+        if (lenderIds.length > 0) {
+          const { data: lenderProfiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", lenderIds);
+          lenderProfiles?.forEach((p) => {
+            contactList.push({
+              id: p.id,
+              label: `${p.full_name || p.email || p.id.slice(0, 8)} (Lender)`,
+              type: "counterparty",
+            });
+          });
         }
       }
     }
@@ -483,11 +553,18 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
     const linkedTxId = contact?.transaction_id || transactionId || null;
 
+    // Determine recipient role from contacts
+    const recipientContact = contacts.find((c) => c.id === composeRecipient);
+    const myRole = role === "admin" ? "admin" : role;
+    const recipientRole = composeRecipient === ADMIN_SENTINEL_ID ? "admin" : (recipientContact?.label?.includes("(Lender)") ? "lender" : recipientContact?.label?.includes("(Vendor)") ? "vendor" : undefined);
+
     const { data: thread, error: tErr } = await supabase
       .from("message_threads")
       .insert({
         participant_1: myParticipantId,
         participant_2: composeRecipient,
+        participant_1_role: myRole,
+        participant_2_role: recipientRole || null,
         subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message"),
         category: composeCategory,
         transaction_id: linkedTxId,

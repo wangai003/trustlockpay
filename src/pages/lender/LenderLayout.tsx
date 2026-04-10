@@ -1,11 +1,15 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import LenderSidebar from "@/components/lender/LenderSidebar";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
 
 const LenderLayoutInner = () => {
   useSessionTimeout("/trustlock/lender/login");
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  useMessageToast("vendor", user?.id, (path) => navigate(path.replace("/vendor/", "/lender/")));
 
   return (
     <LanguageProvider>
