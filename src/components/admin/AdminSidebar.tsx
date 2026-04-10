@@ -30,7 +30,7 @@ const allNavItems = [
   { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", moduleKey: "finance", badgeKey: null },
   { label: "Audit Access", icon: ShieldCheck, to: "/trustlock/admin/audit", tip: "Create read-only audit sessions for regulators", moduleKey: "audit", badgeKey: null },
   { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/admin/industry-playbook", tip: "Industry capabilities, workflows, and compliance overview", moduleKey: "industry", badgeKey: null },
-  { label: "TL-ID Diagnostics", icon: Tag, to: "/trustlock/admin/tl-id", tip: "Look up component identifiers reported by users for support", moduleKey: "overview", badgeKey: null },
+  
   { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction and manage manual remittance", moduleKey: "tax", badgeKey: null },
   { label: "Blockchain Proofs", icon: Shield, to: "/trustlock/admin/blockchain-proofs", tip: "Verify immutable on-chain records anchored to Polygon", moduleKey: "blockchain", badgeKey: null },
   { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs", moduleKey: "gas", badgeKey: null },
