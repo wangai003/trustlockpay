@@ -94,9 +94,7 @@ const ThreadInternalNotes = ({ threadId, adminAliasMap, adminNameMap, isChief }:
         thread_id: threadId,
         admin_account_id: currentAdminId,
         body: encryptedBody,
-        is_encrypted: true,
-        encryption_version: 1,
-      });
+      } as any);
       if (error) { toast.error("Failed to add note"); }
       else { setNewNote(""); }
     } catch {
