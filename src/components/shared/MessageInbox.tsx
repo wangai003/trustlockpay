@@ -1044,22 +1044,58 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
             <p className="text-xs text-muted-foreground">This conversation has been locked.</p>
           </div>
         ) : (
-          <div className="p-3 border-t border-border flex gap-2">
-            <Textarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="min-h-[40px] max-h-[120px] text-sm resize-none flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            <Button size="icon" onClick={handleSend} disabled={!newMessage.trim()} className="shrink-0 self-end">
-              <Send className="w-4 h-4" />
-            </Button>
+          <div className="p-3 border-t border-border space-y-2">
+            {/* Attachment previews */}
+            {replyAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {replyAttachments.map((f, i) => (
+                  <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px]">
+                    {isImageType(f.type) ? <Image className="w-3 h-3 shrink-0 text-muted-foreground" /> : <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                    <span className="truncate max-w-[80px]">{f.name}</span>
+                    <span className="text-muted-foreground">{formatFileSize(f.size)}</span>
+                    <button onClick={() => setReplyAttachments((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                ref={replyFileInputRef}
+                type="file"
+                accept={ACCEPTED_EXTENSIONS}
+                multiple
+                className="hidden"
+                onChange={(e) => { addFiles(e.target.files, setReplyAttachments, replyAttachments); e.target.value = ""; }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="w-9 h-9 shrink-0 self-end"
+                onClick={() => replyFileInputRef.current?.click()}
+                disabled={replyAttachments.length >= MAX_FILES}
+                title={`Attach files (${replyAttachments.length}/${MAX_FILES})`}
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="min-h-[40px] max-h-[120px] text-sm resize-none flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+              <Button size="icon" onClick={handleSend} disabled={(!newMessage.trim() && replyAttachments.length === 0) || uploading} className="shrink-0 self-end">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         )}
       </div>
