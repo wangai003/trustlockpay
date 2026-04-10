@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Landmark, Briefcase, ClipboardList, Search, MessageSquare,
   FileText, Link2, BarChart3, Bot, ShieldCheck, Settings, LogOut, Home,
-  Menu, X, Info, Store
+  Menu, X, Info, Store, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ const navItems = [
   { label: "Blockchain Explorer", icon: Link2, to: "/trustlock/lender/blockchain", tip: "Read-only SHA-256 proof chain verification", badgeKey: null },
   { label: "Analytics", icon: BarChart3, to: "/trustlock/lender/analytics", tip: "Portfolio performance, sector concentration", badgeKey: null },
   { label: "FlashVet AI", icon: Bot, to: "/trustlock/lender/flashvet", tip: "AI-powered research, forensics, and platform Q&A", badgeKey: null },
+  { label: "Repayments", icon: DollarSign, to: "/trustlock/lender/repayments", tip: "Review offline repayment confirmations from vendors", badgeKey: null },
   { label: "KYB Verification", icon: ShieldCheck, to: "/trustlock/lender/kyb", tip: "Upload KYB documents and manage tier status", badgeKey: null },
   { label: "Settings", icon: Settings, to: "/trustlock/lender/settings", tip: "Profile, logo, website, notification preferences", badgeKey: null },
 ];
