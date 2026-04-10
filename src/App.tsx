@@ -274,6 +274,7 @@ const App = () => (
                 <Route path="analytics" element={<LenderAnalytics />} />
                 <Route path="flashvet" element={<LenderFlashVet />} />
                 <Route path="kyb" element={<LenderKYB />} />
+                <Route path="repayments" element={<LenderRepayments />} />
                 <Route path="settings" element={<LenderSettings />} />
               </Route>
 
