@@ -3,7 +3,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Shield, ShoppingBag, Store } from "lucide-react";
+import { Shield, ShoppingBag, Store, Landmark } from "lucide-react";
 
 interface PortalPickerProps {
   open: boolean;
