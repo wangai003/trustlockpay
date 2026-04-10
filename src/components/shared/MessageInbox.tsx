@@ -747,7 +747,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         participant_2: composeRecipient,
         participant_1_role: myRole,
         participant_2_role: recipientRole || null,
-        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : CONTACT_REASONS.find((r) => r.value === composeCategory)?.label || "New Message"),
+        subject: composeSubject || (transactionLabel ? `Re: ${transactionLabel}` : contactReasons.find((r) => r.value === composeCategory)?.label || "New Message"),
         category: composeCategory,
         transaction_id: linkedTxId,
       })
