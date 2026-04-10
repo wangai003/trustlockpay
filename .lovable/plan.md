@@ -429,7 +429,10 @@ Veridia inherits and extends the same document intelligence used by the existing
 - [ ] Vendor social/website requirement enforced (new + existing accounts)
 - [ ] Lender tiers implemented with KYB-gated max facility limits
 - [ ] Oba AI hardened with confidentiality protocol (same standard as Amani/Zawadi/Emmanuel)
+- [ ] Veridia AI hardened with same confidentiality + injection filtering protocol
+- [ ] Veridia analyses stored in `veridia_analyses` with lender-only RLS
+- [ ] Veridia confidence scoring calibrated with transparent methodology disclosure
 - [ ] No raw SQL or user-provided SQL in edge functions
 - [ ] Auto-bridging verified: new verified lender instantly appears in vendor lookup
 - [ ] Lender logo displayed in all lookup cards and contract headers
-- [ ] Sandbox demo includes lender features for presentation readiness
+- [ ] Sandbox demo includes lender features + Veridia mock for presentation readiness
