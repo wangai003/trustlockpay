@@ -244,6 +244,28 @@ const App = () => (
               {/* Vendor Claim (public — outside protected route) */}
               <Route path="/vendor/claim" element={<VendorClaimAccount />} />
 
+              {/* Lender Dashboard */}
+              <Route path="/trustlock/lender/login" element={<LenderLogin />} />
+              <Route path="/trustlock/lender/signup" element={<LenderSignup />} />
+              <Route path="/trustlock/lender/forgot-password" element={<ForgotPassword role="vendor" />} />
+              <Route path="/trustlock/lender" element={
+                <ProtectedRoute loginPath="/trustlock/lender/login" allowTestnet testnetKey="tl_lender_auth">
+                  <LenderLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<LenderOverview />} />
+                <Route path="portfolio" element={<LenderPortfolio />} />
+                <Route path="applications" element={<LenderApplications />} />
+                <Route path="vendor-lookup" element={<LenderVendorLookup />} />
+                <Route path="messages" element={<LenderMessages />} />
+                <Route path="documents" element={<LenderDocuments />} />
+                <Route path="blockchain" element={<LenderBlockchain />} />
+                <Route path="analytics" element={<LenderAnalytics />} />
+                <Route path="flashvet" element={<LenderFlashVet />} />
+                <Route path="kyb" element={<LenderKYB />} />
+                <Route path="settings" element={<LenderSettings />} />
+              </Route>
+
               {/* Buyer Dashboard */}
               <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
               <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
