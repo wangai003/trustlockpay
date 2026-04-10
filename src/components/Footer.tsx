@@ -3,12 +3,6 @@ import { Link } from "react-router-dom";
 import trustlockLogo from "@/assets/trustlock-pay-logo.png";
 
 
-const legalLinks = [
-  { label: "Privacy Policy", to: "/privacy-policy" },
-  { label: "Cookie Policy", to: "/cookie-policy" },
-  { label: "Data Rights", to: "/data-rights" },
-  { label: "Dispute Policy", to: "/dispute-policy" },
-];
 
 const Footer = forwardRef<HTMLElement>((_, ref) => {
   return (
