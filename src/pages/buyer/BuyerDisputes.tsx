@@ -180,12 +180,12 @@ const BuyerDisputes = () => {
     <div>
       <BuyerHeader title="Disputes" />
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track the status of any disputes you've filed</p>
           </div>
-          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2 w-full sm:w-auto">
               <AlertTriangle className="w-4 h-4" /> File New Dispute
             </Button>
         </div>
