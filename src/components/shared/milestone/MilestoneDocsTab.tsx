@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import SecureDocumentViewer from "@/components/shared/SecureDocumentViewer";
 import { getUploadedKeys } from "./milestoneConstants";
 
 interface MilestoneDocsTabProps {
@@ -37,8 +39,19 @@ const MilestoneDocsTab = ({
   scopeDowngraded, tradeScope, docTypeSelections, setDocTypeSelections,
   onTestnetAddDocument, getUserId, updateMilestone,
 }: MilestoneDocsTabProps) => {
+  const [secureViewDoc, setSecureViewDoc] = useState<{ url: string; name: string } | null>(null);
+  const viewerIdentity = `${role.toUpperCase()} · ${transactionId?.slice(0, 8) || "N/A"}`;
+
   return (
     <div className="space-y-3">
+      {/* Secure Document Viewer */}
+      <SecureDocumentViewer
+        open={!!secureViewDoc}
+        onOpenChange={(open) => { if (!open) setSecureViewDoc(null); }}
+        documentUrl={secureViewDoc?.url || ""}
+        documentName={secureViewDoc?.name || ""}
+        viewerIdentity={viewerIdentity}
+      />
       {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
         <div className="rounded-md border border-border p-2 space-y-2">
           {gateStatus.autoSatisfied.length > 0 && (
@@ -141,7 +154,7 @@ const MilestoneDocsTab = ({
                     </span>
                   </div>
                   {doc.url && (
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]" onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}>
+                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]" onClick={(e) => { e.stopPropagation(); setSecureViewDoc({ url: doc.url, name: doc.name }); }}>
                       <Eye className="w-2.5 h-2.5 mr-0.5" /> View
                     </Button>
                   )}
