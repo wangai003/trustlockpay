@@ -2416,11 +2416,16 @@ export type Database = {
           application_id: string | null
           created_at: string
           disbursed_at: string
+          disbursement_date: string | null
+          document_url: string | null
+          exchange_rate_snapshot: number | null
+          extraction_confidence: number | null
           id: string
           lender_id: string
           local_currency_amount: number | null
           local_currency_code: string | null
           notes: string | null
+          reference_number: string | null
           source: string
           status: string
           updated_at: string
@@ -2431,11 +2436,16 @@ export type Database = {
           application_id?: string | null
           created_at?: string
           disbursed_at?: string
+          disbursement_date?: string | null
+          document_url?: string | null
+          exchange_rate_snapshot?: number | null
+          extraction_confidence?: number | null
           id?: string
           lender_id: string
           local_currency_amount?: number | null
           local_currency_code?: string | null
           notes?: string | null
+          reference_number?: string | null
           source?: string
           status?: string
           updated_at?: string
@@ -2446,11 +2456,16 @@ export type Database = {
           application_id?: string | null
           created_at?: string
           disbursed_at?: string
+          disbursement_date?: string | null
+          document_url?: string | null
+          exchange_rate_snapshot?: number | null
+          extraction_confidence?: number | null
           id?: string
           lender_id?: string
           local_currency_amount?: number | null
           local_currency_code?: string | null
           notes?: string | null
+          reference_number?: string | null
           source?: string
           status?: string
           updated_at?: string
