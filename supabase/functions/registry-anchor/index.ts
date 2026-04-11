@@ -111,7 +111,7 @@ function getPolygonConfig(): {
   rpcUrl: string;
 } | null {
   const contractAddress = Deno.env.get("REGISTRY_CONTRACT_ADDRESS");
-  const privateKey = Deno.env.get("POLYGON_WALLET_PRIVATE_KEY");
+  const privateKey = Deno.env.get("POLYGON_RELAYER_PRIVATE_KEY");
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
 
   if (!contractAddress || !privateKey || !rpcUrl) return null;
@@ -562,8 +562,8 @@ Deno.serve(async (req) => {
         polygonConfigured: !!polygonConfig,
         contractAddress: polygonConfig?.contractAddress ? `${polygonConfig.contractAddress.slice(0, 6)}...${polygonConfig.contractAddress.slice(-4)}` : null,
         rpcConfigured: !!Deno.env.get("POLYGON_RPC_URL"),
-        walletConfigured: !!Deno.env.get("POLYGON_WALLET_PRIVATE_KEY"),
-        thirdwebConfigured: !!Deno.env.get("THIRDWEB_API_KEY"),
+        relayerKeyConfigured: !!Deno.env.get("POLYGON_RELAYER_PRIVATE_KEY"),
+        polygonscanConfigured: !!Deno.env.get("POLYGONSCAN_API_KEY"),
       });
     }
 
