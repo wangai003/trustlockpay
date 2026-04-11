@@ -5,6 +5,8 @@ import { Store } from "lucide-react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import UserLookupFilters, { LookupFilters, EMPTY_FILTERS } from "@/components/shared/UserLookupFilters";
 import UserLookupCard, { LookupUser } from "@/components/shared/UserLookupCard";
+import RecommendedMatches from "@/components/shared/RecommendedMatches";
+import { useRecommendedMatches } from "@/hooks/useRecommendedMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +19,7 @@ const BuyerVendorLookup = () => {
   const { user } = useAuth();
   const [filters, setFilters] = useState<LookupFilters>(EMPTY_FILTERS);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { data: recommendedVendors, isLoading: recLoading } = useRecommendedMatches("vendor");
 
   const { data: vendors, isLoading } = useQuery({
     queryKey: ["vendor-lookup", user?.id],
@@ -110,6 +113,13 @@ const BuyerVendorLookup = () => {
           <Store className="w-4 h-4" />
           <span>Browse and connect with vendors on the TrustLock network</span>
         </div>
+
+        <RecommendedMatches
+          matches={recommendedVendors || []}
+          isLoading={recLoading}
+          onMessage={handleMessage}
+          label="Recommended Vendors"
+        />
 
         <UserLookupFilters filters={filters} onChange={handleFilterChange} targetRole="vendor" />
 

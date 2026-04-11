@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Landmark, Globe, Shield, Star, ExternalLink } from "lucide-react";
 import VendorHeader from "@/components/vendor/VendorHeader";
+import RecommendedMatches from "@/components/shared/RecommendedMatches";
+import { useRecommendedMatches } from "@/hooks/useRecommendedMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +39,7 @@ const VendorLenderLookup = () => {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { data: recommendedLenders, isLoading: recLoading } = useRecommendedMatches("lender");
 
   const { data: lenders, isLoading } = useQuery({
     queryKey: ["lender-lookup", user?.id],
@@ -78,6 +81,13 @@ const VendorLenderLookup = () => {
           <Landmark className="w-4 h-4" />
           <span>Browse verified lenders on the TrustLock network</span>
         </div>
+
+        <RecommendedMatches
+          matches={recommendedLenders || []}
+          isLoading={recLoading}
+          onMessage={(id) => navigate(`/trustlock/vendor/messages?to=${id}`)}
+          label="Recommended Lenders"
+        />
 
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
