@@ -159,9 +159,8 @@ const OfflineReconciliation = ({
     }
   };
 
-  const handleSkip = () => {
-    onReconciliationComplete([]);
-  };
+  // No skip — user already chose "Yes, some steps are done" at the initial gate.
+  // To start fresh, they should use the initial "No, start fresh" option instead.
 
   // Initial question gate
   if (hasOfflineWork === null) {
@@ -195,7 +194,7 @@ const OfflineReconciliation = ({
               size="sm"
               variant="default"
               className="gap-1 text-xs"
-              onClick={() => { setHasOfflineWork(false); handleSkip(); }}
+              onClick={() => { setHasOfflineWork(false); onReconciliationComplete([]); }}
             >
               <ArrowRight className="w-3 h-3" /> No, start fresh
             </Button>
@@ -318,17 +317,6 @@ const OfflineReconciliation = ({
               All offline completions are blockchain-anchored
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  setShowReconciliation(false);
-                  handleSkip();
-                }}
-              >
-                Skip
-              </Button>
               <Button
                 size="sm"
                 className="text-xs gap-1"

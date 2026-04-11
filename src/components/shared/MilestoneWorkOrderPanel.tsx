@@ -257,10 +257,29 @@ const MilestoneWorkOrderPanel = ({
           milestoneTemplates={reconciliationTemplates.map(t => ({
             name: t.name, percentage: t.percentage, documents: t.documents, description: t.description,
           }))}
-          onReconciliationComplete={(skipped) => {
+          onReconciliationComplete={async (skipped) => {
             setSkippedMilestoneIndices(skipped);
             setReconciliationComplete(true);
-            if (skipped.length > 0) toast.success(`Work order adjusted — ${skipped.length} milestone(s) marked as completed offline`);
+            if (skipped.length > 0) {
+              toast.success(`Work order adjusted — ${skipped.length} milestone(s) marked as completed offline`);
+              // Update milestone statuses in DB
+              if (transactionId) {
+                const { data: dbMilestones } = await supabase
+                  .from("transaction_milestones")
+                  .select("id, position")
+                  .eq("transaction_id", transactionId)
+                  .order("position", { ascending: true });
+                if (dbMilestones) {
+                  const toUpdate = dbMilestones.filter(m => skipped.includes(m.position));
+                  for (const ms of toUpdate) {
+                    await supabase.from("transaction_milestones").update({
+                      status: "completed_offline",
+                      completed_at: new Date().toISOString(),
+                    }).eq("id", ms.id);
+                  }
+                }
+              }
+            }
           }}
           isTestnet={isTestnet}
         />
