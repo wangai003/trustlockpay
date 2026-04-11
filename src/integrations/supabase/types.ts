@@ -6456,6 +6456,10 @@ export type Database = {
         Args: { _name: string; _username: string }
         Returns: Json
       }
+      compute_match_score: {
+        Args: { _user_a: string; _user_b: string }
+        Returns: Json
+      }
       compute_vendor_risk_score: { Args: { _vendor_id: string }; Returns: Json }
       create_system_notification: {
         Args: {
@@ -6516,6 +6520,44 @@ export type Database = {
       get_masked_arbitrator_proposals: {
         Args: { _dispute_id: string; _user_id: string }
         Returns: Json[]
+      }
+      get_recommended_matches: {
+        Args: {
+          _limit?: number
+          _target_role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: {
+          avatar_url: string
+          company_name: string
+          corridor: string
+          entity_type: string
+          full_name: string
+          location: string
+          match_breakdown: Json
+          match_score: number
+          onboarding_industry: string
+          user_id: string
+        }[]
+      }
+      get_top_matches: {
+        Args: {
+          _limit?: number
+          _target_role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: {
+          avatar_url: string
+          company_name: string
+          corridor: string
+          entity_type: string
+          full_name: string
+          location: string
+          match_breakdown: Json
+          match_score: number
+          onboarding_industry: string
+          user_id: string
+        }[]
       }
       get_vendor_claim_by_token: {
         Args: { p_token: string }
