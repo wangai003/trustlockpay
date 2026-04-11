@@ -232,12 +232,13 @@ const SandboxLenderOverview = () => {
 
       {/* Main Tabs */}
       <Tabs defaultValue="risk" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-5">
+        <TabsList className="w-full grid grid-cols-6">
           <TabsTrigger value="risk" className="text-xs">Risk Engine</TabsTrigger>
           <TabsTrigger value="applications" className="text-xs">Applications</TabsTrigger>
           <TabsTrigger value="vendors" className="text-xs">Vendors</TabsTrigger>
           <TabsTrigger value="flashvet" className="text-xs">FlashVet</TabsTrigger>
           <TabsTrigger value="kyb" className="text-xs">KYB</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
         </TabsList>
 
         {/* Risk Engine Tab */}
@@ -494,6 +495,63 @@ const SandboxLenderOverview = () => {
                   </div>
                 </CardContent>
               </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents" className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-primary" />
+                Sample Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Download sample copies of key platform documents to review before engaging with live transactions.
+              </p>
+
+              {/* Liability Contract */}
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded bg-destructive/10 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-destructive" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground">Lender Liability Contract</p>
+                    <p className="text-[10px] text-muted-foreground">Mandatory agreement · v1 · Signed copy with sample data</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 shrink-0" asChild>
+                  <a href="/samples/sample_liability_contract.pdf" download="TrustLock_Liability_Contract_SAMPLE.pdf">
+                    <FileCheck className="h-3 w-3" /> Download
+                  </a>
+                </Button>
+              </div>
+
+              {/* Escrow Certificate */}
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground">Escrow Collateral Certificate</p>
+                    <p className="text-[10px] text-muted-foreground">Lender-facing instrument · 90-day validity · Mining sample</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 shrink-0" asChild>
+                  <a href="/samples/sample_escrow_certificate.pdf" download="TrustLock_Escrow_Certificate_SAMPLE.pdf">
+                    <FileCheck className="h-3 w-3" /> Download
+                  </a>
+                </Button>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground italic pt-2">
+                These are sample documents watermarked "SAMPLE" — production copies are auto-generated with real transaction data.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
