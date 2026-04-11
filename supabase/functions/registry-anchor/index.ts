@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ethers } from "https://esm.sh/ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -151,119 +152,45 @@ const REGISTRY_ABI = [
   },
 ];
 
-// Encode function call data for anchorRecord(bytes32, bytes32, uint8)
-function encodeAnchorRecord(contentHash: string, txRef: string, recordType: number): string {
-  // Function selector: keccak256("anchorRecord(bytes32,bytes32,uint8)") first 4 bytes
-  // Pre-computed: 0x8a35acfb (from solidity ABI)
-  const selector = "8a35acfb";
-  const hash = contentHash.replace("0x", "").padStart(64, "0");
-  const ref = txRef.replace("0x", "").padStart(64, "0");
-  const type = recordType.toString(16).padStart(64, "0");
-  return "0x" + selector + hash + ref + type;
+// Get wallet address from private key
+function getWalletAddress(privateKey: string): string {
+  const wallet = new ethers.Wallet(privateKey);
+  return wallet.address;
 }
 
-// Send raw transaction to Polygon via JSON-RPC
+// Send signed transaction to Polygon via ethers.js
 async function sendPolygonTx(
   config: { contractAddress: string; privateKey: string; rpcUrl: string },
-  calldata: string
+  contentHash: string,
+  txRef: string,
+  recordType: number
 ): Promise<{ txHash: string } | { error: string }> {
   try {
-    // Step 1: Get nonce
-    const nonceRes = await fetch(config.rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getTransactionCount",
-        params: [await getWalletAddress(config.privateKey), "pending"],
-      }),
+    const provider = new ethers.JsonRpcProvider(config.rpcUrl, {
+      name: "polygon",
+      chainId: 137,
     });
-    const nonceData = await nonceRes.json();
-    const nonce = nonceData.result;
+    const wallet = new ethers.Wallet(config.privateKey, provider);
+    const contract = new ethers.Contract(config.contractAddress, REGISTRY_ABI, wallet);
 
-    // Step 2: Get gas price
-    const gasPriceRes = await fetch(config.rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 2,
-        method: "eth_gasPrice",
-        params: [],
-      }),
-    });
-    const gasPriceData = await gasPriceRes.json();
-    const gasPrice = gasPriceData.result;
-
-    // Step 3: Estimate gas
-    const estimateRes = await fetch(config.rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 3,
-        method: "eth_estimateGas",
-        params: [{
-          from: await getWalletAddress(config.privateKey),
-          to: config.contractAddress,
-          data: calldata,
-        }],
-      }),
-    });
-    const estimateData = await estimateRes.json();
-    const gasLimit = estimateData.result || "0x30000"; // fallback 200k
-
-    // Step 4: Build unsigned transaction
-    // Note: Full signing requires secp256k1 + RLP encoding.
-    // In production, use ethers.js or Thirdweb SDK via import map.
-    // This stub returns the pre-flight data for when the signing library is wired.
-    console.log("[registry-anchor] Polygon TX pre-flight ready:", {
+    console.log("[registry-anchor] Sending anchorRecord TX...", {
+      from: wallet.address,
       to: config.contractAddress,
-      data: calldata,
-      nonce,
-      gasPrice,
-      gasLimit,
-      chainId: "0x89", // Polygon mainnet
+      contentHash: contentHash.slice(0, 10) + "...",
+      recordType,
     });
 
-    // ─── SIGNING STUB ───
-    // When ethers.js or thirdweb is available in Deno edge runtime:
-    //
-    // import { ethers } from "https://esm.sh/ethers@6";
-    // const wallet = new ethers.Wallet(config.privateKey);
-    // const provider = new ethers.JsonRpcProvider(config.rpcUrl);
-    // const signer = wallet.connect(provider);
-    // const contract = new ethers.Contract(config.contractAddress, REGISTRY_ABI, signer);
-    // const tx = await contract.anchorRecord(contentHash, txRef, recordType);
-    // const receipt = await tx.wait();
-    // return { txHash: receipt.hash };
-    //
-    // For Thirdweb (if THIRDWEB_API_KEY is set):
-    //
-    // import { ThirdwebSDK } from "https://esm.sh/@thirdweb-dev/sdk";
-    // const sdk = ThirdwebSDK.fromPrivateKey(config.privateKey, "polygon", {
-    //   thirdwebApiKey: Deno.env.get("THIRDWEB_API_KEY"),
-    // });
-    // const contract = await sdk.getContract(config.contractAddress);
-    // const tx = await contract.call("anchorRecord", [contentHash, txRef, recordType]);
-    // return { txHash: tx.receipt.transactionHash };
-    // ─────────────────────
+    const tx = await contract.anchorRecord(contentHash, txRef, recordType);
+    console.log("[registry-anchor] TX submitted:", tx.hash);
 
-    return { error: "signing_not_wired" };
+    const receipt = await tx.wait(1); // wait for 1 confirmation
+    console.log("[registry-anchor] TX confirmed in block:", receipt.blockNumber);
+
+    return { txHash: receipt.hash };
   } catch (err: any) {
     console.error("[registry-anchor] Polygon TX error:", err);
     return { error: err.message || "polygon_tx_failed" };
   }
-}
-
-// Derive wallet address from private key (stub — needs crypto lib)
-async function getWalletAddress(privateKey: string): Promise<string> {
-  // In production with ethers.js:
-  // return new ethers.Wallet(privateKey).address;
-  // For now, return a placeholder derived from the key
-  const hash = await sha256(privateKey);
-  return "0x" + hash.slice(2, 42);
 }
 
 Deno.serve(async (req) => {
