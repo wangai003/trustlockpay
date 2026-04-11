@@ -119,7 +119,7 @@ const TrustLockDualCheckout = () => {
             Two Modes, One Widget
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            TrustLock Pay auto-detects the buyer's location and shows the right experience — crypto-savvy diaspora or familiar local checkout.
+            TrustLock Pay auto-detects the buyer's location and shows the right experience — international or familiar local checkout.
           </p>
         </motion.div>
 

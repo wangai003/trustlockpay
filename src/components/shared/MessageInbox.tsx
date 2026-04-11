@@ -1133,7 +1133,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
 
   return (
-    <div className="h-[calc(100dvh-14rem)] sm:h-[calc(100dvh-12rem)] min-h-[300px] border border-border rounded-lg bg-background overflow-hidden flex flex-col">
+    <div className="h-[calc(100dvh-18rem)] sm:h-[calc(100dvh-12rem)] min-h-[300px] max-h-[calc(100dvh-10rem)] border border-border rounded-lg bg-background overflow-hidden flex flex-col">
       {selectedThread ? ThreadView() : ThreadList()}
     </div>
   );

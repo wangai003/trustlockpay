@@ -38,7 +38,7 @@ export const industries: IndustryEntry[] = [
   },
   {
     id: "real-estate", name: "Real Estate", icon: Home, color: "text-blue-600",
-    desc: "Escrow protection for land deposits, property purchases, and diaspora housing investments.",
+    desc: "Escrow protection for land deposits, property purchases, and overseas property investments.",
     stages: ["Purchase Agreement Upload", "Title Search & Verification", "Deposit Escrow Lock", "Property Inspection", "Legal Review & Conveyancing", "Transfer of Title", "Final Settlement & Key Handover"],
     buyerCaps: ["Verify property title before funds release", "Upload surveyor reports per stage", "Track conveyancing progress", "Dispute if title defects discovered", "Observer sign-off from licensed valuers", "Escrow holdback for post-sale defects"],
     vendorCaps: ["Receive deposit into escrow immediately", "Staged payout: deposit → balance", "Upload title deeds and certificates", "Auto-notify buyer at each stage", "KYC verification for property ownership", "Standalone links for international buyers"],

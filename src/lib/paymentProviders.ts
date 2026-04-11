@@ -1,5 +1,5 @@
 // Payment provider registry — 3 active processors: Stripe, Coinbase, Transak + Direct
-// Covers diaspora and local African payment methods with dynamic cost-optimized routing
+// Covers international and local payment methods with dynamic cost-optimized routing
 
 import { type ProcessorId, getEligibleProcessors, type PaymentMethod } from "./feeEngine";
 import {
