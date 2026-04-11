@@ -231,13 +231,52 @@ const SandboxLenderOverview = () => {
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="applications" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4">
+      <Tabs defaultValue="risk" className="space-y-4">
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="risk" className="text-xs">Risk Engine</TabsTrigger>
           <TabsTrigger value="applications" className="text-xs">Applications</TabsTrigger>
-          <TabsTrigger value="vendors" className="text-xs">Vendor Lookup</TabsTrigger>
-          <TabsTrigger value="flashvet" className="text-xs">FlashVet AI</TabsTrigger>
-          <TabsTrigger value="kyb" className="text-xs">KYB Demo</TabsTrigger>
+          <TabsTrigger value="vendors" className="text-xs">Vendors</TabsTrigger>
+          <TabsTrigger value="flashvet" className="text-xs">FlashVet</TabsTrigger>
+          <TabsTrigger value="kyb" className="text-xs">KYB</TabsTrigger>
         </TabsList>
+
+        {/* Risk Engine Tab */}
+        <TabsContent value="risk" className="space-y-4">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold text-foreground">TrustLock Risk Engine</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                5-pillar behavioral scoring computed from real escrow data. No demographics, no bias — purely on-platform performance.
+                Select a vendor below to see their live risk scorecard.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-foreground">Select Vendor to Score</label>
+            <Select value={selectedRiskVendor} onValueChange={setSelectedRiskVendor}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(MOCK_RISK_SCORES).map(name => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {MOCK_RISK_SCORES[selectedRiskVendor] && (
+            <VendorRiskScorecard
+              data={MOCK_RISK_SCORES[selectedRiskVendor]}
+              vendorName={selectedRiskVendor}
+              onRefresh={() => toast.success("Risk score refreshed (sandbox demo)")}
+            />
+          )}
+        </TabsContent>
 
         {/* Applications Tab */}
         <TabsContent value="applications" className="space-y-3">
