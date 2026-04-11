@@ -263,8 +263,7 @@ Deno.serve(async (req) => {
       // ── Attempt on-chain anchoring if Polygon is configured ──
       if (polygonConfig) {
         chainStatus = "pending_tx";
-        const calldata = encodeAnchorRecord(contentHash, txRef, typeNum);
-        const result = await sendPolygonTx(polygonConfig, calldata);
+        const result = await sendPolygonTx(polygonConfig, contentHash, txRef, typeNum);
 
         if ("txHash" in result && result.txHash) {
           polygonTxHash = result.txHash;
@@ -346,8 +345,7 @@ Deno.serve(async (req) => {
 
       for (const record of queued) {
         const typeNum = RECORD_TYPE_MAP[record.record_type] ?? 13;
-        const calldata = encodeAnchorRecord(record.content_hash, record.tx_ref, typeNum);
-        const result = await sendPolygonTx(polygonConfig, calldata);
+        const result = await sendPolygonTx(polygonConfig, record.content_hash, record.tx_ref, typeNum);
 
         if ("txHash" in result && result.txHash) {
           await supabase
