@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Store, ShoppingBag, Globe, UserCheck } from "lucide-react";
+import { Shield, Store, ShoppingBag, Globe, UserCheck, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SandboxCountdown } from "./SandboxCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
 import { toast } from "sonner";
 
-type DemoRole = "vendor" | "buyer";
+type DemoRole = "vendor" | "buyer" | "lender";
 
 const SandboxLogin = () => {
   const navigate = useNavigate();
@@ -65,8 +65,10 @@ const SandboxLogin = () => {
     };
     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
     toast.success("Welcome to TrustLock Sandbox!");
-    navigate(role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
+    navigate(role === "vendor" ? "/sandbox/vendor" : role === "lender" ? "/sandbox/lender" : "/sandbox/buyer");
   };
+
+  const roleRoute = (r: string) => r === "vendor" ? "/sandbox/vendor" : r === "lender" ? "/sandbox/lender" : "/sandbox/buyer";
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -100,7 +102,7 @@ const SandboxLogin = () => {
                 <Button
                   size="sm"
                   className="flex-1"
-                  onClick={() => navigate(returning.role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer")}
+                  onClick={() => navigate(roleRoute(returning.role))}
                 >
                   Continue as {returning.role === "vendor" ? "Vendor" : "Buyer"}
                 </Button>
@@ -108,7 +110,9 @@ const SandboxLogin = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const otherRole = returning.role === "vendor" ? "buyer" : "vendor";
+                    const roles = ["vendor", "buyer", "lender"];
+                    const currentIdx = roles.indexOf(returning.role);
+                    const otherRole = roles[(currentIdx + 1) % roles.length];
                     const session = {
                       name: returning.name,
                       email: returning.email,
@@ -117,10 +121,10 @@ const SandboxLogin = () => {
                       expiresAt: "2026-12-31T23:59:59Z",
                     };
                     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
-                    navigate(otherRole === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
+                    navigate(roleRoute(otherRole));
                   }}
                 >
-                  Switch to {returning.role === "vendor" ? "Buyer" : "Vendor"}
+                  Switch Role
                 </Button>
               </div>
               <button
@@ -159,24 +163,33 @@ const SandboxLogin = () => {
             <form onSubmit={handleStart} className="space-y-4">
               <div className="space-y-2">
                 <Label>I want to explore as…</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => setRole("vendor")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${role === "vendor" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "vendor" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
                   >
-                    <Store className={`w-6 h-6 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
-                    <span className="text-xs text-muted-foreground text-center">Manage & fulfill orders</span>
+                    <Store className={`w-5 h-5 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Manage orders</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("buyer")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${role === "buyer" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "buyer" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
                   >
-                    <ShoppingBag className={`w-6 h-6 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
-                    <span className="text-xs text-muted-foreground text-center">Track & release orders</span>
+                    <ShoppingBag className={`w-5 h-5 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Track orders</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("lender")}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "lender" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                  >
+                    <Building2 className={`w-5 h-5 ${role === "lender" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "lender" ? "text-primary" : "text-muted-foreground"}`}>Lender</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Finance vendors</span>
                   </button>
                 </div>
               </div>
