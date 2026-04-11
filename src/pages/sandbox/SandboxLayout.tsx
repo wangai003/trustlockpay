@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
-import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Globe, Search } from "lucide-react";
+import { Shield, LayoutDashboard, Package, MessageSquare, LogOut, Globe, Search, Building2, BarChart3, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SandboxCountdown } from "./SandboxCountdown";
@@ -8,7 +8,7 @@ import { SandboxCountdown } from "./SandboxCountdown";
 interface SandboxSession {
   name: string;
   email: string;
-  role: "vendor" | "buyer";
+  role: "vendor" | "buyer" | "lender";
   createdAt: string;
   expiresAt: string;
 }
@@ -37,13 +37,19 @@ const SandboxLayout = () => {
   if (!session) return null;
 
   const base = `/sandbox/${session.role}`;
-  const lookupLabel = session.role === "vendor" ? "Buyer Lookup" : "Vendor Lookup";
-  const links = [
-    { to: base, icon: LayoutDashboard, label: "Overview" },
-    { to: `${base}/lookup`, icon: Search, label: lookupLabel },
-    { to: `${base}/orders`, icon: Package, label: "Orders" },
-    { to: `${base}/messages`, icon: MessageSquare, label: "Messages" },
-  ];
+  const lookupLabel = session.role === "vendor" ? "Buyer Lookup" : session.role === "lender" ? "Vendor Lookup" : "Vendor Lookup";
+  const roleLabel = session.role === "vendor" ? "Vendor Demo" : session.role === "lender" ? "Lender Demo" : "Buyer Demo";
+
+  const links = session.role === "lender"
+    ? [
+        { to: base, icon: LayoutDashboard, label: "Overview" },
+      ]
+    : [
+        { to: base, icon: LayoutDashboard, label: "Overview" },
+        { to: `${base}/lookup`, icon: Search, label: lookupLabel },
+        { to: `${base}/orders`, icon: Package, label: "Orders" },
+        { to: `${base}/messages`, icon: MessageSquare, label: "Messages" },
+      ];
 
   const handleLogout = () => {
     localStorage.removeItem("tl_sandbox_session");
@@ -60,7 +66,7 @@ const SandboxLayout = () => {
             <span className="font-bold text-sm">TrustLock Sandbox</span>
           </div>
           <Badge variant="outline" className="mt-2 text-[10px]">
-            {session.role === "vendor" ? "Vendor Demo" : "Buyer Demo"}
+            {roleLabel}
           </Badge>
         </div>
         <nav className="flex-1 p-2 space-y-1">
