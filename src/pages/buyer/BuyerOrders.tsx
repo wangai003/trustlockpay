@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
+import DocumentComplianceProgress from "@/components/shared/DocumentComplianceProgress";
 import PayoutGuideWizard, { type PayoutScenario } from "@/components/shared/PayoutGuideWizard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
