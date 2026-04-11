@@ -208,9 +208,24 @@ const SecureDocumentViewer = ({
             <DialogTitle className="text-sm truncate">{documentName}</DialogTitle>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
+            <div className={`flex items-center gap-1.5 text-[9px] rounded px-2 py-1 ${
+              isExpiringSoon 
+                ? 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800' 
+                : 'text-muted-foreground bg-muted/50'
+            }`}>
               <Eye className="w-3 h-3" />
-              <span>View-only · 5min session</span>
+              <span className="font-mono">
+                {timeRemaining !== null ? `${formatTime(timeRemaining)} remaining` : 'Loading...'}
+              </span>
+              {isExpiringSoon && (
+                <button 
+                  onClick={handleRefreshAccess}
+                  disabled={loading}
+                  className="ml-1 px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700 rounded text-[8px] font-semibold transition-colors"
+                >
+                  {loading ? '...' : 'Extend'}
+                </button>
+              )}
             </div>
           </div>
         </DialogHeader>
