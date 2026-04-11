@@ -82,7 +82,7 @@ export const Scene7_EndCard: React.FC = () => {
         color: "#C8A951", fontFamily: "monospace",
         opacity: urlIn,
       }}>
-        trustlockpay.lovable.app
+        trustlockpay.com
       </div>
 
       {/* Bottom line */}

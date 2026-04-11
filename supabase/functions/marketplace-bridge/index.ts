@@ -405,7 +405,7 @@ Deno.serve(async (req) => {
             .single();
 
           if (token) {
-            const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+            const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
             claimInfo = {
               claim_url: `${baseUrl}/vendor/claim?token=${token.token}`,
               token: token.token,
@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
         return json({ error: "Invalid or inactive platform API key" }, 403);
       }
 
-      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
       const results: Record<string, unknown>[] = [];
       let created = 0;
       let skipped = 0;
@@ -735,7 +735,7 @@ Deno.serve(async (req) => {
       if (!platform) return json({ error: "platform is required" }, 400);
 
       const supabase = getSupabase();
-      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
 
       let existingVendorId: string | null = null;
       if (vendor_email) {
@@ -1015,7 +1015,7 @@ Deno.serve(async (req) => {
         return json({ error: "Failed to create fast-track token", details: tokenErr.message }, 500);
       }
 
-      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+      const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
       const claimUrl = `${baseUrl}/vendor/claim?token=${token.token}&fast_track=true`;
 
       return json({
@@ -1057,7 +1057,7 @@ async function callCheckoutWidget(payload: Record<string, unknown>): Promise<unk
 }
 
 function generateEmbedSnippet(vendorId: string, integrationId: string, platform: string): string {
-  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
   return `<!-- TrustLock Escrow Widget (Marketplace Mode) -->
 <script>
   window.TrustLockConfig = {

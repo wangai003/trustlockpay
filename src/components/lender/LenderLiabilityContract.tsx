@@ -11,7 +11,7 @@ import TrustLockWatermark from "@/components/shared/TrustLockWatermark";
 import trustlockLogo from "@/assets/trustlock-pay-logo.png";
 
 const CURRENT_VERSION = 1;
-const PLATFORM_DOMAIN = "trustlockpay.lovable.app";
+const PLATFORM_DOMAIN = "trustlockpay.com";
 const PLATFORM_EMAIL = `compliance@${PLATFORM_DOMAIN}`;
 
 interface LenderLiabilityContractProps {

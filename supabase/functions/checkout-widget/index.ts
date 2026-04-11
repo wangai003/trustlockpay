@@ -673,7 +673,7 @@ async function confirmPayment(params: Record<string, unknown>): Promise<Response
   }
 
   // ── Standalone buyer flow: generate signup/login links ──
-  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
   const signupLink = `${baseUrl}/buyer/signup?ref=${txId}&vendor=${session.vendorId}`;
   const loginLink = `${baseUrl}/buyer/login?ref=${txId}`;
 

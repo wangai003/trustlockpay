@@ -40,7 +40,7 @@ export const SceneEndCard: React.FC = () => {
       </div>
 
       <AnimatedText text="Try It Now — Free" fontSize={48} delay={10} />
-      <AnimatedText text="trustlockpay.lovable.app/test-widget" fontSize={22} color={COLORS.primaryGlow} fontWeight={500} delay={20} />
+      <AnimatedText text="trustlockpay.com/test-widget" fontSize={22} color={COLORS.primaryGlow} fontWeight={500} delay={20} />
       <AnimatedText text="No signups · No cost · Works on any platform" fontSize={16} color={COLORS.muted} fontWeight={400} delay={30} />
     </AbsoluteFill>
   );

@@ -27,7 +27,7 @@ export const SceneGetCode: React.FC = () => {
       </div>
 
       {/* Right side - mock of test-widget page */}
-      <MockBrowser url="trustlockpay.lovable.app/test-widget" delay={12} width={800} height={420}>
+      <MockBrowser url="trustlockpay.com/test-widget" delay={12} width={800} height={420}>
         <div style={{ padding: 32, background: COLORS.bg }}>
           <div style={{
             background: COLORS.card, borderRadius: 12, padding: 24,
