@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import SidebarLegalLinks from "@/components/shared/SidebarLegalLinks";
 import SidebarAccordionNav, { type SidebarNavGroup } from "@/components/shared/SidebarAccordionNav";
 import { useSidebarBadges } from "@/hooks/useSidebarBadges";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 const navGroups: SidebarNavGroup[] = [
   {
@@ -75,7 +77,7 @@ const navGroups: SidebarNavGroup[] = [
   {
     label: "Account",
     items: [
-      { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notifications" },
+      { label: "Settings", icon: Settings, to: "/trustlock/vendor/settings", tip: "Account preferences and notifications", badgeKey: "settings" },
     ],
   },
 ];
@@ -85,8 +87,24 @@ const VendorSidebar = () => {
   const [open, setOpen] = useState(false);
   const { switchRole, switching } = useRoleSwitcher("vendor");
   const { messages: msgCount, disputes: disputeCount } = useSidebarBadges("vendor");
+  const { user } = useAuth();
 
-  const badgeCounts: Record<string, number> = { messages: msgCount, disputes: disputeCount };
+  // Check web presence for settings badge
+  const { data: webPresenceCheck } = useQuery({
+    queryKey: ["vendor_web_presence_badge", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { missing: false };
+      const { data } = await supabase.from("profiles").select("website_url, social_links").eq("id", user.id).single();
+      if (!data) return { missing: false };
+      const hasSocial = data.social_links && Object.values(data.social_links as Record<string, string>).some(v => v);
+      return { missing: !data.website_url && !hasSocial };
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const settingsBadge = webPresenceCheck?.missing ? 1 : 0;
+  const badgeCounts: Record<string, number> = { messages: msgCount, disputes: disputeCount, settings: settingsBadge };
 
   useEffect(() => {
     const handler = () => setOpen(true);
