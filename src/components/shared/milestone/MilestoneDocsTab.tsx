@@ -39,8 +39,19 @@ const MilestoneDocsTab = ({
   scopeDowngraded, tradeScope, docTypeSelections, setDocTypeSelections,
   onTestnetAddDocument, getUserId, updateMilestone,
 }: MilestoneDocsTabProps) => {
+  const [secureViewDoc, setSecureViewDoc] = useState<{ url: string; name: string } | null>(null);
+  const viewerIdentity = `${role.toUpperCase()} · ${transactionId?.slice(0, 8) || "N/A"}`;
+
   return (
     <div className="space-y-3">
+      {/* Secure Document Viewer */}
+      <SecureDocumentViewer
+        open={!!secureViewDoc}
+        onOpenChange={(open) => { if (!open) setSecureViewDoc(null); }}
+        documentUrl={secureViewDoc?.url || ""}
+        documentName={secureViewDoc?.name || ""}
+        viewerIdentity={viewerIdentity}
+      />
       {(requiredDocs.length > 0 || optionalDocs.length > 0) && (
         <div className="rounded-md border border-border p-2 space-y-2">
           {gateStatus.autoSatisfied.length > 0 && (
