@@ -15,6 +15,7 @@ interface SandboxLead {
   phone: string | null;
   country_code: string | null;
   role: string | null;
+  business: string | null;
   created_at: string;
 }
 
@@ -43,10 +44,10 @@ const AdminSandboxLeads = () => {
   );
 
   const exportCSV = () => {
-    const header = "Name,Email,Phone,Role,Date\n";
+    const header = "Name,Email,Phone,Business,Date\n";
     const rows = filtered
       .map((l) =>
-        `"${l.name}","${l.email}","${l.country_code || ""}${l.phone || ""}","${l.role || ""}","${format(new Date(l.created_at), "yyyy-MM-dd HH:mm")}"`
+        `"${l.name}","${l.email}","${l.country_code || ""}${l.phone || ""}","${l.business || ""}","${format(new Date(l.created_at), "yyyy-MM-dd HH:mm")}"`
       )
       .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
@@ -115,9 +116,9 @@ const AdminSandboxLeads = () => {
             <Users className="w-5 h-5 text-primary" />
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {leads.filter((l) => l.role === "vendor").length} / {leads.filter((l) => l.role === "buyer").length}
+                {leads.filter((l) => l.business).length}
               </p>
-              <p className="text-xs text-muted-foreground">Vendors / Buyers</p>
+              <p className="text-xs text-muted-foreground">With Business</p>
             </div>
           </CardContent>
         </Card>
@@ -146,14 +147,14 @@ const AdminSandboxLeads = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Business</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       {loading ? "Loading…" : "No leads yet — share the sandbox link to start collecting!"}
                     </TableCell>
                   </TableRow>
@@ -165,10 +166,8 @@ const AdminSandboxLeads = () => {
                       <TableCell>
                         {lead.phone ? `${lead.country_code || ""}${lead.phone}` : "—"}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={lead.role === "vendor" ? "default" : "secondary"} className="text-[10px]">
-                          {lead.role || "unknown"}
-                        </Badge>
+                      <TableCell className="text-sm">
+                        {lead.business || "—"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {format(new Date(lead.created_at), "MMM d, yyyy h:mm a")}

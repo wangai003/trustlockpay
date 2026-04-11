@@ -4161,6 +4161,7 @@ export type Database = {
       }
       sandbox_leads: {
         Row: {
+          business: string | null
           country_code: string | null
           created_at: string
           email: string
@@ -4170,6 +4171,7 @@ export type Database = {
           role: string | null
         }
         Insert: {
+          business?: string | null
           country_code?: string | null
           created_at?: string
           email: string
@@ -4179,6 +4181,7 @@ export type Database = {
           role?: string | null
         }
         Update: {
+          business?: string | null
           country_code?: string | null
           created_at?: string
           email?: string
