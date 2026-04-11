@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
 import { toast } from "sonner";
 
-type DemoRole = "vendor" | "buyer";
+type DemoRole = "vendor" | "buyer" | "lender";
 
 const SandboxLogin = () => {
   const navigate = useNavigate();
@@ -65,8 +65,10 @@ const SandboxLogin = () => {
     };
     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
     toast.success("Welcome to TrustLock Sandbox!");
-    navigate(role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
+    navigate(role === "vendor" ? "/sandbox/vendor" : role === "lender" ? "/sandbox/lender" : "/sandbox/buyer");
   };
+
+  const roleRoute = (r: string) => r === "vendor" ? "/sandbox/vendor" : r === "lender" ? "/sandbox/lender" : "/sandbox/buyer";
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -100,7 +102,7 @@ const SandboxLogin = () => {
                 <Button
                   size="sm"
                   className="flex-1"
-                  onClick={() => navigate(returning.role === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer")}
+                  onClick={() => navigate(roleRoute(returning.role))}
                 >
                   Continue as {returning.role === "vendor" ? "Vendor" : "Buyer"}
                 </Button>
@@ -108,7 +110,9 @@ const SandboxLogin = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const otherRole = returning.role === "vendor" ? "buyer" : "vendor";
+                    const roles = ["vendor", "buyer", "lender"];
+                    const currentIdx = roles.indexOf(returning.role);
+                    const otherRole = roles[(currentIdx + 1) % roles.length];
                     const session = {
                       name: returning.name,
                       email: returning.email,
@@ -117,10 +121,10 @@ const SandboxLogin = () => {
                       expiresAt: "2026-12-31T23:59:59Z",
                     };
                     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
-                    navigate(otherRole === "vendor" ? "/sandbox/vendor" : "/sandbox/buyer");
+                    navigate(roleRoute(otherRole));
                   }}
                 >
-                  Switch to {returning.role === "vendor" ? "Buyer" : "Vendor"}
+                  Switch Role
                 </Button>
               </div>
               <button
