@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Store, ShoppingBag, Globe, UserCheck, Building2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Shield, Store, ShoppingBag, Globe, Building2, LogIn } from "lucide-react";
 import { SandboxCountdown } from "./SandboxCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
@@ -20,59 +19,180 @@ const SandboxLogin = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [business, setBusiness] = useState("");
   const [countryCode, setCountryCode] = useState("+1");
-  const [role, setRole] = useState<DemoRole>("vendor");
   const [saving, setSaving] = useState(false);
-  const [returning, setReturning] = useState<{ name: string; email: string; role: string } | null>(null);
 
-  // Check for existing session — let returning testers skip the form
+  // Return user flow
+  const [showReturnLogin, setShowReturnLogin] = useState(false);
+  const [returnEmail, setReturnEmail] = useState("");
+  const [returnLoading, setReturnLoading] = useState(false);
+
+  // After login (new or returning), pick a portal
+  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+
+  // Check localStorage for existing session on mount
   useState(() => {
     const raw = localStorage.getItem("tl_sandbox_session");
     if (raw) {
       try {
         const s = JSON.parse(raw);
         if (new Date(s.expiresAt) > new Date()) {
-          setReturning({ name: s.name, email: s.email, role: s.role });
-          setName(s.name);
-          setEmail(s.email);
-          setRole(s.role as DemoRole);
+          setLoggedInUser({ name: s.name, email: s.email });
         }
       } catch { /* ignore */ }
     }
   });
 
-  const handleStart = async (e: React.FormEvent) => {
+  const handleNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
       await supabase.from("sandbox_leads").insert({
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         phone: phone.trim() || null,
         country_code: countryCode,
-        role,
+        business: business.trim() || null,
       });
     } catch {
-      // non-blocking — still let them in
+      // non-blocking
     }
     setSaving(false);
     const session = {
       name: name.trim(),
-      email: email.trim(),
-      role,
+      email: email.trim().toLowerCase(),
       createdAt: new Date().toISOString(),
       expiresAt: "2026-12-31T23:59:59Z",
     };
     localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
     toast.success("Welcome to TrustLock Sandbox!");
+    setLoggedInUser({ name: name.trim(), email: email.trim().toLowerCase() });
+  };
+
+  const handleReturnLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReturnLoading(true);
+    const trimmedEmail = returnEmail.trim().toLowerCase();
+
+    // Look up in DB
+    const { data } = await supabase
+      .from("sandbox_leads")
+      .select("name, email")
+      .eq("email", trimmedEmail)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (data && data.length > 0) {
+      const lead = data[0];
+      const session = {
+        name: lead.name,
+        email: lead.email,
+        createdAt: new Date().toISOString(),
+        expiresAt: "2026-12-31T23:59:59Z",
+      };
+      localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
+      toast.success(`Welcome back, ${lead.name}!`);
+      setLoggedInUser({ name: lead.name, email: lead.email });
+    } else {
+      toast.error("No account found with that email. Please sign up below.");
+    }
+    setReturnLoading(false);
+  };
+
+  const enterPortal = (role: DemoRole) => {
+    if (!loggedInUser) return;
+    const raw = localStorage.getItem("tl_sandbox_session");
+    if (raw) {
+      const session = JSON.parse(raw);
+      session.role = role;
+      localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
+    }
     navigate(role === "vendor" ? "/sandbox/vendor" : role === "lender" ? "/sandbox/lender" : "/sandbox/buyer");
   };
 
-  const roleRoute = (r: string) => r === "vendor" ? "/sandbox/vendor" : r === "lender" ? "/sandbox/lender" : "/sandbox/buyer";
+  // ── Portal picker (shown after login) ──
+  if (loggedInUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+              <Shield className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock Sandbox</h1>
+              <p className="text-xs text-muted-foreground">Welcome, {loggedInUser.name}</p>
+            </div>
+          </div>
 
+          <div className="flex justify-center mb-2">
+            <SandboxCountdown />
+          </div>
+
+          <Link to="/sandbox/store">
+            <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                  <Globe className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Browse Demo Vendor Websites</p>
+                  <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Choose a Portal</CardTitle>
+              <CardDescription>Select which dashboard you'd like to explore.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 px-4" onClick={() => enterPortal("vendor")}>
+                <Store className="w-5 h-5 text-primary shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold">Vendor Dashboard</p>
+                  <p className="text-xs text-muted-foreground font-normal">Manage orders, payouts & escrow</p>
+                </div>
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 px-4" onClick={() => enterPortal("buyer")}>
+                <ShoppingBag className="w-5 h-5 text-primary shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold">Buyer Dashboard</p>
+                  <p className="text-xs text-muted-foreground font-normal">Track orders & manage purchases</p>
+                </div>
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 px-4" onClick={() => enterPortal("lender")}>
+                <Building2 className="w-5 h-5 text-primary shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold">Lender Dashboard</p>
+                  <p className="text-xs text-muted-foreground font-normal">Finance vendors & view risk scores</p>
+                </div>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <button
+            className="w-full text-xs text-muted-foreground hover:underline text-center"
+            onClick={() => {
+              localStorage.removeItem("tl_sandbox_session");
+              setLoggedInUser(null);
+              setShowReturnLogin(false);
+            }}
+          >
+            Not you? Start fresh
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Login / Signup form ──
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
         <div className="flex items-center justify-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
             <Shield className="w-6 h-6 text-primary-foreground" />
@@ -87,66 +207,48 @@ const SandboxLogin = () => {
           <SandboxCountdown />
         </div>
 
-        {/* Returning tester quick-resume */}
-        {returning && (
-          <Card className="mb-4 border-primary/30 bg-primary/5">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-primary" />
-                <p className="text-sm font-semibold text-foreground">Welcome back, {returning.name}!</p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                You were last testing as <Badge variant="outline" className="mx-1 text-[10px]">{returning.role}</Badge>. Jump back in or switch roles below.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => navigate(roleRoute(returning.role))}
-                >
-                  Continue as {returning.role === "vendor" ? "Vendor" : "Buyer"}
+        {/* Return User Button — always visible */}
+        <Button
+          variant={showReturnLogin ? "default" : "outline"}
+          className="w-full gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          onClick={() => setShowReturnLogin(!showReturnLogin)}
+        >
+          <LogIn className="w-4 h-4" />
+          Returning User? Log In
+        </Button>
+
+        {showReturnLogin && (
+          <Card className="border-primary/30">
+            <CardContent className="p-4">
+              <form onSubmit={handleReturnLogin} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="return-email">Your Email</Label>
+                  <Input
+                    id="return-email"
+                    type="email"
+                    value={returnEmail}
+                    onChange={(e) => setReturnEmail(e.target.value)}
+                    placeholder="jane@example.com"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={!returnEmail.trim() || returnLoading}>
+                  {returnLoading ? "Looking up…" : "Log In"}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const roles = ["vendor", "buyer", "lender"];
-                    const currentIdx = roles.indexOf(returning.role);
-                    const otherRole = roles[(currentIdx + 1) % roles.length];
-                    const session = {
-                      name: returning.name,
-                      email: returning.email,
-                      role: otherRole,
-                      createdAt: new Date().toISOString(),
-                      expiresAt: "2026-12-31T23:59:59Z",
-                    };
-                    localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
-                    navigate(roleRoute(otherRole));
-                  }}
-                >
-                  Switch Role
-                </Button>
-              </div>
-              <button
-                className="text-[10px] text-muted-foreground hover:underline"
-                onClick={() => { localStorage.removeItem("tl_sandbox_session"); setReturning(null); }}
-              >
-                Not you? Start fresh
-              </button>
+              </form>
             </CardContent>
           </Card>
         )}
 
-
         <Link to="/sandbox/store">
-          <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
+          <Card className="border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer mt-4">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
                 <Globe className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">Browse Demo Vendor Websites</p>
-                <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout, then come back to track your order.</p>
+                <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout.</p>
               </div>
             </CardContent>
           </Card>
@@ -154,46 +256,13 @@ const SandboxLogin = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Enter Sandbox Dashboard</CardTitle>
+            <CardTitle className="text-lg">First Time? Sign Up</CardTitle>
             <CardDescription>
-              Pick a role to explore the dashboard. Vendors see all orders. Buyers enter their order number to track.
+              Enter your info to access the sandbox dashboards. Only required once.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleStart} className="space-y-4">
-              <div className="space-y-2">
-                <Label>I want to explore as…</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole("vendor")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "vendor" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                  >
-                    <Store className={`w-5 h-5 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-xs font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
-                    <span className="text-[10px] text-muted-foreground text-center">Manage orders</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("buyer")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "buyer" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                  >
-                    <ShoppingBag className={`w-5 h-5 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-xs font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
-                    <span className="text-[10px] text-muted-foreground text-center">Track orders</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("lender")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "lender" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
-                  >
-                    <Building2 className={`w-5 h-5 ${role === "lender" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-xs font-medium ${role === "lender" ? "text-primary" : "text-muted-foreground"}`}>Lender</span>
-                    <span className="text-[10px] text-muted-foreground text-center">Finance vendors</span>
-                  </button>
-                </div>
-              </div>
-
+            <form onSubmit={handleNewUser} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="sb-name">Your Name *</Label>
                 <Input id="sb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Mensah" required />
@@ -223,12 +292,17 @@ const SandboxLogin = () => {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="sb-business">Business / Company <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Input id="sb-business" value={business} onChange={(e) => setBusiness(e.target.value)} placeholder="Acme Logistics Ltd." />
+              </div>
+
               <Button type="submit" className="w-full" disabled={!name.trim() || !email.trim() || saving}>
                 {saving ? "Saving…" : "Enter Sandbox"}
               </Button>
 
               <p className="text-center text-[11px] text-muted-foreground">
-                We'll notify you when TrustLock goes live. Data stored securely. Active until December 31, 2026.
+                We'll notify you when TrustLock goes live. Data stored securely.
               </p>
             </form>
           </CardContent>
