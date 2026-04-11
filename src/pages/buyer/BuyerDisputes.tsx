@@ -179,7 +179,7 @@ const BuyerDisputes = () => {
   return (
     <div>
       <BuyerHeader title="Disputes" />
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
