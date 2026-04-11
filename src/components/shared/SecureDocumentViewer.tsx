@@ -26,15 +26,15 @@ const SecureDocumentViewer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const watermarkId = useRef(`wm-${Date.now()}`);
 
-  // Generate signed URL with expiry
+  // Generate signed URL with expiry and auto-refresh
   useEffect(() => {
     if (!open || !documentUrl) return;
     setLoading(true);
     setSignedUrl(null);
+    setExpiresAt(null);
 
     const fetchSignedUrl = async () => {
       try {
-        // Extract bucket and path from public URL
         const urlObj = new URL(documentUrl);
         const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
 
@@ -42,19 +42,22 @@ const SecureDocumentViewer = ({
           const [, bucket, path] = storageMatch;
           const { data, error } = await supabase.storage
             .from(bucket)
-            .createSignedUrl(path, 300); // 5-minute expiry
+            .createSignedUrl(path, 600); // 10-minute expiry
 
           if (error || !data?.signedUrl) {
             console.error("Signed URL error:", error);
-            setSignedUrl(documentUrl); // Fallback
+            setSignedUrl(documentUrl);
           } else {
             setSignedUrl(data.signedUrl);
+            setExpiresAt(Date.now() + 600 * 1000);
           }
         } else {
-          setSignedUrl(documentUrl); // Non-storage URL fallback
+          setSignedUrl(documentUrl);
+          setExpiresAt(Date.now() + 600 * 1000);
         }
       } catch {
         setSignedUrl(documentUrl);
+        setExpiresAt(Date.now() + 600 * 1000);
       } finally {
         setLoading(false);
       }
@@ -62,6 +65,34 @@ const SecureDocumentViewer = ({
 
     fetchSignedUrl();
   }, [open, documentUrl]);
+
+  // Auto-refresh signed URL before expiry (at 8-min mark)
+  useEffect(() => {
+    if (!expiresAt || !open) return;
+    
+    const timeUntilRefresh = expiresAt - Date.now() - 120000; // Refresh at 8-min mark (2 min before expiry)
+    if (timeUntilRefresh <= 0) return;
+
+    const refreshTimer = setTimeout(async () => {
+      try {
+        const urlObj = new URL(documentUrl);
+        const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+        if (storageMatch) {
+          const [, bucket, path] = storageMatch;
+          const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 600);
+          if (data?.signedUrl) {
+            setSignedUrl(data.signedUrl);
+            setExpiresAt(Date.now() + 600 * 1000);
+            toast.success("Access renewed — 10 minutes remaining");
+          }
+        }
+      } catch {
+        toast.info("Access will expire in 2 minutes — click refresh to extend");
+      }
+    }, timeUntilRefresh);
+
+    return () => clearTimeout(refreshTimer);
+  }, [expiresAt, open, documentUrl]);
 
   // Blur on tab switch (anti-screenshot deterrent)
   useEffect(() => {
