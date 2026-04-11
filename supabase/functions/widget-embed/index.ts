@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
   }
 
   // GET = serve widget JS
-  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.lovable.app";
+  const baseUrl = Deno.env.get("SITE_URL") || "https://trustlockpay.com";
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const analyticsUrl = `${supabaseUrl}/functions/v1/widget-embed`;
 
