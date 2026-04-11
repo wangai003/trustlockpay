@@ -274,6 +274,60 @@ const AdminTrainingManual = () => {
             </Accordion>
           </CardContent>
         </Card>
+
+        {/* Glossary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BookOpen className="w-5 h-5 text-primary" />
+              Glossary of Terms
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Standard definitions used across TrustLock platform operations, compliance, and documentation.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[
+                { term: "Escrow", def: "A financial arrangement where TrustLock holds funds on behalf of transacting parties until predefined milestone conditions are met." },
+                { term: "Milestone", def: "A discrete, verifiable stage within a transaction that must be completed and confirmed by both parties before funds are released." },
+                { term: "KYC (Know Your Customer)", def: "Identity verification process required for buyers and vendors to comply with anti-money laundering regulations." },
+                { term: "KYB (Know Your Business)", def: "Enhanced due diligence for institutional entities (lenders, banks, DFIs) verifying legal registration, beneficial ownership, and authorization." },
+                { term: "RLS (Row-Level Security)", def: "Database-level access control ensuring users can only view and modify data they are authorized to access." },
+                { term: "AML (Anti-Money Laundering)", def: "Regulatory framework and internal procedures designed to detect and prevent the use of the platform for money laundering or terrorist financing." },
+                { term: "Sanctions Screening", def: "Automated checks against international sanctions lists (OFAC, UN, EU) to ensure parties are not prohibited from transacting." },
+                { term: "SHA-256 Hash", def: "A cryptographic fingerprint used to verify document integrity. Any alteration to the original document produces a completely different hash." },
+                { term: "Blockchain Anchoring", def: "The process of recording a SHA-256 hash on the Polygon blockchain, creating an immutable, timestamped proof of a document or event." },
+                { term: "Polygon", def: "The Layer-2 Ethereum blockchain used by TrustLock for anchoring transaction proofs, rulings, and compliance records." },
+                { term: "OS Pay", def: "TrustLock's integrated payment processing system supporting fiat and crypto transactions with automated fee calculation." },
+                { term: "Gas Treasury", def: "The platform wallet that funds blockchain transaction fees (gas) for anchoring proofs on Polygon." },
+                { term: "DFI (Development Finance Institution)", def: "A government-backed or multilateral financial institution that provides capital for development projects (e.g., Afreximbank, AfDB)." },
+                { term: "EPC (Engineering, Procurement & Construction)", def: "A contracting model where a single entity handles engineering design, material procurement, and construction — common in large infrastructure projects." },
+                { term: "Arbitration", def: "A formal dispute resolution process where an independent third-party arbitrator reviews evidence and issues a binding ruling." },
+                { term: "Case Management Fee", def: "TrustLock's flat fee for facilitating arbitration — covers case file packaging, portal hosting, and blockchain anchoring. Separate from arbitrator professional fees." },
+                { term: "AMS (Arbitrator Management System)", def: "TrustLock's internal system for generating secure arbitrator portals, managing case files, and distributing rulings." },
+                { term: "Carbon Copy", def: "An immutable snapshot of an order at a specific point in time, retained for compliance and audit purposes." },
+                { term: "Protection Document", def: "Any compliance artifact (contract, acknowledgement, certificate, archive record) stored with mandatory 7-year retention." },
+                { term: "Auto-Release", def: "The automatic release of escrowed funds to the vendor after a 48-hour countdown if the buyer does not confirm delivery or raise a dispute." },
+                { term: "Seed Token", def: "A one-time cryptographic token used during onboarding to verify account ownership and initialize encryption keys." },
+                { term: "Chief Admin", def: "The highest-authority administrator with override capabilities, staff management access, and cross-department visibility." },
+                { term: "Deviation", def: "Any admin action that departs from standard operating procedure, requiring chief admin review and justification logging." },
+                { term: "Round-Robin Assignment", def: "An automated workload distribution method that assigns incoming cases to department members in rotating order." },
+                { term: "TL-Agent", def: "The anonymous admin identity used for client-facing communications. Individual admin identities are never exposed to users." },
+                { term: "Retention Period", def: "The mandatory duration (typically 7 years) for which compliance documents, transaction records, and audit logs must be preserved." },
+                { term: "Payout", def: "The disbursement of released escrow funds from TrustLock to the vendor's designated bank account or crypto wallet." },
+                { term: "Compliance Flag", def: "An automated or manual alert indicating a potential regulatory concern (e.g., structuring, sanctions match, unusual activity)." },
+                { term: "Document Scanner", def: "AI-powered tool that analyzes uploaded documents for authenticity, forgery indicators, and compliance with expected formats." },
+                { term: "Financing Agreement", def: "A standardized contract generated when a lender approves a vendor's financing application, incorporating milestone-linked repayment triggers." },
+              ].map(({ term, def }) => (
+                <div key={term} className="p-3 rounded-lg border bg-card">
+                  <p className="text-sm font-semibold text-foreground">{term}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{def}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
