@@ -1,7 +1,7 @@
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, ExternalLink, Scale, DollarSign, Shield, Clock, Upload, CheckCircle, AlertTriangle, Users } from "lucide-react";
+import { Download, FileText, ExternalLink, Scale, DollarSign, Shield, Clock, Upload, CheckCircle, AlertTriangle, Users, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
