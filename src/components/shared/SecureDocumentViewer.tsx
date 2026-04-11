@@ -22,19 +22,20 @@ const SecureDocumentViewer = ({
 }: SecureDocumentViewerProps) => {
   const [loading, setLoading] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [blurred, setBlurred] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const watermarkId = useRef(`wm-${Date.now()}`);
 
-  // Generate signed URL with expiry
+  // Generate signed URL with expiry and auto-refresh
   useEffect(() => {
     if (!open || !documentUrl) return;
     setLoading(true);
     setSignedUrl(null);
+    setExpiresAt(null);
 
     const fetchSignedUrl = async () => {
       try {
-        // Extract bucket and path from public URL
         const urlObj = new URL(documentUrl);
         const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
 
@@ -42,19 +43,22 @@ const SecureDocumentViewer = ({
           const [, bucket, path] = storageMatch;
           const { data, error } = await supabase.storage
             .from(bucket)
-            .createSignedUrl(path, 300); // 5-minute expiry
+            .createSignedUrl(path, 600); // 10-minute expiry
 
           if (error || !data?.signedUrl) {
             console.error("Signed URL error:", error);
-            setSignedUrl(documentUrl); // Fallback
+            setSignedUrl(documentUrl);
           } else {
             setSignedUrl(data.signedUrl);
+            setExpiresAt(Date.now() + 600 * 1000);
           }
         } else {
-          setSignedUrl(documentUrl); // Non-storage URL fallback
+          setSignedUrl(documentUrl);
+          setExpiresAt(Date.now() + 600 * 1000);
         }
       } catch {
         setSignedUrl(documentUrl);
+        setExpiresAt(Date.now() + 600 * 1000);
       } finally {
         setLoading(false);
       }
@@ -62,6 +66,34 @@ const SecureDocumentViewer = ({
 
     fetchSignedUrl();
   }, [open, documentUrl]);
+
+  // Auto-refresh signed URL before expiry (at 8-min mark)
+  useEffect(() => {
+    if (!expiresAt || !open) return;
+    
+    const timeUntilRefresh = expiresAt - Date.now() - 120000; // Refresh at 8-min mark (2 min before expiry)
+    if (timeUntilRefresh <= 0) return;
+
+    const refreshTimer = setTimeout(async () => {
+      try {
+        const urlObj = new URL(documentUrl);
+        const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+        if (storageMatch) {
+          const [, bucket, path] = storageMatch;
+          const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 600);
+          if (data?.signedUrl) {
+            setSignedUrl(data.signedUrl);
+            setExpiresAt(Date.now() + 600 * 1000);
+            toast.success("Access renewed — 10 minutes remaining");
+          }
+        }
+      } catch {
+        toast.info("Access will expire in 2 minutes — click refresh to extend");
+      }
+    }, timeUntilRefresh);
+
+    return () => clearTimeout(refreshTimer);
+  }, [expiresAt, open, documentUrl]);
 
   // Blur on tab switch (anti-screenshot deterrent)
   useEffect(() => {
@@ -105,9 +137,62 @@ const SecureDocumentViewer = ({
     }
   }, []);
 
+  // Countdown timer for session expiry
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (!expiresAt || !open) {
+      setTimeRemaining(null);
+      return;
+    }
+    
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+      if (remaining <= 0) {
+        toast.error("Access expired — request a new link to continue viewing");
+        onOpenChange(false);
+      }
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, open, onOpenChange]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Manual refresh handler
+  const handleRefreshAccess = async () => {
+    setLoading(true);
+    try {
+      const urlObj = new URL(documentUrl);
+      const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+      if (storageMatch) {
+        const [, bucket, path] = storageMatch;
+        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 600);
+        if (data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+          setExpiresAt(Date.now() + 600 * 1000);
+          toast.success("Access extended — 10 minutes remaining");
+        }
+      }
+    } catch {
+      toast.error("Failed to refresh access");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
   const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(documentUrl);
   const isPdf = /\.pdf(\?|$)/i.test(documentUrl);
+
+  const isExpiringSoon = timeRemaining !== null && timeRemaining < 120;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,9 +208,24 @@ const SecureDocumentViewer = ({
             <DialogTitle className="text-sm truncate">{documentName}</DialogTitle>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
+            <div className={`flex items-center gap-1.5 text-[9px] rounded px-2 py-1 ${
+              isExpiringSoon 
+                ? 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800' 
+                : 'text-muted-foreground bg-muted/50'
+            }`}>
               <Eye className="w-3 h-3" />
-              <span>View-only · 5min session</span>
+              <span className="font-mono">
+                {timeRemaining !== null ? `${formatTime(timeRemaining)} remaining` : 'Loading...'}
+              </span>
+              {isExpiringSoon && (
+                <button 
+                  onClick={handleRefreshAccess}
+                  disabled={loading}
+                  className="ml-1 px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700 rounded text-[8px] font-semibold transition-colors"
+                >
+                  {loading ? '...' : 'Extend'}
+                </button>
+              )}
             </div>
           </div>
         </DialogHeader>
