@@ -116,9 +116,9 @@ const AdminSandboxLeads = () => {
             <Users className="w-5 h-5 text-primary" />
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {leads.filter((l) => l.role === "vendor").length} / {leads.filter((l) => l.role === "buyer").length}
+                {leads.filter((l) => l.business).length}
               </p>
-              <p className="text-xs text-muted-foreground">Vendors / Buyers</p>
+              <p className="text-xs text-muted-foreground">With Business</p>
             </div>
           </CardContent>
         </Card>
