@@ -145,7 +145,7 @@ const BuyerLogin = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
-            <p className="text-xs text-muted-foreground">Buyer Portal</p>
+            <p className="text-xs text-muted-foreground">Buyer Portal <span className="text-[10px] opacity-70">(Investor · Client · Funder)</span></p>
           </div>
         </motion.div>
 
@@ -184,7 +184,7 @@ const BuyerLogin = () => {
 
         <Card className="border-border/50 shadow-xl shadow-black/5 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Buyer Sign In</CardTitle>
+             <CardTitle className="text-lg">Buyer Sign In</CardTitle>
             <CardDescription>{isTestnet ? "Use testnet credentials to explore" : "Enter your credentials"}</CardDescription>
           </CardHeader>
           <CardContent>

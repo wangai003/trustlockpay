@@ -94,14 +94,14 @@ const BuyerSignup = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
-            <p className="text-xs text-muted-foreground">Buyer Registration</p>
+            <p className="text-xs text-muted-foreground">Buyer Registration <span className="text-[10px] opacity-70">(Investor · Client · Funder)</span></p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Create Buyer Account</CardTitle>
-            <CardDescription>Shop with escrow protection on every purchase</CardDescription>
+            <CardDescription>Secure every transaction with milestone-gated escrow protection</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignup} className="space-y-4">

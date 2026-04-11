@@ -130,7 +130,7 @@ const LenderSignup = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
-            <p className="text-xs text-muted-foreground">Lender Registration</p>
+            <p className="text-xs text-muted-foreground">Lender Registration <span className="text-[10px] opacity-70">(Bank · DFI · Fund Manager)</span></p>
           </div>
         </div>
 
