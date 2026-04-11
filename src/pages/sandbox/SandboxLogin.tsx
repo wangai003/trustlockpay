@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Store, ShoppingBag, Globe, UserCheck } from "lucide-react";
+import { Shield, Store, ShoppingBag, Globe, UserCheck, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SandboxCountdown } from "./SandboxCountdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,24 +163,33 @@ const SandboxLogin = () => {
             <form onSubmit={handleStart} className="space-y-4">
               <div className="space-y-2">
                 <Label>I want to explore as…</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => setRole("vendor")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${role === "vendor" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "vendor" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
                   >
-                    <Store className={`w-6 h-6 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
-                    <span className="text-xs text-muted-foreground text-center">Manage & fulfill orders</span>
+                    <Store className={`w-5 h-5 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`}>Vendor</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Manage orders</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole("buyer")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${role === "buyer" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "buyer" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
                   >
-                    <ShoppingBag className={`w-6 h-6 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
-                    <span className="text-xs text-muted-foreground text-center">Track & release orders</span>
+                    <ShoppingBag className={`w-5 h-5 ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "buyer" ? "text-primary" : "text-muted-foreground"}`}>Buyer</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Track orders</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("lender")}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors ${role === "lender" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                  >
+                    <Building2 className={`w-5 h-5 ${role === "lender" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${role === "lender" ? "text-primary" : "text-muted-foreground"}`}>Lender</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Finance vendors</span>
                   </button>
                 </div>
               </div>
