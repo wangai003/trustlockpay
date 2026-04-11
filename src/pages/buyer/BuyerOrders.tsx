@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import TransportLegsViewer from "@/components/shared/TransportLegsViewer";
+import EscrowExtensionRequest from "@/components/buyer/EscrowExtensionRequest";
 
 type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
 
@@ -544,6 +545,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <TransportLegsViewer legs={order.transportLegs} compact />
             )}
             <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
+            <EscrowExtensionRequest transactionId={order.dbId} txId={order.id} status={order.status} />
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
               <MilestoneProgress industry={order.industry} status={order.status} transactionId={order.dbId} />
