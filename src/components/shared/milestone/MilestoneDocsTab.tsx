@@ -154,7 +154,7 @@ const MilestoneDocsTab = ({
                     </span>
                   </div>
                   {doc.url && (
-                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]" onClick={(e) => { e.stopPropagation(); window.open(doc.url, "_blank"); }}>
+                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[9px]" onClick={(e) => { e.stopPropagation(); setSecureViewDoc({ url: doc.url, name: doc.name }); }}>
                       <Eye className="w-2.5 h-2.5 mr-0.5" /> View
                     </Button>
                   )}
