@@ -22,6 +22,7 @@ const SecureDocumentViewer = ({
 }: SecureDocumentViewerProps) => {
   const [loading, setLoading] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [blurred, setBlurred] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const watermarkId = useRef(`wm-${Date.now()}`);
