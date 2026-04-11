@@ -329,6 +329,7 @@ const BuyerDisputes = () => {
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
           <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, either party may request a professional arbitrator. A non-refundable flat Arbitration Filing & Case Management Fee is required via TrustLock OS Pay ($500 for $10K–$50K · $1,500 for $50K–$250K · $3,000 for $250K–$1M · $5,000 for $1M+). This covers case coordination — the arbitrator's professional fees are separate, determined by their institution after appointment. Arbitration follows ICC/UNCITRAL rules.</p>
+          <p><strong>After Arbitration Payment:</strong> Once your filing fee is confirmed via OS Pay, TrustLock will: (1) notify the counterparty, (2) package all evidence into a case bundle, (3) facilitate arbitrator selection via the Arbitrator Proposal Panel, and (4) provide the appointed arbitrator with secure read-only access to the case. You'll receive status updates in your Disputes tab and via notifications throughout the process.</p>
         </div>
       </div>
     </div>
