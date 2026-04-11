@@ -39,6 +39,7 @@ const VendorLenderLookup = () => {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { data: recommendedLenders, isLoading: recLoading } = useRecommendedMatches("lender");
 
   const { data: lenders, isLoading } = useQuery({
     queryKey: ["lender-lookup", user?.id],
@@ -80,6 +81,13 @@ const VendorLenderLookup = () => {
           <Landmark className="w-4 h-4" />
           <span>Browse verified lenders on the TrustLock network</span>
         </div>
+
+        <RecommendedMatches
+          matches={recommendedLenders || []}
+          isLoading={recLoading}
+          onMessage={(id) => navigate(`/trustlock/vendor/messages?to=${id}`)}
+          label="Recommended Lenders"
+        />
 
         <div className="flex flex-col sm:flex-row gap-2">
           <Input

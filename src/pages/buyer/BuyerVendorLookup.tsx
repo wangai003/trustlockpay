@@ -19,6 +19,7 @@ const BuyerVendorLookup = () => {
   const { user } = useAuth();
   const [filters, setFilters] = useState<LookupFilters>(EMPTY_FILTERS);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { data: recommendedVendors, isLoading: recLoading } = useRecommendedMatches("vendor");
 
   const { data: vendors, isLoading } = useQuery({
     queryKey: ["vendor-lookup", user?.id],
@@ -112,6 +113,13 @@ const BuyerVendorLookup = () => {
           <Store className="w-4 h-4" />
           <span>Browse and connect with vendors on the TrustLock network</span>
         </div>
+
+        <RecommendedMatches
+          matches={recommendedVendors || []}
+          isLoading={recLoading}
+          onMessage={handleMessage}
+          label="Recommended Vendors"
+        />
 
         <UserLookupFilters filters={filters} onChange={handleFilterChange} targetRole="vendor" />
 
