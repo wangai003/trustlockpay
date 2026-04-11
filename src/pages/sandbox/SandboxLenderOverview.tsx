@@ -68,6 +68,65 @@ const MOCK_VENDORS: MockVendorProfile[] = [
   { name: "Kwame Digital Studio", industry: "Freelance", transactions: 89, escrowVolume: 245_000, completionRate: 98, disputes: 0, kycStatus: "approved" },
 ];
 
+const MOCK_RISK_SCORES: Record<string, RiskScoreData> = {
+  "GreenSahel Agro Exports": {
+    composite_score: 72,
+    risk_tier: "moderate",
+    pillars: {
+      escrow_performance: { score: 82, weight: 20, details: { total_transactions: 47, completed: 45, cancelled: 1, refunded: 1, avg_days_to_release: 14.2 } },
+      dispute_profile: { score: 78, weight: 20, details: { total_disputes: 1, vendor_favorable: 0, escalated_to_arbitration: 0, dispute_rate_pct: 2.1 } },
+      velocity_consistency: { score: 68, weight: 20, details: { tx_last_90_days: 12, tx_prev_90_days: 10, total_volume_usd: 892000, trend: "growing" } },
+      compliance_standing: { score: 80, weight: 20, details: { kyc_status: "approved", business_kyc_verified: true, compliance_flags: 0, critical_flags: 0 } },
+      counterparty_network: { score: 52, weight: 20, details: { unique_buyers: 8, repeat_buyers: 5, cross_border_transactions: 12 } },
+    },
+    computed_at: new Date().toISOString(),
+    methodology_version: "1.0",
+    scoring_model: "equal_weight_5_pillar",
+  },
+  "SahelGold Mining Corp": {
+    composite_score: 58,
+    risk_tier: "elevated",
+    pillars: {
+      escrow_performance: { score: 72, weight: 20, details: { total_transactions: 12, completed: 11, cancelled: 0, refunded: 1, avg_days_to_release: 28.5 } },
+      dispute_profile: { score: 55, weight: 20, details: { total_disputes: 2, vendor_favorable: 1, escalated_to_arbitration: 1, dispute_rate_pct: 16.7 } },
+      velocity_consistency: { score: 45, weight: 20, details: { tx_last_90_days: 3, tx_prev_90_days: 4, total_volume_usd: 1450000, trend: "declining" } },
+      compliance_standing: { score: 70, weight: 20, details: { kyc_status: "approved", business_kyc_verified: true, compliance_flags: 1, critical_flags: 0 } },
+      counterparty_network: { score: 48, weight: 20, details: { unique_buyers: 4, repeat_buyers: 2, cross_border_transactions: 8 } },
+    },
+    computed_at: new Date().toISOString(),
+    methodology_version: "1.0",
+    scoring_model: "equal_weight_5_pillar",
+  },
+  "Atlas Build International": {
+    composite_score: 34,
+    risk_tier: "high_risk",
+    pillars: {
+      escrow_performance: { score: 55, weight: 20, details: { total_transactions: 8, completed: 7, cancelled: 1, refunded: 0, avg_days_to_release: 42.1 } },
+      dispute_profile: { score: 25, weight: 20, details: { total_disputes: 3, vendor_favorable: 0, escalated_to_arbitration: 2, dispute_rate_pct: 37.5 } },
+      velocity_consistency: { score: 30, weight: 20, details: { tx_last_90_days: 1, tx_prev_90_days: 3, total_volume_usd: 2100000, trend: "declining" } },
+      compliance_standing: { score: 35, weight: 20, details: { kyc_status: "pending", business_kyc_verified: false, compliance_flags: 2, critical_flags: 1 } },
+      counterparty_network: { score: 25, weight: 20, details: { unique_buyers: 3, repeat_buyers: 1, cross_border_transactions: 0 } },
+    },
+    computed_at: new Date().toISOString(),
+    methodology_version: "1.0",
+    scoring_model: "equal_weight_5_pillar",
+  },
+  "Kente Craft Online": {
+    composite_score: 89,
+    risk_tier: "low_risk",
+    pillars: {
+      escrow_performance: { score: 97, weight: 20, details: { total_transactions: 234, completed: 231, cancelled: 2, refunded: 1, avg_days_to_release: 5.8 } },
+      dispute_profile: { score: 95, weight: 20, details: { total_disputes: 0, vendor_favorable: 0, escalated_to_arbitration: 0, dispute_rate_pct: 0 } },
+      velocity_consistency: { score: 85, weight: 20, details: { tx_last_90_days: 18, tx_prev_90_days: 15, total_volume_usd: 156000, trend: "growing" } },
+      compliance_standing: { score: 80, weight: 20, details: { kyc_status: "approved", business_kyc_verified: true, compliance_flags: 0, critical_flags: 0 } },
+      counterparty_network: { score: 88, weight: 20, details: { unique_buyers: 45, repeat_buyers: 28, cross_border_transactions: 89 } },
+    },
+    computed_at: new Date().toISOString(),
+    methodology_version: "1.0",
+    scoring_model: "equal_weight_5_pillar",
+  },
+};
+
 const FLASHVET_RESPONSES: Record<string, string> = {
   default: "I'm FlashVet AI — your intelligent lending assistant. I can help you analyze vendor risk profiles, review applications, check escrow performance metrics, and generate portfolio insights. Try asking about a specific vendor or application!",
   risk: "**Risk Assessment Summary:**\n\nBased on the current portfolio:\n- 🟢 Low Risk (score >75): 5 vendors — representing 62% of exposure\n- 🟡 Medium Risk (50-75): 2 vendors — representing 28% of exposure\n- 🔴 High Risk (<50): 1 vendor — representing 10% of exposure\n\n**Recommendation:** Consider reducing exposure to Atlas Build International (score: 34) — their KYC is still pending and dispute rate is elevated at 37.5%.",
