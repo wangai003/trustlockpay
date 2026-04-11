@@ -5,6 +5,8 @@ import { Store } from "lucide-react";
 import BuyerHeader from "@/components/buyer/BuyerHeader";
 import UserLookupFilters, { LookupFilters, EMPTY_FILTERS } from "@/components/shared/UserLookupFilters";
 import UserLookupCard, { LookupUser } from "@/components/shared/UserLookupCard";
+import RecommendedMatches from "@/components/shared/RecommendedMatches";
+import { useRecommendedMatches } from "@/hooks/useRecommendedMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";

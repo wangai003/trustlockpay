@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Landmark, Globe, Shield, Star, ExternalLink } from "lucide-react";
 import VendorHeader from "@/components/vendor/VendorHeader";
+import RecommendedMatches from "@/components/shared/RecommendedMatches";
+import { useRecommendedMatches } from "@/hooks/useRecommendedMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
