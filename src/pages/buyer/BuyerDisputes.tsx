@@ -277,7 +277,7 @@ const BuyerDisputes = () => {
                       {" — "}
                       <span>{dispute.reason}</span>
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap">
                       <span>TX: {dispute.txId}</span>
                       <span>Amount: {dispute.amount}</span>
                       <span>Filed: {dispute.filed}</span>
