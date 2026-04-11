@@ -430,6 +430,14 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
               )}
             </div>
+            {/* Compact compliance docs indicator for pre-ship statuses */}
+            {(order.status === "locked" || order.status === "shipped") && order.industry && (
+              <DocumentComplianceProgress
+                industry={order.industry}
+                transactionId={order.dbId}
+                compact
+              />
+            )}
             <ExternalFeeSummary
               transactionId={order.dbId}
               escrowAmount={parseFloat(order.amount.replace(/[$,]/g, ""))}
