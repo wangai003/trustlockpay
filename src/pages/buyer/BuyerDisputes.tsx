@@ -111,12 +111,25 @@ const BuyerDisputes = () => {
     input.onchange = async () => {
       if (!input.files?.length) return;
       const files = Array.from(input.files);
+      const { data: { user } } = await supabase.auth.getUser();
       let uploaded = 0;
       for (const file of files) {
         const path = `${disputeId}/${Date.now()}_${file.name}`;
         const { error } = await supabase.storage.from("dispute-evidence").upload(path, file);
-        if (!error) uploaded++;
-        else toast.error(`Failed to upload ${file.name}`);
+        if (!error) {
+          uploaded++;
+          // Record in dispute_evidence table for audit trail
+          const publicUrl = supabase.storage.from("dispute-evidence").getPublicUrl(path).data.publicUrl;
+          await supabase.from("dispute_evidence").insert({
+            dispute_id: disputeId,
+            file_url: publicUrl,
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            uploaded_by: user?.id || null,
+          });
+        } else {
+          toast.error(`Failed to upload ${file.name}`);
+        }
       }
       if (uploaded > 0) toast.success(`${uploaded} evidence file(s) added to dispute`);
     };
