@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Store, ShoppingBag, Globe, Building2, LogIn } from "lucide-react";
+import { Shield, Store, ShoppingBag, Building2, LogIn, UserPlus } from "lucide-react";
 import { SandboxCountdown } from "./SandboxCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
@@ -16,6 +16,8 @@ type DemoRole = "vendor" | "buyer" | "lender";
 
 const SandboxLogin = () => {
   const navigate = useNavigate();
+
+  // Form fields (signup)
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -23,15 +25,15 @@ const SandboxLogin = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [saving, setSaving] = useState(false);
 
-  // Return user flow
-  const [showReturnLogin, setShowReturnLogin] = useState(false);
+  // Return user
   const [returnEmail, setReturnEmail] = useState("");
   const [returnLoading, setReturnLoading] = useState(false);
 
-  // After login (new or returning), pick a portal
+  // View state: "choose" | "return" | "signup" | "portal"
+  const [view, setView] = useState<"choose" | "return" | "signup" | "portal">("choose");
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
 
-  // Check localStorage for existing session on mount
+  // Check localStorage on mount
   useState(() => {
     const raw = localStorage.getItem("tl_sandbox_session");
     if (raw) {
@@ -39,12 +41,25 @@ const SandboxLogin = () => {
         const s = JSON.parse(raw);
         if (new Date(s.expiresAt) > new Date()) {
           setLoggedInUser({ name: s.name, email: s.email });
+          setView("portal");
         }
       } catch { /* ignore */ }
     }
   });
 
-  const handleNewUser = async (e: React.FormEvent) => {
+  const createSession = (userName: string, userEmail: string) => {
+    const session = {
+      name: userName,
+      email: userEmail,
+      createdAt: new Date().toISOString(),
+      expiresAt: "2026-12-31T23:59:59Z",
+    };
+    localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
+    setLoggedInUser({ name: userName, email: userEmail });
+    setView("portal");
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -55,19 +70,10 @@ const SandboxLogin = () => {
         country_code: countryCode,
         business: business.trim() || null,
       });
-    } catch {
-      // non-blocking
-    }
+    } catch { /* non-blocking */ }
     setSaving(false);
-    const session = {
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      createdAt: new Date().toISOString(),
-      expiresAt: "2026-12-31T23:59:59Z",
-    };
-    localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
     toast.success("Welcome to TrustLock Sandbox!");
-    setLoggedInUser({ name: name.trim(), email: email.trim().toLowerCase() });
+    createSession(name.trim(), email.trim().toLowerCase());
   };
 
   const handleReturnLogin = async (e: React.FormEvent) => {
@@ -75,7 +81,6 @@ const SandboxLogin = () => {
     setReturnLoading(true);
     const trimmedEmail = returnEmail.trim().toLowerCase();
 
-    // Look up in DB
     const { data } = await supabase
       .from("sandbox_leads")
       .select("name, email")
@@ -84,18 +89,10 @@ const SandboxLogin = () => {
       .limit(1);
 
     if (data && data.length > 0) {
-      const lead = data[0];
-      const session = {
-        name: lead.name,
-        email: lead.email,
-        createdAt: new Date().toISOString(),
-        expiresAt: "2026-12-31T23:59:59Z",
-      };
-      localStorage.setItem("tl_sandbox_session", JSON.stringify(session));
-      toast.success(`Welcome back, ${lead.name}!`);
-      setLoggedInUser({ name: lead.name, email: lead.email });
+      toast.success(`Welcome back, ${data[0].name}!`);
+      createSession(data[0].name, data[0].email);
     } else {
-      toast.error("No account found with that email. Please sign up below.");
+      toast.error("No account found with that email. Please sign up instead.");
     }
     setReturnLoading(false);
   };
@@ -111,8 +108,10 @@ const SandboxLogin = () => {
     navigate(role === "vendor" ? "/sandbox/vendor" : role === "lender" ? "/sandbox/lender" : "/sandbox/buyer");
   };
 
-  // ── Portal picker (shown after login) ──
-  if (loggedInUser) {
+  // ═══════════════════════════════
+  // Portal Picker (after login)
+  // ═══════════════════════════════
+  if (view === "portal" && loggedInUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
@@ -126,23 +125,9 @@ const SandboxLogin = () => {
             </div>
           </div>
 
-          <div className="flex justify-center mb-2">
+          <div className="flex justify-center">
             <SandboxCountdown />
           </div>
-
-          <Link to="/sandbox/store">
-            <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                  <Globe className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">Browse Demo Vendor Websites</p>
-                  <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
 
           <Card>
             <CardHeader className="pb-3">
@@ -179,7 +164,7 @@ const SandboxLogin = () => {
             onClick={() => {
               localStorage.removeItem("tl_sandbox_session");
               setLoggedInUser(null);
-              setShowReturnLogin(false);
+              setView("choose");
             }}
           >
             Not you? Start fresh
@@ -189,11 +174,13 @@ const SandboxLogin = () => {
     );
   }
 
-  // ── Login / Signup form ──
+  // ═══════════════════════════════
+  // Landing: Two buttons only
+  // ═══════════════════════════════
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4">
-        <div className="flex items-center justify-center gap-3 mb-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-5">
+        <div className="flex items-center justify-center gap-3 mb-2">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
             <Shield className="w-6 h-6 text-primary-foreground" />
           </div>
@@ -203,26 +190,43 @@ const SandboxLogin = () => {
           </div>
         </div>
 
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center">
           <SandboxCountdown />
         </div>
 
-        {/* Return User Button — always visible */}
-        <Button
-          variant={showReturnLogin ? "default" : "outline"}
-          className="w-full gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-          onClick={() => setShowReturnLogin(!showReturnLogin)}
-        >
-          <LogIn className="w-4 h-4" />
-          Returning User? Log In
-        </Button>
+        {/* ── Two main actions ── */}
+        {view === "choose" && (
+          <div className="space-y-3">
+            <Button
+              className="w-full h-12 gap-2 text-base"
+              variant="default"
+              onClick={() => setView("return")}
+            >
+              <LogIn className="w-5 h-5" />
+              Return User
+            </Button>
+            <Button
+              className="w-full h-12 gap-2 text-base"
+              variant="outline"
+              onClick={() => setView("signup")}
+            >
+              <UserPlus className="w-5 h-5" />
+              Sign Up
+            </Button>
+          </div>
+        )}
 
-        {showReturnLogin && (
-          <Card className="border-primary/30">
-            <CardContent className="p-4">
-              <form onSubmit={handleReturnLogin} className="space-y-3">
+        {/* ── Return User Form ── */}
+        {view === "return" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Welcome Back</CardTitle>
+              <CardDescription>Enter the email you signed up with.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleReturnLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="return-email">Your Email</Label>
+                  <Label htmlFor="return-email">Email Address</Label>
                   <Input
                     id="return-email"
                     type="email"
@@ -230,83 +234,78 @@ const SandboxLogin = () => {
                     onChange={(e) => setReturnEmail(e.target.value)}
                     placeholder="jane@example.com"
                     required
+                    autoFocus
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={!returnEmail.trim() || returnLoading}>
                   {returnLoading ? "Looking up…" : "Log In"}
+                </Button>
+                <Button type="button" variant="ghost" className="w-full text-sm" onClick={() => setView("choose")}>
+                  ← Back
                 </Button>
               </form>
             </CardContent>
           </Card>
         )}
 
-        <Link to="/sandbox/store">
-          <Card className="border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer mt-4">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Browse Demo Vendor Websites</p>
-                <p className="text-[11px] text-muted-foreground">Start here as a buyer — choose an industry, go through checkout.</p>
-              </div>
+        {/* ── Sign Up Form ── */}
+        {view === "signup" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Create Your Account</CardTitle>
+              <CardDescription>Enter your info to access the sandbox. Only required once.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sb-name">Your Name *</Label>
+                  <Input id="sb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Mensah" required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sb-email">Email Address *</Label>
+                  <Input id="sb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <div className="flex gap-2">
+                    <Select value={countryCode} onValueChange={setCountryCode}>
+                      <SelectTrigger className="w-[120px] shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-56">
+                        {COUNTRY_CODES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {c.code} {c.country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="555 123 4567" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sb-business">Business / Company <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Input id="sb-business" value={business} onChange={(e) => setBusiness(e.target.value)} placeholder="Acme Logistics Ltd." />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={!name.trim() || !email.trim() || saving}>
+                  {saving ? "Saving…" : "Enter Sandbox"}
+                </Button>
+
+                <Button type="button" variant="ghost" className="w-full text-sm" onClick={() => setView("choose")}>
+                  ← Back
+                </Button>
+
+                <p className="text-center text-[11px] text-muted-foreground">
+                  We'll notify you when TrustLock goes live. Data stored securely.
+                </p>
+              </form>
             </CardContent>
           </Card>
-        </Link>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">First Time? Sign Up</CardTitle>
-            <CardDescription>
-              Enter your info to access the sandbox dashboards. Only required once.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleNewUser} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="sb-name">Your Name *</Label>
-                <Input id="sb-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Mensah" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sb-email">Email Address *</Label>
-                <Input id="sb-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Phone Number</Label>
-                <div className="flex gap-2">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="w-[120px] shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-56">
-                      {COUNTRY_CODES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {c.code} {c.country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="555 123 4567" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sb-business">Business / Company <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                <Input id="sb-business" value={business} onChange={(e) => setBusiness(e.target.value)} placeholder="Acme Logistics Ltd." />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={!name.trim() || !email.trim() || saving}>
-                {saving ? "Saving…" : "Enter Sandbox"}
-              </Button>
-
-              <p className="text-center text-[11px] text-muted-foreground">
-                We'll notify you when TrustLock goes live. Data stored securely.
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+        )}
       </motion.div>
     </div>
   );
