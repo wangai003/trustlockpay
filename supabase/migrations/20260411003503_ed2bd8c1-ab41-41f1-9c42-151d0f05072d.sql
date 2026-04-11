@@ -1,0 +1,1 @@
+ALTER TABLE public.sandbox_leads ADD COLUMN business text DEFAULT null;
