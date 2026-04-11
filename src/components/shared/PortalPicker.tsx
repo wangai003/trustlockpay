@@ -15,6 +15,7 @@ const portals = [
   {
     role: "vendor",
     label: "Vendor",
+    sublabel: "(Contractor · Supplier · Exporter)",
     desc: "Sell products & services with escrow protection",
     icon: Store,
     loginPath: "/trustlock/vendor/login",
@@ -23,6 +24,7 @@ const portals = [
   {
     role: "buyer",
     label: "Buyer",
+    sublabel: "(Investor · Client · Funder · Principal)",
     desc: "Shop securely with funds held in escrow",
     icon: ShoppingBag,
     loginPath: "/trustlock/buyer/login",
@@ -31,6 +33,7 @@ const portals = [
   {
     role: "lender",
     label: "Lender",
+    sublabel: "(Bank · DFI · Fund Manager)",
     desc: "Finance vendors & manage loan portfolios",
     icon: Landmark,
     loginPath: "/trustlock/lender/login",
@@ -39,6 +42,7 @@ const portals = [
   {
     role: "admin",
     label: "Admin",
+    sublabel: "",
     desc: "Manage platform operations & compliance",
     icon: Shield,
     loginPath: "/trustlock/admin/login",
@@ -73,7 +77,10 @@ const PortalPicker = ({ open, onOpenChange, mode }: PortalPickerProps) => {
             >
               <p.icon className="w-5 h-5 text-primary shrink-0" />
               <div className="text-left">
-                <p className="text-sm font-semibold">{p.label}</p>
+                <p className="text-sm font-semibold">
+                  {p.label}{" "}
+                  {p.sublabel && <span className="text-[10px] font-normal text-muted-foreground">{p.sublabel}</span>}
+                </p>
                 <p className="text-xs text-muted-foreground font-normal">{p.desc}</p>
               </div>
             </Button>

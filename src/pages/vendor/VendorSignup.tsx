@@ -165,14 +165,14 @@ const VendorSignup = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock</h1>
-            <p className="text-xs text-muted-foreground">Vendor Registration</p>
+            <p className="text-xs text-muted-foreground">Vendor Registration <span className="text-[10px] opacity-70">(Contractor · Supplier · Exporter)</span></p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Create Vendor Account</CardTitle>
-            <CardDescription>Start accepting escrow-protected payments</CardDescription>
+            <CardDescription>Receive milestone-verified payments with escrow protection</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignup} className="space-y-4">
