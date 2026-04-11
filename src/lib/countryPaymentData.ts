@@ -1,6 +1,6 @@
 // ─── Country-Specific Payment Data ─────────────────────────
 // Bank lists, mobile money operators, and KYC field configs
-// for all 32 supported African + diaspora markets.
+// for all 32 supported markets.
 
 import type { ProviderField } from "./paymentProviders";
 
