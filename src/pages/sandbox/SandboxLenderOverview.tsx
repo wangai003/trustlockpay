@@ -148,6 +148,7 @@ const SandboxLenderOverview = () => {
     { role: "ai", text: FLASHVET_RESPONSES.default },
   ]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [selectedRiskVendor, setSelectedRiskVendor] = useState<string>("GreenSahel Agro Exports");
 
   const utilizationPct = Math.round((MOCK_LENDER.utilized / MOCK_LENDER.facilityLimit) * 100);
   const filteredVendors = MOCK_VENDORS.filter(v =>
