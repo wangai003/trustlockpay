@@ -153,8 +153,10 @@ const SandboxLenderCertificate = ({ order }: Props) => {
           {/* Actions */}
           <div className="flex gap-2 flex-wrap pt-1">
             {generated ? (
-              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1" onClick={() => toast.info("PDF download simulated (sandbox)")}>
-                <Download className="h-3 w-3" /> Download PDF
+              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1" asChild>
+                <a href="/samples/sample_escrow_certificate.pdf" download="TrustLock_Escrow_Certificate_SAMPLE.pdf">
+                  <Download className="h-3 w-3" /> Download PDF
+                </a>
               </Button>
             ) : (
               <Button size="sm" variant="default" className="h-7 text-[10px] gap-1" onClick={handleGenerate}>
