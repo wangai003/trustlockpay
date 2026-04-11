@@ -94,40 +94,48 @@ const MessageTranslateButton = ({ fields, sandbox, className }: MessageTranslate
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={translating}
-          className={cn("gap-1 text-xs h-8 px-2", className)}
-          title="Translate message"
-        >
-          {translating ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Languages className="w-3.5 h-3.5" />
-          )}
-          <span className="hidden sm:inline">Translate</span>
-          <ChevronDown className="w-3 h-3 opacity-60" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 max-h-72 overflow-y-auto">
-        <DropdownMenuLabel className="text-[10px]">Translate to</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {TRANSLATE_LANGUAGES.map((lang) => (
-          <DropdownMenuItem
-            key={lang.code}
-            onClick={() => handleTranslate(lang.label)}
-            className="flex items-center justify-between text-sm cursor-pointer"
-          >
-            <span>{lang.native || lang.label}</span>
-            <span className="text-[10px] text-muted-foreground uppercase">{lang.code}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <TooltipProvider>
+      <Tooltip>
+        <DropdownMenu>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={translating}
+                className={cn("gap-1 text-xs h-8 px-2", className)}
+              >
+                {translating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Languages className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">Translate</span>
+                <ChevronDown className="w-3 h-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px] text-center">
+            <p className="text-xs">Translate your message into another language before sending — helps communicate clearly across borders.</p>
+          </TooltipContent>
+          <DropdownMenuContent align="start" className="w-48 max-h-72 overflow-y-auto">
+            <DropdownMenuLabel className="text-[10px]">Translate to</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {TRANSLATE_LANGUAGES.map((lang) => (
+              <DropdownMenuItem
+                key={lang.code}
+                onClick={() => handleTranslate(lang.label)}
+                className="flex items-center justify-between text-sm cursor-pointer"
+              >
+                <span>{lang.native || lang.label}</span>
+                <span className="text-[10px] text-muted-foreground uppercase">{lang.code}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
