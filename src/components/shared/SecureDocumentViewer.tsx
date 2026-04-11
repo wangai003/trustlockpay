@@ -137,9 +137,62 @@ const SecureDocumentViewer = ({
     }
   }, []);
 
+  // Countdown timer for session expiry
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (!expiresAt || !open) {
+      setTimeRemaining(null);
+      return;
+    }
+    
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+      if (remaining <= 0) {
+        toast.error("Access expired — request a new link to continue viewing");
+        onOpenChange(false);
+      }
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, open, onOpenChange]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Manual refresh handler
+  const handleRefreshAccess = async () => {
+    setLoading(true);
+    try {
+      const urlObj = new URL(documentUrl);
+      const storageMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+      if (storageMatch) {
+        const [, bucket, path] = storageMatch;
+        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 600);
+        if (data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+          setExpiresAt(Date.now() + 600 * 1000);
+          toast.success("Access extended — 10 minutes remaining");
+        }
+      }
+    } catch {
+      toast.error("Failed to refresh access");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
   const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(documentUrl);
   const isPdf = /\.pdf(\?|$)/i.test(documentUrl);
+
+  const isExpiringSoon = timeRemaining !== null && timeRemaining < 120;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
