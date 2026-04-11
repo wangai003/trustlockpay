@@ -159,9 +159,8 @@ const OfflineReconciliation = ({
     }
   };
 
-  const handleSkip = () => {
-    onReconciliationComplete([]);
-  };
+  // No skip — user already chose "Yes, some steps are done" at the initial gate.
+  // To start fresh, they should use the initial "No, start fresh" option instead.
 
   // Initial question gate
   if (hasOfflineWork === null) {
