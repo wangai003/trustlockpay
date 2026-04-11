@@ -111,12 +111,25 @@ const BuyerDisputes = () => {
     input.onchange = async () => {
       if (!input.files?.length) return;
       const files = Array.from(input.files);
+      const { data: { user } } = await supabase.auth.getUser();
       let uploaded = 0;
       for (const file of files) {
         const path = `${disputeId}/${Date.now()}_${file.name}`;
         const { error } = await supabase.storage.from("dispute-evidence").upload(path, file);
-        if (!error) uploaded++;
-        else toast.error(`Failed to upload ${file.name}`);
+        if (!error) {
+          uploaded++;
+          // Record in dispute_evidence table for audit trail
+          const publicUrl = supabase.storage.from("dispute-evidence").getPublicUrl(path).data.publicUrl;
+          await supabase.from("dispute_evidence").insert({
+            dispute_id: disputeId,
+            file_url: publicUrl,
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            uploaded_by: user?.id || null,
+          });
+        } else {
+          toast.error(`Failed to upload ${file.name}`);
+        }
       }
       if (uploaded > 0) toast.success(`${uploaded} evidence file(s) added to dispute`);
     };
@@ -166,13 +179,13 @@ const BuyerDisputes = () => {
   return (
     <div>
       <BuyerHeader title="Disputes" />
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track the status of any disputes you've filed</p>
           </div>
-          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2 w-full sm:w-auto">
               <AlertTriangle className="w-4 h-4" /> File New Dispute
             </Button>
         </div>
@@ -264,7 +277,7 @@ const BuyerDisputes = () => {
                       {" — "}
                       <span>{dispute.reason}</span>
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap">
                       <span>TX: {dispute.txId}</span>
                       <span>Amount: {dispute.amount}</span>
                       <span>Filed: {dispute.filed}</span>
@@ -316,6 +329,7 @@ const BuyerDisputes = () => {
           <p><strong>Dispute Window:</strong> You have 14 days from delivery confirmation to file a dispute.</p>
           <p><strong>Review Process:</strong> Emmanuel AI will analyze your case and provide a recommendation. Every dispute requires explicit admin approval before any action is taken.</p>
           <p><strong>Professional Arbitration:</strong> For disputes involving ≥$10,000 in escrow, either party may request a professional arbitrator. A non-refundable flat Arbitration Filing & Case Management Fee is required via TrustLock OS Pay ($500 for $10K–$50K · $1,500 for $50K–$250K · $3,000 for $250K–$1M · $5,000 for $1M+). This covers case coordination — the arbitrator's professional fees are separate, determined by their institution after appointment. Arbitration follows ICC/UNCITRAL rules.</p>
+          <p><strong>After Arbitration Payment:</strong> Once your filing fee is confirmed via OS Pay, TrustLock will: (1) notify the counterparty, (2) package all evidence into a case bundle, (3) facilitate arbitrator selection via the Arbitrator Proposal Panel, and (4) provide the appointed arbitrator with secure read-only access to the case. You'll receive status updates in your Disputes tab and via notifications throughout the process.</p>
         </div>
       </div>
     </div>
