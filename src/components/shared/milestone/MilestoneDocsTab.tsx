@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentUpload from "@/components/shared/DocumentUpload";
+import SecureDocumentViewer from "@/components/shared/SecureDocumentViewer";
 import { getUploadedKeys } from "./milestoneConstants";
 
 interface MilestoneDocsTabProps {
