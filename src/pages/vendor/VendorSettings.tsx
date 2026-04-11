@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut, Building2 } from "lucide-react";
+import { Bell, CreditCard, User, Save, Truck, Shield, AlertTriangle, Pause, Trash2, LogOut, Building2, Globe, Facebook, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -21,6 +21,9 @@ import { getVendorPlanState, PLANS } from "@/hooks/useVendorPlan";
 import { useVendorSettings, useSaveVendorSettings } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useSaveProfile } from "@/hooks/useBackendSync";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+
 const notificationKeys = [
   { key: "new_escrow", label: "New escrow created" },
   { key: "buyer_confirms", label: "Buyer confirms delivery" },
@@ -33,6 +36,7 @@ const notificationKeys = [
 
 const VendorSettings = () => {
   const { vendor } = useVendor();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const planState = getVendorPlanState();
   const { data: settings } = useVendorSettings();
@@ -44,6 +48,33 @@ const VendorSettings = () => {
   const [profilePhone, setProfilePhone] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [entityType, setEntityType] = useState("individual");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialX, setSocialX] = useState("");
+
+  // Load web presence from profile
+  const { data: webPresenceData } = useQuery({
+    queryKey: ["vendor_web_presence", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.from("profiles").select("website_url, social_links").eq("id", user.id).single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const hasWebPresence = !!(webPresenceData?.website_url || (webPresenceData?.social_links && Object.values(webPresenceData.social_links as Record<string, string>).some(v => v)));
+
+  useEffect(() => {
+    if (webPresenceData) {
+      setWebsiteUrl(webPresenceData.website_url || "");
+      const sl = (webPresenceData.social_links || {}) as Record<string, string>;
+      setSocialFacebook(sl.facebook || "");
+      setSocialLinkedin(sl.linkedin || "");
+      setSocialX(sl.x || "");
+    }
+  }, [webPresenceData]);
 
   const [autoDelivery, setAutoDelivery] = useState(() => {
     return localStorage.getItem("tl_vendor_auto_delivery") === "true";
@@ -100,6 +131,17 @@ const VendorSettings = () => {
     <div>
       <VendorHeader title="Settings" />
       <div className="p-6 space-y-6 max-w-4xl">
+        {/* Web Presence Banner */}
+        {!hasWebPresence && webPresenceData !== undefined && (
+          <div className="p-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Complete your profile</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Add a website or social media link to maintain full account access. This is required for vendor verification and lender due diligence.</p>
+            </div>
+          </div>
+        )}
+
         {/* Profile */}
         <Card>
           <CardHeader>
@@ -182,6 +224,62 @@ const VendorSettings = () => {
               disabled={saveProfile.isPending}
             >
               <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Web Presence */}
+        <Card className={!hasWebPresence && webPresenceData !== undefined ? "border-amber-300" : ""}>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Globe className="w-5 h-5 text-primary" />
+              <div>
+                <CardTitle className="text-base">Website & Social Media</CardTitle>
+                <CardDescription>Required for vendor verification and lender due diligence</CardDescription>
+              </div>
+              {!hasWebPresence && webPresenceData !== undefined && (
+                <Badge variant="destructive" className="ml-auto text-[9px]">Action Required</Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Website URL</Label>
+              <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://yourstore.com" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Social Media Links</Label>
+              <div className="grid sm:grid-cols-1 gap-2">
+                <div className="relative">
+                  <Facebook className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                  <Input value={socialFacebook} onChange={(e) => setSocialFacebook(e.target.value)} placeholder="Facebook page URL" className="pl-9" />
+                </div>
+                <div className="relative">
+                  <Linkedin className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                  <Input value={socialLinkedin} onChange={(e) => setSocialLinkedin(e.target.value)} placeholder="LinkedIn profile URL" className="pl-9" />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-bold">𝕏</span>
+                  <Input value={socialX} onChange={(e) => setSocialX(e.target.value)} placeholder="X (Twitter) profile URL" className="pl-9" />
+                </div>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const socialLinks: Record<string, string> = {};
+                if (socialFacebook.trim()) socialLinks.facebook = socialFacebook.trim();
+                if (socialLinkedin.trim()) socialLinks.linkedin = socialLinkedin.trim();
+                if (socialX.trim()) socialLinks.x = socialX.trim();
+                saveProfile.mutateAsync({
+                  websiteUrl: websiteUrl.trim(),
+                  socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : null,
+                });
+              }}
+              disabled={saveProfile.isPending}
+            >
+              <Save className="w-3.5 h-3.5 mr-1.5" /> Save Web Presence
             </Button>
           </CardContent>
         </Card>

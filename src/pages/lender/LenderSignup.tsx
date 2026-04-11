@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Landmark, Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Landmark, Eye, EyeOff, ArrowLeft, CheckCircle, Globe, Facebook, Linkedin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PasswordStrengthMeter, isPasswordStrong } from "@/components/shared/PasswordStrength";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,10 @@ import EntityTypeSelector, { type EntityType } from "@/components/shared/EntityT
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
+const isValidUrl = (v: string) => {
+  if (!v.trim()) return false;
+  try { new URL(v.startsWith("http") ? v : `https://${v}`); return true; } catch { return false; }
+};
 
 const LenderSignup = () => {
   const navigate = useNavigate();
@@ -30,6 +34,10 @@ const LenderSignup = () => {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [entityType, setEntityType] = useState<EntityType>("company");
   const [companyName, setCompanyName] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialX, setSocialX] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,13 +47,22 @@ const LenderSignup = () => {
     if (!tosAccepted) { setError("You must accept the Terms of Service to create an account"); return; }
     if (!isPasswordStrong(password)) { setError("Password does not meet all strength requirements"); return; }
     if (!companyName.trim()) { setError("Please enter your institution name"); return; }
+    if (!websiteUrl.trim()) { setError("Website URL is required for lender registration"); return; }
+    if (!isValidUrl(websiteUrl)) { setError("Please enter a valid website URL"); return; }
 
     setLoading(true);
+    const socialLinks: Record<string, string> = {};
+    if (socialFacebook.trim()) socialLinks.facebook = socialFacebook.trim();
+    if (socialLinkedin.trim()) socialLinks.linkedin = socialLinkedin.trim();
+    if (socialX.trim()) socialLinks.x = socialX.trim();
+
     const { error } = await signUp(email, password, {
       full_name: fullName,
       role: "lender",
       entity_type: entityType,
       company_name: companyName.trim(),
+      website_url: websiteUrl.trim(),
+      social_links: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
     });
     setLoading(false);
 
@@ -133,6 +150,37 @@ const LenderSignup = () => {
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@institution.com" required />
               </div>
               <EntityTypeSelector entityType={entityType} onEntityTypeChange={setEntityType} companyName={companyName} onCompanyNameChange={setCompanyName} role="vendor" />
+
+              {/* Website (MANDATORY) & Social Links (optional) */}
+              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/20">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" /> Website & Social
+                </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="lenderWebsite" className="text-xs">
+                    Website URL <span className="text-destructive">*</span>
+                  </Label>
+                  <Input id="lenderWebsite" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://institution.com" className="h-8 text-sm" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Social Media (optional)</Label>
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <Facebook className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input value={socialFacebook} onChange={(e) => setSocialFacebook(e.target.value)} placeholder="Facebook page URL" className="h-8 text-sm pl-8" />
+                    </div>
+                    <div className="relative">
+                      <Linkedin className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input value={socialLinkedin} onChange={(e) => setSocialLinkedin(e.target.value)} placeholder="LinkedIn profile URL" className="h-8 text-sm pl-8" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-xs text-muted-foreground font-bold">𝕏</span>
+                      <Input value={socialX} onChange={(e) => setSocialX(e.target.value)} placeholder="X (Twitter) profile URL" className="h-8 text-sm pl-8" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

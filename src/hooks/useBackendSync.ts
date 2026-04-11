@@ -40,7 +40,7 @@ async function callFn(fnName: string, body: Record<string, unknown>) {
   return data;
 }
 
-// ─── Profile Sync (name, email, location, phone, company, entity_type) ────────────
+// ─── Profile Sync (name, email, location, phone, company, entity_type, website, social) ────────────
 export function useSaveProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -52,16 +52,20 @@ export function useSaveProfile() {
       phoneCountryCode?: string;
       companyName?: string;
       entityType?: string;
+      websiteUrl?: string;
+      socialLinks?: Record<string, string> | null;
     }) => {
       const session = (await supabase.auth.getSession()).data.session;
       if (!session?.user?.id) throw new Error("Not authenticated");
-      const updates: Record<string, string> = { updated_at: new Date().toISOString() };
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (params.fullName !== undefined) updates.full_name = params.fullName;
       if (params.location !== undefined) updates.location = params.location;
       if (params.phone !== undefined) updates.phone = params.phone;
       if (params.phoneCountryCode !== undefined) updates.phone_country_code = params.phoneCountryCode;
       if (params.companyName !== undefined) updates.company_name = params.companyName;
       if (params.entityType !== undefined) updates.entity_type = params.entityType;
+      if (params.websiteUrl !== undefined) updates.website_url = params.websiteUrl || null;
+      if (params.socialLinks !== undefined) updates.social_links = params.socialLinks;
       const { error } = await supabase.from("profiles").update(updates as any).eq("id", session.user.id);
       if (error) throw error;
       return { success: true };
@@ -69,6 +73,7 @@ export function useSaveProfile() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profiles_by_role"] });
       qc.invalidateQueries({ queryKey: ["profile_notifications"] });
+      qc.invalidateQueries({ queryKey: ["vendor_web_presence"] });
       toast.success("Profile saved");
     },
     onError: (e: Error) => toast.error(e.message),
