@@ -160,13 +160,13 @@ const VendorDisputes = () => {
   return (
     <div>
       <VendorHeader title="Disputes" />
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="font-heading text-lg font-bold">Your Disputes</h2>
             <p className="text-sm text-muted-foreground">Track disputes you've filed or that buyers filed against you</p>
           </div>
-          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2">
+          <Button onClick={() => setShowNewDispute(!showNewDispute)} className="gap-2 w-full sm:w-auto">
               <AlertTriangle className="w-4 h-4" /> File Dispute
             </Button>
         </div>
@@ -260,7 +260,7 @@ const VendorDisputes = () => {
                         {" — "}
                         <span>{dispute.reason}</span>
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap">
                         <span>TX: {dispute.txId}</span>
                         <span>Amount: {dispute.amount}</span>
                         <span>Filed: {dispute.filed}</span>
