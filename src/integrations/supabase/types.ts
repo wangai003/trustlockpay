@@ -6253,7 +6253,6 @@ export type Database = {
       arbitrator_sessions_safe: {
         Row: {
           access_count: number | null
-          access_token: string | null
           arbitrator_email: string | null
           arbitrator_name: string | null
           case_bundle_generated: boolean | null
@@ -6274,7 +6273,6 @@ export type Database = {
         }
         Insert: {
           access_count?: number | null
-          access_token?: string | null
           arbitrator_email?: string | null
           arbitrator_name?: string | null
           case_bundle_generated?: boolean | null
@@ -6295,7 +6293,6 @@ export type Database = {
         }
         Update: {
           access_count?: number | null
-          access_token?: string | null
           arbitrator_email?: string | null
           arbitrator_name?: string | null
           case_bundle_generated?: boolean | null
@@ -6334,7 +6331,6 @@ export type Database = {
       audit_sessions_safe: {
         Row: {
           access_count: number | null
-          access_token: string | null
           allowed_tables: string[] | null
           auditor_email: string | null
           auditor_name: string | null
@@ -6349,7 +6345,6 @@ export type Database = {
         }
         Insert: {
           access_count?: number | null
-          access_token?: string | null
           allowed_tables?: string[] | null
           auditor_email?: string | null
           auditor_name?: string | null
@@ -6364,7 +6359,6 @@ export type Database = {
         }
         Update: {
           access_count?: number | null
-          access_token?: string | null
           allowed_tables?: string[] | null
           auditor_email?: string | null
           auditor_name?: string | null
@@ -6376,6 +6370,33 @@ export type Database = {
           is_active?: boolean | null
           last_accessed_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles_counterparty_safe: {
+        Row: {
+          avatar_url: string | null
+          company_name: string | null
+          entity_type: string | null
+          full_name: string | null
+          id: string | null
+          status: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_name?: string | null
+          entity_type?: string | null
+          full_name?: string | null
+          id?: string | null
+          status?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          company_name?: string | null
+          entity_type?: string | null
+          full_name?: string | null
+          id?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -6436,8 +6457,54 @@ export type Database = {
         Returns: Json
       }
       compute_vendor_risk_score: { Args: { _vendor_id: string }; Returns: Json }
+      create_system_notification: {
+        Args: {
+          _action_url?: string
+          _is_action_required?: boolean
+          _message: string
+          _related_entity_id?: string
+          _related_entity_type?: string
+          _title: string
+          _type?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       generate_admin_alias: { Args: never; Returns: string }
       generate_temp_password: { Args: never; Returns: string }
+      get_arbitrator_session_by_token: {
+        Args: { _token: string }
+        Returns: {
+          arbitrator_name: string
+          case_bundle_generated: boolean
+          case_bundle_url: string
+          created_at: string
+          dispute_id: string
+          expires_at: string
+          id: string
+          ruling_anchored: boolean
+          ruling_distributed: boolean
+          ruling_file_name: string
+          ruling_file_url: string
+          ruling_uploaded_at: string
+          status: string
+          transaction_id: string
+        }[]
+      }
+      get_audit_session_by_token: {
+        Args: { _token: string }
+        Returns: {
+          access_count: number
+          allowed_tables: string[]
+          auditor_name: string
+          can_export: boolean
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_accessed_at: string
+        }[]
+      }
       get_contract_audit_trail: {
         Args: { _transaction_id: string }
         Returns: Json
