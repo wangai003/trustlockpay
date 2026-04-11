@@ -5914,6 +5914,42 @@ export type Database = {
           },
         ]
       }
+      vendor_risk_scores: {
+        Row: {
+          composite_score: number
+          computed_at: string
+          created_at: string
+          id: string
+          pillar_scores: Json
+          risk_tier: string
+          score_metadata: Json | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          composite_score?: number
+          computed_at?: string
+          created_at?: string
+          id?: string
+          pillar_scores?: Json
+          risk_tier?: string
+          score_metadata?: Json | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          composite_score?: number
+          computed_at?: string
+          created_at?: string
+          id?: string
+          pillar_scores?: Json
+          risk_tier?: string
+          score_metadata?: Json | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       vendor_settings: {
         Row: {
           auto_delivery: boolean | null
@@ -6396,6 +6432,7 @@ export type Database = {
         Args: { _name: string; _username: string }
         Returns: Json
       }
+      compute_vendor_risk_score: { Args: { _vendor_id: string }; Returns: Json }
       generate_admin_alias: { Args: never; Returns: string }
       generate_temp_password: { Args: never; Returns: string }
       get_contract_audit_trail: {
