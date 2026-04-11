@@ -549,6 +549,13 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
         {expandedOrder === order.id && (
           <div className="mt-3 border-t border-border pt-3 space-y-3">
             <OrderStepGuide status={order.status} role="buyer" industry={order.industry} />
+            {/* Full compliance document progress for buyer visibility */}
+            {(order.status === "locked" || order.status === "shipped") && order.industry && (
+              <DocumentComplianceProgress
+                industry={order.industry}
+                transactionId={order.dbId}
+              />
+            )}
             {/* Transport Legs Viewer */}
             {order.transportLegs && order.transportLegs.length > 0 && (
               <TransportLegsViewer legs={order.transportLegs} compact />
