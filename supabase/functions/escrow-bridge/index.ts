@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ethers } from "https://esm.sh/ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,18 +41,8 @@ function json(data: unknown, status = 200) {
 
 // ─── Generate escrowId from transaction ───────────────────
 // Matches Solidity: keccak256(abi.encodePacked("TL-", txId))
-async function txToEscrowId(txId: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`TL-${txId}`);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  // Use SHA-256 as keccak256 stand-in until ethers.js is integrated on-chain.
-  // When ethers is available, replace with: ethers.keccak256(ethers.toUtf8Bytes(`TL-${txId}`))
-  const hashArray = new Uint8Array(hashBuffer);
-  let hash = "0x";
-  for (const byte of hashArray) {
-    hash += byte.toString(16).padStart(2, "0");
-  }
-  return hash;
+function txToEscrowId(txId: string): string {
+  return ethers.keccak256(ethers.toUtf8Bytes(`TL-${txId}`));
 }
 
 // ─── Convert amount to contract units (6 decimals) ────────
@@ -158,7 +149,7 @@ Deno.serve(async (req) => {
       return json({ error: "Transaction not found" }, 404);
     }
 
-    const escrowId = await txToEscrowId(tx.tx_id);
+    const escrowId = txToEscrowId(tx.tx_id);
     const contractUnits = toContractUnits(tx.amount);
 
     // Resolve token address from transaction payment method

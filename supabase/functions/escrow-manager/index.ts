@@ -1407,6 +1407,29 @@ async function checkAutoRelease() {
 
   if (expired && expired.length > 0) {
     for (const tx of expired) {
+      // Safety gate: skip if buyer has never interacted with this transaction
+      // (no notifications read, no approvals, no activity at all)
+      const { count: buyerActivityCount } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", tx.buyer_id)
+        .eq("related_entity_id", tx.id)
+        .eq("is_read", true);
+
+      if (!buyerActivityCount || buyerActivityCount === 0) {
+        // Also check if buyer approved or acknowledged via acknowledgement_forms
+        const { count: ackCount } = await supabase
+          .from("acknowledgement_forms")
+          .select("id", { count: "exact", head: true })
+          .eq("transaction_id", tx.id)
+          .eq("signed_by_buyer", true);
+
+        if (!ackCount || ackCount === 0) {
+          console.log(`[auto-release] Skipping ${tx.tx_id} — buyer has never interacted`);
+          continue;
+        }
+      }
+
       // Skip if transaction has milestones (handled separately)
       const { data: hasMilestones } = await supabase
         .from("transaction_milestones")

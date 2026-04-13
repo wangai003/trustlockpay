@@ -130,7 +130,7 @@ const REGISTRY_ABI = [
       { name: "txRef", type: "bytes32" },
       { name: "recordType", type: "uint8" },
     ],
-    outputs: [],
+    outputs: [{ name: "recordId", type: "uint256" }],
   },
   {
     name: "anchorBatch",
@@ -148,7 +148,10 @@ const REGISTRY_ABI = [
     type: "function",
     stateMutability: "view",
     inputs: [{ name: "contentHash", type: "bytes32" }],
-    outputs: [{ name: "", type: "bool" }],
+    outputs: [
+      { name: "exists", type: "bool" },
+      { name: "recordId", type: "uint256" },
+    ],
   },
 ];
 
@@ -338,37 +341,86 @@ Deno.serve(async (req) => {
         return json({ success: true, anchored: 0, message: "No queued records" });
       }
 
-      // Batch anchor would call anchorBatch() on the contract
-      // For now, process one-by-one
-      let anchored = 0;
-      const errors: string[] = [];
+      // Batch anchor using contract's anchorBatch() for gas efficiency
+      const contentHashes: string[] = [];
+      const txRefs: string[] = [];
+      const recordTypes: number[] = [];
 
       for (const record of queued) {
-        const typeNum = RECORD_TYPE_MAP[record.record_type] ?? 13;
-        const result = await sendPolygonTx(polygonConfig, record.content_hash, record.tx_ref, typeNum);
+        contentHashes.push(record.content_hash);
+        txRefs.push(record.tx_ref);
+        recordTypes.push(RECORD_TYPE_MAP[record.record_type] ?? 13);
+      }
 
-        if ("txHash" in result && result.txHash) {
+      try {
+        const provider = new ethers.JsonRpcProvider(polygonConfig.rpcUrl, {
+          name: "polygon",
+          chainId: 137,
+        });
+        const wallet = new ethers.Wallet(polygonConfig.privateKey, provider);
+        const contract = new ethers.Contract(polygonConfig.contractAddress, REGISTRY_ABI, wallet);
+
+        console.log(`[registry-anchor] Sending anchorBatch TX for ${queued.length} records...`);
+        const tx = await contract.anchorBatch(contentHashes, txRefs, recordTypes);
+        const receipt = await tx.wait(1);
+        console.log(`[registry-anchor] Batch TX confirmed: ${receipt.hash}, block: ${receipt.blockNumber}`);
+
+        // Update all records as anchored
+        const ids = queued.map((r: Record<string, unknown>) => r.id);
+        const now = new Date().toISOString();
+        for (const id of ids) {
           await supabase
             .from("blockchain_proofs")
             .update({
               chain_status: "anchored",
-              polygon_tx_hash: result.txHash,
-              anchored_at: new Date().toISOString(),
+              polygon_tx_hash: receipt.hash,
+              anchored_at: now,
             })
-            .eq("id", record.id);
-          anchored++;
-        } else {
-          errors.push(`${record.id}: ${result.error}`);
+            .eq("id", id);
         }
-      }
 
-      return json({
-        success: true,
-        total: queued.length,
-        anchored,
-        failed: errors.length,
-        errors: errors.slice(0, 10),
-      });
+        return json({
+          success: true,
+          total: queued.length,
+          anchored: queued.length,
+          failed: 0,
+          batchTxHash: receipt.hash,
+          errors: [],
+        });
+      } catch (err: any) {
+        console.error("[registry-anchor] Batch TX failed, falling back to one-by-one:", err.message);
+
+        // Fallback: process one-by-one
+        let anchored = 0;
+        const errors: string[] = [];
+
+        for (const record of queued) {
+          const typeNum = RECORD_TYPE_MAP[record.record_type] ?? 13;
+          const result = await sendPolygonTx(polygonConfig, record.content_hash, record.tx_ref, typeNum);
+
+          if ("txHash" in result && result.txHash) {
+            await supabase
+              .from("blockchain_proofs")
+              .update({
+                chain_status: "anchored",
+                polygon_tx_hash: result.txHash,
+                anchored_at: new Date().toISOString(),
+              })
+              .eq("id", record.id);
+            anchored++;
+          } else {
+            errors.push(`${record.id}: ${result.error}`);
+          }
+        }
+
+        return json({
+          success: true,
+          total: queued.length,
+          anchored,
+          failed: errors.length,
+          errors: errors.slice(0, 10),
+        });
+      }
     }
 
     // ═══════════════════════════════════════════
