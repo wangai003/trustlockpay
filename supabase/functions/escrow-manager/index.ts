@@ -1482,6 +1482,30 @@ async function checkAutoRelease() {
       const paymentAmount = Number(ms.payment_amount ?? 0);
       if (paymentAmount <= 0) continue;
 
+      // Safety gate: skip if buyer has never interacted with this transaction
+      const txId = txData.id as string;
+      const buyerId = txData.buyer_id as string;
+
+      const { count: msBuyerActivityCount } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", buyerId)
+        .eq("related_entity_id", txId)
+        .eq("is_read", true);
+
+      if (!msBuyerActivityCount || msBuyerActivityCount === 0) {
+        const { count: msAckCount } = await supabase
+          .from("acknowledgement_forms")
+          .select("id", { count: "exact", head: true })
+          .eq("transaction_id", txId)
+          .eq("signed_by_buyer", true);
+
+        if (!msAckCount || msAckCount === 0) {
+          console.log(`[auto-release] Skipping milestone ${ms.id} on ${txData.tx_id} — buyer has never interacted`);
+          continue;
+        }
+      }
+
       const fees = calculateFees(paymentAmount, "release");
       const payoutId = generatePayoutId();
 
