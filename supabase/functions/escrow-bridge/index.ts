@@ -70,34 +70,73 @@ async function resolveWalletAddress(
   return (data as Record<string, unknown>)?.wallet_address as string | null;
 }
 
-// ─── Send transaction via Polygon RPC (eth_sendRawTransaction) ───
-async function sendContractCall(
-  functionSig: string,
-  encodedParams: string
-): Promise<{ txHash: string; status: string }> {
+// ─── Escrow Contract ABI (full interface for ethers.Contract) ──
+const ESCROW_CONTRACT_ABI = [
+  ESCROW_ABI.lockFunds,
+  ESCROW_ABI.lockFundsWithMilestones,
+  ESCROW_ABI.releaseFunds,
+  ESCROW_ABI.refundBuyer,
+  ESCROW_ABI.splitPayout,
+  ESCROW_ABI.approveMilestone,
+  ESCROW_ABI.releaseMilestone,
+  ESCROW_ABI.refundMilestone,
+];
+
+// ─── Get ethers contract instance ─────────────────────────
+// Uses DEPLOYER_WALLET_PRIVATE_KEY — this wallet MUST be registered
+// as an operator on TrustLockEscrow (via setOperator()).
+// This is intentionally a DIFFERENT key from POLYGON_RELAYER_PRIVATE_KEY
+// (used by registry-anchor for TrustLockRegistry), keeping escrow
+// signing authority separate from registry anchoring authority.
+function getEscrowContract(): { contract: ethers.Contract; wallet: ethers.Wallet } | null {
   const privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL") || "https://polygon-rpc.com";
 
   if (!privateKey || !ESCROW_CONTRACT) {
-    console.warn("Contract not deployed or keys not configured — recording intent only");
-    return {
-      txHash: "pending_deployment",
-      status: "queued",
-    };
+    return null;
   }
 
-  // In production, this would use ethers.js to sign and send:
-  // const wallet = new ethers.Wallet(privateKey, provider);
-  // const contract = new ethers.Contract(ESCROW_CONTRACT, abi, wallet);
-  // const tx = await contract.lockFunds(...args);
-  // return { txHash: tx.hash, status: "submitted" };
+  const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
+  const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
+  const wallet = new ethers.Wallet(privateKey, provider);
+  const contract = new ethers.Contract(ESCROW_CONTRACT, ESCROW_CONTRACT_ABI, wallet);
+  return { contract, wallet };
+}
 
-  // For now, record the intent and return queued status
-  // This will be replaced with actual signing when contract is deployed
-  return {
-    txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    status: "queued",
-  };
+// ─── Send signed transaction to escrow contract ───────────
+async function sendContractCall(
+  methodName: string,
+  args: unknown[]
+): Promise<{ txHash: string; status: string }> {
+  const instance = getEscrowContract();
+
+  if (!instance) {
+    console.warn("[escrow-bridge] Contract not deployed or keys not configured — recording intent only");
+    return { txHash: "pending_deployment", status: "queued" };
+  }
+
+  try {
+    console.log(`[escrow-bridge] Sending ${methodName} TX...`, {
+      from: instance.wallet.address,
+      to: ESCROW_CONTRACT,
+      args: args.map(a => typeof a === "bigint" ? a.toString() : a),
+    });
+
+    const tx = await instance.contract[methodName](...args);
+    console.log(`[escrow-bridge] TX submitted: ${tx.hash}`);
+
+    const receipt = await tx.wait(1);
+    console.log(`[escrow-bridge] TX confirmed in block: ${receipt.blockNumber}`);
+
+    return { txHash: receipt.hash, status: "confirmed" };
+  } catch (err: any) {
+    console.error(`[escrow-bridge] TX ${methodName} failed:`, err.message);
+    return {
+      txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      status: "failed",
+      ...({ error: err.message } as Record<string, unknown>),
+    };
+  }
 }
 
 // ─── Notify ───────────────────────────────────────────────
