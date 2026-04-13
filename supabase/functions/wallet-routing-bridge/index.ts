@@ -71,6 +71,12 @@ function toContractUnits(amount: number): string {
   return BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS))).toString();
 }
 
+// ─── ERC-20 ABI (minimal — transfer only) ─────────────────
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+];
+
 async function transferOnChain(
   fromWallet: string,
   toWallet: string,
@@ -89,18 +95,35 @@ async function transferOnChain(
     };
   }
 
-  // TODO: Wire live ERC-20 transfer via ethers.js when contracts are deployed
-  // Implementation requires:
-  // 1. Create ethers.JsonRpcProvider with rpcUrl
-  // 2. Create ethers.Wallet with privateKey
-  // 3. Create IERC20 contract instance for the token address
-  // 4. Call contract.transfer(toWallet, toContractUnits(amount))
-  // 5. Wait for confirmation and return receipt.hash
-  console.warn(`[wallet-routing] Deployer key present but live transfers not yet wired: ${memo}`);
-  return {
-    txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    status: "queued",
-  };
+  try {
+    const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
+    const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
+    const wallet = new ethers.Wallet(privateKey, provider);
+    const tokenContract = new ethers.Contract(token, ERC20_ABI, wallet);
+
+    const contractUnits = BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS)));
+
+    console.log(`[wallet-routing] Sending ERC-20 transfer: ${amount} tokens`, {
+      from: wallet.address,
+      to: toWallet,
+      token,
+      memo,
+    });
+
+    const tx = await tokenContract.transfer(toWallet, contractUnits);
+    console.log(`[wallet-routing] TX submitted: ${tx.hash}`);
+
+    const receipt = await tx.wait(1);
+    console.log(`[wallet-routing] TX confirmed in block: ${receipt.blockNumber}`);
+
+    return { txHash: receipt.hash, status: "confirmed" };
+  } catch (err: any) {
+    console.error(`[wallet-routing] ERC-20 transfer failed: ${err.message}`, { memo });
+    return {
+      txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      status: "failed",
+    };
+  }
 }
 
 async function notify(
