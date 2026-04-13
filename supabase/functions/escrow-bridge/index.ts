@@ -227,27 +227,14 @@ Deno.serve(async (req) => {
         );
 
         result = await sendContractCall(
-          ESCROW_ABI.lockFundsWithMilestones,
-          JSON.stringify({
-            orderId: escrowId,
-            token: tokenAddress,
-            buyer: effectiveBuyerAddr,
-            vendor: effectiveVendorAddr,
-            amount: contractUnits.toString(),
-            milestoneAmounts: milestoneAmounts.map(String),
-          })
+          "lockFundsWithMilestones",
+          [escrowId, tokenAddress, effectiveBuyerAddr, effectiveVendorAddr, contractUnits, milestoneAmounts]
         );
       } else {
         // Atomic lock
         result = await sendContractCall(
-          ESCROW_ABI.lockFunds,
-          JSON.stringify({
-            orderId: escrowId,
-            token: tokenAddress,
-            buyer: effectiveBuyerAddr,
-            vendor: effectiveVendorAddr,
-            amount: contractUnits.toString(),
-          })
+          "lockFunds",
+          [escrowId, tokenAddress, effectiveBuyerAddr, effectiveVendorAddr, contractUnits]
         );
       }
 
@@ -310,8 +297,8 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     if (action === "release") {
       const result = await sendContractCall(
-        ESCROW_ABI.releaseFunds,
-        JSON.stringify({ orderId: escrowId })
+        "releaseFunds",
+        [escrowId]
       );
 
       await supabase
@@ -392,8 +379,8 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════
     if (action === "refund") {
       const result = await sendContractCall(
-        ESCROW_ABI.refundBuyer,
-        JSON.stringify({ orderId: escrowId })
+        "refundBuyer",
+        [escrowId]
       );
 
       await supabase
@@ -431,12 +418,8 @@ Deno.serve(async (req) => {
       }
 
       const result = await sendContractCall(
-        ESCROW_ABI.splitPayout,
-        JSON.stringify({
-          orderId: escrowId,
-          buyerAmount: toContractUnits(buyerAmount).toString(),
-          vendorAmount: toContractUnits(vendorAmount).toString(),
-        })
+        "splitPayout",
+        [escrowId, toContractUnits(buyerAmount), toContractUnits(vendorAmount)]
       );
 
       // 1% fee from vendor's share
@@ -490,8 +473,8 @@ Deno.serve(async (req) => {
       }
 
       const result = await sendContractCall(
-        ESCROW_ABI.releaseMilestone,
-        JSON.stringify({ orderId: escrowId, milestoneIndex })
+        "releaseMilestone",
+        [escrowId, milestoneIndex]
       );
 
       // Update milestone in DB
@@ -633,8 +616,8 @@ Deno.serve(async (req) => {
       }
 
       const result = await sendContractCall(
-        ESCROW_ABI.refundMilestone,
-        JSON.stringify({ orderId: escrowId, milestoneIndex })
+        "refundMilestone",
+        [escrowId, milestoneIndex]
       );
 
       const { data: milestone } = await supabase
@@ -707,8 +690,8 @@ Deno.serve(async (req) => {
       const isBuyer = body.isBuyer ?? true;
 
       const result = await sendContractCall(
-        ESCROW_ABI.approveMilestone,
-        JSON.stringify({ orderId: escrowId, milestoneIndex, isBuyer })
+        "approveMilestone",
+        [escrowId, milestoneIndex, isBuyer]
       );
 
       return json({
