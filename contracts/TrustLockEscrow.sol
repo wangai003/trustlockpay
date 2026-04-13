@@ -305,7 +305,7 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
             });
         }
 
-        emit FundsLocked(orderId, token, buyer, vendor, amount, milestoneCount);
+        emit FundsLocked(orderId, token, buyer, vendor, amount, uint8(milestoneAmounts.length));
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -463,9 +463,11 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
 
         IERC20 stablecoin = IERC20(e.token);
 
-        // Fractionalized fee: 1% of total principal ÷ milestone count
+        // Fractionalized fee: 1% of total principal ÷ financial milestone count (amount > 0)
         uint256 totalEscrowFee = (e.totalPrincipal * ESCROW_RELEASE_FEE_BPS) / BPS;
-        uint256 fractionalFee = totalEscrowFee / uint256(e.milestoneCount);
+        uint256 financialCount = _countTotalFinancial(orderId, e);
+        require(financialCount > 0, "No financial milestones");
+        uint256 fractionalFee = totalEscrowFee / financialCount;
 
         // Remainder absorption: if this is the last financial milestone, absorb remainder
         uint256 releaseFee;
