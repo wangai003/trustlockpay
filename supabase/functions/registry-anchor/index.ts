@@ -98,9 +98,13 @@ const RECORD_TYPE_MAP: Record<string, number> = {
 // ═══════════════════════════════════════════════════════════
 //
 // Required secrets (add via Lovable secrets tool when ready):
-//   REGISTRY_CONTRACT_ADDRESS  — deployed TrustLockRegistry.sol address
-//   POLYGON_WALLET_PRIVATE_KEY — hot wallet private key for signing txs
-//   POLYGON_RPC_URL            — e.g. https://polygon-rpc.com or Alchemy/Infura
+//   REGISTRY_CONTRACT_ADDRESS    — deployed TrustLockRegistry.sol address
+//   POLYGON_RELAYER_PRIVATE_KEY  — hot wallet private key for registry anchoring
+//   POLYGON_RPC_URL              — e.g. https://polygon-rpc.com or Alchemy/Infura
+//
+// NOTE: This uses POLYGON_RELAYER_PRIVATE_KEY (separate from DEPLOYER_WALLET_PRIVATE_KEY
+// used by escrow-bridge). The relayer wallet is the operator on TrustLockRegistry,
+// while the deployer wallet is the operator on TrustLockEscrow.
 //
 // The anchorOnChain() function is called automatically when all three
 // secrets are present. Until then, records stay "queued" in the DB.
