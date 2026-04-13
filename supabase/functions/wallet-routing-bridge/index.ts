@@ -78,13 +78,24 @@ async function transferOnChain(
   memo: string
 ): Promise<{ txHash: string; status: string }> {
   const privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
-  if (!privateKey) {
-    console.warn(`Wallet routing queued (no deployer key): ${memo}`);
+  const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
+
+  if (!privateKey || !rpcUrl) {
+    console.warn(`[wallet-routing] Queued (missing deployer key or RPC URL): ${memo}`);
     return {
       txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       status: "queued",
     };
   }
+
+  // TODO: Wire live ERC-20 transfer via ethers.js when contracts are deployed
+  // Implementation requires:
+  // 1. Create ethers.JsonRpcProvider with rpcUrl
+  // 2. Create ethers.Wallet with privateKey
+  // 3. Create IERC20 contract instance for the token address
+  // 4. Call contract.transfer(toWallet, toContractUnits(amount))
+  // 5. Wait for confirmation and return receipt.hash
+  console.warn(`[wallet-routing] Deployer key present but live transfers not yet wired: ${memo}`);
   return {
     txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     status: "queued",

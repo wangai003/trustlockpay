@@ -556,6 +556,17 @@ contract TrustLockEscrow is Ownable, ReentrancyGuard {
         return count;
     }
 
+    /// @dev Count total financial milestones (amount > 0) for fee division
+    function _countTotalFinancial(bytes32 orderId, EscrowRecord storage e) internal view returns (uint256 count) {
+        count = 0;
+        for (uint256 i = 0; i < e.milestoneCount; i++) {
+            if (milestones[orderId][i].amount > 0) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     // ═══════════════════════════════════════════════════════════
     //  AUTO-RELEASE (batch — adaptive timeout)
     // ═══════════════════════════════════════════════════════════
