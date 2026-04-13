@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       return json({ error: "Transaction not found" }, 404);
     }
 
-    const escrowId = await txToEscrowId(tx.tx_id);
+    const escrowId = txToEscrowId(tx.tx_id);
     const contractUnits = toContractUnits(tx.amount);
 
     // Resolve token address from transaction payment method
