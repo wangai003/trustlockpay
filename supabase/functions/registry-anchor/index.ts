@@ -169,9 +169,10 @@ async function sendPolygonTx(
   recordType: number
 ): Promise<{ txHash: string } | { error: string }> {
   try {
+    const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
     const provider = new ethers.JsonRpcProvider(config.rpcUrl, {
       name: "polygon",
-      chainId: 137,
+      chainId,
     });
     const wallet = new ethers.Wallet(config.privateKey, provider);
     const contract = new ethers.Contract(config.contractAddress, REGISTRY_ABI, wallet);
@@ -353,9 +354,10 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const batchChainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
         const provider = new ethers.JsonRpcProvider(polygonConfig.rpcUrl, {
           name: "polygon",
-          chainId: 137,
+          chainId: batchChainId,
         });
         const wallet = new ethers.Wallet(polygonConfig.privateKey, provider);
         const contract = new ethers.Contract(polygonConfig.contractAddress, REGISTRY_ABI, wallet);
