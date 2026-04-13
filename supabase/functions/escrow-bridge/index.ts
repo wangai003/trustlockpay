@@ -533,13 +533,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ── Fractionalized escrow fee: 1% ÷ total milestones ──
-      const { count: totalMilestoneCount } = await supabase
+      // ── Fractionalized escrow fee: 1% ÷ financial milestones only (amount > 0) ──
+      // This matches the contract's _countTotalFinancial() which skips $0 checkpoints
+      const { data: allMilestones } = await supabase
         .from("transaction_milestones")
-        .select("id", { count: "exact", head: true })
+        .select("id, amount")
         .eq("transaction_id", transactionId);
 
-      const msCount = totalMilestoneCount || 1;
+      const financialMilestoneCount = (allMilestones || []).filter(
+        (m: Record<string, unknown>) => Number(m.amount) > 0
+      ).length;
+      const msCount = financialMilestoneCount || 1;
       const totalEscrowFee = Math.round(tx.amount * 0.01 * 100) / 100;
       const fractionalFee = Math.round((totalEscrowFee / msCount) * 100) / 100;
 
