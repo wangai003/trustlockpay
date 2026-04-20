@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound, Rocket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,7 @@ const allNavGroups: SidebarNavGroup[] = [
       { label: "Training Manual", icon: BookOpen, to: "/trustlock/admin/training-manual", tip: "Operations guide for admin staff", moduleKey: "training" },
       { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", moduleKey: "documents" },
       { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings" },
+      { label: "Deploy Contracts", icon: Rocket, to: "/trustlock/admin/deploy-contracts", tip: "Deploy escrow & registry smart contracts to Polygon", moduleKey: "deploy-contracts" },
     ],
   },
 ];
