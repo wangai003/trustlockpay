@@ -1,9 +1,9 @@
 // Deploy TrustLock smart contracts to Polygon Amoy or Mainnet
 // Order: MinimalForwarder → TrustLockRegistry → TrustLockEscrow
-import { corsHeaders } from "@supabase/supabase-js/cors";
-import { createClient } from "@supabase/supabase-js";
-import { ethers } from "npm:ethers@6.13.4";
-import solc from "npm:solc@0.8.24";
+import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.45.4/cors";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { ethers } from "https://esm.sh/ethers@6.13.4";
+import solc from "https://esm.sh/solc@0.8.24";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
