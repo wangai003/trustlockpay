@@ -29,6 +29,7 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminDeployContracts = lazy(() => import("./pages/admin/AdminDeployContracts"));
 
 const AdminWorkflow = lazy(() => import("./pages/admin/AdminWorkflow"));
 const AdminStaffWorkflow = lazy(() => import("./pages/admin/AdminStaffWorkflow"));
@@ -210,6 +211,7 @@ const App = () => (
                 <Route path="platform-analytics" element={<AdminPlatformAnalytics />} />
                 <Route path="lender-kyb" element={<AdminLenderKYB />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="deploy-contracts" element={<AdminDeployContracts />} />
               </Route>
 
               {/* Vendor Dashboard */}

@@ -1356,6 +1356,68 @@ export type Database = {
         }
         Relationships: []
       }
+      deployment_history: {
+        Row: {
+          block_number: number | null
+          constructor_args: Json | null
+          contract_address: string
+          contract_name: string
+          created_at: string
+          deployer_address: string
+          gas_used: string | null
+          id: string
+          initiated_by_admin_id: string | null
+          metadata: Json | null
+          network: string
+          status: string
+          tx_hash: string
+          verification_status: string | null
+          verification_url: string | null
+        }
+        Insert: {
+          block_number?: number | null
+          constructor_args?: Json | null
+          contract_address: string
+          contract_name: string
+          created_at?: string
+          deployer_address: string
+          gas_used?: string | null
+          id?: string
+          initiated_by_admin_id?: string | null
+          metadata?: Json | null
+          network: string
+          status?: string
+          tx_hash: string
+          verification_status?: string | null
+          verification_url?: string | null
+        }
+        Update: {
+          block_number?: number | null
+          constructor_args?: Json | null
+          contract_address?: string
+          contract_name?: string
+          created_at?: string
+          deployer_address?: string
+          gas_used?: string | null
+          id?: string
+          initiated_by_admin_id?: string | null
+          metadata?: Json | null
+          network?: string
+          status?: string
+          tx_hash?: string
+          verification_status?: string | null
+          verification_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_history_initiated_by_admin_id_fkey"
+            columns: ["initiated_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispute_evidence: {
         Row: {
           created_at: string
