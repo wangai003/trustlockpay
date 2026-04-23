@@ -1,1 +1,4 @@
 project_id = "dbajucxswcgxllmwxnia"
+
+[functions.export-deploy-secrets]
+verify_jwt = false
