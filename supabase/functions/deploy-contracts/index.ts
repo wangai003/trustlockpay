@@ -63,46 +63,54 @@ async function fetchProjectContract(filename: string): Promise<string> {
   throw new Error(`Cannot load ${filename} — upload contracts to Storage bucket 'contracts' first`);
 }
 
-async function importResolver(importPath: string): Promise<{ contents: string }> {
-  if (importPath.startsWith("@openzeppelin/contracts/")) {
-    const sub = importPath.replace("@openzeppelin/contracts/", "");
-    return { contents: await loadOZSource(sub) };
-  }
-  throw new Error(`Cannot resolve import: ${importPath}`);
-}
-
 async function compileAll(sources: Record<string, string>) {
-  const input = {
-    language: "Solidity",
-    sources: Object.fromEntries(
-      Object.entries(sources).map(([n, c]) => [n, { content: c }])
-    ),
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
-      outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
-      evmVersion: "paris",
-    },
-  };
-
-  // Async import resolver
+  // Pre-fetch ALL transitive @openzeppelin imports recursively
   const imports: Record<string, string> = {};
-  async function resolveImports(src: string) {
-    const re = /import\s+["']([^"']+)["']/g;
+
+  async function fetchAndScan(ozPath: string) {
+    if (imports[`@openzeppelin/contracts/${ozPath}`]) return;
+    const contents = await loadOZSource(ozPath);
+    imports[`@openzeppelin/contracts/${ozPath}`] = contents;
+
+    // Find imports inside this file and resolve them relative to ozPath
+    const re = /import\s+(?:\{[^}]*\}\s+from\s+)?["']([^"']+)["']/g;
+    const dir = ozPath.includes("/") ? ozPath.substring(0, ozPath.lastIndexOf("/")) : "";
+    let m;
+    const promises: Promise<void>[] = [];
+    while ((m = re.exec(contents)) !== null) {
+      const imp = m[1];
+      let resolved: string | null = null;
+      if (imp.startsWith("@openzeppelin/contracts/")) {
+        resolved = imp.replace("@openzeppelin/contracts/", "");
+      } else if (imp.startsWith("./") || imp.startsWith("../")) {
+        // Resolve relative path against current dir
+        const parts = (dir ? dir.split("/") : []);
+        for (const seg of imp.split("/")) {
+          if (seg === "." || seg === "") continue;
+          if (seg === "..") parts.pop();
+          else parts.push(seg);
+        }
+        resolved = parts.join("/");
+      }
+      if (resolved) promises.push(fetchAndScan(resolved));
+    }
+    await Promise.all(promises);
+  }
+
+  // Scan top-level user sources for @openzeppelin imports
+  for (const src of Object.values(sources)) {
+    const re = /import\s+(?:\{[^}]*\}\s+from\s+)?["']([^"']+)["']/g;
     let m;
     while ((m = re.exec(src)) !== null) {
-      const p = m[1];
-      if (!imports[p] && p.startsWith("@openzeppelin/")) {
-        const r = await importResolver(p);
-        imports[p] = r.contents;
-        await resolveImports(r.contents);
+      if (m[1].startsWith("@openzeppelin/contracts/")) {
+        await fetchAndScan(m[1].replace("@openzeppelin/contracts/", ""));
       }
     }
   }
-  for (const s of Object.values(sources)) await resolveImports(s);
 
   const findImports = (path: string) => {
     if (imports[path]) return { contents: imports[path] };
-    return { error: "File not found" };
+    return { error: "File not found: " + path };
   };
 
   const output = JSON.parse(
