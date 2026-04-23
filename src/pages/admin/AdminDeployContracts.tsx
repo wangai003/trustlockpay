@@ -206,6 +206,12 @@ export default function AdminDeployContracts() {
               <><Rocket className="mr-2 h-4 w-4" /> Deploy to {network === "polygon" ? "Mainnet" : "Amoy Testnet"}</>
             )}
           </Button>
+          {deploying && compileStatus && (
+            <p className="text-xs text-muted-foreground text-center mt-2 flex items-center justify-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {compileStatus}
+            </p>
+          )}
         </CardContent>
       </Card>
 
