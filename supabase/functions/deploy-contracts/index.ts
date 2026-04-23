@@ -113,6 +113,18 @@ async function compileAll(sources: Record<string, string>) {
     return { error: "File not found: " + path };
   };
 
+  const input = {
+    language: "Solidity",
+    sources: Object.fromEntries(
+      Object.entries(sources).map(([n, c]) => [n, { content: c }])
+    ),
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+      outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
+      evmVersion: "paris",
+    },
+  };
+
   const output = JSON.parse(
     solc.compile(JSON.stringify(input), { import: findImports })
   );
