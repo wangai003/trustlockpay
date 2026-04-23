@@ -1,14 +1,14 @@
 // Browser-side Solidity compiler using solc-js loaded from CDN.
-// Compiles in the main thread (acceptable for one-off admin deploys).
-// Recursively resolves @openzeppelin imports from jsdelivr.
+// Uses an asm.js soljson build to avoid WASM main-thread limits,
+// and waits for Module to be fully initialized before wrapping.
 
 declare global {
   interface Window {
     Module?: any;
-    soljson?: any;
   }
 }
 
+// Use a soljson build. We must wait for runtime initialization before wrapping.
 const SOLC_CDN = "https://binaries.soliditylang.org/bin/soljson-v0.8.24+commit.e11b9ed9.js";
 const OZ_VERSION = "5.0.2";
 
@@ -17,7 +17,15 @@ let solcPromise: Promise<any> | null = null;
 async function loadSolc(): Promise<any> {
   if (solcPromise) return solcPromise;
   solcPromise = (async () => {
-    // Load soljson UMD into global scope
+    // Pre-seed Module so soljson attaches to it and we can await runtime init.
+    const moduleReady = new Promise<any>((resolve) => {
+      (window as any).Module = {
+        onRuntimeInitialized() {
+          resolve((window as any).Module);
+        },
+      };
+    });
+
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
       script.src = SOLC_CDN;
@@ -25,12 +33,20 @@ async function loadSolc(): Promise<any> {
       script.onerror = () => reject(new Error("Failed to load solc compiler"));
       document.head.appendChild(script);
     });
-    // solc-js wrapper from CDN as ESM
+
+    // Wait until WASM/asm runtime finishes initializing (cwrap becomes available).
+    const Module = await Promise.race([
+      moduleReady,
+      new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error("solc runtime init timeout (60s)")), 60000)
+      ),
+    ]);
+
     const wrapperUrl = "https://esm.sh/solc@0.8.24/wrapper.js";
-    // @ts-ignore - dynamic remote import
+    // @ts-ignore - dynamic remote import not resolvable at build time
     const wrapperMod: any = await import(/* @vite-ignore */ wrapperUrl);
     const wrapper = wrapperMod.default || wrapperMod;
-    return wrapper((window as any).Module);
+    return wrapper(Module);
   })();
   return solcPromise;
 }
