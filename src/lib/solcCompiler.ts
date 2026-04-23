@@ -42,7 +42,9 @@ async function loadSolc(): Promise<any> {
       ),
     ]);
 
-    const wrapperMod: any = await import(/* @vite-ignore */ "https://esm.sh/solc@0.8.24/wrapper.js");
+    const wrapperUrl = "https://esm.sh/solc@0.8.24/wrapper.js";
+    // @ts-ignore - dynamic remote import not resolvable at build time
+    const wrapperMod: any = await import(/* @vite-ignore */ wrapperUrl);
     const wrapper = wrapperMod.default || wrapperMod;
     return wrapper(Module);
   })();
