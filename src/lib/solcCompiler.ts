@@ -26,7 +26,9 @@ async function loadSolc(): Promise<any> {
       document.head.appendChild(script);
     });
     // solc-js wrapper from CDN as ESM
-    const wrapperMod: any = await import(/* @vite-ignore */ "https://esm.sh/solc@0.8.24/wrapper.js");
+    const wrapperUrl = "https://esm.sh/solc@0.8.24/wrapper.js";
+    // @ts-ignore - dynamic remote import
+    const wrapperMod: any = await import(/* @vite-ignore */ wrapperUrl);
     const wrapper = wrapperMod.default || wrapperMod;
     return wrapper((window as any).Module);
   })();
