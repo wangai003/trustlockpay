@@ -78,18 +78,34 @@ export default function AdminDeployContracts() {
 
       const adminAuth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
 
-      toast.info(`Compiling & deploying to ${network === "polygon" ? "Polygon Mainnet" : "Amoy Testnet"}…`, {
-        description: "This takes 30–90 seconds. Do not close this page.",
+      toast.info("Compiling contracts in your browser…", {
+        description: "First compile downloads ~10MB compiler. 30–60 seconds.",
+      });
+
+      const compiled = await compileContracts({
+        "MinimalForwarder.sol": FORWARDER_SRC,
+        "TrustLockEscrow.sol": escrow,
+        "TrustLockRegistry.sol": registry,
+      });
+
+      const artifacts = {
+        forwarder: compiled["MinimalForwarder.sol"]?.["TrustLockForwarder"],
+        registry: compiled["TrustLockRegistry.sol"]?.["TrustLockRegistry"],
+        escrow: compiled["TrustLockEscrow.sol"]?.["TrustLockEscrow"],
+      };
+      if (!artifacts.forwarder || !artifacts.registry || !artifacts.escrow) {
+        throw new Error("Compilation succeeded but expected contracts not found in output");
+      }
+
+      toast.info(`Deploying to ${network === "polygon" ? "Polygon Mainnet" : "Amoy Testnet"}…`, {
+        description: "Broadcasting 3 transactions. 30–90 seconds.",
       });
 
       const { data, error } = await supabase.functions.invoke("deploy-contracts", {
         body: {
           network,
           admin_id: adminAuth.adminId ?? null,
-          sources: {
-            "TrustLockEscrow.sol": escrow,
-            "TrustLockRegistry.sol": registry,
-          },
+          artifacts,
         },
       });
 
