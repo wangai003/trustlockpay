@@ -40,6 +40,7 @@ export default function AdminDeployContracts() {
   const [history, setHistory] = useState<Deployment[]>([]);
   const [latest, setLatest] = useState<any>(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [compileStatus, setCompileStatus] = useState<string>("");
 
   async function loadHistory() {
     setLoadingHistory(true);
@@ -82,11 +83,24 @@ export default function AdminDeployContracts() {
         description: "First compile downloads ~10MB compiler. 30–60 seconds.",
       });
 
-      const compiled = await compileContracts({
-        "MinimalForwarder.sol": FORWARDER_SRC,
-        "TrustLockEscrow.sol": escrow,
-        "TrustLockRegistry.sol": registry,
-      });
+      const compiled = await compileContracts(
+        {
+          "MinimalForwarder.sol": FORWARDER_SRC,
+          "TrustLockEscrow.sol": escrow,
+          "TrustLockRegistry.sol": registry,
+        },
+        (p) => {
+          const label =
+            p.phase === "loading-compiler" ? "Loading compiler" :
+            p.phase === "downloading" ? `Downloading ${p.detail || "compiler"}${p.pct ? ` ${p.pct}%` : "…"}` :
+            p.phase === "initializing" ? `Initializing — ${p.detail || ""}` :
+            p.phase === "fetching-imports" ? (p.detail || "Resolving imports…") :
+            p.phase === "compiling" ? (p.detail || "Compiling…") :
+            p.phase;
+          setCompileStatus(label);
+        }
+      );
+      setCompileStatus("");
 
       const artifacts = {
         forwarder: compiled["MinimalForwarder.sol"]?.["TrustLockForwarder"],
@@ -120,6 +134,7 @@ export default function AdminDeployContracts() {
       toast.error("Deployment failed", { description: e.message });
     } finally {
       setDeploying(false);
+      setCompileStatus("");
     }
   }
 
@@ -191,6 +206,12 @@ export default function AdminDeployContracts() {
               <><Rocket className="mr-2 h-4 w-4" /> Deploy to {network === "polygon" ? "Mainnet" : "Amoy Testnet"}</>
             )}
           </Button>
+          {deploying && compileStatus && (
+            <p className="text-xs text-muted-foreground text-center mt-2 flex items-center justify-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {compileStatus}
+            </p>
+          )}
         </CardContent>
       </Card>
 
