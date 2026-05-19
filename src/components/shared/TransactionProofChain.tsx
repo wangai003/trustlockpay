@@ -196,7 +196,7 @@ const TransactionProofChain = ({ transactionId, className, compact = false }: Tr
 
                           {proof.polygon_tx_hash && (
                             <a
-                              href={`https://polygonscan.com/tx/${proof.polygon_tx_hash}`}
+                              href={explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
