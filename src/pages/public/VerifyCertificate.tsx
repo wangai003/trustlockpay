@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, CheckCircle, AlertTriangle, Clock, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { explorerTxUrl, explorerName } from "@/lib/polygonExplorer";
 
 interface CertificateData {
   id: string;
