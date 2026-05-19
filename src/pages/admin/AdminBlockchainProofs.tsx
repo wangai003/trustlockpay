@@ -294,7 +294,7 @@ function ProofTable({ proofs, truncateHash, copyHash }: { proofs: ProofRecord[];
                 </TableCell>
                 <TableCell>
                   {p.polygon_tx_hash && (
-                    <a href={`https://polygonscan.com/tx/${p.polygon_tx_hash}`} target="_blank" rel="noopener noreferrer">
+                    <a href={explorerTxUrl(p.polygon_tx_hash, (p as any).network)} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-4 h-4 text-primary" />
                     </a>
                   )}
