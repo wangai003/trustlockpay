@@ -91,20 +91,39 @@ function getAdminAuth() {
   } catch { return {}; }
 }
 
+// CHIEF-ONLY modules — never exposed to non-chief admins regardless of department.
+// Defense-in-depth: server-side handlers must also reject non-chief callers.
+const CHIEF_ONLY_MODULES = new Set([
+  "accountability",   // Staff Manager, chief overrides, action log
+  "settings",         // Platform configuration
+  "deploy-contracts", // Polygon mainnet contract deployment
+]);
+
 function getAccessibleModules(): string[] | null {
   const auth = getAdminAuth();
   const deptSlug = auth.departmentSlug;
   if (auth.isChief === true) return null;
   if (deptSlug) {
     const ACCESS_MAP: Record<string, string[]> = {
-      executive: [],
+      // Executive department = full operational access (still NOT chief-only modules)
+      executive: [
+        "overview", "transactions", "workflow", "staff-workflow", "staff", "platforms",
+        "vendors", "buyers", "compliance", "sandbox",
+        "finance", "payout", "tax", "gas",
+        "disputes", "audit", "blockchain",
+        "emmanuel", "analytics", "reports", "industry",
+        "team-chat", "messages", "staff-dms",
+        "documents", "training",
+      ],
       correspondence: ["overview", "messages", "team-chat", "staff-dms", "vendors", "buyers", "training", "emmanuel"],
       disputes: ["overview", "disputes", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       finance: ["overview", "transactions", "finance", "payout", "tax", "gas", "analytics", "team-chat", "staff-dms", "training", "emmanuel"],
       compliance: ["overview", "compliance", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       operations: ["overview", "transactions", "workflow", "vendors", "buyers", "platforms", "blockchain", "industry", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
     };
-    return ACCESS_MAP[deptSlug] || ["overview", "emmanuel", "team-chat", "staff-dms", "training"];
+    const base = ACCESS_MAP[deptSlug] || ["overview", "emmanuel", "team-chat", "staff-dms", "training"];
+    // Strip any chief-only modules that may have slipped into a dept allow-list
+    return base.filter((m) => !CHIEF_ONLY_MODULES.has(m));
   }
   return ["overview", "emmanuel", "team-chat", "staff-dms", "training"];
 }
