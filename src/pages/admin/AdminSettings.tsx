@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Bell, Globe, Lock, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveAdminSettings, useAdminSettings } from "@/hooks/useBackendSync";
+import ChiefOnlyGate from "@/components/admin/ChiefOnlyGate";
 
 const adminNotifKeys = [
   { key: "new_dispute", label: "New dispute filed" },
