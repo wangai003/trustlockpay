@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Download, Loader2, CheckCircle2, FileText, Hash } from "lucide-react";
 import { toast } from "sonner";
+import { explorerTxUrl } from "@/lib/polygonExplorer";
 
 const RECORD_LABELS: Record<string, string> = {
   invoice: "Invoice",
