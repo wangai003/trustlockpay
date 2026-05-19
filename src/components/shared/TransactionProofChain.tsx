@@ -233,7 +233,7 @@ const TransactionProofChain = ({ transactionId, className, compact = false }: Tr
                             <div className="col-span-2">
                               <span className="text-muted-foreground">Polygon TX:</span>
                               <a
-                                href={`https://polygonscan.com/tx/${proof.polygon_tx_hash}`}
+                                href={explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="ml-1 font-mono text-primary underline break-all"
