@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, CheckCircle, AlertTriangle, Clock, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { explorerTxUrl, explorerName } from "@/lib/polygonExplorer";
 
 interface CertificateData {
   id: string;
@@ -108,12 +109,12 @@ const VerifyCertificate = () => {
                 <div className="pt-3 border-t border-border">
                   <p className="text-xs font-semibold text-muted-foreground mb-1">BLOCKCHAIN PROOF</p>
                   <a
-                    href={`https://polygonscan.com/tx/${meta.blockchain_tx_hash}`}
+                    href={explorerTxUrl(meta.blockchain_tx_hash, (meta as any).network)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline flex items-center gap-1"
                   >
-                    View on Polygonscan <ExternalLink className="h-3 w-3" />
+                    View on {explorerName((meta as any).network)} <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               )}

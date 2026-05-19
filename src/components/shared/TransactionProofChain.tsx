@@ -12,6 +12,7 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { explorerTxUrl } from "@/lib/polygonExplorer";
 
 // ─── Record type visual config ────────────────────────────
 const RECORD_CONFIG: Record<string, { label: string; icon: typeof Shield; color: string }> = {
@@ -195,7 +196,7 @@ const TransactionProofChain = ({ transactionId, className, compact = false }: Tr
 
                           {proof.polygon_tx_hash && (
                             <a
-                              href={`https://polygonscan.com/tx/${proof.polygon_tx_hash}`}
+                              href={explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -232,7 +233,7 @@ const TransactionProofChain = ({ transactionId, className, compact = false }: Tr
                             <div className="col-span-2">
                               <span className="text-muted-foreground">Polygon TX:</span>
                               <a
-                                href={`https://polygonscan.com/tx/${proof.polygon_tx_hash}`}
+                                href={explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="ml-1 font-mono text-primary underline break-all"

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Download, Loader2, CheckCircle2, FileText, Hash } from "lucide-react";
 import { toast } from "sonner";
+import { explorerTxUrl } from "@/lib/polygonExplorer";
 
 const RECORD_LABELS: Record<string, string> = {
   invoice: "Invoice",
@@ -79,7 +80,7 @@ const ProofCertificate = ({ transactionId, orderNumber, className }: ProofCertif
         lines.push(`  Timestamp:     ${proof.created_at}`);
         if (proof.polygon_tx_hash) {
           lines.push(`  Polygon TX:    ${proof.polygon_tx_hash}`);
-          lines.push(`  Verify:        https://polygonscan.com/tx/${proof.polygon_tx_hash}`);
+          lines.push(`  Verify:        ${explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}`);
         }
         if (proof.event_data && Object.keys(proof.event_data).length > 0) {
           lines.push(`  Event Data:`);

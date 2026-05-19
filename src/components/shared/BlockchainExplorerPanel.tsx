@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { explorerTxUrl, explorerName } from "@/lib/polygonExplorer";
 
 const RECORD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   invoice: { label: "Invoice", color: "bg-blue-500/20 text-blue-400" },
@@ -582,13 +583,13 @@ function ProofDetail({ proof, onBack, copyHash, truncate, onNavigateToSource }: 
       {/* PolygonScan Link */}
       {proof.polygon_tx_hash && (
         <a
-          href={`https://polygonscan.com/tx/${proof.polygon_tx_hash}`}
+          href={explorerTxUrl(proof.polygon_tx_hash, (proof as any).network)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-sm text-primary hover:underline"
         >
           <ExternalLink className="w-4 h-4" />
-          View on PolygonScan →
+          View on {explorerName((proof as any).network)} →
         </a>
       )}
 

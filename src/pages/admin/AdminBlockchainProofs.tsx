@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Search, CheckCircle2, XCircle, Link2, Hash, Clock, FileText, AlertTriangle, Copy, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { explorerTxUrl } from "@/lib/polygonExplorer";
 
 const RECORD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   invoice: { label: "Invoice", color: "bg-blue-500/20 text-blue-400" },
@@ -293,7 +294,7 @@ function ProofTable({ proofs, truncateHash, copyHash }: { proofs: ProofRecord[];
                 </TableCell>
                 <TableCell>
                   {p.polygon_tx_hash && (
-                    <a href={`https://polygonscan.com/tx/${p.polygon_tx_hash}`} target="_blank" rel="noopener noreferrer">
+                    <a href={explorerTxUrl(p.polygon_tx_hash, (p as any).network)} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-4 h-4 text-primary" />
                     </a>
                   )}
