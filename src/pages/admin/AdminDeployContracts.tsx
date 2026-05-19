@@ -295,5 +295,6 @@ export default function AdminDeployContracts() {
         </CardContent>
       </Card>
     </div>
+    </ChiefOnlyGate>
   );
 }
