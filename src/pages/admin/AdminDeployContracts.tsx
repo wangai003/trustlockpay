@@ -8,6 +8,7 @@ import { Loader2, CheckCircle2, AlertTriangle, ExternalLink, Rocket, ShieldCheck
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compileContracts } from "@/lib/solcCompiler";
+import ChiefOnlyGate from "@/components/admin/ChiefOnlyGate";
 
 // Inline contract sources — fetched from /contracts at request time via raw URLs
 // NOTE: For Lovable preview we read them from the same origin's published static files.
