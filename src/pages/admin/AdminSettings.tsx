@@ -34,6 +34,7 @@ const AdminSettings = () => {
     saveSettings.mutateAsync({ notifPrefs });
   };
   return (
+    <ChiefOnlyGate pageName="Platform Settings">
     <div>
       <AdminHeader title="Settings" />
       <div className="p-6 space-y-6 max-w-4xl">
