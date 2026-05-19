@@ -206,40 +206,36 @@ const AdminLogin = () => {
                 </>
               ) : (
                 <>
-                  {/* MAINNET: Swapped order — Password FIRST, Email/Username SECOND — labels hidden */}
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="flex items-center gap-1.5 h-5">
-                      {passwordValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="identifier" className="flex items-center gap-1.5 h-5">
-                      {identifierValid && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
-                    </Label>
-                    <Input
-                      id="identifier"
-                      type="text"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder=""
-                    />
-                  </div>
+              {/* MAINNET: Normal order — Email/Username first, Password second */}
+              <div className="space-y-2">
+                <Label htmlFor="identifier">Email / Username</Label>
+                <Input
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Enter your email or username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
                 </>
               )}
 
