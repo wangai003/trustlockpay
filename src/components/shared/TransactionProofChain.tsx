@@ -12,6 +12,7 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { explorerTxUrl } from "@/lib/polygonExplorer";
 
 // ─── Record type visual config ────────────────────────────
 const RECORD_CONFIG: Record<string, { label: string; icon: typeof Shield; color: string }> = {
