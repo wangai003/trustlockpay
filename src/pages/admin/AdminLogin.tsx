@@ -206,26 +206,24 @@ const AdminLogin = () => {
                 </>
               ) : (
                 <>
-              {/* MAINNET: Normal order — Email/Username first, Password second */}
-              <div className="space-y-2">
-                <Label htmlFor="identifier">Email / Username</Label>
+              {/* MAINNET: No labels — Email/Username first, Password second */}
+              <div>
                 <Input
                   id="identifier"
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your email or username"
+                  aria-label="Email or Username"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    aria-label="Password"
                   />
                   <button
                     type="button"
