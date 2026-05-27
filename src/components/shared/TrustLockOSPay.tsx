@@ -117,8 +117,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
       return "card";
     }
     if (cat === "card") return "card";
-    // Transak-routed providers
+    // Transak / Thirdweb-routed providers
     if (proc === "transak") return "transak";
+    if (proc === "thirdweb") return "thirdweb";
     return "card";
   }, [selectedProvider]);
 
