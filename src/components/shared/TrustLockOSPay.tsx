@@ -614,6 +614,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 : method === "azix" ? "Crypto (USDC/USDT)"
                 : method === "coinbase" ? "Coinbase"
                 : method === "transak" ? "Transak"
+                : method === "thirdweb" ? "Thirdweb Pay"
                 : method === "applepay" ? "Apple Pay / Google Pay"
                 : "Card"
               }
