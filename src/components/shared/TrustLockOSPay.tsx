@@ -479,7 +479,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
         } else if (procResult?.clientSecret) {
           toast.success("Payment intent created — complete checkout in Stripe widget");
         } else if (procResult?.widgetConfig) {
-          toast.success("Transak widget ready — complete payment in the popup");
+          const procName = processorId === "thirdweb" ? "Thirdweb Pay" : "Transak";
+          toast.success(`${procName} widget ready — complete payment in the popup`);
         } else {
           toast.success(`✅ Payment of $${amount} initiated via ${processorId}`);
         }
