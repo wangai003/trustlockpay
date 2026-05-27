@@ -338,13 +338,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
   // Map UI payment method → processor ID for API routing (prefer selectedProvider.processor)
-  const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "direct" => {
+  const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "thirdweb" | "direct" => {
     if (selectedProvider?.processor) {
-      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "direct";
+      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "thirdweb" | "direct";
     }
     if (m === "azix") return "direct";
     if (m === "coinbase") return "coinbase";
     if (m === "transak") return "transak";
+    if (m === "thirdweb") return "thirdweb";
     if (m === "paypal") return "stripe";
     if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak";
     if (m === "bank_transfer") return payMode === "local" ? "coinbase" : "stripe";
