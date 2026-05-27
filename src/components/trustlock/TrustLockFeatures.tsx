@@ -16,7 +16,7 @@ const features = [
   {
     icon: Globe,
     title: "Multi-Currency Support",
-    desc: "Accept payments in USD, EUR, GBP and settle in local African currencies via Coinbase, Stripe & Transak.",
+    desc: "Accept payments in USD, EUR, GBP and settle in local African currencies via Coinbase, Stripe, Transak & Thirdweb Pay.",
   },
   {
     icon: Banknote,
