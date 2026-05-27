@@ -1,4 +1,4 @@
-// Payment provider registry — 3 active processors: Stripe, Coinbase, Transak + Direct
+// Payment provider registry — 4 active processors: Stripe, Coinbase, Transak, Thirdweb Pay + Direct
 // Covers international and local payment methods with dynamic cost-optimized routing
 
 import { type ProcessorId, getEligibleProcessors, type PaymentMethod } from "./feeEngine";
@@ -158,6 +158,16 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "account_number", label: "Account Number", placeholder: "1234567890", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_pay",
+    name: "Thirdweb Pay",
+    category: "crypto_wallet",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Receiving Wallet (Polygon)", placeholder: "0x... (optional — escrow wallet used by default)", type: "text", required: false },
+    ],
+  },
 ];
 
 // ─── BUILD LOCAL PROVIDERS FROM COUNTRY DATA ───────────────
@@ -231,6 +241,16 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     processor: "direct",
     fields: [
       { key: "wallet_address", label: "Wallet Address (Polygon)", placeholder: "0x...", type: "text", required: true },
+    ],
+  },
+  {
+    id: "thirdweb_pay_local",
+    name: "Thirdweb Pay (Card / Bank / Mobile Money → USDC)",
+    category: "crypto_wallet",
+    mode: "local",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Receiving Wallet (Polygon)", placeholder: "0x... (optional — escrow wallet used by default)", type: "text", required: false },
     ],
   },
   {
@@ -312,7 +332,7 @@ export const SUPPORTED_COUNTRIES = [
   "Gabon", "Mauritius", "Namibia", "Tunisia",
 ];
 
-export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
+export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak, Thirdweb Pay) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
 
 export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.5%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (1.0%) pre-paid at checkout and held with your escrow funds — fully refunded on cancellation before work begins. No TrustLock service fees are charged on refunds.
 

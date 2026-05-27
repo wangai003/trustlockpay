@@ -566,7 +566,7 @@ export function useProcessPayment() {
       splitRecipient?: string;
       splitPercentage?: string;
       // Processor routing params (triggers real API flow)
-      processor?: "stripe" | "coinbase" | "transak" | "direct";
+      processor?: "stripe" | "coinbase" | "transak" | "thirdweb" | "direct";
       direction?: "onramp" | "offramp";
       currency?: string;
       walletAddress?: string;

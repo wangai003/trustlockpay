@@ -30,7 +30,7 @@ export interface TravelRuleData {
   beneficiary_institution?: string;
 }
 
-const CRYPTO_METHODS = ["azix", "crypto", "coinbase", "transak"];
+const CRYPTO_METHODS = ["azix", "crypto", "coinbase", "transak", "thirdweb"];
 const TRAVEL_RULE_THRESHOLD = 1000;
 
 export const isTravelRuleRequired = (amount: number, method: string): boolean =>

@@ -69,7 +69,7 @@ const PrivacyPolicy = () => (
       <p>We do not sell your personal data. We share data only with:</p>
       <ul>
         <li><strong>Transaction counterparties:</strong> Buyer/vendor names and order details necessary for completing escrow transactions</li>
-        <li><strong>Payment processors:</strong> Stripe, Coinbase Commerce, and Transak for payment processing</li>
+        <li><strong>Payment processors:</strong> Stripe, Coinbase Commerce, Transak, and Thirdweb Pay for payment processing</li>
         <li><strong>Infrastructure providers:</strong> Cloud hosting and database services for platform operation</li>
         <li><strong>Regulatory authorities:</strong> When required by law (e.g., Suspicious Activity Reports)</li>
         <li><strong>Auditors:</strong> Limited, time-bound access for compliance audits (password-protected sessions)</li>

@@ -42,7 +42,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { GLOBAL_CURRENCIES, RATE_LOCK_DURATION_MS, getCurrencyForCountry, type CurrencyInfo } from "@/lib/globalCurrencies";
 
-type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "paypal" | null;
+type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "thirdweb" | "paypal" | null;
 type AdminAction = "refund" | "split" | null;
 type PayMode = "local" | "diaspora";
 
@@ -117,8 +117,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
       return "card";
     }
     if (cat === "card") return "card";
-    // Transak-routed providers
+    // Transak / Thirdweb-routed providers
     if (proc === "transak") return "transak";
+    if (proc === "thirdweb") return "thirdweb";
     return "card";
   }, [selectedProvider]);
 
@@ -337,13 +338,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const mobileList = COUNTRY_MOBILE[selectedCountry] || [];
 
   // Map UI payment method → processor ID for API routing (prefer selectedProvider.processor)
-  const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "direct" => {
+  const getProcessorForMethod = (m: PaymentMethod): "stripe" | "coinbase" | "transak" | "thirdweb" | "direct" => {
     if (selectedProvider?.processor) {
-      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "direct";
+      return selectedProvider.processor as "stripe" | "coinbase" | "transak" | "thirdweb" | "direct";
     }
     if (m === "azix") return "direct";
     if (m === "coinbase") return "coinbase";
     if (m === "transak") return "transak";
+    if (m === "thirdweb") return "thirdweb";
     if (m === "paypal") return "stripe";
     if (m === "mobile_money") return payMode === "local" ? "coinbase" : "transak";
     if (m === "bank_transfer") return payMode === "local" ? "coinbase" : "stripe";
@@ -612,6 +614,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 : method === "azix" ? "Crypto (USDC/USDT)"
                 : method === "coinbase" ? "Coinbase"
                 : method === "transak" ? "Transak"
+                : method === "thirdweb" ? "Thirdweb Pay"
                 : method === "applepay" ? "Apple Pay / Google Pay"
                 : "Card"
               }
@@ -1026,6 +1029,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               method === "applepay" ? "card" :
               method === "coinbase" ? "crypto" :
               method === "transak" ? "crypto" :
+              method === "thirdweb" ? "crypto" :
               method === "azix" ? "crypto" :
               method as FeeEnginePaymentMethod;
             const check = detectUnavailableMethod(selectedCountry, feeMethod);
@@ -1038,6 +1042,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                     if (action === "switch_to_crypto") setMethod("azix");
                     else if (action === "switch_to_card") setMethod("card");
                     else if (action === "switch_to_transak") setMethod("transak");
+                    else if (action === "switch_to_thirdweb") setMethod("thirdweb");
                   }}
                 />
               );
@@ -1421,7 +1426,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           )}
 
           {/* Coinbase/Transak on-ramp notice (when those providers selected) */}
-          {(method === "coinbase" || method === "transak") && selectedProvider && (
+          {(method === "coinbase" || method === "transak" || method === "thirdweb") && selectedProvider && (
             <div className="p-3 rounded-lg border border-border text-center space-y-1">
               <p className="text-xs font-medium">
                 {selectedProvider.name} on-ramp
@@ -1501,6 +1506,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 : method === "azix" ? "Crypto (USDC/USDT)"
                 : method === "coinbase" ? "Coinbase"
                 : method === "transak" ? "Transak"
+                : method === "thirdweb" ? "Thirdweb Pay"
                 : method === "applepay" ? "Apple Pay / Google Pay"
                 : method === "paypal" ? "PayPal"
                 : "Card"

@@ -86,6 +86,15 @@ export function detectUnavailableMethod(
       icon: Globe,
       action: "switch_to_transak",
     });
+    alternatives.push({
+      id: "thirdweb_global",
+      label: "Pay via Thirdweb Pay",
+      description: "Thirdweb Pay aggregates global on-ramps (card, bank, mobile money) and routes USDC directly into escrow.",
+      fee: "1.5% platform + 1.8% processor",
+      speed: "Instant",
+      icon: Globe,
+      action: "switch_to_thirdweb",
+    });
   }
 
   const methodLabel =
