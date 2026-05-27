@@ -33,7 +33,7 @@ export type TransactionType =
   | "os_payment";
 
 // ─── Processor Configuration ──────────────────────────────
-export type ProcessorId = "stripe" | "coinbase" | "transak" | "direct";
+export type ProcessorId = "stripe" | "coinbase" | "transak" | "thirdweb" | "direct";
 
 export type PaymentMethod = "card" | "bank_transfer" | "mobile_money" | "crypto";
 
