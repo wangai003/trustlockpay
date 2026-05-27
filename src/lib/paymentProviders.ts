@@ -244,6 +244,16 @@ const LOCAL_CRYPTO_PROVIDERS: PaymentProvider[] = [
     ],
   },
   {
+    id: "thirdweb_pay_local",
+    name: "Thirdweb Pay (Card / Bank / Mobile Money → USDC)",
+    category: "crypto_wallet",
+    mode: "local",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Receiving Wallet (Polygon)", placeholder: "0x... (optional — escrow wallet used by default)", type: "text", required: false },
+    ],
+  },
+  {
     id: "coinbase_offramp_local",
     name: "Coinbase Off-Ramp",
     category: "crypto_wallet",
