@@ -548,6 +548,50 @@ Deno.serve(async (req) => {
           break;
         }
 
+        case "thirdweb": {
+          // Accept either THIRDWEB_CLIENT_ID (preferred) or fall back to THIRDWEB_API_KEY
+          const thirdwebClientId =
+            Deno.env.get("THIRDWEB_CLIENT_ID") || Deno.env.get("THIRDWEB_API_KEY");
+          const thirdwebSecret = Deno.env.get("THIRDWEB_SECRET_KEY"); // backend-only, never returned
+          if (!thirdwebClientId) {
+            processorResult = {
+              processor: "thirdweb", direction, status: "not_configured",
+              message: "Thirdweb pending client ID setup.",
+            };
+          } else if (direction === "onramp") {
+            processorResult = {
+              processor: "thirdweb",
+              direction,
+              status: "ready",
+              hasBackendSecret: !!thirdwebSecret,
+              widgetConfig: {
+                clientId: thirdwebClientId,
+                mode: "fund_wallet",
+                chain: "polygon",
+                chainId: 137,
+                defaultFiatAmount: chargeAmount,
+                defaultFiatCurrency: (currency || "USD").toUpperCase(),
+                defaultCryptoCurrency: body.cryptoCurrency || "USDC",
+                tokenAddress: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // USDC (native) on Polygon mainnet
+                receiverAddress: body.receiverAddress || walletAddress || "",
+                partnerCustomerId: userId || "",
+                partnerOrderId: transactionId || "",
+                metadata: {
+                  transaction_id: transactionId || "",
+                  user_id: userId || "",
+                  checkout_session_id: body.sessionId || "",
+                },
+              },
+            };
+          } else {
+            processorResult = {
+              processor: "thirdweb", direction: "offramp", status: "not_supported",
+              message: "Thirdweb Pay supports on-ramp only.",
+            };
+          }
+          break;
+        }
+
         case "direct":
           processorResult = {
             processor: "direct", direction, status: "awaiting_onchain",
