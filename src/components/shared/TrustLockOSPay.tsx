@@ -42,7 +42,7 @@ import ProviderSearch from "@/components/shared/ProviderSearch";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { GLOBAL_CURRENCIES, RATE_LOCK_DURATION_MS, getCurrencyForCountry, type CurrencyInfo } from "@/lib/globalCurrencies";
 
-type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "paypal" | null;
+type PaymentMethod = "card" | "applepay" | "azix" | "mobile_money" | "bank_transfer" | "coinbase" | "transak" | "thirdweb" | "paypal" | null;
 type AdminAction = "refund" | "split" | null;
 type PayMode = "local" | "diaspora";
 
