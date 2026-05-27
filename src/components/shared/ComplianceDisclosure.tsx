@@ -25,7 +25,7 @@ const ComplianceDisclosure = ({ amount, paymentMethod, userRole, onAccept }: Com
     highValue: false,
   });
 
-  const isCrypto = ["azix", "crypto", "coinbase", "transak"].includes(paymentMethod);
+  const isCrypto = ["azix", "crypto", "coinbase", "transak", "thirdweb"].includes(paymentMethod);
   const isHighValue = amount >= 10000;
   const isEDD = amount >= 3000;
   const needsTravelRule = isCrypto && amount >= 1000;
