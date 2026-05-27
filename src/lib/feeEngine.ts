@@ -157,6 +157,33 @@ export const PROCESSORS: Record<ProcessorId, ProcessorConfig & { limits: Process
       maxDailyTxCount: 50,
     },
   },
+  thirdweb: {
+    name: "Thirdweb Pay",
+    feeRate: 1.8, // ~0.3% Thirdweb routing fee + ~1.5% underlying on-ramp (Transak/Coinbase/Stripe)
+    supportsFiat: true,
+    supportsCrypto: true,
+    regions: [
+      "US", "GB", "CA", "AU", "NZ", "JP", "SG", "HK", "IN", "BR", "MX", "AE",
+      "EU",
+      "NG", "KE", "GH", "ZA", "EG", "SN", "CI", "TZ", "UG", "RW",
+      "CM", "ET", "MA", "TN", "DZ",
+      "SA", "QA", "KW", "BH", "OM",
+      "MY", "TH", "ID", "PH", "VN", "KR",
+      "AR", "CO", "CL", "PE",
+      "TR", "IL",
+      "global",
+    ],
+    onRamp: true,
+    offRamp: false,
+    supportedMethods: ["card", "bank_transfer", "mobile_money", "crypto"],
+    limits: {
+      minPerTx: 1.00,
+      maxPerTx:    { none: 250, basic: 2_500, intermediate: 25_000, full: 100_000 },
+      dailyLimit:  { none: 500, basic: 5_000, intermediate: 50_000, full: 250_000 },
+      monthlyLimit:{ none: 2_500, basic: 25_000, intermediate: 250_000, full: 1_000_000 },
+      maxDailyTxCount: 75,
+    },
+  },
   direct: {
     name: "Direct (On-chain)",
     feeRate: 0,
