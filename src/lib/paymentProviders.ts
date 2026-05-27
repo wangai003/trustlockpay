@@ -158,6 +158,16 @@ const DIASPORA_PROVIDERS: PaymentProvider[] = [
       { key: "account_number", label: "Account Number", placeholder: "1234567890", type: "text", required: true },
     ],
   },
+  {
+    id: "thirdweb_pay",
+    name: "Thirdweb Pay",
+    category: "crypto_wallet",
+    mode: "diaspora",
+    processor: "thirdweb",
+    fields: [
+      { key: "wallet_address", label: "Receiving Wallet (Polygon)", placeholder: "0x... (optional — escrow wallet used by default)", type: "text", required: false },
+    ],
+  },
 ];
 
 // ─── BUILD LOCAL PROVIDERS FROM COUNTRY DATA ───────────────
