@@ -1029,6 +1029,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               method === "applepay" ? "card" :
               method === "coinbase" ? "crypto" :
               method === "transak" ? "crypto" :
+              method === "thirdweb" ? "crypto" :
               method === "azix" ? "crypto" :
               method as FeeEnginePaymentMethod;
             const check = detectUnavailableMethod(selectedCountry, feeMethod);
@@ -1041,6 +1042,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                     if (action === "switch_to_crypto") setMethod("azix");
                     else if (action === "switch_to_card") setMethod("card");
                     else if (action === "switch_to_transak") setMethod("transak");
+                    else if (action === "switch_to_thirdweb") setMethod("thirdweb");
                   }}
                 />
               );
