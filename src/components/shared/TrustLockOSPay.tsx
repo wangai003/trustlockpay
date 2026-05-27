@@ -1426,7 +1426,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           )}
 
           {/* Coinbase/Transak on-ramp notice (when those providers selected) */}
-          {(method === "coinbase" || method === "transak") && selectedProvider && (
+          {(method === "coinbase" || method === "transak" || method === "thirdweb") && selectedProvider && (
             <div className="p-3 rounded-lg border border-border text-center space-y-1">
               <p className="text-xs font-medium">
                 {selectedProvider.name} on-ramp
