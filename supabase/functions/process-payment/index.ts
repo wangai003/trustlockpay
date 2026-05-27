@@ -31,7 +31,7 @@ interface ProcessPaymentRequest {
   refundReason?: string;
   splitRecipient?: string;
   splitPercentage?: number;
-  processor?: "stripe" | "coinbase" | "transak" | "direct";
+  processor?: "stripe" | "coinbase" | "transak" | "thirdweb" | "direct";
   direction?: "onramp" | "offramp";
   currency?: string;
   cryptoCurrency?: string;
