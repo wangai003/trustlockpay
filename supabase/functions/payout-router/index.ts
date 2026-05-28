@@ -33,6 +33,25 @@ function getSupabase() {
   );
 }
 
+async function verifyCaller(req: Request, supabase: ReturnType<typeof getSupabase>): Promise<{ userId: string | null; isService: boolean; isAdmin: boolean }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return { userId: null, isService: false, isAdmin: false };
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return { userId: null, isService: true, isAdmin: true };
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return { userId: null, isService: false, isAdmin: false };
+    const { data: adminRole } = await supabase
+      .from("user_roles").select("role").eq("user_id", data.user.id).eq("role", "admin").maybeSingle();
+    return { userId: data.user.id, isService: false, isAdmin: !!adminRole };
+  } catch { return { userId: null, isService: false, isAdmin: false }; }
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
