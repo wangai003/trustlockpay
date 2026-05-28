@@ -962,6 +962,38 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 ? "Pay via mobile money, local bank, card, or crypto within Africa."
                 : "Pay via card, PayPal, Apple Pay, Google Pay, bank transfer, or crypto."}
             </p>
+
+            {/* ─── ONE-CLICK: PAY WITH CRYPTO (DIRECT) ─── */}
+            <button
+              type="button"
+              onClick={() => {
+                setMethod("azix");
+                setSelectedProvider(null);
+                setProviderFields({});
+              }}
+              className={cn(
+                "w-full p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3",
+                method === "azix"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-primary/40 hover:bg-primary/5"
+              )}
+            >
+              <Wallet className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">Pay with Crypto</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Send USDC/USDT on Polygon from any wallet or exchange (Coinbase, Binance, MetaMask, Trust Wallet, etc.). We'll show you the address + amount.
+                </p>
+              </div>
+              {method === "azix" && <Check className="w-4 h-4 text-primary shrink-0" />}
+            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-border" />
+              <p className="text-[10px] text-muted-foreground">or choose another method</p>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
             <ProviderSearch
               mode={payMode === "local" ? "local" : "diaspora"}
               onSelect={(provider) => {
@@ -977,6 +1009,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               }}
               selected={selectedProvider}
             />
+            <p className="text-[10px] text-muted-foreground text-center">
+              Don't have crypto yet? Pick an on-ramp above (Coinbase, Transak, Thirdweb) to buy USDC with card/bank first.
+            </p>
+
             {/* International Bank Transfer — show when diaspora bank_account selected */}
             {payMode === "diaspora" && method === "bank_transfer" && selectedProvider?.category === "bank_account" && (
               <div className="space-y-3">
