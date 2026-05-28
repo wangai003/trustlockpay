@@ -321,12 +321,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase();
+    const caller = await verifyCaller(req, supabase);
+    if (!caller.isService && !caller.isAdmin) {
+      return json({ error: "Unauthorized — service role or admin required" }, 401);
+    }
+
     const body = await req.json();
     const {
       action,
       transactionId,
       payoutAmount,
-      payoutType,       // "release" | "split_vendor" | "milestone_release"
+      payoutType,
       vendorPaymentDetails,
       paymentProvider,
       paymentCategory,
@@ -336,7 +342,10 @@ Deno.serve(async (req) => {
 
     if (!action) return json({ error: "action is required" }, 400);
 
-    const supabase = getSupabase();
+    if (action === "resolve_manual_payout" && !caller.isAdmin && !caller.isService) {
+      return json({ error: "Forbidden — admin only" }, 403);
+    }
+
 
     // ═════════════════════════════════════════════════
     //  ACTION: route_vendor_payout
