@@ -353,6 +353,8 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </WagmiProvider>
 );
+
 
 export default App;
