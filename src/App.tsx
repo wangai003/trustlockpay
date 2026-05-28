@@ -160,9 +160,11 @@ const Loading = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
   </div>
 );
-
 const App = () => (
+  <WagmiProvider config={wagmiConfig}>
   <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
