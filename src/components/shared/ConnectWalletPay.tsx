@@ -137,15 +137,17 @@ const ConnectWalletPay = ({
               Connect your wallet (MetaMask, Coinbase Wallet, Trust, Rainbow, Rabby, Ledger, or scan QR with any mobile wallet). We'll send exactly <strong>${amountUsd.toFixed(2)} {token}</strong> on Polygon — no copy/paste, no TxID entry.
             </p>
           </div>
+        </div>
         <Button type="button" className="w-full gap-2" onClick={openModal}>
           <Wallet className="w-4 h-4" /> Connect Wallet
-        </Button>
-
         </Button>
         <p className="text-[10px] text-muted-foreground text-center">
           Gas fee: ~$0.01 in POL · Settles in ~5 seconds on Polygon
         </p>
       </div>
+    );
+  }
+
     );
   }
 
