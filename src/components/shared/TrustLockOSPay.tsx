@@ -962,6 +962,38 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 ? "Pay via mobile money, local bank, card, or crypto within Africa."
                 : "Pay via card, PayPal, Apple Pay, Google Pay, bank transfer, or crypto."}
             </p>
+
+            {/* ─── ONE-CLICK: PAY WITH CRYPTO (DIRECT) ─── */}
+            <button
+              type="button"
+              onClick={() => {
+                setMethod("azix");
+                setSelectedProvider(null);
+                setProviderFields({});
+              }}
+              className={cn(
+                "w-full p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3",
+                method === "azix"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-primary/40 hover:bg-primary/5"
+              )}
+            >
+              <Wallet className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">Pay with Crypto</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Send USDC/USDT on Polygon from any wallet or exchange (Coinbase, Binance, MetaMask, Trust Wallet, etc.). We'll show you the address + amount.
+                </p>
+              </div>
+              {method === "azix" && <Check className="w-4 h-4 text-primary shrink-0" />}
+            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-border" />
+              <p className="text-[10px] text-muted-foreground">or choose another method</p>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
             <ProviderSearch
               mode={payMode === "local" ? "local" : "diaspora"}
               onSelect={(provider) => {
@@ -977,6 +1009,10 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               }}
               selected={selectedProvider}
             />
+            <p className="text-[10px] text-muted-foreground text-center">
+              Don't have crypto yet? Pick an on-ramp above (Coinbase, Transak, Thirdweb) to buy USDC with card/bank first.
+            </p>
+
             {/* International Bank Transfer — show when diaspora bank_account selected */}
             {payMode === "diaspora" && method === "bank_transfer" && selectedProvider?.category === "bank_account" && (
               <div className="space-y-3">
@@ -1053,6 +1089,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                   }}
                 />
               );
+
             }
             return null;
           })()}
@@ -1087,7 +1124,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                   </div>
                 </div>
                 <div className="ml-6 space-y-1 text-[10px] text-foreground">
-                  <p><strong>1.</strong> Copy the Azix receiving wallet address below.</p>
+                  <p><strong>1.</strong> Copy the TrustLock receiving wallet address below.</p>
                   <p><strong>2.</strong> Open your wallet or exchange → Withdraw → select <strong>{selectedToken}</strong> → choose <strong>Polygon</strong> network → paste address → enter amount → confirm.</p>
                   <p><strong>3.</strong> After sending, your wallet/exchange will show a <strong>Transaction ID (TxID)</strong> — a 66-character code starting with 0x.</p>
                   <p><strong>4.</strong> Return here and fill in the 3 fields below → click <strong>"Verify & Generate Order"</strong>.</p>
@@ -1161,9 +1198,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               {polygonConfirmed && (<>
               {/* Step 3 content continues below */}
 
-              {/* ── Azix Receiving Wallet (LOCKED + COPY) ── */}
+              {/* ── TrustLock Receiving Wallet (LOCKED + COPY) ── */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Azix Receiving Wallet — <span className="text-destructive">DO NOT EDIT</span></Label>
+                <Label className="text-xs font-semibold">TrustLock Receiving Wallet — <span className="text-destructive">DO NOT EDIT</span></Label>
                 <div className="relative">
                   <Input
                     value={AZIX_WALLETS.transaction.publicKey}
@@ -1539,7 +1576,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon · Platform Fee → Transaction Wallet · Verified</span>
+            <span>Secured by TrustLock Smart Contracts on Polygon · Platform Fee → Transaction Wallet · Verified</span>
           </div>
         </CardContent>
       </Card>
