@@ -148,8 +148,6 @@ const ConnectWalletPay = ({
     );
   }
 
-    );
-  }
 
   // ─── WRONG NETWORK ────────────────────────────
   if (!onCorrectChain) {
