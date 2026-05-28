@@ -581,12 +581,12 @@ function ClauseCheckbox({
     <label
       htmlFor={id}
       className={cn(
-        "flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors text-xs",
+        "flex w-full min-w-0 items-start gap-2.5 rounded-md p-2 text-xs transition-colors cursor-pointer",
         checked ? "bg-green-500/10 border border-green-500/30" : "bg-muted/30 border border-transparent hover:border-muted-foreground/20"
       )}
     >
       <Checkbox id={id} checked={checked} onCheckedChange={onToggle} className="mt-0.5" />
-      <span className={cn("leading-relaxed", checked && "text-foreground")}>{label}</span>
+      <span className={cn("min-w-0 flex-1 whitespace-normal break-words leading-relaxed", checked && "text-foreground")}>{label}</span>
     </label>
   );
 }
