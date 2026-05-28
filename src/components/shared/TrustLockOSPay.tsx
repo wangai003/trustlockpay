@@ -39,6 +39,8 @@ import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import ProviderSearch from "@/components/shared/ProviderSearch";
+import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
+
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { GLOBAL_CURRENCIES, RATE_LOCK_DURATION_MS, getCurrencyForCountry, type CurrencyInfo } from "@/lib/globalCurrencies";
 
