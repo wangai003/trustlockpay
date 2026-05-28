@@ -247,7 +247,8 @@ const ConnectWalletPay = ({
             abi: ERC20_ABI,
             functionName: "transfer",
             args: [recipient, amountUnits],
-          });
+          } as Parameters<typeof writeContract>[0]);
+
         }}
       >
         {sending && <><Loader2 className="w-4 h-4 animate-spin" /> Confirm in wallet...</>}
