@@ -207,6 +207,11 @@ Deno.serve(async (req) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
+  // Service-role only — moves real on-chain funds
+  if (!isServiceRoleCall(req)) {
+    return json({ error: "Unauthorized — service role required" }, 401);
+  }
+
   try {
     const body = await req.json();
     const {
