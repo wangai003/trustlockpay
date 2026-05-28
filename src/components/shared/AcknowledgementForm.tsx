@@ -551,15 +551,19 @@ const AcknowledgementForm = ({
             </Button>
           )}
           <Button
-            onClick={onAccept}
-            disabled={!allChecked || !nameMatch}
+            onClick={() => {
+              if (!allChecked) { scrollToFirstUnchecked(); return; }
+              if (!nameMatch) return;
+              onAccept();
+            }}
+            variant={allChecked && nameMatch ? "default" : "secondary"}
             className="flex-1 gap-2"
           >
             <CheckCircle2 className="h-4 w-4" />
             {allChecked && nameMatch
               ? "Accept & Lock Funds"
               : !allChecked
-                ? `${allCheckboxIds.length - checkedCount} clauses remaining`
+                ? `${allCheckboxIds.length - checkedCount} clauses remaining — tap to jump`
                 : "Type your name to sign"
             }
           </Button>
