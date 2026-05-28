@@ -39,6 +39,8 @@ import type { PaymentMethod as FeeEnginePaymentMethod } from "@/lib/feeEngine";
 import InternationalBankSelector from "@/components/shared/InternationalBankSelector";
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import ProviderSearch from "@/components/shared/ProviderSearch";
+import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
+
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { GLOBAL_CURRENCIES, RATE_LOCK_DURATION_MS, getCurrencyForCountry, type CurrencyInfo } from "@/lib/globalCurrencies";
 
@@ -1112,6 +1114,26 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {/* ─── CRYPTO (AZIX) SPECIAL FLOW ─── */}
           {method === "azix" && (
             <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
+              {/* ── TIER 1: ONE-CLICK CONNECT WALLET ── */}
+              <ConnectWalletPay
+                amountUsd={parseFloat(total) || parsedAmount}
+                token={selectedToken}
+                isTestnet={isTestnet}
+                onVerified={() => {
+                  setCryptoVerifyStatus("verified");
+                  setCumulativeReceived(parseFloat(total) || parsedAmount);
+                  if (onComplete) onComplete();
+                }}
+              />
+
+              <div className="flex items-center gap-2 py-1">
+                <div className="flex-1 h-px bg-border" />
+                <p className="text-[10px] text-muted-foreground">or send manually from an exchange</p>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+
+
               {/* ── SIMPLIFIED CRYPTO PAYMENT INSTRUCTIONS ── */}
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
                 <div className="flex items-start gap-2">
