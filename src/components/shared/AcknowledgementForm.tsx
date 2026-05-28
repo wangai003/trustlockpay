@@ -316,9 +316,22 @@ const AcknowledgementForm = ({
 
         {/* ── Progress Bar ─────────────────── */}
         <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-xs text-muted-foreground items-center">
             <span>Clauses acknowledged</span>
-            <span>{checkedCount}/{allCheckboxIds.length}</span>
+            <div className="flex items-center gap-2">
+              <span>{checkedCount}/{allCheckboxIds.length}</span>
+              {!allChecked && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={acknowledgeAll}
+                >
+                  Acknowledge all
+                </Button>
+              )}
+            </div>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -326,6 +339,11 @@ const AcknowledgementForm = ({
               style={{ width: `${progress}%` }}
             />
           </div>
+          {!allChecked && checkedCount > 0 && (
+            <p className="text-[10px] text-muted-foreground pt-1">
+              Scroll through every section below — there are more clauses after this list.
+            </p>
+          )}
         </div>
 
         <div className="max-h-[clamp(16rem,42dvh,32rem)] overflow-y-auto overscroll-contain pr-2 pb-2">
