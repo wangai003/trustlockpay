@@ -1112,6 +1112,26 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
           {/* ─── CRYPTO (AZIX) SPECIAL FLOW ─── */}
           {method === "azix" && (
             <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
+              {/* ── TIER 1: ONE-CLICK CONNECT WALLET ── */}
+              <ConnectWalletPay
+                amountUsd={parseFloat(total) || parsedAmount}
+                token={selectedToken}
+                isTestnet={isTestnet}
+                onVerified={() => {
+                  setCryptoVerifyStatus("verified");
+                  setCumulativeReceived(parseFloat(total) || parsedAmount);
+                  if (onComplete) onComplete();
+                }}
+              />
+
+              <div className="flex items-center gap-2 py-1">
+                <div className="flex-1 h-px bg-border" />
+                <p className="text-[10px] text-muted-foreground">or send manually from an exchange</p>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+
+            <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
               {/* ── SIMPLIFIED CRYPTO PAYMENT INSTRUCTIONS ── */}
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
                 <div className="flex items-start gap-2">
