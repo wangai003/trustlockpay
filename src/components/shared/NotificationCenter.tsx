@@ -96,16 +96,14 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
         for (const prio of ["critical", "high", "medium", "low", "other"]) {
           if (data.grouped?.[prio]) all.push(...data.grouped[prio]);
         }
-        if (all.length > 0) {
-          setNotifications(all);
-          return;
-        }
+        setNotifications(all);
+        return;
       }
-      // Fall back to mock data if edge function returns empty or fails
-      setNotifications(mockNotifications[fallbackRole] || []);
+      // Mainnet: no mock fallback — show empty state instead of fake notifications
+      setNotifications([]);
     } catch (e) {
       console.error("notification-triage fetch error:", e);
-      setNotifications(mockNotifications[fallbackRole] || []);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
