@@ -1408,6 +1408,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                   >
                     Try Again
                   </Button>
+                </div>
+              )}
+
               <div className="p-2 rounded bg-muted text-[10px] space-y-1">
                 <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
                 <p><strong>Token:</strong> {selectedToken} ({selectedToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"})</p>
