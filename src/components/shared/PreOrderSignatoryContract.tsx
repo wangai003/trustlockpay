@@ -186,10 +186,23 @@ const PreOrderSignatoryContract = ({
         </div>
 
         {/* ── Progress ─────────────────── */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>Contract terms acknowledged</span>
-            <span>{checkedCount}/{allTermIds.length}</span>
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              <span>{checkedCount}/{allTermIds.length}</span>
+              {!allChecked && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[10px]"
+                  onClick={acknowledgeAllTerms}
+                >
+                  Check all terms
+                </Button>
+              )}
+            </div>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -199,14 +212,13 @@ const PreOrderSignatoryContract = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[320px] pr-2">
-          <div className="space-y-3">
+        <div className="w-full max-w-full space-y-3 overflow-x-hidden pb-2">
             {CONTRACT_TERMS.map((term) => (
               <label
                 key={term.id}
                 htmlFor={`contract-${term.id}`}
                 className={cn(
-                  "flex items-start gap-2.5 p-3 rounded-md cursor-pointer transition-colors text-xs border",
+                  "flex w-full min-w-0 cursor-pointer items-start gap-2.5 rounded-md border p-3 text-xs transition-colors",
                   checkedTerms[term.id]
                     ? "bg-green-500/10 border-green-500/30"
                     : "bg-muted/30 border-transparent hover:border-muted-foreground/20"
@@ -218,9 +230,9 @@ const PreOrderSignatoryContract = ({
                   onCheckedChange={() => toggle(term.id)}
                   className="mt-0.5"
                 />
-                <div className="space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <span className="font-semibold text-foreground">{term.title}</span>
-                  <p className={cn("leading-relaxed", checkedTerms[term.id] ? "text-foreground" : "text-muted-foreground")}>
+                  <p className={cn("whitespace-normal break-words leading-relaxed", checkedTerms[term.id] ? "text-foreground" : "text-muted-foreground")}>
                     {term.text}
                   </p>
                 </div>
@@ -261,8 +273,7 @@ const PreOrderSignatoryContract = ({
                 </ul>
               </div>
             )}
-          </div>
-        </ScrollArea>
+        </div>
 
         <Separator />
 
