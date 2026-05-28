@@ -310,7 +310,7 @@ const AcknowledgementForm = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[400px] pr-2">
+        <div className="pr-2">
           <div className="space-y-4">
             {/* ── 1. Escrow Disclaimer ─────────── */}
             <section>
@@ -459,7 +459,7 @@ const AcknowledgementForm = ({
               />
             </section>
           </div>
-        </ScrollArea>
+        </div>
 
         {/* ── Digital Signature Block ──────── */}
         <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-xs">
