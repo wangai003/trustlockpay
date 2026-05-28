@@ -56,7 +56,6 @@ export function useSaveProfile() {
       socialLinks?: Record<string, string> | null;
     }) => {
       const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.user?.id) throw new Error("Not authenticated");
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (params.fullName !== undefined) updates.full_name = params.fullName;
       if (params.location !== undefined) updates.location = params.location;
@@ -66,6 +65,16 @@ export function useSaveProfile() {
       if (params.entityType !== undefined) updates.entity_type = params.entityType;
       if (params.websiteUrl !== undefined) updates.website_url = params.websiteUrl || null;
       if (params.socialLinks !== undefined) updates.social_links = params.socialLinks;
+
+      // Testnet/demo fallback: no auth session → persist locally so demo users can save
+      if (!session?.user?.id) {
+        try {
+          const prev = JSON.parse(localStorage.getItem("tl_buyer_profile_demo") || "{}");
+          localStorage.setItem("tl_buyer_profile_demo", JSON.stringify({ ...prev, ...params }));
+        } catch {}
+        return { success: true, demo: true };
+      }
+
       const { error } = await supabase.from("profiles").update(updates as any).eq("id", session.user.id);
       if (error) throw error;
       return { success: true };
