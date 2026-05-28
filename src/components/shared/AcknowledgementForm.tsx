@@ -459,7 +459,7 @@ const AcknowledgementForm = ({
               />
             </section>
           </div>
-        </ScrollArea>
+        </div>
 
         {/* ── Digital Signature Block ──────── */}
         <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-xs">
