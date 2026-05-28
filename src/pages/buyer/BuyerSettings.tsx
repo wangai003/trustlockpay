@@ -119,13 +119,14 @@ const BuyerSettings = () => {
                 toast.error("Company name is required for registered companies.");
                 return;
               }
-              saveProfile.mutateAsync({
+              saveProfile.mutate({
                 fullName: profileName,
                 location: profileLocation,
                 phone: profilePhone,
                 companyName: companyName || undefined,
                 entityType,
-              }).then(() => {
+              }, {
+                onSuccess: () => {
                 setBuyer((prev) => ({
                   ...prev,
                   name: profileName.trim() || prev.name,
@@ -134,6 +135,7 @@ const BuyerSettings = () => {
                   companyName,
                   entityType,
                 }));
+                },
               });
             }} disabled={saveProfile.isPending}>
               <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile
