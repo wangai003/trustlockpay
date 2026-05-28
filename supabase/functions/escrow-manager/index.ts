@@ -1627,6 +1627,28 @@ function errorResponse(message: string, status = 400) {
 }
 
 // ─── Main Handler ──────────────────────────────────────────
+// Verify caller JWT and return their user id. Returns null when invalid.
+async function verifyCaller(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  // Service-role calls (from other edge functions / cron) bypass JWT user check
+  if (token === serviceKey) return "__service_role__";
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -1640,8 +1662,32 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // check_auto_release is a cron-triggered action — require service role.
+    if (action === "check_auto_release") {
+      const caller = await verifyCaller(req);
+      if (caller !== "__service_role__") {
+        return errorResponse("Unauthorized", 401);
+      }
+      return await checkAutoRelease();
+    }
+
+    // All other actions require an authenticated user.
+    const callerId = await verifyCaller(req);
+    if (!callerId) {
+      return errorResponse("Unauthorized", 401);
+    }
+    // Service-role callers may pass user_id explicitly (internal flows).
+    // For end-user JWTs, override body.user_id with the verified id so the
+    // caller cannot spoof another party's identity.
+    if (callerId !== "__service_role__") {
+      body.user_id = callerId;
+      // lock_funds derives identity from buyer_id — enforce match
+      if (action === "lock_funds" && body.buyer_id && String(body.buyer_id) !== callerId) {
+        return errorResponse("buyer_id must match authenticated user", 403);
+      }
+    }
+
     switch (action) {
-      // Original actions
       case "lock_funds":
         return await lockFunds(body);
       case "release_funds":
@@ -1650,8 +1696,6 @@ Deno.serve(async (req) => {
         return await refundBuyer(body);
       case "split_payout":
         return await splitPayout(body);
-
-      // New milestone & observer actions
       case "create_milestones":
         return await createMilestones(body);
       case "update_milestone":
@@ -1664,14 +1708,12 @@ Deno.serve(async (req) => {
         return await restoreMilestone(body);
       case "release_milestone_payment":
         return await releaseMilestonePayment(body);
-      case "check_auto_release":
-        return await checkAutoRelease();
       case "add_observer":
         return await addObserver(body);
 
       default:
         return errorResponse(
-          `Unknown action: ${action}. Valid: lock_funds, release_funds, refund_buyer, split_payout, create_milestones, update_milestone, reorder_milestones, delete_milestone, restore_milestone, release_milestone_payment, check_auto_release, add_observer`,
+          `Unknown action: ${action}.`,
           400
         );
     }
