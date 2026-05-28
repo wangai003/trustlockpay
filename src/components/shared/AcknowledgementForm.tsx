@@ -287,7 +287,7 @@ const AcknowledgementForm = ({
   });
 
   return (
-    <Card className="border-2 border-primary/30 bg-card">
+    <Card className="w-full max-w-full overflow-x-hidden border-2 border-primary/30 bg-card">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -303,7 +303,7 @@ const AcknowledgementForm = ({
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="w-full max-w-full space-y-5 overflow-x-hidden px-4 sm:px-6">
         {/* ── Header Info ─────────────────── */}
         <div className="grid grid-cols-2 gap-3 text-xs bg-muted/50 rounded-lg p-3">
           <div><span className="text-muted-foreground">Order:</span> <span className="font-medium">{txId ?? "Pending"}</span></div>
@@ -315,20 +315,20 @@ const AcknowledgementForm = ({
         </div>
 
         {/* ── Progress Bar ─────────────────── */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground items-center">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>Clauses acknowledged</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
               <span>{checkedCount}/{allCheckboxIds.length}</span>
               {!allChecked && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  className="h-7 px-2 text-[10px]"
                   onClick={acknowledgeAll}
                 >
-                  Acknowledge all
+                  Check all clauses
                 </Button>
               )}
             </div>
@@ -346,7 +346,7 @@ const AcknowledgementForm = ({
           )}
         </div>
 
-        <div className="space-y-4 pr-2 pb-2">
+        <div className="w-full max-w-full space-y-4 overflow-x-hidden pb-2">
             {/* ── 1. Escrow Disclaimer ─────────── */}
             <section>
               <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
@@ -542,9 +542,9 @@ const AcknowledgementForm = ({
         )}
 
         {/* ── Actions ──────────────────────── */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {onDecline && (
-            <Button variant="outline" onClick={onDecline} className="flex-1">
+            <Button variant="outline" onClick={onDecline} className="w-full sm:flex-1">
               Decline
             </Button>
           )}
@@ -555,13 +555,13 @@ const AcknowledgementForm = ({
               onAccept();
             }}
             variant={allChecked && nameMatch ? "default" : "secondary"}
-            className="flex-1 gap-2"
+            className="min-h-11 w-full min-w-0 whitespace-normal px-3 py-2 leading-snug sm:flex-1"
           >
             <CheckCircle2 className="h-4 w-4" />
             {allChecked && nameMatch
               ? "Accept & Lock Funds"
               : !allChecked
-                ? `${allCheckboxIds.length - checkedCount} clauses remaining — tap to jump`
+                ? `${allCheckboxIds.length - checkedCount} clauses remaining`
                 : "Type your name to sign"
             }
           </Button>
@@ -581,12 +581,12 @@ function ClauseCheckbox({
     <label
       htmlFor={id}
       className={cn(
-        "flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors text-xs",
+        "flex w-full min-w-0 items-start gap-2.5 rounded-md p-2 text-xs transition-colors cursor-pointer",
         checked ? "bg-green-500/10 border border-green-500/30" : "bg-muted/30 border border-transparent hover:border-muted-foreground/20"
       )}
     >
       <Checkbox id={id} checked={checked} onCheckedChange={onToggle} className="mt-0.5" />
-      <span className={cn("leading-relaxed", checked && "text-foreground")}>{label}</span>
+      <span className={cn("min-w-0 flex-1 whitespace-normal break-words leading-relaxed", checked && "text-foreground")}>{label}</span>
     </label>
   );
 }
