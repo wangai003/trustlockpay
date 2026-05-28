@@ -33,12 +33,12 @@ export async function serverAdminLogin(identifier: string, password: string): Pr
   return callAdminAuth("login", { identifier, password });
 }
 
-export async function serverAdminSetup(username: string, email: string, password: string): Promise<{ success: boolean; error?: string }> {
-  return callAdminAuth("setup", { username, email, password });
+export async function serverAdminSetup(username: string, email: string, password: string, tempPassword: string): Promise<{ success: boolean; error?: string }> {
+  return callAdminAuth("setup", { username, email, password, tempPassword });
 }
 
-export async function serverAdminReset(email: string, password: string): Promise<{ success: boolean; error?: string }> {
-  return callAdminAuth("reset", { email, password });
+export async function serverAdminReset(email: string, currentPassword: string, password: string): Promise<{ success: boolean; error?: string }> {
+  return callAdminAuth("reset", { email, currentPassword, password });
 }
 
 export async function serverAdminLookup(identifier: string): Promise<{ exists: boolean; isSetup: boolean }> {
