@@ -75,7 +75,11 @@ export function useSaveProfile() {
         return { success: true, demo: true };
       }
 
-      const { error } = await supabase.from("profiles").update(updates as any).eq("id", session.user.id);
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        email: session.user.email || params.email || "",
+        ...updates,
+      } as any, { onConflict: "id" });
       if (error) throw error;
       return { success: true };
     },
