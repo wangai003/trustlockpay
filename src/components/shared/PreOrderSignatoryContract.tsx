@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Shield, FileText, Scale, Clock, Globe, CheckCircle2,
@@ -124,19 +123,38 @@ const PreOrderSignatoryContract = ({
     setCheckedTerms((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const acknowledgeAllTerms = () => {
+    const next: Record<string, boolean> = {};
+    allTermIds.forEach((id) => { next[id] = true; });
+    setCheckedTerms(next);
+  };
+
+  const scrollToFirstUncheckedTerm = () => {
+    const firstUnchecked = allTermIds.find((id) => !checkedTerms[id]);
+    if (!firstUnchecked) return;
+    const el = document.getElementById(`contract-${firstUnchecked}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      (el.closest("label") as HTMLElement | null)?.classList.add("ring-2", "ring-primary");
+      setTimeout(() => {
+        (el.closest("label") as HTMLElement | null)?.classList.remove("ring-2", "ring-primary");
+      }, 1800);
+    }
+  };
+
   const now = new Date();
   const formattedDate = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const formattedTime = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
 
   return (
-    <Card className="border-2 border-primary/30 bg-card">
+    <Card className="w-full max-w-full overflow-x-hidden border-2 border-primary/30 bg-card">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
             <Handshake className="h-6 w-6 text-primary" />
-            <CardTitle className="text-lg">Pre-Order Signatory Contract</CardTitle>
+            <CardTitle className="text-lg leading-tight">Pre-Order Signatory Contract</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-xs">{clauseSet.label}</Badge>
             {isAutoSigned && (
               <Badge className="text-[10px] bg-green-600">Vendor Auto-Signed ✓</Badge>
@@ -152,26 +170,39 @@ const PreOrderSignatoryContract = ({
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="w-full max-w-full space-y-5 overflow-x-hidden px-4 sm:px-6">
         {/* ── Order Summary ────────────── */}
-        <div className="grid grid-cols-2 gap-3 text-xs bg-muted/50 rounded-lg p-3">
+        <div className="grid grid-cols-1 gap-3 rounded-lg bg-muted/50 p-3 text-xs sm:grid-cols-2">
           <div><span className="text-muted-foreground">Transaction:</span> <span className="font-medium">{txId ?? "Pending"}</span></div>
           <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{formattedDate}</span></div>
           <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{buyerName}</span></div>
           <div><span className="text-muted-foreground">Vendor:</span> <span className="font-medium">{vendorName}</span></div>
           <div><span className="text-muted-foreground">Amount:</span> <span className="font-medium">${orderAmount.toLocaleString()}</span></div>
           <div><span className="text-muted-foreground">Milestones:</span> <span className="font-medium">{milestoneCount}</span></div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <span className="text-muted-foreground">Industry:</span>{" "}
             <span className="font-medium">{clauseSet.label}</span>
           </div>
         </div>
 
         {/* ── Progress ─────────────────── */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>Contract terms acknowledged</span>
-            <span>{checkedCount}/{allTermIds.length}</span>
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              <span>{checkedCount}/{allTermIds.length}</span>
+              {!allChecked && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[10px]"
+                  onClick={acknowledgeAllTerms}
+                >
+                  Check all terms
+                </Button>
+              )}
+            </div>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -181,14 +212,13 @@ const PreOrderSignatoryContract = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[320px] pr-2">
-          <div className="space-y-3">
+        <div className="w-full max-w-full space-y-3 overflow-x-hidden pb-2">
             {CONTRACT_TERMS.map((term) => (
               <label
                 key={term.id}
                 htmlFor={`contract-${term.id}`}
                 className={cn(
-                  "flex items-start gap-2.5 p-3 rounded-md cursor-pointer transition-colors text-xs border",
+                  "flex w-full min-w-0 cursor-pointer items-start gap-2.5 rounded-md border p-3 text-xs transition-colors",
                   checkedTerms[term.id]
                     ? "bg-green-500/10 border-green-500/30"
                     : "bg-muted/30 border-transparent hover:border-muted-foreground/20"
@@ -200,9 +230,9 @@ const PreOrderSignatoryContract = ({
                   onCheckedChange={() => toggle(term.id)}
                   className="mt-0.5"
                 />
-                <div className="space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <span className="font-semibold text-foreground">{term.title}</span>
-                  <p className={cn("leading-relaxed", checkedTerms[term.id] ? "text-foreground" : "text-muted-foreground")}>
+                  <p className={cn("whitespace-normal break-words leading-relaxed", checkedTerms[term.id] ? "text-foreground" : "text-muted-foreground")}>
                     {term.text}
                   </p>
                 </div>
@@ -243,8 +273,7 @@ const PreOrderSignatoryContract = ({
                 </ul>
               </div>
             )}
-          </div>
-        </ScrollArea>
+        </div>
 
         <Separator />
 
@@ -258,9 +287,9 @@ const PreOrderSignatoryContract = ({
           <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
             <Label className="text-xs font-semibold">Vendor Signature</Label>
             {isAutoSigned ? (
-              <div className="flex items-center gap-2 text-xs">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="font-medium text-green-700 dark:text-green-400">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
+                <span className="min-w-0 flex-1 whitespace-normal break-words font-medium text-green-700 dark:text-green-400">
                   Auto-signed by TrustLock Protocol — "{vendorName}"
                 </span>
                 <Badge variant="secondary" className="text-[10px]">Automated</Badge>
@@ -331,18 +360,22 @@ const PreOrderSignatoryContract = ({
         </div>
 
         {/* ── Actions ──────────────────────── */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {onDecline && (
-            <Button variant="outline" onClick={onDecline} className="flex-1">
+            <Button variant="outline" onClick={onDecline} className="w-full sm:flex-1">
               Decline & Cancel
             </Button>
           )}
           <Button
-            onClick={onBothSigned}
-            disabled={!canSign}
-            className="flex-1 gap-2"
+            onClick={() => {
+              if (!allChecked) { scrollToFirstUncheckedTerm(); return; }
+              if (!canSign) return;
+              onBothSigned();
+            }}
+            variant={canSign ? "default" : "secondary"}
+            className="min-h-11 w-full min-w-0 whitespace-normal px-3 py-2 leading-snug sm:flex-1"
           >
-            <Handshake className="h-4 w-4" />
+            <Handshake className="h-4 w-4 shrink-0" />
             {previewMode
               ? "Preview Only"
               : canSign
