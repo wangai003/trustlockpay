@@ -1088,6 +1088,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                     else if (action === "switch_to_thirdweb") setMethod("thirdweb");
                   }}
                 />
+              );
 
             }
             return null;
