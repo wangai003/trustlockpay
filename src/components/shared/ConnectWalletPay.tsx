@@ -247,7 +247,8 @@ const ConnectWalletPay = ({
             abi: ERC20_ABI,
             functionName: "transfer",
             args: [recipient, amountUnits],
-          } as Parameters<typeof writeContract>[0]);
+          });
+
 
         }}
       >
