@@ -281,7 +281,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
     : method === "bank_transfer" ? "bank_transfer"
     : method === "azix" ? "crypto"
     : "card";
-  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
+  // Prefer the explicit processor on the chosen provider (e.g. Coinbase Wallet → coinbase)
+  // so the fee breakdown matches what the user actually selected, instead of falling back
+  // to the cost-optimizer default (which would pick Transak for card-like flows).
+  const selectedProcessorId = isAdmin
+    ? "direct" as const
+    : (selectedProvider?.processor as "stripe" | "coinbase" | "transak" | "thirdweb" | "direct" | undefined)
+      ?? selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
   const feeBreakdown = parsedAmount > 0 && !isAdmin
     ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
     : null;
@@ -1402,17 +1408,14 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                   >
                     Try Again
                   </Button>
-                  <div className="p-2 rounded bg-muted text-[10px] text-muted-foreground">
-                    <p><strong>💡 Try another payment method?</strong> If you're having trouble with crypto, you can switch to card, mobile money, or bank transfer above — these methods are processed instantly through our payment partners.</p>
-                  </div>
                 </div>
               )}
 
               <div className="p-2 rounded bg-muted text-[10px] space-y-1">
                 <p><strong>Network:</strong> Polygon (Chain ID: 137)</p>
                 <p><strong>Token:</strong> {selectedToken} ({selectedToken === "USDC" ? "0x3c499...b8f0" : "0xc2132...1eFB"})</p>
-                <p><strong>Owner:</strong> Azix</p>
-                <p><strong>Support:</strong> support@azix.world</p>
+                <p><strong>Owner:</strong> TrustLock</p>
+                <p><strong>Support:</strong> support@trustlockpay.com</p>
               </div>
 
               <div className="p-2 rounded-lg border border-accent/30 bg-accent/5">
@@ -1421,7 +1424,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 </p>
               </div>
 
-              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to Transaction Fee Wallet via Polygon</p>
+              <p className="text-[10px] text-muted-foreground">Direct crypto · 1.0% platform fee · No processor fee · Funds route to the TrustLock Transaction Fee Wallet via Polygon</p>
               </>)}
             </div>
           )}
@@ -1433,7 +1436,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                 {selectedProvider.name} on-ramp
               </p>
               <p className="text-[10px] text-muted-foreground">
-                Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
+                Converts your fiat to USDC and routes to the TrustLock Transaction Fee Wallet.
                 {" "}1.5% platform + 1.5% processor fee
               </p>
             </div>
