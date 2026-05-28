@@ -259,6 +259,25 @@ const AcknowledgementForm = ({
     setCheckedClauses((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const acknowledgeAll = () => {
+    const all: Record<string, boolean> = {};
+    allCheckboxIds.forEach((id) => { all[id] = true; });
+    setCheckedClauses(all);
+  };
+
+  const scrollToFirstUnchecked = () => {
+    const firstUnchecked = allCheckboxIds.find((id) => !checkedClauses[id]);
+    if (!firstUnchecked) return;
+    const el = document.getElementById(firstUnchecked);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      (el.closest("label") as HTMLElement | null)?.classList.add("ring-2", "ring-primary");
+      setTimeout(() => {
+        (el.closest("label") as HTMLElement | null)?.classList.remove("ring-2", "ring-primary");
+      }, 1800);
+    }
+  };
+
   const now = new Date();
   const formattedDate = now.toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
