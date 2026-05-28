@@ -6579,6 +6579,13 @@ export type Database = {
         Args: { p_industry: string }
         Returns: number
       }
+      get_lender_license_self: {
+        Args: never
+        Returns: {
+          lending_license_number: string
+          license_jurisdiction: string
+        }[]
+      }
       get_masked_arbitrator_proposals: {
         Args: { _dispute_id: string; _user_id: string }
         Returns: Json[]
