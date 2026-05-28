@@ -1438,12 +1438,6 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               </p>
             </div>
           )}
-              <p className="text-[10px] text-muted-foreground">
-                Converts your fiat to USDC and routes to the Azix Transaction Fee Wallet.
-                {" "}1.5% platform + 1.5% processor fee
-              </p>
-            </div>
-          )}
 
           {/* Apple Pay / Google Pay notice */}
           {method === "applepay" && (
