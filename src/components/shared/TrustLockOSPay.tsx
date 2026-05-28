@@ -281,7 +281,13 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
     : method === "bank_transfer" ? "bank_transfer"
     : method === "azix" ? "crypto"
     : "card";
-  const selectedProcessorId = isAdmin ? "direct" as const : selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
+  // Prefer the explicit processor on the chosen provider (e.g. Coinbase Wallet → coinbase)
+  // so the fee breakdown matches what the user actually selected, instead of falling back
+  // to the cost-optimizer default (which would pick Transak for card-like flows).
+  const selectedProcessorId = isAdmin
+    ? "direct" as const
+    : (selectedProvider?.processor as "stripe" | "coinbase" | "transak" | "thirdweb" | "direct" | undefined)
+      ?? selectProcessor("global", isCryptoMethod, undefined, feePaymentMethod, "os_payment");
   const feeBreakdown = parsedAmount > 0 && !isAdmin
     ? calculateFeesV2(parsedAmount, "os_payment", selectedProcessorId)
     : null;
