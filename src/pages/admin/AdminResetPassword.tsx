@@ -105,6 +105,30 @@ const AdminResetPassword = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrent ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Your existing password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Forgot your password? Ask a chief admin to issue a new temporary password.
+                </p>
+              </div>
+
+
                 <Label htmlFor="newPassword">New Password <span className="text-destructive">*</span></Label>
                 <div className="relative">
                   <Input
