@@ -145,20 +145,33 @@ Deno.serve(async (req) => {
     }
 
     // ── SETUP (first-time password + email) ────────────────
+    // Requires the temp password issued at account creation.
     if (action === "setup") {
-      const { username, email, password } = params;
-      if (!username || !email || !password) return json({ error: "Missing fields" }, 400);
+      const { username, email, password, tempPassword } = params;
+      if (!username || !email || !password || !tempPassword) {
+        return json({ error: "username, email, password, and tempPassword are required" }, 400);
+      }
       if (password.length < 6) return json({ error: "Password must be at least 6 characters." }, 400);
 
       const { data: account } = await supabase
         .from("admin_accounts")
-        .select("id")
+        .select("id, is_setup")
         .eq("username", username.toLowerCase().trim())
         .single();
 
       if (!account) return json({ error: "Account not found." }, 404);
+      if (account.is_setup) {
+        return json({ error: "Account is already set up. Use login or contact a chief admin to reset." }, 403);
+      }
 
-      // Hash the new password using pgcrypto
+      const { data: tempMatch } = await supabase.rpc("verify_admin_temp_password", {
+        _account_id: account.id,
+        _password: tempPassword,
+      });
+      if (!tempMatch) {
+        return json({ error: "Invalid temporary password." }, 401);
+      }
+
       const { data: hash } = await supabase.rpc("hash_password", { _password: password });
 
       const { error: updateErr } = await supabase
@@ -178,18 +191,32 @@ Deno.serve(async (req) => {
     }
 
     // ── RESET PASSWORD ─────────────────────────────────────
+    // Requires the caller to prove possession of the CURRENT password.
+    // Forgotten-password recovery must be handled by a chief admin via
+    // manage-admin-staff (which issues a fresh temp password).
     if (action === "reset") {
-      const { email, password } = params;
-      if (!email || !password) return json({ error: "Missing fields" }, 400);
+      const { email, password, currentPassword } = params;
+      if (!email || !password || !currentPassword) {
+        return json({ error: "email, currentPassword, and password are required" }, 400);
+      }
       if (password.length < 6) return json({ error: "Password must be at least 6 characters." }, 400);
 
       const { data: account } = await supabase
         .from("admin_accounts")
-        .select("id")
+        .select("id, is_setup")
         .eq("email", email.toLowerCase().trim())
         .single();
 
       if (!account) return json({ error: "No account found with that email." }, 404);
+      if (!account.is_setup) {
+        return json({ error: "Account is not set up yet. Complete first-time setup with your temporary password." }, 403);
+      }
+
+      const { data: currentMatch } = await supabase.rpc("verify_admin_password", {
+        _account_id: account.id,
+        _password: currentPassword,
+      });
+      if (!currentMatch) return json({ error: "Current password is incorrect." }, 401);
 
       const { data: hash } = await supabase.rpc("hash_password", { _password: password });
 
