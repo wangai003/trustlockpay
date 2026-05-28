@@ -1131,7 +1131,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               </div>
 
 
-            <div className="space-y-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5">
+
               {/* ── SIMPLIFIED CRYPTO PAYMENT INSTRUCTIONS ── */}
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
                 <div className="flex items-start gap-2">
