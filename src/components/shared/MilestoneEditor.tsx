@@ -841,7 +841,7 @@ const MilestoneEditor = ({ role, orderId, industry: initialIndustry, onSave }: M
 
       {/* Acknowledgement Form Modal */}
       <Dialog open={!!showAckModal} onOpenChange={() => setShowAckModal(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-sm">Sign Milestone Acknowledgement</DialogTitle>
           </DialogHeader>
