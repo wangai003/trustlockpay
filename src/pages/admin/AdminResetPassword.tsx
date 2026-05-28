@@ -11,8 +11,10 @@ import { serverAdminReset } from "@/lib/adminAuth";
 const AdminResetPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +24,7 @@ const AdminResetPassword = () => {
   const isPasswordValid = newPassword.length >= 6;
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid && !loading;
+  const canSubmit = isPasswordValid && passwordsMatch && isEmailValid && currentPassword.length > 0 && !loading;
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,15 +32,16 @@ const AdminResetPassword = () => {
 
     if (!isPasswordValid) { setError("Password must be at least 6 characters."); return; }
     if (!passwordsMatch) { setError("Passwords do not match."); return; }
+    if (!currentPassword) { setError("Current password is required."); return; }
 
     setLoading(true);
     try {
-      const result = await serverAdminReset(email, newPassword);
+      const result = await serverAdminReset(email, currentPassword, newPassword);
       if (result.success) {
         setSuccess(true);
         setTimeout(() => navigate("/trustlock/admin/login"), 3000);
       } else {
-        setError(result.error || "Reset failed. Please verify your email address.");
+        setError(result.error || "Reset failed. Verify your email and current password, or contact a chief admin if you have forgotten your password.");
       }
     } catch {
       setError("Connection error. Please try again.");
