@@ -31,7 +31,18 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { action, chiefAdminId, ...params } = await req.json();
+    const { action, chiefAdminId, chiefPassword, ...params } = await req.json();
+
+    if (!chiefAdminId || !chiefPassword) {
+      return json({ error: "Unauthorized — chief credentials required." }, 401);
+    }
+
+    // Verify the chief's password server-side (proves caller owns the chiefAdminId)
+    const { data: pwOk } = await supabase.rpc("verify_admin_password", {
+      _admin_id: chiefAdminId,
+      _password: chiefPassword,
+    });
+    if (!pwOk) return json({ error: "Unauthorized — invalid credentials." }, 401);
 
     // Verify the caller is a chief admin
     const callerRank = await getChiefRank(supabase, chiefAdminId);

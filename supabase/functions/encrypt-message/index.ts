@@ -33,11 +33,52 @@ async function decrypt(ciphertext: string, nonce: string): Promise<string> {
   return decoder.decode(decrypted);
 }
 
+async function verifyCaller(req: Request): Promise<{ userId: string | null; isService: boolean }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return { userId: null, isService: false };
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return { userId: null, isService: true };
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return { userId: null, isService: false };
+    return { userId: data.user.id, isService: false };
+  } catch { return { userId: null, isService: false }; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const caller = await verifyCaller(req);
+    if (!caller.isService && !caller.userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { action, body, ciphertext, nonce, messages } = await req.json();
+
+    // Decrypt actions require admin role (or service role)
+    if ((action === "decrypt" || action === "decrypt_batch") && !caller.isService) {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: adminRole } = await supabase
+        .from("user_roles").select("role").eq("user_id", caller.userId!).eq("role", "admin").maybeSingle();
+      if (!adminRole) {
+        return new Response(JSON.stringify({ error: "Forbidden — admin role required to decrypt" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+
 
     if (action === "encrypt" && body) {
       const result = await encrypt(body);
