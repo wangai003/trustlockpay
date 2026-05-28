@@ -364,22 +364,27 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase();
+    const caller = await verifyCaller(req, supabase);
+    if (!caller.isService && !caller.isAdmin) {
+      return json({ error: "Unauthorized — service role or admin required" }, 401);
+    }
+
     const body = await req.json();
     const {
       action,
       transactionId,
       refundAmount,
-      refundType,      // "full_refund" | "split_buyer" | "milestone_refund"
-      buyerPaymentDetails,  // From payout_requests.provider_details
-      originalProcessor,    // Stripe, Coinbase, Transak, Direct
-      paymentCategory,      // card, bank_account, mobile_money, crypto_wallet
+      refundType,
+      buyerPaymentDetails,
+      originalProcessor,
+      paymentCategory,
       buyerId,
       milestoneId,
     } = body;
 
     if (!action) return json({ error: "action is required" }, 400);
 
-    const supabase = getSupabase();
 
     // ═════════════════════════════════════════════════
     //  ACTION: route_buyer_refund
