@@ -113,6 +113,12 @@ const AdminLogin = () => {
         }));
         localStorage.setItem("tl_network", "mainnet");
         localStorage.setItem("tl_admin_name", result.name || "Admin");
+        // Stash the chief password for the session so privileged staff-management
+        // mutations can prove credential ownership server-side. Cleared on tab
+        // close, logout, or session timeout.
+        if (result.isChief) {
+          sessionStorage.setItem("tl_admin_session_pw", password);
+        }
         setLoading(false);
         navigate("/trustlock/admin");
         return;

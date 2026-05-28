@@ -31,13 +31,31 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { action, chiefAdminId, ...params } = await req.json();
+    const { action, chiefAdminId, chiefPassword, ...params } = await req.json();
 
-    // Verify the caller is a chief admin
+    if (!chiefAdminId) {
+      return json({ error: "Unauthorized — chiefAdminId required." }, 401);
+    }
+
+    // Verify caller is a chief admin
     const callerRank = await getChiefRank(supabase, chiefAdminId);
     if (callerRank === null) return json({ error: "Unauthorized — chief admin only." }, 403);
 
     const isOriginalChief = callerRank === 1;
+
+    // Mutation actions require password proof to prevent UUID spoofing
+    const MUTATION_ACTIONS = new Set(["add", "delete", "reinstate", "promote", "demote", "deleteSelf"]);
+    if (MUTATION_ACTIONS.has(action)) {
+      if (!chiefPassword) {
+        return json({ error: "Unauthorized — chief password required for this action." }, 401);
+      }
+      const { data: pwOk } = await supabase.rpc("verify_admin_password", {
+        _admin_id: chiefAdminId,
+        _password: chiefPassword,
+      });
+      if (!pwOk) return json({ error: "Unauthorized — invalid credentials." }, 401);
+    }
+
 
     // ── ADD NEW ADMIN (any chief can add) ──────────────────
     if (action === "add") {

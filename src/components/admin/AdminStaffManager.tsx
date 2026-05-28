@@ -16,11 +16,20 @@ const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-a
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const TESTNET_CHIEF_ADMIN_ID = "a0ac136f-de82-45bd-8219-0fc5ab25d098";
 
+const MUTATION_ACTIONS = new Set([
+  "add", "delete", "reinstate", "promote", "demote", "deleteSelf",
+]);
+
 function callStaffApi(body: Record<string, unknown>) {
+  const enriched: Record<string, unknown> = { ...body };
+  if (typeof body.action === "string" && MUTATION_ACTIONS.has(body.action)) {
+    const pw = sessionStorage.getItem("tl_admin_session_pw") || "";
+    if (pw) enriched.chiefPassword = pw;
+  }
   return fetch(FUNCTION_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: API_KEY },
-    body: JSON.stringify(body),
+    body: JSON.stringify(enriched),
   }).then((r) => r.json());
 }
 

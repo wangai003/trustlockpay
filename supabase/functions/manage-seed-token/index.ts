@@ -157,15 +157,30 @@ Deno.serve(async (req) => {
     );
 
     let userId: string | null = null;
+    let isServiceRole = false;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
-      const anonClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
+      const token = authHeader.replace("Bearer ", "");
+      if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+        isServiceRole = true;
+      } else {
+        const anonClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data } = await anonClient.auth.getUser();
+        userId = data?.user?.id ?? null;
+      }
+    }
+
+    // Public read-only actions allowed without auth
+    const PUBLIC_ACTIONS = new Set(["get_wallet_info", "get_wallet_routing"]);
+    if (!isServiceRole && !userId && !PUBLIC_ACTIONS.has(action)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-      const { data } = await anonClient.auth.getUser();
-      userId = data?.user?.id ?? null;
     }
 
     switch (action) {
@@ -173,7 +188,8 @@ Deno.serve(async (req) => {
       // wallet_purpose='pay'    → hardwired to AZIX_TRANSACTION_WALLET (revenue/fees)
       // wallet_purpose='payout' → hardwired to AZIX_ESCROW_WALLET (escrow disbursement)
       case "get_or_create_token": {
-        const targetUserId = params.userId || userId;
+        // Only allow service-role or admin to set targetUserId different from caller
+        const targetUserId = (isServiceRole && params.userId) ? params.userId : userId;
         if (!targetUserId) throw new Error("User ID required");
 
         // Accept wallet_purpose ('pay' | 'payout') — maps to internal purpose

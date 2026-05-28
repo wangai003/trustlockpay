@@ -13,10 +13,11 @@ export const useSessionTimeout = (loginPath: string) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       await signOut();
-      // Clear any testnet auth flags
+      // Clear any testnet auth flags + admin session credential
       localStorage.removeItem("tl_buyer_auth");
       localStorage.removeItem("tl_vendor_auth");
       localStorage.removeItem("tl_admin_auth");
+      sessionStorage.removeItem("tl_admin_session_pw");
       navigate(loginPath, { replace: true });
     }, SESSION_TIMEOUT_MS);
   }, [signOut, navigate, loginPath]);

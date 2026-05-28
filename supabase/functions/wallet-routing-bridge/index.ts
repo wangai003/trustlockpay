@@ -56,6 +56,12 @@ function getSupabase() {
   );
 }
 
+function isServiceRoleCall(req: Request): boolean {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  return authHeader.replace("Bearer ", "") === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -199,6 +205,11 @@ Deno.serve(async (req) => {
   }
   if (req.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
+  }
+
+  // Service-role only — moves real on-chain funds
+  if (!isServiceRoleCall(req)) {
+    return json({ error: "Unauthorized — service role required" }, 401);
   }
 
   try {

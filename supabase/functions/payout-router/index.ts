@@ -33,6 +33,25 @@ function getSupabase() {
   );
 }
 
+async function verifyCaller(req: Request, supabase: ReturnType<typeof getSupabase>): Promise<{ userId: string | null; isService: boolean; isAdmin: boolean }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return { userId: null, isService: false, isAdmin: false };
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return { userId: null, isService: true, isAdmin: true };
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return { userId: null, isService: false, isAdmin: false };
+    const { data: adminRole } = await supabase
+      .from("user_roles").select("role").eq("user_id", data.user.id).eq("role", "admin").maybeSingle();
+    return { userId: data.user.id, isService: false, isAdmin: !!adminRole };
+  } catch { return { userId: null, isService: false, isAdmin: false }; }
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -302,12 +321,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = getSupabase();
+    const caller = await verifyCaller(req, supabase);
+    if (!caller.isService && !caller.isAdmin) {
+      return json({ error: "Unauthorized — service role or admin required" }, 401);
+    }
+
     const body = await req.json();
     const {
       action,
       transactionId,
       payoutAmount,
-      payoutType,       // "release" | "split_vendor" | "milestone_release"
+      payoutType,
       vendorPaymentDetails,
       paymentProvider,
       paymentCategory,
@@ -317,7 +342,10 @@ Deno.serve(async (req) => {
 
     if (!action) return json({ error: "action is required" }, 400);
 
-    const supabase = getSupabase();
+    if (action === "resolve_manual_payout" && !caller.isAdmin && !caller.isService) {
+      return json({ error: "Forbidden — admin only" }, 403);
+    }
+
 
     // ═════════════════════════════════════════════════
     //  ACTION: route_vendor_payout
