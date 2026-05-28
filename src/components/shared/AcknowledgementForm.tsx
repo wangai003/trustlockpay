@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Shield, FileText, AlertTriangle, Scale, Clock, Globe,
@@ -310,7 +309,7 @@ const AcknowledgementForm = ({
           </div>
         </div>
 
-        <div className="pr-2">
+        <div className="max-h-[clamp(16rem,42dvh,32rem)] overflow-y-auto overscroll-contain pr-2 pb-2">
           <div className="space-y-4">
             {/* ── 1. Escrow Disclaimer ─────────── */}
             <section>
