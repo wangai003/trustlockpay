@@ -81,16 +81,13 @@ const SandboxLogin = () => {
     setReturnLoading(true);
     const trimmedEmail = returnEmail.trim().toLowerCase();
 
-    const { data } = await supabase
-      .from("sandbox_leads")
-      .select("name, email")
-      .eq("email", trimmedEmail)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const { data } = await supabase.functions.invoke("sandbox-lookup", {
+      body: { email: trimmedEmail },
+    });
 
-    if (data && data.length > 0) {
-      toast.success(`Welcome back, ${data[0].name}!`);
-      createSession(data[0].name, data[0].email);
+    if (data?.found) {
+      toast.success(`Welcome back, ${data.name}!`);
+      createSession(data.name, data.email);
     } else {
       toast.error("No account found with that email. Please sign up instead.");
     }
