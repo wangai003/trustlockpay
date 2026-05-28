@@ -247,7 +247,11 @@ const ConnectWalletPay = ({
             abi: ERC20_ABI,
             functionName: "transfer",
             args: [recipient, amountUnits],
-          });
+            account: address as `0x${string}`,
+            chainId: targetChain.id,
+            chain: targetChain,
+          } as any);
+
 
 
         }}
