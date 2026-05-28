@@ -1087,7 +1087,8 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                     else if (action === "switch_to_transak") setMethod("transak");
                     else if (action === "switch_to_thirdweb") setMethod("thirdweb");
                   }}
-                />
+                  <p><strong>1.</strong> Copy the TrustLock receiving wallet address below.</p>
+
               );
             }
             return null;
