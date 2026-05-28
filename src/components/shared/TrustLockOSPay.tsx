@@ -1124,7 +1124,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
                   </div>
                 </div>
                 <div className="ml-6 space-y-1 text-[10px] text-foreground">
-                  <p><strong>1.</strong> Copy the Azix receiving wallet address below.</p>
+                  <p><strong>1.</strong> Copy the TrustLock receiving wallet address below.</p>
                   <p><strong>2.</strong> Open your wallet or exchange → Withdraw → select <strong>{selectedToken}</strong> → choose <strong>Polygon</strong> network → paste address → enter amount → confirm.</p>
                   <p><strong>3.</strong> After sending, your wallet/exchange will show a <strong>Transaction ID (TxID)</strong> — a 66-character code starting with 0x.</p>
                   <p><strong>4.</strong> Return here and fill in the 3 fields below → click <strong>"Verify & Generate Order"</strong>.</p>
@@ -1198,9 +1198,9 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               {polygonConfirmed && (<>
               {/* Step 3 content continues below */}
 
-              {/* ── Azix Receiving Wallet (LOCKED + COPY) ── */}
+              {/* ── TrustLock Receiving Wallet (LOCKED + COPY) ── */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold">Azix Receiving Wallet — <span className="text-destructive">DO NOT EDIT</span></Label>
+                <Label className="text-xs font-semibold">TrustLock Receiving Wallet — <span className="text-destructive">DO NOT EDIT</span></Label>
                 <div className="relative">
                   <Input
                     value={AZIX_WALLETS.transaction.publicKey}
@@ -1576,7 +1576,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <Lock className="w-3 h-3" />
-            <span>Secured by Azix Smart Contracts on Polygon · Platform Fee → Transaction Wallet · Verified</span>
+            <span>Secured by TrustLock Smart Contracts on Polygon · Platform Fee → Transaction Wallet · Verified</span>
           </div>
         </CardContent>
       </Card>
