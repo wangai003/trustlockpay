@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Shield, FileText, Scale, Clock, Globe, CheckCircle2,
@@ -124,19 +123,38 @@ const PreOrderSignatoryContract = ({
     setCheckedTerms((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const acknowledgeAllTerms = () => {
+    const next: Record<string, boolean> = {};
+    allTermIds.forEach((id) => { next[id] = true; });
+    setCheckedTerms(next);
+  };
+
+  const scrollToFirstUncheckedTerm = () => {
+    const firstUnchecked = allTermIds.find((id) => !checkedTerms[id]);
+    if (!firstUnchecked) return;
+    const el = document.getElementById(`contract-${firstUnchecked}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      (el.closest("label") as HTMLElement | null)?.classList.add("ring-2", "ring-primary");
+      setTimeout(() => {
+        (el.closest("label") as HTMLElement | null)?.classList.remove("ring-2", "ring-primary");
+      }, 1800);
+    }
+  };
+
   const now = new Date();
   const formattedDate = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const formattedTime = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
 
   return (
-    <Card className="border-2 border-primary/30 bg-card">
+    <Card className="w-full max-w-full overflow-x-hidden border-2 border-primary/30 bg-card">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
             <Handshake className="h-6 w-6 text-primary" />
-            <CardTitle className="text-lg">Pre-Order Signatory Contract</CardTitle>
+            <CardTitle className="text-lg leading-tight">Pre-Order Signatory Contract</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-xs">{clauseSet.label}</Badge>
             {isAutoSigned && (
               <Badge className="text-[10px] bg-green-600">Vendor Auto-Signed ✓</Badge>
@@ -152,16 +170,16 @@ const PreOrderSignatoryContract = ({
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="w-full max-w-full space-y-5 overflow-x-hidden px-4 sm:px-6">
         {/* ── Order Summary ────────────── */}
-        <div className="grid grid-cols-2 gap-3 text-xs bg-muted/50 rounded-lg p-3">
+        <div className="grid grid-cols-1 gap-3 rounded-lg bg-muted/50 p-3 text-xs sm:grid-cols-2">
           <div><span className="text-muted-foreground">Transaction:</span> <span className="font-medium">{txId ?? "Pending"}</span></div>
           <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{formattedDate}</span></div>
           <div><span className="text-muted-foreground">Buyer:</span> <span className="font-medium">{buyerName}</span></div>
           <div><span className="text-muted-foreground">Vendor:</span> <span className="font-medium">{vendorName}</span></div>
           <div><span className="text-muted-foreground">Amount:</span> <span className="font-medium">${orderAmount.toLocaleString()}</span></div>
           <div><span className="text-muted-foreground">Milestones:</span> <span className="font-medium">{milestoneCount}</span></div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <span className="text-muted-foreground">Industry:</span>{" "}
             <span className="font-medium">{clauseSet.label}</span>
           </div>
