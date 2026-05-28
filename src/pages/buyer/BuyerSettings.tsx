@@ -26,7 +26,7 @@ const buyerNotificationKeys = [
 ];
 
 const BuyerSettings = () => {
-  const { buyer } = useBuyer();
+  const { buyer, setBuyer } = useBuyer();
   const navigate = useNavigate();
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -40,6 +40,14 @@ const BuyerSettings = () => {
   const [profilePhone, setProfilePhone] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [entityType, setEntityType] = useState("individual");
+
+  useEffect(() => {
+    setProfileName(buyer.name || "");
+    setProfileLocation(buyer.location || "");
+    setProfilePhone(buyer.phone || "");
+    setCompanyName(buyer.companyName || "");
+    setEntityType(buyer.entityType || "individual");
+  }, [buyer]);
 
   useEffect(() => {
     if (savedNotifs && typeof savedNotifs === "object") {
@@ -111,12 +119,23 @@ const BuyerSettings = () => {
                 toast.error("Company name is required for registered companies.");
                 return;
               }
-              saveProfile.mutateAsync({
+              saveProfile.mutate({
                 fullName: profileName,
                 location: profileLocation,
                 phone: profilePhone,
                 companyName: companyName || undefined,
                 entityType,
+              }, {
+                onSuccess: () => {
+                setBuyer((prev) => ({
+                  ...prev,
+                  name: profileName.trim() || prev.name,
+                  location: profileLocation,
+                  phone: profilePhone,
+                  companyName,
+                  entityType,
+                }));
+                },
               });
             }} disabled={saveProfile.isPending}>
               <Save className="w-3.5 h-3.5 mr-1.5" /> Save Profile

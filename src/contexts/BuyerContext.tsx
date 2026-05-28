@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 type NetworkMode = "testnet" | "mainnet";
 
@@ -7,6 +9,9 @@ interface BuyerProfile {
   name: string;
   email: string;
   location: string;
+  phone?: string;
+  companyName?: string;
+  entityType?: string;
 }
 
 interface BuyerContextType {
@@ -14,6 +19,7 @@ interface BuyerContextType {
   setNetworkMode: (mode: NetworkMode) => void;
   isTestnet: boolean;
   buyer: BuyerProfile;
+  setBuyer: (buyer: BuyerProfile | ((prev: BuyerProfile) => BuyerProfile)) => void;
 }
 
 const defaultTestnetBuyer: BuyerProfile = {
@@ -37,15 +43,80 @@ export const useBuyer = () => {
 };
 
 export const BuyerProvider = ({ children }: { children: ReactNode }) => {
+  const { user, loading: authLoading } = useAuth();
   const [networkMode, setNetworkModeState] = useState<NetworkMode>(getInitialBuyerMode);
+  const [buyer, setBuyer] = useState<BuyerProfile>(defaultTestnetBuyer);
 
   const setNetworkMode = (mode: NetworkMode) => {
     setNetworkModeState(mode);
     localStorage.setItem("tl_buyer_network", mode);
   };
 
+  useEffect(() => {
+    if (!authLoading && user && !localStorage.getItem("tl_buyer_network")) {
+      setNetworkModeState("mainnet");
+      localStorage.setItem("tl_buyer_network", "mainnet");
+    }
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const metadataName = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name.trim() : "";
+    const fallbackName = metadataName || user?.email?.split("@")[0] || "Buyer";
+
+    const loadMainnetProfile = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name,email,location,phone,company_name,entity_type")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error || !data) {
+        setBuyer({ id: user.id, name: fallbackName, email: user.email || "", location: "" });
+        return;
+      }
+
+      setBuyer({
+        id: user.id,
+        name: (data.full_name || "").trim() || fallbackName,
+        email: data.email || user.email || "",
+        location: data.location || "",
+        phone: data.phone || "",
+        companyName: data.company_name || "",
+        entityType: data.entity_type || "individual",
+      });
+    };
+
+    if (networkMode === "mainnet") {
+      void loadMainnetProfile();
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem("tl_buyer_profile_demo") || "{}");
+        setBuyer({
+          ...defaultTestnetBuyer,
+          name: saved.fullName || defaultTestnetBuyer.name,
+          location: saved.location || defaultTestnetBuyer.location,
+          phone: saved.phone || "",
+          companyName: saved.companyName || "",
+          entityType: saved.entityType || "individual",
+        });
+      } catch {
+        setBuyer(defaultTestnetBuyer);
+      }
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [networkMode, user, authLoading]);
+
   return (
-    <BuyerContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", buyer: defaultTestnetBuyer }}>
+    <BuyerContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", buyer, setBuyer }}>
       {children}
     </BuyerContext.Provider>
   );
