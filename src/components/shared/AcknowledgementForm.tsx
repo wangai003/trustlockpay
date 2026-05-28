@@ -259,6 +259,25 @@ const AcknowledgementForm = ({
     setCheckedClauses((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const acknowledgeAll = () => {
+    const all: Record<string, boolean> = {};
+    allCheckboxIds.forEach((id) => { all[id] = true; });
+    setCheckedClauses(all);
+  };
+
+  const scrollToFirstUnchecked = () => {
+    const firstUnchecked = allCheckboxIds.find((id) => !checkedClauses[id]);
+    if (!firstUnchecked) return;
+    const el = document.getElementById(firstUnchecked);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      (el.closest("label") as HTMLElement | null)?.classList.add("ring-2", "ring-primary");
+      setTimeout(() => {
+        (el.closest("label") as HTMLElement | null)?.classList.remove("ring-2", "ring-primary");
+      }, 1800);
+    }
+  };
+
   const now = new Date();
   const formattedDate = now.toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
@@ -297,9 +316,22 @@ const AcknowledgementForm = ({
 
         {/* ── Progress Bar ─────────────────── */}
         <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-xs text-muted-foreground items-center">
             <span>Clauses acknowledged</span>
-            <span>{checkedCount}/{allCheckboxIds.length}</span>
+            <div className="flex items-center gap-2">
+              <span>{checkedCount}/{allCheckboxIds.length}</span>
+              {!allChecked && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={acknowledgeAll}
+                >
+                  Acknowledge all
+                </Button>
+              )}
+            </div>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -307,6 +339,11 @@ const AcknowledgementForm = ({
               style={{ width: `${progress}%` }}
             />
           </div>
+          {!allChecked && checkedCount > 0 && (
+            <p className="text-[10px] text-muted-foreground pt-1">
+              Scroll through every section below — there are more clauses after this list.
+            </p>
+          )}
         </div>
 
         <div className="max-h-[clamp(16rem,42dvh,32rem)] overflow-y-auto overscroll-contain pr-2 pb-2">
@@ -514,15 +551,19 @@ const AcknowledgementForm = ({
             </Button>
           )}
           <Button
-            onClick={onAccept}
-            disabled={!allChecked || !nameMatch}
+            onClick={() => {
+              if (!allChecked) { scrollToFirstUnchecked(); return; }
+              if (!nameMatch) return;
+              onAccept();
+            }}
+            variant={allChecked && nameMatch ? "default" : "secondary"}
             className="flex-1 gap-2"
           >
             <CheckCircle2 className="h-4 w-4" />
             {allChecked && nameMatch
               ? "Accept & Lock Funds"
               : !allChecked
-                ? `${allCheckboxIds.length - checkedCount} clauses remaining`
+                ? `${allCheckboxIds.length - checkedCount} clauses remaining — tap to jump`
                 : "Type your name to sign"
             }
           </Button>
