@@ -180,12 +180,36 @@ async function notifyDisputeParties(supabase: any, dispute: any, message: string
   }
 }
 
+async function verifyCaller(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return "__service_role__";
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch { return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const callerId = await verifyCaller(req);
+    if (!callerId) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { action, disputeId, txId, reason, description, resolution } = body;
 
@@ -193,6 +217,31 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Authorization: caller must be a transaction party or admin.
+    if (callerId !== "__service_role__") {
+      const { data: adminRole } = await supabase
+        .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+      const isAdmin = !!adminRole;
+      const adminOnly = ["review_dispute", "resolve_dispute", "escalate_to_arbitration"];
+      if (adminOnly.includes(action) && !isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: "Admin role required" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // For tx-bound actions, ensure caller is a party.
+      const relTxId = txId;
+      if (relTxId && !isAdmin) {
+        const { data: txRow } = await supabase
+          .from("transactions").select("buyer_id, vendor_id").eq("tx_id", relTxId).maybeSingle();
+        const isParty = txRow && (txRow.buyer_id === callerId || txRow.vendor_id === callerId);
+        if (!isParty) {
+          return new Response(JSON.stringify({ success: false, error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
 
     let result;
 

@@ -37,8 +37,15 @@ const AdminSetup = () => {
 
     setLoading(true);
     try {
-      const result = await serverAdminSetup(username, email, newPassword);
+      const tempPassword = sessionStorage.getItem("tl_admin_setup_temp") || "";
+      if (!tempPassword) {
+        setError("Setup session expired. Please log in again with your temporary password.");
+        setLoading(false);
+        return;
+      }
+      const result = await serverAdminSetup(username, email, newPassword, tempPassword);
       if (result.success) {
+        sessionStorage.removeItem("tl_admin_setup_temp");
         setSuccess(true);
         setTimeout(() => {
           localStorage.setItem("tl_admin_auth", JSON.stringify({ authenticated: true, adminId: "", name: username, isChief: false }));

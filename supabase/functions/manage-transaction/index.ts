@@ -54,12 +54,36 @@ async function anchorProof(
   }
 }
 
+async function verifyCaller(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return "__service_role__";
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch { return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const callerId = await verifyCaller(req);
+    if (!callerId) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { action, txId, tracking, transportLegs, reason, description } = body;
 
@@ -67,6 +91,28 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Authorization: caller must be buyer/vendor on the txId, or an admin.
+    // Skip for service-role internal calls.
+    if (callerId !== "__service_role__" && txId) {
+      const { data: txRow } = await supabase
+        .from("transactions").select("buyer_id, vendor_id").eq("tx_id", txId).maybeSingle();
+      const { data: adminRole } = await supabase
+        .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+      const isParty = txRow && (txRow.buyer_id === callerId || txRow.vendor_id === callerId);
+      const isAdmin = !!adminRole;
+      const adminOnly = ["unfreeze_transaction", "compliance_reject_refund"];
+      if (adminOnly.includes(action) && !isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: "Admin role required" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!isParty && !isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     let result;
 

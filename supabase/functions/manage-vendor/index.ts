@@ -5,12 +5,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function verifyCaller(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "");
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return "__service_role__";
+  try {
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data, error } = await anon.auth.getUser();
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch { return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const callerId = await verifyCaller(req);
+    if (!callerId) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { action } = body;
 
@@ -18,6 +42,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Vendor actions: enforce vendorId matches caller (or admin).
+    if (callerId !== "__service_role__") {
+      const claimedVendorId = body.vendorId;
+      if (claimedVendorId && claimedVendorId !== callerId) {
+        const { data: adminRole } = await supabase
+          .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
+        if (!adminRole) {
+          return new Response(JSON.stringify({ success: false, error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else if (!claimedVendorId) {
+        // Default vendorId to caller for vendor self-service actions
+        body.vendorId = callerId;
+      }
+    }
 
     let result;
 

@@ -93,6 +93,9 @@ const AdminLogin = () => {
       }
 
       if (result.success && result.needsSetup) {
+        // Stash the temp password briefly so the setup page can prove ownership
+        // when submitting first-time credentials. Cleared by AdminSetup on use.
+        sessionStorage.setItem("tl_admin_setup_temp", password);
         setLoading(false);
         navigate(`/trustlock/admin/setup?username=${encodeURIComponent(result.username || identifier.toLowerCase().trim())}`);
         return;
