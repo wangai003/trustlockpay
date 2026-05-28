@@ -346,8 +346,7 @@ const AcknowledgementForm = ({
           )}
         </div>
 
-        <div className="max-h-[clamp(16rem,42dvh,32rem)] overflow-y-auto overscroll-contain pr-2 pb-2">
-          <div className="space-y-4">
+        <div className="space-y-4 pr-2 pb-2">
             {/* ── 1. Escrow Disclaimer ─────────── */}
             <section>
               <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
@@ -494,7 +493,6 @@ const AcknowledgementForm = ({
                 label="I consent to the 14-day auto-release policy for each milestone."
               />
             </section>
-          </div>
         </div>
 
         {/* ── Digital Signature Block ──────── */}
