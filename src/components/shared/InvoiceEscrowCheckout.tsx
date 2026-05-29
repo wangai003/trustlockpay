@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
+import CryptoPaymentTiers from "@/components/shared/CryptoPaymentTiers";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 import FundMovementTracker from "@/components/shared/FundMovementTracker";
 import { useProcessPayment } from "@/hooks/useSupabaseData";
@@ -445,14 +446,15 @@ const InvoiceEscrowCheckout = ({
               </div>
               {!buyerName.trim() || !buyerEmail.trim() ? (
                 <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200">
-                  Enter your name and email above before connecting your wallet.
+                  Enter your name and email above before paying with crypto.
                 </div>
               ) : (
-                <ConnectWalletPay
+                <CryptoPaymentTiers
                   amountUsd={grandTotal}
                   token={token}
                   isTestnet={isTestnet}
                   sessionId={linkId}
+                  buyerEmail={buyerEmail}
                   onVerified={handleCryptoVerified}
                 />
               )}
