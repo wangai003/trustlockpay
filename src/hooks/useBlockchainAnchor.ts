@@ -16,7 +16,12 @@ export type RecordType =
   | "gps_verification"
   | "price_lock"
   | "rejection"
-  | "hash_chain_anchor";
+  | "hash_chain_anchor"
+  // Pre-payment events (off-chain hash-chained — fired before any transaction exists)
+  | "rfq_submitted"
+  | "counter_proposal_accepted"
+  | "draft_proforma_issued";
+
 
 export interface AnchorResult {
   success: boolean;
