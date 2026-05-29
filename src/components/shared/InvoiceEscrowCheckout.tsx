@@ -11,7 +11,8 @@
  *   • Routes funds to TrustLock intake wallet → escrow (1% fee baked in, extracted at release)
  *   • Anchors `invoice` proof on Polygon via verify-crypto-payment / process-payment pipelines
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
