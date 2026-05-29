@@ -386,7 +386,25 @@ const WidgetCheckout = () => {
                     setAgreedMilestones(drafts);
                     setNegotiationStatus("agreed");
                     setStep("form");
+                    // Anchor buyer's acceptance of vendor's preset schedule (pre-payment event)
+                    void anchorProof(
+                      null,
+                      "counter_proposal_accepted",
+                      {
+                        vendor_id: vendorId || null,
+                        site_id: siteId || null,
+                        vendor_name: vendor.name,
+                        industry: vendor.industry,
+                        accepted_by: "buyer",
+                        accepted_milestones: drafts,
+                        amount: parseFloat(form.amount || "0"),
+                        accepted_at: new Date().toISOString(),
+                        surface: "widget",
+                      },
+                      `widget:${vendorId || siteId}`
+                    ).catch((e) => console.warn("[WidgetCheckout] counter_proposal_accepted anchor failed:", e));
                     toast.success("Vendor schedule accepted — proceed to payment details.");
+
                   } else if (decision === "counter") {
                     setStep("negotiation");
                   } else if (decision === "rfq") {
