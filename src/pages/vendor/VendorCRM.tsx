@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 import { getRFQTerms } from "@/lib/rfqIndustryConfig";
+
 import { INDUSTRY_LABELS } from "@/lib/industryList";
 import { toast } from "sonner";
 import {
