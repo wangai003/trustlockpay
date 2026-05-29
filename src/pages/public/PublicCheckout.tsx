@@ -46,6 +46,8 @@ const PublicCheckout = () => {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
   const [step, setStep] = useState<"loading" | "invoice" | "negotiation" | "compliance" | "acknowledge" | "contract" | "pay" | "done" | "vendor_locked">("loading");
+  const { anchor: anchorProof } = useBlockchainAnchor();
+
   const [linkData, setLinkData] = useState<LinkData | null>(null);
   const [invoiceData, setInvoiceData] = useState<{
     subtotal: number;
