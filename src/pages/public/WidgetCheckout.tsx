@@ -23,6 +23,8 @@ import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } f
 import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
 import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
+
 
 interface VendorInfo {
   name: string;
