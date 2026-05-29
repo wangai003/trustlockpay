@@ -627,6 +627,7 @@ const PublicCheckout = () => {
             </Button>
             <TrustLockOSPay
               role="buyer"
+              isTestnet={false}
               prefillService={linkTitle}
               prefillAmount={String(invoiceData?.grandTotal ?? linkData?.grand_total ?? 0)}
               onComplete={() => setStep("done")}
