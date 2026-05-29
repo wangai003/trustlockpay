@@ -107,19 +107,22 @@ export function useBlockchainAnchor() {
    */
   const anchor = useCallback(
     async (
-      transactionId: string,
+      transactionId: string | null,
       recordType: RecordType,
-      eventData: Record<string, unknown>
+      eventData: Record<string, unknown>,
+      txRefSource?: string
     ): Promise<AnchorResult> => {
       return callRegistryAnchor({
         action: "anchor",
         transactionId,
         recordType,
         eventData,
+        txRefSource,
       });
     },
     [callRegistryAnchor]
   );
+
 
   /**
    * Verify a content hash exists in the registry.
