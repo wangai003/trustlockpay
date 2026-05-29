@@ -525,6 +525,9 @@ const PublicCheckout = () => {
                 })()}
                 onSubmitDraft={(milestones) => {
                   setAgreedMilestones(milestones);
+                  setNegotiationStatus("proposed");
+                  toast.success("Milestone schedule locked — proceed to compliance.");
+                }}
                 onApproveDraft={() => {
                   setNegotiationStatus("agreed");
                   const key = linkData.industry.replace(/_/g, "-");
@@ -558,13 +561,10 @@ const PublicCheckout = () => {
                   ).catch((e) => console.warn("[PublicCheckout] counter_proposal_accepted anchor failed:", e));
                   toast.success("Vendor schedule accepted!");
                 }}
-
-                  })));
-                  toast.success("Vendor schedule accepted!");
-                }}
                 onRequestChanges={(note) => {
                   toast.info(`Change requested: ${note}`);
                 }}
+
               />
             )}
           </div>
