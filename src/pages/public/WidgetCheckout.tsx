@@ -106,6 +106,39 @@ const WidgetCheckout = () => {
     loadVendor();
   }, [vendorId]);
 
+  // ── Pre-payment anchor: draft_proforma_issued + invoice (fires once when checkout reaches form step) ──
+  const proformaAnchoredRef = useRef(false);
+  useEffect(() => {
+    if (step !== "form" || proformaAnchoredRef.current) return;
+    if (!vendorId && !siteId) return;
+    proformaAnchoredRef.current = true;
+
+    const txRefSource = `widget:${vendorId || siteId}`;
+    const issuedAt = new Date().toISOString();
+    const baseEvent = {
+      vendor_id: vendorId || null,
+      site_id: siteId || null,
+      vendor_name: vendor.name,
+      industry: vendor.industry,
+      item: form.item,
+      amount: parseFloat(form.amount || "0"),
+      currency: vendor.currency,
+      mode,
+      surface: "widget",
+      issued_at: issuedAt,
+    };
+
+    void anchorProof(null, "draft_proforma_issued", baseEvent, txRefSource).catch((e) =>
+      console.warn("[WidgetCheckout] draft_proforma_issued anchor failed:", e)
+    );
+    void anchorProof(null, "invoice", { ...baseEvent, stage: "presented_to_buyer" }, txRefSource).catch((e) =>
+      console.warn("[WidgetCheckout] invoice anchor failed:", e)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, vendorId, siteId]);
+
+
+
   const loadVendor = async () => {
     if (!vendorId) {
       setStep("form");
