@@ -19,6 +19,8 @@ import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import ReturningBuyerBanner from "@/components/shared/ReturningBuyerBanner";
 import { isMilestoneIndustryByKey } from "@/lib/industryList";
 import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
+
 import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
 
