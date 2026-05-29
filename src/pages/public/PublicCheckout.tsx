@@ -9,7 +9,7 @@ import IndustryBlueprintCard, { INDUSTRY_MILESTONES } from "@/components/shared/
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import StandaloneInvoice from "@/components/shared/StandaloneInvoice";
-import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
+import InvoiceEscrowCheckout from "@/components/shared/InvoiceEscrowCheckout";
 import SanctionsGate from "@/components/shared/SanctionsGate";
 import AcknowledgementForm from "@/components/shared/AcknowledgementForm";
 import PreOrderSignatoryContract from "@/components/shared/PreOrderSignatoryContract";
@@ -625,11 +625,19 @@ const PublicCheckout = () => {
             >
               <ArrowLeft className="w-4 h-4" /> Back to Contract
             </Button>
-            <TrustLockOSPay
-              role="buyer"
+            <InvoiceEscrowCheckout
+              vendorName={vendorName}
+              invoiceTitle={linkTitle}
+              lineItems={(linkData?.invoice_items as any[]) || []}
+              subtotal={invoiceData?.subtotal ?? linkData?.subtotal ?? 0}
+              taxItems={(linkData?.tax_items as TaxLineItem[]) || []}
+              taxTotal={invoiceData?.taxTotal ?? linkData?.tax_total ?? 0}
+              grandTotal={invoiceData?.grandTotal ?? linkData?.grand_total ?? 0}
+              currency={linkData?.currency || "USD"}
+              industry={linkData?.industry}
+              vendorId={(linkData as any)?.vendor_id}
+              linkId={linkId}
               isTestnet={false}
-              prefillService={linkTitle}
-              prefillAmount={String(invoiceData?.grandTotal ?? linkData?.grand_total ?? 0)}
               onComplete={() => setStep("done")}
             />
           </div>
