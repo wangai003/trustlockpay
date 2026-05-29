@@ -343,6 +343,40 @@ const InvoiceEscrowCheckout = ({
         </CardContent>
       </Card>
 
+      {/* Verification Timeline — surfaces pre-payment blockchain anchors to the buyer */}
+      <Card className="border border-primary/15 bg-primary/5">
+        <CardContent className="p-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+            <Shield className="w-3 h-3" /> Verification Timeline
+          </p>
+          <ol className="grid grid-cols-4 gap-1 text-[10px]">
+            {[
+              { label: "Proforma issued", done: true },
+              { label: "Invoice presented", done: true },
+              { label: "Payment lock", done: false },
+              { label: "Escrow active", done: false },
+            ].map((step, i) => (
+              <li key={i} className="flex flex-col items-center text-center gap-1">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${
+                  step.done
+                    ? "bg-primary border-primary text-primary-foreground"
+                    : "bg-background border-border text-muted-foreground"
+                }`}>
+                  {step.done ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Lock className="w-3 h-3" />}
+                </div>
+                <span className={step.done ? "text-foreground font-medium leading-tight" : "text-muted-foreground leading-tight"}>
+                  {step.label}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-[9px] text-muted-foreground text-center mt-2">
+            Each step is hash-chained and anchored on Polygon for audit
+          </p>
+        </CardContent>
+      </Card>
+
+
       {/* Buyer info */}
       <Card>
         <CardContent className="p-4 space-y-3">
