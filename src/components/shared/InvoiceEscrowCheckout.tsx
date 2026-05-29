@@ -226,7 +226,7 @@ const InvoiceEscrowCheckout = ({
               )}
             </div>
             <FundMovementTracker
-              flowType={payRail === "crypto" ? "escrow_crypto" : "escrow_fiat"}
+              flowType="checkout_escrow"
               role="buyer"
               method={payRail === "crypto" ? "azix" : selectedProvider?.category || "card"}
               providerName={payRail === "crypto" ? `Crypto (${token})` : (selectedProvider?.name || "Card")}
