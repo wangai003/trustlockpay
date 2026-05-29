@@ -79,6 +79,9 @@ async function reverseGeocode(
 const RECORD_TYPE_MAP: Record<string, number> = {
   invoice: 0,
   contract: 1,
+const RECORD_TYPE_MAP: Record<string, number> = {
+  invoice: 0,
+  contract: 1,
   signature: 2,
   milestone: 3,
   observer_signoff: 4,
@@ -91,11 +94,15 @@ const RECORD_TYPE_MAP: Record<string, number> = {
   price_lock: 11,
   rejection: 12,
   hash_chain_anchor: 13,
+  // Pre-payment events (off-chain hash-chained only — contract doesn't know these enum values)
+  rfq_submitted: 14,
+  counter_proposal_accepted: 15,
+  draft_proforma_issued: 16,
 };
 
-// ═══════════════════════════════════════════════════════════
-//  POLYGON PRE-WIRING — activates when secrets are set
-// ═══════════════════════════════════════════════════════════
+// Types >= this value are stored off-chain only (not sent to Polygon contract)
+const OFFCHAIN_ONLY_THRESHOLD = 14;
+
 //
 // Required secrets (add via Lovable secrets tool when ready):
 //   REGISTRY_CONTRACT_ADDRESS    — deployed TrustLockRegistry.sol address
