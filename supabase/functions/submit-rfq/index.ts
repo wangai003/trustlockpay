@@ -69,11 +69,43 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    // ── Anchor pre-payment event: rfq_submitted ──
+    try {
+      const anchorRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/registry-anchor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          action: "anchor",
+          transactionId: null,
+          recordType: "rfq_submitted",
+          txRefSource: `rfq:${data.id}`,
+          eventData: {
+            rfq_id: data.id,
+            rfq_number: data.rfq_number,
+            vendor_id: vendor_id || null,
+            buyer_email: buyer_email.trim(),
+            buyer_name: buyer_name.trim(),
+            industry: industry || null,
+            quantity: quantity || null,
+            unit: unit || null,
+            incoterms: incoterms || null,
+            submitted_at: new Date().toISOString(),
+          },
+        }),
+      });
+      if (!anchorRes.ok) console.warn("[submit-rfq] anchor non-200:", await anchorRes.text());
+    } catch (anchorErr) {
+      console.warn("[submit-rfq] anchor failed (non-fatal):", anchorErr);
+    }
 
     return new Response(
       JSON.stringify({ success: true, id: data.id, rfq_number: data.rfq_number }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error("submit-rfq error:", err);
     return new Response(

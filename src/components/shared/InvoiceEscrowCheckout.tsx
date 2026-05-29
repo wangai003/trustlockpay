@@ -11,7 +11,8 @@
  *   • Routes funds to TrustLock intake wallet → escrow (1% fee baked in, extracted at release)
  *   • Anchors `invoice` proof on Polygon via verify-crypto-payment / process-payment pipelines
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,8 @@ import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 import FundMovementTracker from "@/components/shared/FundMovementTracker";
 import { useProcessPayment } from "@/hooks/useSupabaseData";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
+
 import { AZIX_WALLETS, calculateFeesV2, type TransactionType } from "@/lib/feeEngine";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { explorerTxUrl } from "@/lib/polygonExplorer";
@@ -84,6 +87,42 @@ const InvoiceEscrowCheckout = ({
   const [success, setSuccess] = useState<{ confirmationCode: string; txHash?: string } | null>(null);
 
   const processPayment = useProcessPayment();
+  const { anchor } = useBlockchainAnchor();
+
+  // ── Pre-payment anchor: draft_proforma_issued + invoice (fires once on mount) ──
+  const prepaymentAnchoredRef = useRef(false);
+  useEffect(() => {
+    if (prepaymentAnchoredRef.current) return;
+    if (!linkId && !vendorId) return; // need at least one stable ref
+    prepaymentAnchoredRef.current = true;
+
+    const txRefSource = `link:${linkId || vendorId}`;
+    const issuedAt = new Date().toISOString();
+
+    const baseEvent = {
+      link_id: linkId || null,
+      vendor_id: vendorId || null,
+      vendor_name: vendorName,
+      invoice_title: invoiceTitle,
+      subtotal,
+      tax_total: taxTotal,
+      grand_total: grandTotal,
+      currency,
+      industry: industry || null,
+      line_item_count: lineItems.length,
+      issued_at: issuedAt,
+    };
+
+    // Fire both proforma + invoice anchors (non-blocking, errors swallowed)
+    void anchor(null, "draft_proforma_issued", baseEvent, txRefSource).catch((e) =>
+      console.warn("[InvoiceEscrowCheckout] draft_proforma_issued anchor failed:", e)
+    );
+    void anchor(null, "invoice", { ...baseEvent, stage: "presented_to_buyer" }, txRefSource).catch((e) =>
+      console.warn("[InvoiceEscrowCheckout] invoice anchor failed:", e)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkId, vendorId]);
+
 
   // ── Fee preview (transparent to buyer) ──
   const feeMethod = payRail === "crypto"

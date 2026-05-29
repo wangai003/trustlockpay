@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ import { selectProcessor, PROCESSORS, type PaymentMethod as FeePaymentMethod } f
 import OrderIntentRouter, { type IntentDecision } from "@/components/shared/OrderIntentRouter";
 import MilestoneNegotiation, { type MilestoneDraft } from "@/components/shared/MilestoneNegotiation";
 import MilestoneNegotiationGantt from "@/components/shared/MilestoneNegotiationGantt";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
+
 
 interface VendorInfo {
   name: string;
@@ -37,8 +40,11 @@ const WidgetCheckout = () => {
   const mode = params.get("mode") || "sandbox";
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
-
   const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
+  const { anchor: anchorProof } = useBlockchainAnchor();
+
+
+
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
@@ -100,6 +106,39 @@ const WidgetCheckout = () => {
   useEffect(() => {
     loadVendor();
   }, [vendorId]);
+
+  // ── Pre-payment anchor: draft_proforma_issued + invoice (fires once when checkout reaches form step) ──
+  const proformaAnchoredRef = useRef(false);
+  useEffect(() => {
+    if (step !== "form" || proformaAnchoredRef.current) return;
+    if (!vendorId && !siteId) return;
+    proformaAnchoredRef.current = true;
+
+    const txRefSource = `widget:${vendorId || siteId}`;
+    const issuedAt = new Date().toISOString();
+    const baseEvent = {
+      vendor_id: vendorId || null,
+      site_id: siteId || null,
+      vendor_name: vendor.name,
+      industry: vendor.industry,
+      item: form.item,
+      amount: parseFloat(form.amount || "0"),
+      currency: vendor.currency,
+      mode,
+      surface: "widget",
+      issued_at: issuedAt,
+    };
+
+    void anchorProof(null, "draft_proforma_issued", baseEvent, txRefSource).catch((e) =>
+      console.warn("[WidgetCheckout] draft_proforma_issued anchor failed:", e)
+    );
+    void anchorProof(null, "invoice", { ...baseEvent, stage: "presented_to_buyer" }, txRefSource).catch((e) =>
+      console.warn("[WidgetCheckout] invoice anchor failed:", e)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, vendorId, siteId]);
+
+
 
   const loadVendor = async () => {
     if (!vendorId) {
@@ -347,7 +386,25 @@ const WidgetCheckout = () => {
                     setAgreedMilestones(drafts);
                     setNegotiationStatus("agreed");
                     setStep("form");
+                    // Anchor buyer's acceptance of vendor's preset schedule (pre-payment event)
+                    void anchorProof(
+                      null,
+                      "counter_proposal_accepted",
+                      {
+                        vendor_id: vendorId || null,
+                        site_id: siteId || null,
+                        vendor_name: vendor.name,
+                        industry: vendor.industry,
+                        accepted_by: "buyer",
+                        accepted_milestones: drafts,
+                        amount: parseFloat(form.amount || "0"),
+                        accepted_at: new Date().toISOString(),
+                        surface: "widget",
+                      },
+                      `widget:${vendorId || siteId}`
+                    ).catch((e) => console.warn("[WidgetCheckout] counter_proposal_accepted anchor failed:", e));
                     toast.success("Vendor schedule accepted — proceed to payment details.");
+
                   } else if (decision === "counter") {
                     setStep("negotiation");
                   } else if (decision === "rfq") {

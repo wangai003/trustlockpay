@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 import { getRFQTerms } from "@/lib/rfqIndustryConfig";
+
 import { INDUSTRY_LABELS } from "@/lib/industryList";
 import { toast } from "sonner";
 import {
@@ -59,6 +61,8 @@ const statusColors: Record<string, string> = {
 
 const VendorCRM = () => {
   const { user } = useAuth();
+  const { anchor } = useBlockchainAnchor();
+
   const [rfqs, setRfqs] = useState<RFQRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -132,12 +136,37 @@ const VendorCRM = () => {
     };
     fetchProposals();
   }, [user?.id]);
-
   const handleProposalAction = async (id: string, action: "accepted" | "rejected", notes?: string) => {
     await supabase.from("milestone_counter_proposals").update({ status: action, vendor_notes: notes || null } as any).eq("id", id);
     setProposals(prev => prev.map(p => p.id === id ? { ...p, status: action, vendor_notes: notes || null } : p));
+
+    // ── Anchor pre-payment event when vendor accepts buyer's counter-proposal ──
+    if (action === "accepted") {
+      const proposal = proposals.find(p => p.id === id);
+      try {
+        await anchor(
+          proposal?.transaction_id || null,
+          "counter_proposal_accepted",
+          {
+            proposal_id: id,
+            transaction_id: proposal?.transaction_id || null,
+            vendor_id: user?.id || null,
+            buyer_id: proposal?.buyer_id || null,
+            proposed_milestones: proposal?.proposed_milestones || null,
+            vendor_notes: notes || null,
+            accepted_by: "vendor",
+            accepted_at: new Date().toISOString(),
+          },
+          `proposal:${id}`
+        );
+      } catch (e) {
+        console.warn("[VendorCRM] counter_proposal_accepted anchor failed:", e);
+      }
+    }
+
     toast.success(action === "accepted" ? "Proposal accepted — create a standalone link to send payment" : "Proposal rejected");
   };
+
 
   const proposalCounts = {
     total: proposals.length,

@@ -16,7 +16,12 @@ export type RecordType =
   | "gps_verification"
   | "price_lock"
   | "rejection"
-  | "hash_chain_anchor";
+  | "hash_chain_anchor"
+  // Pre-payment events (off-chain hash-chained — fired before any transaction exists)
+  | "rfq_submitted"
+  | "counter_proposal_accepted"
+  | "draft_proforma_issued";
+
 
 export interface AnchorResult {
   success: boolean;
@@ -102,19 +107,22 @@ export function useBlockchainAnchor() {
    */
   const anchor = useCallback(
     async (
-      transactionId: string,
+      transactionId: string | null,
       recordType: RecordType,
-      eventData: Record<string, unknown>
+      eventData: Record<string, unknown>,
+      txRefSource?: string
     ): Promise<AnchorResult> => {
       return callRegistryAnchor({
         action: "anchor",
         transactionId,
         recordType,
         eventData,
+        txRefSource,
       });
     },
     [callRegistryAnchor]
   );
+
 
   /**
    * Verify a content hash exists in the registry.
