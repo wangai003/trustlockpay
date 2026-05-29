@@ -42,7 +42,8 @@ const WidgetCheckout = () => {
   const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
   const { anchor: anchorProof } = useBlockchainAnchor();
 
-  const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
+
+
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
   const [checkoutMode, setCheckoutMode] = useState<"direct" | "rfq">("direct");
   const [form, setForm] = useState({
