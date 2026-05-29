@@ -226,12 +226,15 @@ Deno.serve(async (req) => {
     const polygonConfig = getPolygonConfig();
 
     // ═══════════════════════════════════════════
-    //  ACTION: ANCHOR — Hash, store, and optionally anchor on-chain
-    // ═══════════════════════════════════════════
     if (action === "anchor") {
-      const { transactionId, recordType, eventData } = body;
-      if (!transactionId || !recordType || !eventData) {
-        return json({ error: "transactionId, recordType, and eventData required" }, 400);
+      const { transactionId, recordType, eventData, txRefSource } = body;
+      if (!recordType || !eventData) {
+        return json({ error: "recordType and eventData required" }, 400);
+      }
+      // transactionId may be null for pre-payment events (RFQ, proforma, counter-proposal accept).
+      // In that case, caller must supply a stable txRefSource string (e.g. "rfq:<id>" or "link:<id>").
+      if (!transactionId && !txRefSource) {
+        return json({ error: "transactionId or txRefSource required" }, 400);
       }
 
       const typeNum = RECORD_TYPE_MAP[recordType];
@@ -245,7 +248,6 @@ Deno.serve(async (req) => {
         const geo = await reverseGeocode(eventData.latitude, eventData.longitude);
         if (geo.formatted) {
           resolvedLocation = geo;
-          // Merge into eventData so it's included in the content hash
           eventData.resolvedAddress = geo.address;
           eventData.resolvedCity = geo.city;
           eventData.resolvedState = geo.state;
@@ -258,7 +260,7 @@ Deno.serve(async (req) => {
       // Create deterministic content hash
       const canonicalData = JSON.stringify(eventData, Object.keys(eventData).sort());
       const contentHash = await sha256(canonicalData);
-      const txRef = toBytes32(transactionId);
+      const txRef = toBytes32(transactionId || txRefSource);
 
       // Get previous hash for chain linking
       const { data: lastRecord } = await supabase
@@ -275,8 +277,9 @@ Deno.serve(async (req) => {
       let polygonTxHash: string | null = null;
       let anchoredAt: string | null = null;
 
-      // ── Attempt on-chain anchoring if Polygon is configured ──
-      if (polygonConfig) {
+      // ── Attempt on-chain anchoring if Polygon is configured AND type is on-chain ──
+      const isOffchainOnly = typeNum >= OFFCHAIN_ONLY_THRESHOLD;
+      if (polygonConfig && !isOffchainOnly) {
         chainStatus = "pending_tx";
         const result = await sendPolygonTx(polygonConfig, contentHash, txRef, typeNum);
 
@@ -286,13 +289,15 @@ Deno.serve(async (req) => {
           anchoredAt = new Date().toISOString();
           console.log(`[registry-anchor] ✅ Anchored on Polygon: ${result.txHash}`);
         } else {
-          // TX failed or signing not wired yet — record stays pending
           console.log(`[registry-anchor] ⏳ On-chain pending: ${result.error}`);
           chainStatus = result.error === "signing_not_wired" ? "queued" : "failed";
         }
+      } else if (isOffchainOnly) {
+        // Pre-payment events are immutably hash-chained off-chain only
+        chainStatus = "offchain_anchored";
+        anchoredAt = new Date().toISOString();
       }
 
-      // Store in database
       const { data: proof, error: insertErr } = await supabase
         .from("blockchain_proofs")
         .insert({
