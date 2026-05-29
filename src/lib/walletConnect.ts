@@ -14,7 +14,7 @@ import { polygon, polygonAmoy } from "@reown/appkit/networks";
 // Replace this placeholder once you create a Reown project (takes ~30 seconds).
 export const REOWN_PROJECT_ID =
   (import.meta.env.VITE_REOWN_PROJECT_ID as string | undefined) ||
-  "REPLACE_WITH_REOWN_PROJECT_ID";
+  "61eecd5d17b264ac7be03bc4b97df842";
 
 const networks = [polygon, polygonAmoy] as const;
 
