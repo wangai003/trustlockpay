@@ -167,7 +167,6 @@ const VendorCRM = () => {
     toast.success(action === "accepted" ? "Proposal accepted — create a standalone link to send payment" : "Proposal rejected");
   };
 
-  };
 
   const proposalCounts = {
     total: proposals.length,
