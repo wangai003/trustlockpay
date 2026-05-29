@@ -305,7 +305,8 @@ Deno.serve(async (req) => {
           prev_hash: prevHash,
           record_type: recordType,
           tx_ref: txRef,
-          transaction_id: transactionId,
+          transaction_id: transactionId || null,
+
           event_data: eventData,
           chain_status: chainStatus,
           polygon_tx_hash: polygonTxHash,
