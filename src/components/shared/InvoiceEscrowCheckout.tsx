@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
+import CryptoPaymentTiers from "@/components/shared/CryptoPaymentTiers";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
 import FundMovementTracker from "@/components/shared/FundMovementTracker";
 import { useProcessPayment } from "@/hooks/useSupabaseData";
