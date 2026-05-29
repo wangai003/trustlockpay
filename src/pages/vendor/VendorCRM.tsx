@@ -61,6 +61,8 @@ const statusColors: Record<string, string> = {
 
 const VendorCRM = () => {
   const { user } = useAuth();
+  const { anchor } = useBlockchainAnchor();
+
   const [rfqs, setRfqs] = useState<RFQRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
