@@ -26,10 +26,10 @@ import { toast } from "sonner";
 import ProviderSearch from "@/components/shared/ProviderSearch";
 import ConnectWalletPay from "@/components/shared/ConnectWalletPay";
 import TaxBreakdown, { type TaxLineItem } from "@/components/shared/TaxBreakdown";
+import FundMovementTracker from "@/components/shared/FundMovementTracker";
 import { useProcessPayment } from "@/hooks/useSupabaseData";
 import { useBlockchainAnchor } from "@/hooks/useBlockchainAnchor";
 
-import { useProcessPayment } from "@/hooks/useSupabaseData";
 import { AZIX_WALLETS, calculateFeesV2, type TransactionType } from "@/lib/feeEngine";
 import type { PaymentProvider } from "@/lib/paymentProviders";
 import { explorerTxUrl } from "@/lib/polygonExplorer";
