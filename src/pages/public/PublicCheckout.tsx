@@ -525,14 +525,11 @@ const PublicCheckout = () => {
                 })()}
                 onSubmitDraft={(milestones) => {
                   setAgreedMilestones(milestones);
-                  setNegotiationStatus("agreed");
-                  toast.success("Milestone schedule locked — proceed to compliance.");
-                }}
                 onApproveDraft={() => {
                   setNegotiationStatus("agreed");
                   const key = linkData.industry.replace(/_/g, "-");
                   const templates = INDUSTRY_MILESTONES[key] || INDUSTRY_MILESTONES[linkData.industry] || [];
-                  setAgreedMilestones(templates.map((m, i) => ({
+                  const accepted = templates.map((m, i) => ({
                     id: `ms-${i}`,
                     title: m.name,
                     description: m.description || "",
@@ -540,6 +537,28 @@ const PublicCheckout = () => {
                     estimatedDays: 14,
                     documentRequired: true,
                     documentName: "",
+                  }));
+                  setAgreedMilestones(accepted);
+                  // Anchor pre-payment event: buyer accepted vendor's preset schedule
+                  void anchorProof(
+                    null,
+                    "counter_proposal_accepted",
+                    {
+                      link_id: linkData.link_id,
+                      vendor_id: (linkData as any).vendor_id || null,
+                      vendor_name: linkData.vendor_name,
+                      industry: linkData.industry,
+                      accepted_by: "buyer",
+                      accepted_milestones: accepted,
+                      amount: linkData.grand_total,
+                      accepted_at: new Date().toISOString(),
+                      surface: "standalone_link",
+                    },
+                    `link:${linkData.link_id}`
+                  ).catch((e) => console.warn("[PublicCheckout] counter_proposal_accepted anchor failed:", e));
+                  toast.success("Vendor schedule accepted!");
+                }}
+
                   })));
                   toast.success("Vendor schedule accepted!");
                 }}
