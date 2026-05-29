@@ -39,6 +39,8 @@ const WidgetCheckout = () => {
   const mode = params.get("mode") || "sandbox";
   const isEmbed = params.get("embed") === "true";
   const isSandbox = mode === "sandbox";
+  const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
+  const { anchor: anchorProof } = useBlockchainAnchor();
 
   const [step, setStep] = useState<"loading" | "intent" | "negotiation" | "form" | "processing" | "done" | "error" | "rfq" | "rfq_done" | "vendor_locked" | "counter_submitted">("loading");
   const [vendor, setVendor] = useState<VendorInfo>({ name: "Demo Vendor", industry: "general", currency: "USD" });
