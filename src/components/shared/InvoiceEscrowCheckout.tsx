@@ -300,7 +300,7 @@ const InvoiceEscrowCheckout = ({
             <div className="flex justify-between font-bold text-foreground pt-1 border-t border-border"><span>Grand Total</span><span className="tabular-nums">${grandTotal.toFixed(2)}</span></div>
           </div>
 
-          {taxItems.length > 0 && <TaxBreakdown items={taxItems} amount={subtotal} />}
+          {taxItems.length > 0 && <TaxBreakdown subtotal={subtotal} taxItems={taxItems} onTaxItemsChange={() => {}} editable={false} compact />}
         </CardContent>
       </Card>
 
