@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { hydrateWalletConfig } from "./lib/feeEngine";
+
+// Fire-and-forget: pull real custodian wallet addresses from edge function
+hydrateWalletConfig();
 
 // PWA guard: prevent service worker in iframes/preview environments
 const isInIframe = (() => {
