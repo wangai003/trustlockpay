@@ -239,7 +239,7 @@ const ConnectWalletPay = ({
       <Button
         type="button"
         className="w-full h-11 gap-2 text-sm font-semibold"
-        disabled={insufficient || sending || confirming || verifying || amountUnits === 0n}
+        disabled={insufficient || sending || confirming || verifying || amountUnits === 0n || !/^0x[a-fA-F0-9]{40}$/.test(recipient)}
         onClick={() => {
           resetSend();
           writeContract({
