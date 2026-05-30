@@ -7,18 +7,45 @@
 //      completion, 1% escrow service fee is extracted and trickled back to
 //      Transaction Fee Wallet. The fee is NEVER deducted upfront.
 
+// Public custodian wallet addresses. Hydrated at app boot from the
+// `get-wallet-config` edge function (which reads TRANSACTION_WALLET_ADDRESS
+// and ESCROW_WALLET_ADDRESS secrets). Until hydration completes, the
+// publicKey strings are empty — components should treat empty as "loading"
+// and disable on-chain actions.
 export const AZIX_WALLETS = {
   transaction: {
-    label: "Azix Transaction Fee Wallet",
-    publicKey: "0x7A3b...F92d",
+    label: "TrustLock Transaction Fee Wallet",
+    publicKey: "" as string,
     purpose: "Receives all post-processor funds. Keeps 0.5% transaction fee + taxes + remittance. Routes vendor principal to Escrow Wallet.",
   },
   escrow: {
-    label: "Azix Escrow Wallet",
-    publicKey: "0x4E1c...A83b",
+    label: "TrustLock Escrow Wallet",
+    publicKey: "" as string,
     purpose: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion — never deducted upfront.",
   },
-} as const;
+};
+
+let _walletConfigPromise: Promise<void> | null = null;
+export function hydrateWalletConfig(): Promise<void> {
+  if (_walletConfigPromise) return _walletConfigPromise;
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const url = `https://${projectId}.supabase.co/functions/v1/get-wallet-config`;
+  _walletConfigPromise = fetch(url)
+    .then((r) => r.json())
+    .then((cfg) => {
+      if (typeof cfg?.transaction === "string" && /^0x[a-fA-F0-9]{40}$/.test(cfg.transaction)) {
+        AZIX_WALLETS.transaction.publicKey = cfg.transaction;
+      }
+      if (typeof cfg?.escrow === "string" && /^0x[a-fA-F0-9]{40}$/.test(cfg.escrow)) {
+        AZIX_WALLETS.escrow.publicKey = cfg.escrow;
+      }
+    })
+    .catch((err) => {
+      console.warn("[walletConfig] hydration failed:", err);
+      _walletConfigPromise = null; // allow retry
+    });
+  return _walletConfigPromise;
+}
 
 export type WalletType = keyof typeof AZIX_WALLETS;
 
