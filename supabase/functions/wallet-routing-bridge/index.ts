@@ -83,6 +83,63 @@ const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
 ];
 
+// ─── Gas station: relayer funds every source wallet's gas ─────────────
+// All on-chain ERC-20 transfers in TrustLock are gas-funded by the Polygon
+// Relayer wallet (POLYGON_RELAYER_PRIVATE_KEY). Before any transfer we
+// estimate the gas, and if the source wallet does not hold enough MATIC,
+// the relayer tops it up just-in-time. This keeps the relayer as the
+// single funding source for gas across the entire system while preserving
+// per-wallet token custody.
+async function ensureGasFromRelayer(
+  provider: ethers.JsonRpcProvider,
+  sourceAddress: string,
+  estimatedGasCostWei: bigint,
+  memo: string,
+): Promise<void> {
+  const relayerKey = Deno.env.get("POLYGON_RELAYER_PRIVATE_KEY");
+  if (!relayerKey) {
+    console.warn(`[wallet-routing] No POLYGON_RELAYER_PRIVATE_KEY configured — skipping gas top-up`, { memo });
+    return;
+  }
+
+  const currentBalance = await provider.getBalance(sourceAddress);
+  // Headroom multiplier — fund 1.5× the estimated cost for price drift safety
+  const required = (estimatedGasCostWei * 15n) / 10n;
+
+  if (currentBalance >= required) {
+    return; // Source wallet already has enough gas
+  }
+
+  const topUp = required - currentBalance;
+  const relayer = new ethers.Wallet(relayerKey, provider);
+
+  // Don't drain the relayer below a small reserve
+  const relayerBalance = await provider.getBalance(relayer.address);
+  if (relayerBalance <= topUp) {
+    console.error(`[wallet-routing] Relayer balance too low to top up gas`, {
+      relayer: relayer.address,
+      relayerBalance: relayerBalance.toString(),
+      needed: topUp.toString(),
+      memo,
+    });
+    throw new Error("Relayer wallet has insufficient MATIC to fund gas");
+  }
+
+  console.log(`[wallet-routing] Relayer topping up gas`, {
+    from: relayer.address,
+    to: sourceAddress,
+    amountWei: topUp.toString(),
+    memo,
+  });
+
+  const fundTx = await relayer.sendTransaction({
+    to: sourceAddress,
+    value: topUp,
+  });
+  await fundTx.wait(1);
+  console.log(`[wallet-routing] Gas top-up confirmed: ${fundTx.hash}`);
+}
+
 async function transferOnChain(
   fromWallet: string,
   toWallet: string,
@@ -91,9 +148,9 @@ async function transferOnChain(
   memo: string
 ): Promise<{ txHash: string; status: string }> {
   // Select signer key based on the source wallet holding the funds.
-  // Intake (Transaction) wallet sweeps require TRANSACTION_WALLET_PRIVATE_KEY.
-  // Escrow-originated transfers use ESCROW_WALLET_PRIVATE_KEY.
-  // Fallback to DEPLOYER_WALLET_PRIVATE_KEY for legacy/admin moves.
+  // The signer holds the ERC-20 tokens, but gas (MATIC) is supplied by the
+  // Polygon Relayer wallet via ensureGasFromRelayer(). This way the relayer
+  // is the single gas-funding wallet for the entire system.
   const txWalletAddr = (Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || "").toLowerCase();
   const escrowWalletAddr = (Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "").toLowerCase();
   const fromLower = (fromWallet || "").toLowerCase();
@@ -148,6 +205,20 @@ async function transferOnChain(
       memo,
     });
 
+    // ─── Estimate gas + top up from relayer if needed ───
+    let estimatedGas: bigint;
+    try {
+      estimatedGas = await tokenContract.transfer.estimateGas(toWallet, contractUnits);
+    } catch (gasErr) {
+      // Fallback to a safe upper bound for an ERC-20 transfer on Polygon
+      estimatedGas = 100_000n;
+    }
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice ?? 50_000_000_000n; // 50 gwei fallback
+    const estimatedCost = estimatedGas * gasPrice;
+
+    await ensureGasFromRelayer(provider, wallet.address, estimatedCost, memo);
+
     const tx = await tokenContract.transfer(toWallet, contractUnits);
     console.log(`[wallet-routing] TX submitted: ${tx.hash}`);
 
@@ -163,6 +234,7 @@ async function transferOnChain(
     };
   }
 }
+
 
 async function notify(
   supabase: ReturnType<typeof createClient>,
