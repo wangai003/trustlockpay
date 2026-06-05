@@ -163,13 +163,43 @@ Deno.serve(async (req) => {
       .eq("tx_id", txHash)
       .limit(1);
 
-    if (existing?.length) {
+    const forceReroute = Boolean((body as any).forceReroute);
+
+    if (existing?.length && !forceReroute) {
       return json({
         success: false,
         error: "This transaction ID has already been submitted.",
         existingStatus: existing[0].status,
       }, 409);
     }
+
+    // Force-reroute path: skip on-chain re-verification, just trigger wallet-routing-bridge.
+    if (existing?.length && forceReroute) {
+      if (!transactionId) {
+        return json({ success: false, error: "transactionId required for forceReroute" }, 400);
+      }
+      const routingUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
+      const r = await fetch(routingUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        },
+        body: JSON.stringify({
+          action: "route_inbound",
+          transactionId,
+          processor: "direct",
+          paymentMethod: "crypto",
+          verifiedAmount: Number(expectedAmount) || undefined,
+          network: net.name,
+          isTestnet: useTestnet,
+        }),
+      });
+      const text = await r.text();
+      let parsed: unknown = text; try { parsed = JSON.parse(text); } catch {}
+      return json({ success: r.ok, forceReroute: true, status: r.status, response: parsed }, r.ok ? 200 : 502);
+    }
+
 
     // ── Step 2: Fetch receipt ─────────────────────────
     let receipt;
