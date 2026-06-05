@@ -120,7 +120,9 @@ async function transferOnChain(
 
   try {
     const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
+    const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
     const wallet = new ethers.Wallet(privateKey, provider);
+
 
     if (fromLower && wallet.address.toLowerCase() !== fromLower) {
       console.error(`[wallet-routing] Signer/source mismatch`, {
