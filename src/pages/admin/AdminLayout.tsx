@@ -1,5 +1,6 @@
 import { Outlet, Navigate, useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import SystemWalletBalancesPanel from "@/components/admin/SystemWalletBalancesPanel";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
@@ -22,6 +23,7 @@ const AdminLayoutInner = () => {
         <div className="flex min-h-screen bg-background">
           <AdminSidebar />
           <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+            <SystemWalletBalancesPanel />
             <TestnetGuide role="admin" />
             <Outlet />
           </main>
