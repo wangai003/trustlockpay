@@ -90,16 +90,33 @@ async function transferOnChain(
   token: string,
   memo: string
 ): Promise<{ txHash: string; status: string }> {
-  const privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+  // Select signer key based on the source wallet holding the funds.
+  // Intake (Transaction) wallet sweeps require TRANSACTION_WALLET_PRIVATE_KEY.
+  // Escrow-originated transfers use ESCROW_WALLET_PRIVATE_KEY.
+  // Fallback to DEPLOYER_WALLET_PRIVATE_KEY for legacy/admin moves.
+  const txWalletAddr = (Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || "").toLowerCase();
+  const escrowWalletAddr = (Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "").toLowerCase();
+  const fromLower = (fromWallet || "").toLowerCase();
+
+  let privateKey: string | undefined;
+  if (fromLower && fromLower === txWalletAddr) {
+    privateKey = Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+  } else if (fromLower && fromLower === escrowWalletAddr) {
+    privateKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+  } else {
+    privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+  }
+
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
 
   if (!privateKey || !rpcUrl) {
-    console.warn(`[wallet-routing] Queued (missing deployer key or RPC URL): ${memo}`);
+    console.warn(`[wallet-routing] Queued (missing signer key or RPC URL): ${memo}`, { fromWallet });
     return {
       txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       status: "queued",
     };
   }
+
 
   try {
     const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
