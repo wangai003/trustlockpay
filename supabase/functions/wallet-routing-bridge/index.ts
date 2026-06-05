@@ -120,8 +120,21 @@ async function transferOnChain(
 
   try {
     const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
-    const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
     const wallet = new ethers.Wallet(privateKey, provider);
+
+    if (fromLower && wallet.address.toLowerCase() !== fromLower) {
+      console.error(`[wallet-routing] Signer/source mismatch`, {
+        signer: wallet.address,
+        expectedFrom: fromWallet,
+        memo,
+      });
+      return {
+        txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        status: "failed",
+      };
+    }
+
+
     const tokenContract = new ethers.Contract(token, ERC20_ABI, wallet);
 
     const contractUnits = BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS)));
