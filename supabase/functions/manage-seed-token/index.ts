@@ -6,8 +6,8 @@ const corsHeaders = {
 };
 
 // ─── Dual Azix Wallet Addresses ────────────────────────────
-const AZIX_TRANSACTION_WALLET = "0x7A3b...F92d"; // Collects checkout/processing fees
-const AZIX_ESCROW_WALLET = "0x4E1c...A83b";       // Collects escrow service fees
+const AZIX_TRANSACTION_WALLET = Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || ""; // Collects checkout/processing fees
+const AZIX_ESCROW_WALLET = Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "";       // Collects escrow service fees
 
 // ─── Processor Fee Rates ───────────────────────────────────
 const PROCESSOR_FEES: Record<string, number> = {

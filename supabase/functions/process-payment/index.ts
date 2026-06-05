@@ -8,8 +8,8 @@ const corsHeaders = {
 
 // ─── Azix Wallet Addresses (from env, fallback to placeholder) ─
 const AZIX_WALLETS = {
-  transaction: Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d",
-  escrow: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
+  transaction: Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || "",
+  escrow: Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "",
 };
 
 // ─── Fee Constants (basis points) ────────────────────────

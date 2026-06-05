@@ -87,8 +87,8 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-const AZIX_TRANSACTION_WALLET = Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d";
-const AZIX_ESCROW_WALLET = Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b";
+const AZIX_TRANSACTION_WALLET = Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || "";
+const AZIX_ESCROW_WALLET = Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "";
 
 // ─── Auto-Processor Selection (cost-optimized) ────────────
 // Priority: direct (crypto, 0%) → thirdweb (1.0%) → coinbase/transak (1.5%) → yellow_card (2.0%) → stripe (2.9%)

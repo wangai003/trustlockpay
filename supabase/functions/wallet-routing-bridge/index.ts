@@ -10,12 +10,12 @@ const corsHeaders = {
 // ─── Dual Custodian Wallet Addresses (Polygon) ────────────
 const WALLETS = {
   transaction: {
-    address: Deno.env.get("AZIX_TRANSACTION_WALLET") || "0x7A3b1234567890abcdef1234567890abcdefF92d",
-    label: "Azix Transaction Fee Wallet",
+    address: Deno.env.get("TRANSACTION_WALLET_ADDRESS") || Deno.env.get("AZIX_TRANSACTION_WALLET") || "",
+    label: "TrustLock Transaction Fee Wallet",
     purpose: "Receives platform fees + taxes. Routes escrow principal + escrow fee to Escrow Wallet.",
   },
   escrow: {
-    address: Deno.env.get("AZIX_ESCROW_WALLET") || "0x4E1c1234567890abcdef1234567890abcdefA83b",
+    address: Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "",
     label: "Azix Escrow Wallet",
     purpose: "Holds vendor principal until release. 1% escrow service fee extracted only upon deal completion — never deducted upfront.",
   },
