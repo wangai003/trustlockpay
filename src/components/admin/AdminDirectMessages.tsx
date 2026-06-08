@@ -257,6 +257,17 @@ const AdminDirectMessages = () => {
             <Send className="w-4 h-4" />
           </Button>
         </div>
+
+        {forwardSource && currentAdminId && (
+          <ForwardMessageDialog
+            open={!!forwardSource}
+            onOpenChange={(o) => !o && setForwardSource(null)}
+            callerAdminId={currentAdminId}
+            fromDepartmentSlug={forwardSource.fromDept}
+            bodyPlaintext={forwardSource.body}
+            excludeSlug={myDeptSlug}
+          />
+        )}
       </div>
     );
   }
