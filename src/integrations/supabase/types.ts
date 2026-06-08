@@ -1022,6 +1022,7 @@ export type Database = {
           developer_notified_at: string | null
           diagnosis_summary: string | null
           dispatched_at: string | null
+          executive_notified_at: string | null
           id: string
           legitimacy_score: number
           legitimacy_signals: Json
@@ -1049,6 +1050,7 @@ export type Database = {
           developer_notified_at?: string | null
           diagnosis_summary?: string | null
           dispatched_at?: string | null
+          executive_notified_at?: string | null
           id?: string
           legitimacy_score?: number
           legitimacy_signals?: Json
@@ -1076,6 +1078,7 @@ export type Database = {
           developer_notified_at?: string | null
           diagnosis_summary?: string | null
           dispatched_at?: string | null
+          executive_notified_at?: string | null
           id?: string
           legitimacy_score?: number
           legitimacy_signals?: Json
