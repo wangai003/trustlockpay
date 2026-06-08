@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Clock, Hand, MessageSquare, Search, UserCheck, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Forward, Hand, MessageSquare, Search, UserCheck, XCircle } from "lucide-react";
 import { useAdminAliases, useClaimThread, useUnclaimThread, useUpdateCaseStatus } from "@/hooks/useAdminMessaging";
 import { format } from "date-fns";
+import ForwardMessageDialog from "@/components/admin/ForwardMessageDialog";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
