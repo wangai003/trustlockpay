@@ -346,10 +346,9 @@ function ProofTimeline({ proofs, onSelect, truncate, loading }: {
       {proofs.map((p, i) => {
         const typeInfo = RECORD_TYPE_LABELS[p.record_type] || { label: p.record_type, color: "bg-muted text-muted-foreground" };
         return (
-          <button
+          <div
             key={p.id}
-            onClick={() => onSelect(p)}
-            className="w-full text-left flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+            className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors group"
           >
             {/* Chain link indicator */}
             <div className="flex flex-col items-center gap-0.5 shrink-0">
@@ -357,7 +356,7 @@ function ProofTimeline({ proofs, onSelect, truncate, loading }: {
               {i < proofs.length - 1 && <div className="w-px h-4 bg-border" />}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <button onClick={() => onSelect(p)} className="flex-1 min-w-0 text-left">
               <div className="flex items-center gap-2 mb-0.5">
                 <Badge className={`${typeInfo.color} text-[10px] px-1.5 py-0`} variant="outline">{typeInfo.label}</Badge>
                 <Badge variant={p.chain_status === "anchored" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
@@ -369,10 +368,26 @@ function ProofTimeline({ proofs, onSelect, truncate, loading }: {
                 <Clock className="w-3 h-3" />
                 {new Date(p.created_at).toLocaleString()}
               </p>
-            </div>
+            </button>
 
-            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
-          </button>
+            {/* Quick PolygonScan jump for anchored rows */}
+            {p.chain_status === "anchored" && p.polygon_tx_hash && (
+              <a
+                href={explorerTxUrl(p.polygon_tx_hash, (p as any).network)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title={`View this block on ${explorerName((p as any).network)}`}
+                className="shrink-0 p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+
+            <button onClick={() => onSelect(p)} className="shrink-0" aria-label="Open detail">
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+            </button>
+          </div>
         );
       })}
     </div>
