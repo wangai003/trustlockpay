@@ -567,6 +567,15 @@ const VendorTransactions = () => {
                                 onTestnetRelease={testnet.releaseMilestonePayment}
                                 onTestnetAddGps={testnet.addGpsToMilestone}
                               />
+                              {!isTestnet && tx.vendorId && (
+                                <DigitalDeliverableVault
+                                  transactionId={tx.dbId}
+                                  vendorId={tx.vendorId}
+                                  buyerId={tx.buyerId}
+                                  status={tx.status}
+                                  role="vendor"
+                                />
+                              )}
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments
                                   tx={{
