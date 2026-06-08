@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Clock, TimerReset, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEscrowExtensions, useRequestExtension, MAX_EXTENSIONS } from "@/hooks/useEscrowExtension";
+import { useEscrowExtensions, useRequestExtension, useReviewExtension, MAX_EXTENSIONS } from "@/hooks/useEscrowExtension";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EscrowExtensionRequestProps {
   transactionId: string;
@@ -20,7 +21,14 @@ const statusBadge: Record<string, { label: string; className: string; icon: any 
 const EscrowExtensionRequest = ({ transactionId, txId, status }: EscrowExtensionRequestProps) => {
   const { data: extensions = [], isLoading } = useEscrowExtensions(transactionId);
   const requestExtension = useRequestExtension();
+  const reviewExtension = useReviewExtension();
   const [showForm, setShowForm] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+
   const [reason, setReason] = useState("");
 
   // Only show for active statuses where auto-release matters
@@ -62,20 +70,47 @@ const EscrowExtensionRequest = ({ transactionId, txId, status }: EscrowExtension
         <div className="space-y-1">
           {extensions.map((ext) => {
             const badge = statusBadge[ext.status] || statusBadge.pending;
+            const isCounterparty = userId && ext.requested_by !== userId;
+            const canReview = isCounterparty && ext.status === "pending";
             return (
-              <div key={ext.id} className="flex items-center justify-between text-xs p-2 rounded bg-background border border-border/50">
-                <div className="min-w-0">
-                  <p className="truncate text-muted-foreground">{ext.reason}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    +{ext.extra_days} days · {new Date(ext.created_at).toLocaleDateString()}
-                  </p>
+              <div key={ext.id} className="text-xs p-2 rounded bg-background border border-border/50 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-muted-foreground">{ext.reason}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      +{ext.extra_days} days · {new Date(ext.created_at).toLocaleDateString()}
+                      {isCounterparty && ext.status === "pending" && " · awaiting your review"}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${badge.className}`}>
+                    <badge.icon className="w-3 h-3 mr-1" /> {badge.label}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${badge.className}`}>
-                  <badge.icon className="w-3 h-3 mr-1" /> {badge.label}
-                </Badge>
+                {canReview && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs flex-1"
+                      disabled={reviewExtension.isPending}
+                      onClick={() => reviewExtension.mutate({ extensionId: ext.id, transactionId, decision: "approved" })}
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs flex-1"
+                      disabled={reviewExtension.isPending}
+                      onClick={() => reviewExtension.mutate({ extensionId: ext.id, transactionId, decision: "rejected" })}
+                    >
+                      <XCircle className="w-3 h-3 mr-1" /> Decline
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })}
+
         </div>
       )}
 
