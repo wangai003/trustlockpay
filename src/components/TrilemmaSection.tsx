@@ -66,7 +66,7 @@ const TrilemmaSection = () => {
             <span className="text-primary">Factor</span>
           </h2>
 
-          <p className="mt-3 text-sm sm:text-base text-muted-foreground italic max-w-lg">
+          <p className="mt-3 text-base sm:text-lg text-foreground/70 italic max-w-lg">
             A deadlock disguised as a funding gap.
           </p>
         </motion.div>
