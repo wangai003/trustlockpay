@@ -518,6 +518,18 @@ const MilestoneWorkOrderPanel = ({
         </CardContent>
       </Card>
 
+      {!isTestnet && transactionId && (role === "buyer" || role === "vendor") && txParties?.vendor_id && (
+        <div className="mt-4">
+          <DigitalDeliverableVault
+            transactionId={transactionId}
+            vendorId={txParties.vendor_id}
+            buyerId={txParties.buyer_id}
+            status={transactionStatus || ""}
+            role={role}
+          />
+        </div>
+      )}
+
     <MilestoneDialogs
       isTestnet={isTestnet}
       pendingDeleteMilestone={pendingDeleteMilestone}
