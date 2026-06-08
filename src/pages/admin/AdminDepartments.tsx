@@ -32,22 +32,20 @@ const TESTNET_MOCK_STAFF = [
 
 const DEPT_ICONS: Record<string, any> = {
   executive: Crown,
-  technical: Wrench,
   correspondence: MessageSquare,
   disputes: Shield,
   finance: DollarSign,
   compliance: ShieldCheck,
-  operations: GitBranch,
+  operations: Wrench,
 };
 
 const DEPT_COLORS: Record<string, string> = {
   executive: "bg-primary/10 text-primary border-primary/20",
-  technical: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
   correspondence: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   disputes: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
   finance: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   compliance: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
-  operations: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20",
+  operations: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
 };
 
 const AdminDepartments = () => {
