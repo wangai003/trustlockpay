@@ -87,17 +87,17 @@ const TrilemmaSection = () => {
                 <party.icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
 
-              <h3 className="text-sm font-bold text-foreground tracking-wide uppercase mb-1">
+              <h3 className="text-base font-bold text-foreground tracking-wide uppercase mb-1">
                 {party.title}
               </h3>
-              <p className="text-xs text-muted-foreground italic mb-4">
+              <p className="text-sm text-foreground/70 italic mb-4">
                 {party.subtitle}
               </p>
 
               {/* Pain point */}
-              <div className="flex items-start gap-1.5 pt-3 border-t border-border/40">
-                <span className="text-destructive/60 text-[10px] mt-0.5">✕</span>
-                <p className="text-[11px] text-muted-foreground leading-snug">
+              <div className="flex items-start gap-2 pt-3 border-t border-border/40">
+                <span className="text-destructive text-sm mt-0.5">✕</span>
+                <p className="text-sm text-foreground/80 leading-snug">
                   {party.pain}
                 </p>
               </div>
