@@ -1010,6 +1010,89 @@ export type Database = {
         }
         Relationships: []
       }
+      autonomous_fixer_tickets: {
+        Row: {
+          agent_actions_taken: Json | null
+          agent_resolved_at: string | null
+          agent_response: string | null
+          created_at: string
+          dept_lead_notified_at: string | null
+          developer_note: string | null
+          developer_notified_at: string | null
+          diagnosis_summary: string | null
+          dispatched_at: string | null
+          id: string
+          legitimacy_score: number
+          legitimacy_signals: Json
+          preset_key: string | null
+          raw_customer_message: string | null
+          resolution_outcome: string | null
+          status: string
+          submitted_by_admin_id: string | null
+          submitted_by_name: string | null
+          ticket_type: string
+          transaction_id: string | null
+          tx_id_input: string
+          updated_at: string
+        }
+        Insert: {
+          agent_actions_taken?: Json | null
+          agent_resolved_at?: string | null
+          agent_response?: string | null
+          created_at?: string
+          dept_lead_notified_at?: string | null
+          developer_note?: string | null
+          developer_notified_at?: string | null
+          diagnosis_summary?: string | null
+          dispatched_at?: string | null
+          id?: string
+          legitimacy_score?: number
+          legitimacy_signals?: Json
+          preset_key?: string | null
+          raw_customer_message?: string | null
+          resolution_outcome?: string | null
+          status?: string
+          submitted_by_admin_id?: string | null
+          submitted_by_name?: string | null
+          ticket_type: string
+          transaction_id?: string | null
+          tx_id_input: string
+          updated_at?: string
+        }
+        Update: {
+          agent_actions_taken?: Json | null
+          agent_resolved_at?: string | null
+          agent_response?: string | null
+          created_at?: string
+          dept_lead_notified_at?: string | null
+          developer_note?: string | null
+          developer_notified_at?: string | null
+          diagnosis_summary?: string | null
+          dispatched_at?: string | null
+          id?: string
+          legitimacy_score?: number
+          legitimacy_signals?: Json
+          preset_key?: string | null
+          raw_customer_message?: string | null
+          resolution_outcome?: string | null
+          status?: string
+          submitted_by_admin_id?: string | null
+          submitted_by_name?: string | null
+          ticket_type?: string
+          transaction_id?: string | null
+          tx_id_input?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomous_fixer_tickets_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blockchain_proofs: {
         Row: {
           anchored_at: string | null
@@ -6865,6 +6948,16 @@ export type Database = {
         }
         Returns: string
       }
+      resolve_autonomous_fixer_ticket: {
+        Args: {
+          _actions?: Json
+          _agent_response: string
+          _diagnosis: string
+          _outcome: string
+          _ticket_id: string
+        }
+        Returns: Json
+      }
       route_department_alert: {
         Args: {
           _admin_id?: string
@@ -6878,6 +6971,16 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      submit_autonomous_fixer_ticket: {
+        Args: {
+          _developer_note?: string
+          _preset_key?: string
+          _raw_message?: string
+          _ticket_type: string
+          _tx_id_input: string
+        }
+        Returns: Json
       }
       update_transaction_status: {
         Args: { _new_status: string; _reason?: string; _transaction_id: string }
