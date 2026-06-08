@@ -1280,6 +1280,20 @@ const TrustLockOSPayout = ({
                   <h4 className="text-sm font-bold text-foreground">Crypto Payout Details</h4>
                 </div>
 
+                {/* Saved Payout Wallets — address book for one-click selection */}
+                <SavedPayoutWallets
+                  chain={selectedChain}
+                  token="USDC"
+                  supportedChains={SUPPORTED_CHAINS}
+                  currentAddress={cryptoWalletAddress}
+                  onSelect={(addr, chainId) => {
+                    setSelectedChain(chainId);
+                    setCryptoWalletAddress(addr);
+                    setCryptoAddressConfirmed(false);
+                    setLiabilityAccepted(false);
+                  }}
+                />
+
                 {/* Chain Selector */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Select Blockchain Network *</Label>
