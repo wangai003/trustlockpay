@@ -316,6 +316,24 @@ const AdminAutonomousFixer = () => {
                                 <strong>Agent diagnosis:</strong> {t.diagnosis_summary}
                               </div>
                             )}
+                            {t.triage_results?.classification && (
+                              <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                <Badge variant="secondary">
+                                  {t.triage_results.classification.source === "ai" ? "AI-classified" : "Preset"}: {t.triage_results.classification.category}
+                                </Badge>
+                                {t.scope && (
+                                  <Badge variant={t.scope === "systemic" ? "destructive" : "outline"}>
+                                    {t.scope} {t.affected_count > 0 && `(${t.affected_count})`}
+                                  </Badge>
+                                )}
+                                {t.resolution_outcome && (
+                                  <Badge variant="outline">{t.resolution_outcome}</Badge>
+                                )}
+                                {Array.isArray(t.triage_results.probes) && (
+                                  <Badge variant="outline">{t.triage_results.probes.length} probes</Badge>
+                                )}
+                              </div>
+                            )}
                             <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                               <span>Legitimacy: {t.legitimacy_score}/100</span>
                               {t.agent_resolved_at && <span>Resolved {new Date(t.agent_resolved_at).toLocaleTimeString()}</span>}
