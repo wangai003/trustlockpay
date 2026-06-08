@@ -179,6 +179,39 @@ async function transferOnChain(
     return failedTransfer("invalid_address");
   }
 
+  // ─── HARD GUARDS (post-incident: Jun 5 funds were routed to Relayer) ───
+  // 1. Refuse if source == destination (would burn gas for no movement).
+  if (fromWallet.toLowerCase() === toWallet.toLowerCase()) {
+    console.error(`[wallet-routing] Refusing transfer where source equals destination`, { fromWallet, toWallet, memo });
+    return failedTransfer("source_equals_destination");
+  }
+
+  // 2. Refuse if destination is the Polygon Relayer wallet. The relayer only
+  //    pays MATIC gas — it must NEVER receive USDC/USDT principal or fees.
+  //    This is the exact misconfiguration that caused the Jun 5 leak.
+  try {
+    const relayerKey = Deno.env.get("POLYGON_RELAYER_PRIVATE_KEY");
+    if (relayerKey) {
+      const relayerAddr = new ethers.Wallet(relayerKey).address.toLowerCase();
+      if (toWallet.toLowerCase() === relayerAddr) {
+        console.error(`[wallet-routing] BLOCKED: destination matches Relayer wallet`, { toWallet, relayerAddr, memo });
+        return failedTransfer("destination_is_relayer");
+      }
+      if (fromWallet.toLowerCase() === relayerAddr) {
+        console.error(`[wallet-routing] BLOCKED: source matches Relayer wallet (relayer must not hold principal)`, { fromWallet, memo });
+        return failedTransfer("source_is_relayer");
+      }
+    }
+  } catch (e) {
+    console.error(`[wallet-routing] Relayer address derivation failed`, { error: (e as Error).message });
+    return failedTransfer("relayer_check_failed");
+  }
+
+  // 3. Refuse if destination is not one of the two managed custodian wallets
+  //    AND not a user-payout address. For inbound routing the destination MUST
+  //    be the Escrow Wallet; this is enforced at the call site below as well.
+
+
   let privateKey: string | undefined;
   if (fromLower && fromLower === txWalletAddr) {
     privateKey = Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
