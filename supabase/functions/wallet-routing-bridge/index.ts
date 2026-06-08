@@ -350,6 +350,86 @@ async function notify(
   });
 }
 
+// Admin sentinel id used across the platform for system-originated messages
+const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
+
+/**
+ * Drops a message into the user's inbox from the admin sentinel so payout
+ * outcomes appear in BOTH the notifications dropdown AND the Messages screen.
+ * Failures here are non-blocking — payout routing must never fail because the
+ * message channel had a hiccup.
+ */
+async function sendInboxMessage(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  body: string,
+  transactionId?: string,
+  subject = "Payout update"
+) {
+  if (!userId) return;
+  try {
+    // Find or create a system thread between sentinel + user (scoped to tx if provided)
+    let threadId: string | null = null;
+    const lookup = await supabase
+      .from("message_threads")
+      .select("id")
+      .eq("category", "system")
+      .or(`and(participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${userId}),and(participant_1.eq.${userId},participant_2.eq.${ADMIN_SENTINEL_ID})`)
+      .limit(1)
+      .maybeSingle();
+    threadId = lookup.data?.id ?? null;
+    if (!threadId) {
+      const ins = await supabase
+        .from("message_threads")
+        .insert({
+          participant_1: ADMIN_SENTINEL_ID,
+          participant_2: userId,
+          participant_1_role: "admin",
+          subject,
+          category: "system",
+          transaction_id: transactionId ?? null,
+          last_message_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      threadId = ins.data?.id ?? null;
+    }
+    if (!threadId) return;
+    await supabase.from("messages").insert({
+      thread_id: threadId,
+      sender_id: ADMIN_SENTINEL_ID,
+      body,
+      is_read: false,
+    });
+    await supabase
+      .from("message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", threadId);
+  } catch (e) {
+    console.warn("[wallet-routing] sendInboxMessage failed (non-blocking):", e);
+  }
+}
+
+/**
+ * Unified payout outcome announcer: drops a notification AND an inbox message
+ * so the user always knows whether a release / refund / split succeeded.
+ */
+async function announcePayoutOutcome(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  success: boolean,
+  titleSuccess: string,
+  titleFailure: string,
+  body: string,
+  transactionId?: string
+) {
+  if (!userId) return;
+  const title = success ? titleSuccess : titleFailure;
+  const prefix = success ? "✅ " : "⚠️ ";
+  await notify(supabase, userId, title, body, success ? "success" : "error", transactionId);
+  await sendInboxMessage(supabase, userId, `${prefix}${title}\n\n${body}`, transactionId, title);
+}
+
 // ═══════════════════════════════════════════════════════════
 //  ROUTING LOGIC — CORRECTED FEE MODEL
 // ═══════════════════════════════════════════════════════════
@@ -729,19 +809,25 @@ Deno.serve(async (req) => {
         console.warn("Payout router forward failed (non-blocking):", e);
       }
 
-      await notify(
-        supabase, tx.vendor_id,
+      const releaseOk = payoutTransfer.status === "confirmed";
+      await announcePayoutOutcome(
+        supabase, tx.vendor_id, releaseOk,
         "Funds Released",
-        `$${vendorPayout.toFixed(2)} released to your account. ` +
-        `1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`,
-        "success", transactionId
+        "Payout Failed — Action Required",
+        releaseOk
+          ? `$${vendorPayout.toFixed(2)} released to your saved payout wallet. 1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`
+          : `We were unable to send $${vendorPayout.toFixed(2)} to your saved payout wallet (reason: ${payoutTransfer.txHash}). Please check your saved payout address in TrustLock OS Payout and contact support if the issue persists. Funds remain safe in escrow.`,
+        transactionId
       );
 
-      await notify(
-        supabase, tx.buyer_id,
+      await announcePayoutOutcome(
+        supabase, tx.buyer_id, releaseOk,
         "Order Completed",
-        `Funds for order #${tx.order_number || tx.tx_id} have been released to the vendor.`,
-        "info", transactionId
+        "Release Pending — Vendor Payout Issue",
+        releaseOk
+          ? `Funds for order #${tx.order_number || tx.tx_id} have been released to the vendor.`
+          : `Release for order #${tx.order_number || tx.tx_id} was initiated but the vendor payout did not confirm. Support has been notified.`,
+        transactionId
       );
 
       return json({
@@ -846,12 +932,15 @@ Deno.serve(async (req) => {
         console.warn("Refund router forward failed (non-blocking):", e);
       }
 
-      await notify(
-        supabase, tx.buyer_id,
+      const refundOk = refundTransfer.status === "confirmed";
+      await announcePayoutOutcome(
+        supabase, tx.buyer_id, refundOk,
         "Refund Processed — $0 Fees",
-        `Full refund of $${lockedPrincipal.toFixed(2)} initiated for order #${tx.order_number || tx.tx_id}. ` +
-        `No fees charged. Gas is covered by TrustLock.`,
-        "success", transactionId
+        "Refund Failed — Action Required",
+        refundOk
+          ? `Full refund of $${lockedPrincipal.toFixed(2)} sent to your saved payout wallet for order #${tx.order_number || tx.tx_id}. No fees charged. Gas covered by TrustLock.`
+          : `We were unable to send your $${lockedPrincipal.toFixed(2)} refund (reason: ${refundTransfer.txHash}). Please verify your saved payout address in TrustLock OS Payout. Funds remain safe in escrow.`,
+        transactionId
       );
 
       return json({
@@ -1034,16 +1123,27 @@ Deno.serve(async (req) => {
         }
       }
 
-      await notify(supabase, tx.buyer_id,
+      const buyerLegOk = !transfers.some((t) => t.to !== WALLETS.transaction.address && t.amount === buyerAmount && t.status !== "confirmed");
+      const vendorLegOk = !transfers.some((t) => t.amount === vendorNet && t.status !== "confirmed");
+
+      await announcePayoutOutcome(
+        supabase, tx.buyer_id, buyerLegOk,
         "Dispute Resolved",
-        `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal). ` +
-        `$0 fees on your portion. Gas covered by TrustLock.`,
-        "info", transactionId);
-      await notify(supabase, tx.vendor_id,
+        "Dispute Split — Buyer Payout Issue",
+        buyerLegOk
+          ? `You receive $${buyerAmount.toFixed(2)} from arbitration (${(buyerShare * 100).toFixed(0)}% of principal) to your saved payout wallet. $0 fees on your portion. Gas covered by TrustLock.`
+          : `Your $${buyerAmount.toFixed(2)} arbitration share could not be sent to your saved payout wallet. Please verify your saved address in TrustLock OS Payout. Funds remain safe in escrow.`,
+        transactionId
+      );
+      await announcePayoutOutcome(
+        supabase, tx.vendor_id, vendorLegOk,
         "Dispute Resolved",
-        `You receive $${vendorNet.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal). ` +
-        `1% escrow fee on your share: $${vendorEscrowFee.toFixed(2)}.`,
-        "info", transactionId);
+        "Dispute Split — Vendor Payout Issue",
+        vendorLegOk
+          ? `You receive $${vendorNet.toFixed(2)} from arbitration (${(vendorShare * 100).toFixed(0)}% of principal) to your saved payout wallet. 1% escrow fee on your share: $${vendorEscrowFee.toFixed(2)}.`
+          : `Your $${vendorNet.toFixed(2)} arbitration share could not be sent to your saved payout wallet. Please verify your saved address in TrustLock OS Payout. Funds remain safe in escrow.`,
+        transactionId
+      );
 
       return json({
         success: true,
