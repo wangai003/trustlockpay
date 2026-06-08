@@ -73,4 +73,46 @@ export const useRequestExtension = () => {
   });
 };
 
+export const useReviewExtension = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      extensionId,
+      decision,
+    }: {
+      extensionId: string;
+      transactionId: string;
+      decision: "approved" | "rejected";
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("escrow_extensions")
+        .update({
+          status: decision,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", extensionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      toast.success(
+        vars.decision === "approved"
+          ? "Extension approved. Timer has been extended."
+          : "Extension request declined."
+      );
+      queryClient.invalidateQueries({ queryKey: ["escrow-extensions", vars.transactionId] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+};
+
 export { MAX_EXTENSIONS };
