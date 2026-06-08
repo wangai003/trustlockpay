@@ -786,7 +786,9 @@ Deno.serve(async (req) => {
       // Escrow Wallet holds ONLY the vendor principal (1% escrow fee baked in).
       // On refund, return the FULL locked amount to buyer — $0 deductions.
       const lockedPrincipal = tx.amount;
-      const buyerWallet = body.buyerWallet || "buyer_pending";
+      const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+        ? body.buyerWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
 
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
