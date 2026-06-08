@@ -14,7 +14,7 @@ import TrilemmaSection from "@/components/TrilemmaSection";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-[hsl(160,20%,6%)]">
+    <div className="dark min-h-screen bg-[hsl(160,20%,6%)]">
       <AnimatedBackground />
       <Navbar />
       <HeroSection />
