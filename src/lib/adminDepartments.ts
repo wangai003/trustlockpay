@@ -8,6 +8,7 @@ export interface Department {
 
 export const DEPARTMENTS: Department[] = [
   { slug: "executive", name: "Executive Office", description: "Full platform access — Chief Admin oversight", canMessageClients: true },
+  { slug: "technical", name: "Technical & Engineering", description: "System health, bug triage, infrastructure & blockchain anchoring", canMessageClients: false },
   { slug: "correspondence", name: "Correspondence & Client Relations", description: "Client messaging, onboarding support", canMessageClients: true },
   { slug: "disputes", name: "Disputes & Arbitration", description: "Case management, arbitrator portal, rulings", canMessageClients: false },
   { slug: "finance", name: "Finance & Payouts", description: "OS Pay, payouts, tax remittance, gas treasury", canMessageClients: false },
@@ -42,6 +43,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   training: "/trustlock/admin/training-manual",
   sandbox: "/trustlock/admin/sandbox-leads",
   platforms: "/trustlock/admin/platforms",
+  "system-health": "/trustlock/admin/system-health",
   settings: "/trustlock/admin/settings",
   staff: "/trustlock/admin/settings",
 };
