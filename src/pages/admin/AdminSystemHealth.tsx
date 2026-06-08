@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, Bug, CheckCircle2, Activity, Clock, Loader2 } from "lucide-react";
+import { AlertTriangle, Bug, CheckCircle2, Activity, Clock, Loader2, Heart, Zap, Send } from "lucide-react";
 import { toast } from "sonner";
 
 type BugRow = {
@@ -57,6 +57,33 @@ const AdminSystemHealth = () => {
     },
     refetchInterval: 30000,
   });
+
+  const { data: metrics } = useQuery({
+    queryKey: ["system-health-metrics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_system_health_summary" as any);
+      if (error) throw error;
+      return (data || []) as Array<{
+        metric_key: string; metric_label: string;
+        value_numeric: number | null; value_text: string | null;
+        status: "healthy" | "degraded" | "critical";
+        recorded_at: string;
+      }>;
+    },
+    refetchInterval: 30000,
+  });
+
+  const refreshMetrics = async () => {
+    const { error } = await supabase.functions.invoke("system-health-collector");
+    if (error) toast.error("Failed to refresh metrics");
+    else { toast.success("Metrics refreshed"); qc.invalidateQueries({ queryKey: ["system-health-metrics"] }); }
+  };
+
+  const sendTestAlert = async () => {
+    const { error } = await supabase.functions.invoke("bug-sentry-notify", { body: { digest: true } });
+    if (error) toast.error("Webhook failed: " + error.message);
+    else toast.success("Webhook fired (configured Slack/email destinations notified)");
+  };
 
   const counts = {
     critical: (bugs || []).filter((b) => b.severity === "critical" && !b.resolved_at).length,
@@ -128,6 +155,45 @@ const AdminSystemHealth = () => {
             </Card>
           ))}
         </div>
+
+        {/* System Health Metrics */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Heart className="w-4 h-4" /> System Health Metrics
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={refreshMetrics}>
+                <Zap className="w-3 h-3 mr-1" /> Refresh
+              </Button>
+              <Button size="sm" variant="outline" onClick={sendTestAlert}>
+                <Send className="w-3 h-3 mr-1" /> Send Alert Digest
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!metrics || metrics.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No metrics recorded yet. Cron runs every 10 minutes — click Refresh to sample now.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {metrics.map((m) => (
+                  <div
+                    key={m.metric_key}
+                    className={`p-2 rounded border text-xs ${
+                      m.status === "critical" ? "border-red-500/40 bg-red-500/5" :
+                      m.status === "degraded" ? "border-yellow-500/40 bg-yellow-500/5" :
+                      "border-border bg-muted/30"
+                    }`}
+                  >
+                    <p className="text-[10px] text-muted-foreground">{m.metric_label}</p>
+                    <p className="font-bold text-base">{m.value_numeric ?? m.value_text ?? "—"}</p>
+                    <p className="text-[9px] uppercase tracking-wide opacity-70">{m.status}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList>

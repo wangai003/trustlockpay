@@ -1067,9 +1067,12 @@ export type Database = {
           category: string
           context: Json | null
           created_at: string
+          escalated_at: string | null
+          escalation_level: number
           first_seen_at: string
           id: string
           last_seen_at: string
+          last_webhook_sent_at: string | null
           message: string
           occurrence_count: number
           resolution_notes: string | null
@@ -1090,9 +1093,12 @@ export type Database = {
           category: string
           context?: Json | null
           created_at?: string
+          escalated_at?: string | null
+          escalation_level?: number
           first_seen_at?: string
           id?: string
           last_seen_at?: string
+          last_webhook_sent_at?: string | null
           message: string
           occurrence_count?: number
           resolution_notes?: string | null
@@ -1113,9 +1119,12 @@ export type Database = {
           category?: string
           context?: Json | null
           created_at?: string
+          escalated_at?: string | null
+          escalation_level?: number
           first_seen_at?: string
           id?: string
           last_seen_at?: string
+          last_webhook_sent_at?: string | null
           message?: string
           occurrence_count?: number
           resolution_notes?: string | null
@@ -4631,6 +4640,45 @@ export type Database = {
         }
         Relationships: []
       }
+      system_health_metrics: {
+        Row: {
+          context: Json
+          id: string
+          metric_key: string
+          metric_label: string
+          recorded_at: string
+          status: string
+          threshold_critical: number | null
+          threshold_warn: number | null
+          value_numeric: number | null
+          value_text: string | null
+        }
+        Insert: {
+          context?: Json
+          id?: string
+          metric_key: string
+          metric_label: string
+          recorded_at?: string
+          status?: string
+          threshold_critical?: number | null
+          threshold_warn?: number | null
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          context?: Json
+          id?: string
+          metric_key?: string
+          metric_label?: string
+          recorded_at?: string
+          status?: string
+          threshold_critical?: number | null
+          threshold_warn?: number | null
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Relationships: []
+      }
       tax_ledger: {
         Row: {
           buyer_country: string | null
@@ -6652,6 +6700,7 @@ export type Database = {
         }
         Returns: string
       }
+      escalate_stale_bugs: { Args: never; Returns: Json }
       generate_admin_alias: { Args: never; Returns: string }
       generate_temp_password: { Args: never; Returns: string }
       get_arbitrator_session_by_token: {
@@ -6725,6 +6774,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_system_health_summary: {
+        Args: never
+        Returns: {
+          context: Json
+          metric_key: string
+          metric_label: string
+          recorded_at: string
+          status: string
+          threshold_critical: number
+          threshold_warn: number
+          value_numeric: number
+          value_text: string
+        }[]
+      }
       get_top_matches: {
         Args: {
           _limit?: number
@@ -6774,6 +6837,18 @@ export type Database = {
       is_valid_status_transition: {
         Args: { _from: string; _is_service_role?: boolean; _to: string }
         Returns: boolean
+      }
+      record_health_metric: {
+        Args: {
+          _context?: Json
+          _key: string
+          _label: string
+          _threshold_critical?: number
+          _threshold_warn?: number
+          _value_numeric?: number
+          _value_text?: string
+        }
+        Returns: string
       }
       report_bug: {
         Args: {
