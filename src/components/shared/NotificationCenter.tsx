@@ -399,6 +399,11 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className={cn("text-xs flex-1 truncate", (isActionPending || !n.is_read) && "font-semibold")}>{n.title}</p>
+                            {((n as DbNotification & { _groupCount?: number })._groupCount ?? 1) > 1 && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground font-semibold shrink-0" title="Duplicate notifications grouped">
+                                ×{(n as DbNotification & { _groupCount?: number })._groupCount}
+                              </span>
+                            )}
                             {isActionPending && (
                               <span className="text-[8px] px-1 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0 flex items-center gap-0.5">
                                 ACTION
