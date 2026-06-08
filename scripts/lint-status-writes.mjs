@@ -27,10 +27,12 @@ const ALLOWLIST = new Set([
   "manage-transaction",      // primary user-driven lifecycle (ship, deliver, release, cancel)
   "manage-dispute",          // dispute open/resolve/split
   "escrow-manager",          // auto-release + admin release/refund
+  "escrow-bridge",           // on-chain settlement: locked / released / refunded / split_resolved
   "manage-kyc",              // KYC hold -> locked exit
   "sanctions-screening",     // OFAC/sanctions block
   "wallet-routing-bridge",   // pending -> locked on inbound routing (forward-only)
   "manage-scan-remediation", // compliance scan remediation transitions
+  "document-scanner",        // doc-intel auto-hold (compliance_hold / compliance_review)
   "auto-route-sweeper",      // idempotent inbound sweep (guarded by inbound_routed_at)
   "compliance-velocity",     // velocity-based holds
   "refund-router",           // refund finalization
