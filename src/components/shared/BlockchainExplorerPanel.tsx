@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, FileText, Clock, ChevronRight, Layers, PlayCircle, ArrowUpRight
+  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { explorerTxUrl, explorerName } from "@/lib/polygonExplorer";
+import { explorerTxUrl, explorerAddressUrl, explorerName, explorerBase } from "@/lib/polygonExplorer";
 
 const RECORD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   invoice: { label: "Invoice", color: "bg-blue-500/20 text-blue-400" },
@@ -50,207 +51,6 @@ interface BlockchainExplorerPanelProps {
   defaultTransactionId?: string;
 }
 
-// ─── Demo Proof Chain ─────────────────────────────
-// Simulates a complete $12,500 Agriculture trade between Kenya and Nigeria
-const DEMO_TX_REF = "TL-2025-0847";
-const DEMO_TX_ID = "demo-tx-00000-0847";
-const DEMO_POLYGON_TX_PREFIX = "0x";
-const now = new Date();
-const demoTime = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3600000).toISOString();
-
-const DEMO_PROOFS: ProofRecord[] = [
-  {
-    id: "demo-proof-001",
-    content_hash: "0x7a3f8b2cd91c7e04f5e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5d4e1",
-    prev_hash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-    record_type: "invoice",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      proforma_number: "PFI-2025-0847",
-      order_amount: "$12,500.00",
-      currency: "USD",
-      industry: "Agriculture",
-      buyer: "Amara Holdings Ltd (Lagos, NG)",
-      vendor: "GreenField Exports (Nairobi, KE)",
-      line_items: "Premium Arabica Coffee - 5,000 kg",
-      incoterms: "CIF Lagos",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0x9bc2e7f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6f71a",
-    anchored_at: demoTime(72),
-    created_at: demoTime(72),
-  },
-  {
-    id: "demo-proof-002",
-    content_hash: "0x2d91c7e04f5e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7a8f3",
-    prev_hash: "0x7a3f8b2cd91c7e04f5e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5d4e1",
-    record_type: "aml_screening",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      screening_provider: "TrustLock Compliance Engine",
-      buyer_status: "CLEAR — No OFAC/UN matches",
-      vendor_status: "CLEAR — No OFAC/UN matches",
-      risk_score: "Low (12/100)",
-      corridor: "KE → NG",
-      sanctions_lists_checked: "OFAC SDN, UN Consolidated, EU Sanctions, FATF Greylist",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xa1e73c9b4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
-    anchored_at: demoTime(71.5),
-    created_at: demoTime(71.5),
-  },
-  {
-    id: "demo-proof-003",
-    content_hash: "0x4b8c3d7e2f1a9b0c5d6e7f8a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
-    prev_hash: "0x2d91c7e04f5e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7a8f3",
-    record_type: "contract",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      buyer_typed_name: "Amara Osei",
-      buyer_ip: "105.112.xxx.xxx (Lagos, NG)",
-      vendor_auto_signed: "Yes (consent on file)",
-      contract_version: "1.0",
-      industry_addendum: "Agriculture — Perishable Goods Clause",
-      milestone_count: "3",
-      escrow_terms: "1.5% fee, milestone-based release",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xb3f28d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
-    anchored_at: demoTime(70),
-    created_at: demoTime(70),
-  },
-  {
-    id: "demo-proof-004",
-    content_hash: "0x5f4e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c7d2",
-    prev_hash: "0x4b8c3d7e2f1a9b0c5d6e7f8a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
-    record_type: "milestone",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      milestone: "1 of 3 — Goods Packaged & Quality Inspected",
-      observer: "James Mwangi (Certified Inspector)",
-      gps_coordinates: "1.2921° S, 36.8219° E (Nairobi)",
-      evidence_hash: "0x8c1d...e4a7 (inspection_report.pdf)",
-      sign_off_ip: "197.248.xxx.xxx",
-      quality_grade: "Grade AA Arabica",
-      weight_verified: "5,012 kg (within tolerance)",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xc4d17a2f3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0",
-    anchored_at: demoTime(48),
-    created_at: demoTime(48),
-  },
-  {
-    id: "demo-proof-005",
-    content_hash: "0x1a8b9c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e3f5",
-    prev_hash: "0x5f4e3a1b9c4d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c7d2",
-    record_type: "document_upload",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      file_name: "Certificate_of_Origin_KE.pdf",
-      file_hash: "0x3e7fb2c1d4e5f6a7b8c9d0e1f2a3b4c5",
-      file_size: "2.4 MB",
-      uploaded_by: "Vendor (GreenField Exports)",
-      document_type: "Certificate of Origin",
-      issuing_authority: "Kenya Revenue Authority",
-      retention_period: "7 years",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xd5e29b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1",
-    anchored_at: demoTime(36),
-    created_at: demoTime(36),
-  },
-  {
-    id: "demo-proof-006",
-    content_hash: "0x8e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
-    prev_hash: "0x1a8b9c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e3f5",
-    record_type: "milestone",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      milestone: "2 of 3 — Shipped & In Transit",
-      carrier: "Maersk Line",
-      tracking_number: "MAEU-284719-5",
-      port_of_loading: "Mombasa, Kenya",
-      port_of_discharge: "Apapa, Lagos",
-      etd: "2025-03-15",
-      eta: "2025-03-28",
-      bill_of_lading: "BL-MSK-2025-284719",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xe6f31c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
-    anchored_at: demoTime(24),
-    created_at: demoTime(24),
-  },
-  {
-    id: "demo-proof-007",
-    content_hash: "0x6c2d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5b1a4",
-    prev_hash: "0x8e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
-    record_type: "observer_signoff",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      observer: "Lagos Port Authority Inspector",
-      sign_off_type: "Delivery Confirmation",
-      gps_coordinates: "6.4541° N, 3.3947° E (Apapa Port)",
-      goods_condition: "Intact — No damage reported",
-      weight_at_arrival: "5,008 kg",
-      customs_clearance: "Cleared — NCS Ref: NCS-2025-08471",
-      sign_off_ip: "41.58.xxx.xxx",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xf7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a",
-    anchored_at: demoTime(6),
-    created_at: demoTime(6),
-  },
-  {
-    id: "demo-proof-008",
-    content_hash: "0x3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a",
-    prev_hash: "0x6c2d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5b1a4",
-    record_type: "acknowledgement",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      form_type: "Delivery Acknowledgement",
-      buyer_confirmed: "Yes — Amara Osei",
-      buyer_ip: "105.112.xxx.xxx",
-      confirmation_timestamp: demoTime(4),
-      goods_accepted: "Full quantity accepted",
-      quality_confirmed: "Matches Grade AA specification",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xa0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
-    anchored_at: demoTime(4),
-    created_at: demoTime(4),
-  },
-  {
-    id: "demo-proof-009",
-    content_hash: "0x9e7f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7d5c8",
-    prev_hash: "0x3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a",
-    record_type: "payout",
-    tx_ref: DEMO_TX_REF,
-    transaction_id: DEMO_TX_ID,
-    event_data: {
-      gross_amount: "$12,500.00",
-      escrow_fee: "$187.50 (1.5%)",
-      net_payout: "$12,312.50",
-      recipient: "GreenField Exports",
-      wallet: "0x4b2c...8d1e",
-      settlement: "USDC on Polygon",
-      confirmation_code: "TLP-9847",
-      trickle_to_wallet_1: "$125.00 (1.0% escrow fee)",
-    },
-    chain_status: "anchored",
-    polygon_tx_hash: "0xb1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c",
-    anchored_at: demoTime(2),
-    created_at: demoTime(2),
-  },
-];
-
 const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainExplorerPanelProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -261,14 +61,40 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
   const [selectedProof, setSelectedProof] = useState<ProofRecord | null>(null);
   const [verifyHash, setVerifyHash] = useState("");
   const [verifyResult, setVerifyResult] = useState<{ verified: boolean; message: string } | null>(null);
+  const [feedProofs, setFeedProofs] = useState<ProofRecord[]>([]);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [feedFilter, setFeedFilter] = useState<string>("all");
+  const [contractAddresses, setContractAddresses] = useState<{ registry?: string; escrow?: string; network?: string }>({});
 
   const sb = supabase as any;
 
-  const loadDemo = () => {
-    setSearchQuery(DEMO_TX_REF);
-    setProofs(DEMO_PROOFS);
-    setSelectedProof(null);
-    toast.success("Demo loaded — 9-block proof chain for order TL-2025-0847");
+  useEffect(() => {
+    if (!open) return;
+    // Fetch public contract addresses for header link
+    supabase.functions.invoke("get-wallet-config").then(({ data }) => {
+      if (data) {
+        setContractAddresses({
+          registry: data.registryContract || "",
+          escrow: data.escrowContract || "",
+          network: data.network || "polygon",
+        });
+      }
+    }).catch(() => {});
+  }, [open]);
+
+  const loadRecentFeed = async (filter: string = feedFilter) => {
+    setFeedLoading(true);
+    let q = sb
+      .from("blockchain_proofs")
+      .select("*")
+      .eq("chain_status", "anchored")
+      .order("anchored_at", { ascending: false })
+      .limit(50);
+    if (filter !== "all") q = q.eq("record_type", filter);
+    const { data, error } = await q;
+    if (error) toast.error("Failed to load recent activity");
+    setFeedProofs((data as ProofRecord[]) || []);
+    setFeedLoading(false);
   };
 
   const searchByOrder = async (query?: string) => {
@@ -276,13 +102,6 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
     if (!q) return;
     setLoading(true);
     setSelectedProof(null);
-
-    // Check demo data first
-    if (q === DEMO_TX_REF || q === DEMO_TX_ID || q.toLowerCase().includes("0847") || q.toLowerCase().includes("demo")) {
-      setProofs(DEMO_PROOFS);
-      setLoading(false);
-      return;
-    }
 
     // Try transaction_id first, then tx_ref partial match
     let { data } = await sb
@@ -309,15 +128,6 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
   const verifyContentHash = async () => {
     if (!verifyHash.trim()) return;
     setLoading(true);
-
-    // Check demo hashes first
-    const demoMatch = DEMO_PROOFS.find(p => p.content_hash === verifyHash.trim());
-    if (demoMatch) {
-      setVerifyResult({ verified: true, message: "Hash verified — record exists in TrustLock Registry (Demo)" });
-      setProofs([demoMatch]);
-      setLoading(false);
-      return;
-    }
 
     const { data } = await sb
       .from("blockchain_proofs")
