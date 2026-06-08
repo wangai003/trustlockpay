@@ -30,6 +30,7 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import DigitalDeliverableVault from "@/components/shared/DigitalDeliverableVault";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TrackingDetailsModal from "@/components/shared/TrackingDetailsModal";
