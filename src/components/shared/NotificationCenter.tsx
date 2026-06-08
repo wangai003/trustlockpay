@@ -175,8 +175,37 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   /* ── Filtered list — action-required items pinned to top ── */
   const filtered = useMemo(() => {
     const list = activeTab === "all" ? notifications : notifications.filter((n) => toPriority(n.type) === activeTab);
+
+    // Collapse near-duplicates: notifications with the same title + related entity
+    // are grouped into a single row showing the most recent one with a count badge.
+    // This prevents bell-icon spam when multiple backend services (escrow-bridge,
+    // wallet-routing-bridge, cron sweepers) emit the same event for one transaction.
+    const groups = new Map<string, { latest: DbNotification; count: number; anyUnread: boolean; anyAction: boolean }>();
+    for (const n of list) {
+      const key = `${n.title}::${n.related_entity_id ?? n.related_entity_type ?? "_"}`;
+      const existing = groups.get(key);
+      const isActionPending = !!n.is_action_required && !n.action_completed_at;
+      if (!existing) {
+        groups.set(key, { latest: n, count: 1, anyUnread: !n.is_read, anyAction: isActionPending });
+      } else {
+        existing.count += 1;
+        existing.anyUnread = existing.anyUnread || !n.is_read;
+        existing.anyAction = existing.anyAction || isActionPending;
+        if (new Date(n.created_at).getTime() > new Date(existing.latest.created_at).getTime()) {
+          existing.latest = n;
+        }
+      }
+    }
+
+    const deduped = Array.from(groups.values()).map((g) => ({
+      ...g.latest,
+      is_read: g.anyUnread ? false : g.latest.is_read,
+      // attach a synthetic `_groupCount` so the row can render an "xN" badge
+      _groupCount: g.count,
+    } as DbNotification & { _groupCount: number }));
+
     // Sort: action-required pending first, then unread, then by date
-    return [...list].sort((a, b) => {
+    return deduped.sort((a, b) => {
       const aAction = a.is_action_required && !a.action_completed_at ? 1 : 0;
       const bAction = b.is_action_required && !b.action_completed_at ? 1 : 0;
       if (aAction !== bAction) return bAction - aAction;
