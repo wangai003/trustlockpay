@@ -46,6 +46,9 @@ interface Ticket {
   legitimacy_score: number;
   created_at: string;
   agent_resolved_at: string | null;
+  triage_results: any;
+  scope: string | null;
+  affected_count: number;
 }
 
 const STATUS_META: Record<string, { label: string; color: string; icon: any }> = {
