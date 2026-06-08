@@ -119,7 +119,6 @@ function getAccessibleModules(): string[] | null {
       ],
       correspondence: ["overview", "messages", "team-chat", "staff-dms", "vendors", "buyers", "training", "emmanuel"],
       disputes: ["overview", "disputes", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
-      disputes: ["overview", "disputes", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       finance: ["overview", "transactions", "finance", "payout", "tax", "gas", "analytics", "team-chat", "staff-dms", "training", "emmanuel"],
       compliance: ["overview", "compliance", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       operations: ["overview", "transactions", "workflow", "vendors", "buyers", "platforms", "blockchain", "gas", "industry", "documents", "system-health", "autonomous-fixer", "team-chat", "staff-dms", "training", "emmanuel"],
