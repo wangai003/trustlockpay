@@ -669,7 +669,9 @@ Deno.serve(async (req) => {
       );
 
       // Transfer 2: Vendor payout (principal minus 1% escrow fee)
-      const vendorWallet = body.vendorWallet || "vendor_pending";
+      const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+        ? body.vendorWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
       const payoutTransfer = await transferOnChain(
         WALLETS.escrow.address,
         vendorWallet,
