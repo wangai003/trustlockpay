@@ -130,12 +130,16 @@ const VendorCRM = () => {
     if (!user?.id) return;
     const fetchProposals = async () => {
       setProposalsLoading(true);
-      const { data } = await supabase
-        .from("milestone_counter_proposals")
-        .select("*")
-        .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false });
-      if (data) setProposals(data as any);
+      // Use masked RPC — buyer PII only returned once status='accepted'
+      const { data } = await supabase.rpc("get_vendor_counter_proposals", {
+        _vendor_id: user.id,
+      });
+      if (data) {
+        const sorted = [...(data as any[])].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setProposals(sorted);
+      }
       setProposalsLoading(false);
     };
     fetchProposals();
