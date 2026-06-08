@@ -73,7 +73,7 @@ const FeeComparisonSection = () => {
           <div className="mt-4 text-center">
             <button
               onClick={() => setShowBreakdown(!showBreakdown)}
-              className="inline-flex items-center gap-1.5 text-xs text-[hsl(160,5%,46%)] hover:text-[hsl(0,0%,90%)] transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-[hsl(160,10%,72%)] hover:text-[hsl(0,0%,90%)] transition-colors"
             >
               <Info className="w-3.5 h-3.5" />
               {showBreakdown ? "Hide fee breakdown" : "See how our fees break down"}
@@ -86,7 +86,7 @@ const FeeComparisonSection = () => {
               animate={{ opacity: 1, height: "auto" }}
               className="mt-3 rounded-lg border border-[hsl(160,15%,16%)] bg-[hsl(160,15%,10%)] p-4 space-y-4 text-xs"
             >
-              <p className="text-[10px] text-[hsl(160,5%,46%)] text-center font-medium uppercase tracking-wide">
+              <p className="text-sm text-[hsl(160,10%,72%)] text-center font-medium uppercase tracking-wide">
                 What buyers see at checkout
               </p>
               <div className="p-3 rounded-lg bg-[hsl(160,20%,8%)] border border-[hsl(160,15%,16%)] space-y-1">
@@ -94,27 +94,27 @@ const FeeComparisonSection = () => {
                   <span className="font-semibold text-[hsl(0,0%,95%)]">{BUYER_FEE_LINES.transactionFee.label}</span>
                   <span className="font-semibold text-[hsl(0,0%,95%)]">{BUYER_FEE_LINES.transactionFee.range}</span>
                 </div>
-                <p className="text-[10px] text-[hsl(160,5%,46%)]">{BUYER_FEE_LINES.transactionFee.description}</p>
-                <p className="text-[10px] text-[hsl(160,5%,46%)] italic">Includes: {BUYER_FEE_LINES.transactionFee.includes}</p>
+                <p className="text-sm text-[hsl(160,10%,72%)]">{BUYER_FEE_LINES.transactionFee.description}</p>
+                <p className="text-sm text-[hsl(160,10%,72%)] italic">Includes: {BUYER_FEE_LINES.transactionFee.includes}</p>
               </div>
               <div className="p-3 rounded-lg bg-[hsl(160,20%,8%)] border border-[hsl(160,15%,16%)] space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-[hsl(0,0%,95%)]">{BUYER_FEE_LINES.taxesAndDuties.label}</span>
                   <span className="font-semibold text-[hsl(0,0%,95%)]">{BUYER_FEE_LINES.taxesAndDuties.range}</span>
                 </div>
-                <p className="text-[10px] text-[hsl(160,5%,46%)]">{BUYER_FEE_LINES.taxesAndDuties.description}</p>
+                <p className="text-sm text-[hsl(160,10%,72%)]">{BUYER_FEE_LINES.taxesAndDuties.description}</p>
               </div>
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-primary">{BUYER_FEE_LINES.escrowServiceFee.label}</span>
                   <span className="font-semibold text-primary">{BUYER_FEE_LINES.escrowServiceFee.display}</span>
                 </div>
-                <p className="text-[10px] text-[hsl(160,5%,46%)]">{BUYER_FEE_LINES.escrowServiceFee.description}</p>
+                <p className="text-sm text-[hsl(160,10%,72%)]">{BUYER_FEE_LINES.escrowServiceFee.description}</p>
               </div>
               <div className="border-t border-[hsl(160,15%,16%)] pt-3 space-y-1.5">
-                <p className="text-[hsl(160,5%,46%)]"><strong className="text-[hsl(0,0%,95%)]">Crypto Direct:</strong> {ALL_IN_RANGES.cryptoDirect.range}</p>
-                <p className="text-[hsl(160,5%,46%)]"><strong className="text-[hsl(0,0%,95%)]">Fiat Payment:</strong> {ALL_IN_RANGES.fiat.range}</p>
-                <p className="text-[hsl(160,5%,46%)]"><strong className="text-[hsl(0,0%,95%)]">Refunds:</strong> {ALL_IN_RANGES.refund.range}</p>
+                <p className="text-[hsl(160,10%,72%)]"><strong className="text-[hsl(0,0%,95%)]">Crypto Direct:</strong> {ALL_IN_RANGES.cryptoDirect.range}</p>
+                <p className="text-[hsl(160,10%,72%)]"><strong className="text-[hsl(0,0%,95%)]">Fiat Payment:</strong> {ALL_IN_RANGES.fiat.range}</p>
+                <p className="text-[hsl(160,10%,72%)]"><strong className="text-[hsl(0,0%,95%)]">Refunds:</strong> {ALL_IN_RANGES.refund.range}</p>
               </div>
             </motion.div>
           )}

@@ -52,7 +52,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-xs text-[hsl(160,5%,45%)] hover:text-[hsl(160,50%,50%)] transition-colors"
+                className="text-xs text-[hsl(160,10%,72%)] hover:text-[hsl(160,50%,50%)] transition-colors"
               >
                 {link.label}
               </Link>

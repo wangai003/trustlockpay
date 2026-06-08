@@ -56,7 +56,7 @@ const TrilemmaSection = () => {
         >
           <div className="flex items-center gap-2.5 mb-4">
             <img src={trustlockLogo} alt="" className="h-7 w-7 object-contain" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-medium">
+            <span className="text-xs sm:text-[11px] tracking-[0.2em] uppercase text-primary/80 font-semibold">
               The $1.7 Trillion Question
             </span>
           </div>
@@ -66,7 +66,7 @@ const TrilemmaSection = () => {
             <span className="text-primary">Factor</span>
           </h2>
 
-          <p className="mt-3 text-sm sm:text-base text-muted-foreground italic max-w-lg">
+          <p className="mt-3 text-base sm:text-lg text-foreground/70 italic max-w-lg">
             A deadlock disguised as a funding gap.
           </p>
         </motion.div>
@@ -87,17 +87,17 @@ const TrilemmaSection = () => {
                 <party.icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
 
-              <h3 className="text-sm font-bold text-foreground tracking-wide uppercase mb-1">
+              <h3 className="text-base font-bold text-foreground tracking-wide uppercase mb-1">
                 {party.title}
               </h3>
-              <p className="text-xs text-muted-foreground italic mb-4">
+              <p className="text-sm text-foreground/70 italic mb-4">
                 {party.subtitle}
               </p>
 
               {/* Pain point */}
-              <div className="flex items-start gap-1.5 pt-3 border-t border-border/40">
-                <span className="text-destructive/60 text-[10px] mt-0.5">✕</span>
-                <p className="text-[11px] text-muted-foreground leading-snug">
+              <div className="flex items-start gap-2 pt-3 border-t border-border/40">
+                <span className="text-destructive text-sm mt-0.5">✕</span>
+                <p className="text-sm text-foreground/80 leading-snug">
                   {party.pain}
                 </p>
               </div>
@@ -113,17 +113,17 @@ const TrilemmaSection = () => {
           transition={{ duration: 0.7, delay: 0.3 }}
           className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 sm:p-6 md:p-8"
         >
-          <p className="text-[10px] tracking-[0.15em] uppercase text-primary font-medium mb-3">
+          <p className="text-xs sm:text-[11px] tracking-[0.15em] uppercase text-primary font-semibold mb-3">
             The Core Insight
           </p>
-          <p className="text-sm sm:text-base text-foreground/90 leading-relaxed max-w-2xl">
+          <p className="text-base sm:text-lg text-foreground leading-relaxed max-w-2xl">
             Each party's fear creates the other's problem. The financier won't lend because the
             vendor can't prove performance. The vendor can't perform because the financier won't
             lend. The buyer won't pay because neither side can guarantee the outcome.
           </p>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-sm sm:text-base text-foreground/70">
             It's not a money problem — it's a{" "}
-            <span className="text-primary font-medium">trust infrastructure</span> problem.
+            <span className="text-primary font-semibold">trust infrastructure</span> problem.
           </p>
 
           {/* Resolution pillars */}
@@ -134,9 +134,9 @@ const TrilemmaSection = () => {
               { num: "03", label: "14-Block Chain", desc: "Forensic audit trail" },
             ].map((p) => (
               <div key={p.num} className="text-center">
-                <span className="text-lg font-bold text-primary/60">{p.num}</span>
-                <p className="text-[10px] font-semibold text-foreground mt-0.5">{p.label}</p>
-                <p className="text-[9px] text-muted-foreground">{p.desc}</p>
+                <span className="text-xl sm:text-2xl font-bold text-primary">{p.num}</span>
+                <p className="text-sm font-semibold text-foreground mt-1">{p.label}</p>
+                <p className="text-xs sm:text-sm text-foreground/65 mt-0.5">{p.desc}</p>
               </div>
             ))}
           </div>
