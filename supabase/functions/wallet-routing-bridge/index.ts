@@ -92,6 +92,33 @@ function failedTransfer(reason: string): { txHash: string; status: string } {
   };
 }
 
+// ─── Saved Payout Wallet Resolver ─────────────────────────
+// Strict resolution: when a release/refund/split needs a destination, look up the
+// user's DEFAULT saved Polygon USDC wallet. If the caller passes a valid 0x address
+// AND it matches the saved default, use it. Otherwise prefer the saved default —
+// this is the single source of truth that eliminates typo risk at payout time.
+// Returns null if no saved default exists; caller should reject the request.
+async function resolveSavedPayoutDestination(
+  supabase: ReturnType<typeof getSupabase>,
+  userId: string | null | undefined,
+  chain = "polygon",
+  token = "USDC",
+): Promise<string | null> {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("saved_payout_wallets")
+    .select("address")
+    .eq("user_id", userId)
+    .eq("chain", chain)
+    .eq("token", token)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (error) {
+    console.warn("[wallet-routing] saved_payout_wallets lookup failed:", error.message);
+    return null;
+  }
+  return data?.address ?? null;
+
 // ─── Gas station: relayer funds every source wallet's gas ─────────────
 // All on-chain ERC-20 transfers in TrustLock are gas-funded by the Polygon
 // Relayer wallet (POLYGON_RELAYER_PRIVATE_KEY). Before any transfer we
