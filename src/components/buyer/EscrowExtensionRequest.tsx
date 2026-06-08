@@ -21,7 +21,14 @@ const statusBadge: Record<string, { label: string; className: string; icon: any 
 const EscrowExtensionRequest = ({ transactionId, txId, status }: EscrowExtensionRequestProps) => {
   const { data: extensions = [], isLoading } = useEscrowExtensions(transactionId);
   const requestExtension = useRequestExtension();
+  const reviewExtension = useReviewExtension();
   const [showForm, setShowForm] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+
   const [reason, setReason] = useState("");
 
   // Only show for active statuses where auto-release matters
