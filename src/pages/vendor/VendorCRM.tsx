@@ -73,12 +73,16 @@ const VendorCRM = () => {
     if (!user?.id) return;
     const fetchRFQs = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("rfq_requests")
-        .select("*")
-        .eq("vendor_id", user.id)
-        .order("created_at", { ascending: false });
-      if (!error && data) setRfqs(data as any);
+      // Use masked RPC — buyer PII (email/phone) is only returned once status='accepted'
+      const { data, error } = await supabase.rpc("get_vendor_rfq_requests", {
+        _vendor_id: user.id,
+      });
+      if (!error && data) {
+        const sorted = [...(data as any[])].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setRfqs(sorted as any);
+      }
       setLoading(false);
     };
     fetchRFQs();
