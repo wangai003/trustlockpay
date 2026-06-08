@@ -82,6 +82,7 @@ const allNavGroups: SidebarNavGroup[] = [
       { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings" },
       { label: "Deploy Contracts", icon: Rocket, to: "/trustlock/admin/deploy-contracts", tip: "Deploy escrow & registry smart contracts to Polygon", moduleKey: "deploy-contracts" },
       { label: "System Health", icon: Bug, to: "/trustlock/admin/system-health", tip: "Bug Sentry — live error stream across the platform", moduleKey: "system-health" },
+      { label: "Autonomous Fixer", icon: Wrench, to: "/trustlock/admin/autonomous-fixer", tip: "Submit technical issues to TrustLock's autonomous fixer agent", moduleKey: "autonomous-fixer" },
     ],
   },
 ];
