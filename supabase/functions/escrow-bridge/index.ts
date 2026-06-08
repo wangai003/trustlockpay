@@ -212,6 +212,22 @@ Deno.serve(async (req) => {
     //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
     // ══════════════════════════════════════════════════
     if (action === "lock") {
+      // Idempotency guard — once a transaction has progressed past `pending`
+      // (locked / shipped / delivered / released / etc.), do not re-lock and
+      // do not re-emit "Funds Locked in Escrow" / "Payment Secured"
+      // notifications. The wallet-routing-bridge and the auto-route sweeper
+      // can call this repeatedly via cron; without this guard each tick
+      // duplicates buyer + vendor notifications.
+      const alreadyLocked = ["locked", "shipped", "delivered", "released", "disputed", "refunded", "completed", "split_resolved", "cancelled"].includes(String(tx.status));
+      if (alreadyLocked) {
+        return json({
+          success: true,
+          action: "lock",
+          skipped: "already_locked",
+          status: tx.status,
+        });
+      }
+
       // Check if milestones exist
       const { data: milestones } = await supabase
         .from("transaction_milestones")
