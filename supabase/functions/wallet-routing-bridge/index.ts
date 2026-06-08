@@ -347,6 +347,20 @@ Deno.serve(async (req) => {
     //  ACTION: ROUTE_INBOUND
     // ══════════════════════════════════════════════════
     if (action === "route_inbound") {
+      // Idempotency guard — if this transaction has already been routed
+      // inbound, do NOT re-transfer funds and do NOT re-emit notifications.
+      // The auto-route sweeper (and DB triggers) can call this repeatedly;
+      // without this guard each call duplicates "Payment Secured" /
+      // "Funds Secured in Escrow" notifications every cron tick.
+      if (tx.inbound_routed_at) {
+        return json({
+          success: true,
+          action: "route_inbound",
+          transactionId,
+          skipped: "already_routed",
+          inbound_routed_at: tx.inbound_routed_at,
+        });
+      }
       const vendorSubtotal = verifiedAmount || tx.amount;
       const taxBreakdown = tx.tax_breakdown as Record<string, unknown> | null;
 
