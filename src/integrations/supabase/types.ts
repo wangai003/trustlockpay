@@ -1012,6 +1012,7 @@ export type Database = {
       }
       autonomous_fixer_tickets: {
         Row: {
+          affected_count: number
           agent_actions_taken: Json | null
           agent_resolved_at: string | null
           agent_response: string | null
@@ -1027,15 +1028,18 @@ export type Database = {
           preset_key: string | null
           raw_customer_message: string | null
           resolution_outcome: string | null
+          scope: string | null
           status: string
           submitted_by_admin_id: string | null
           submitted_by_name: string | null
           ticket_type: string
           transaction_id: string | null
+          triage_results: Json
           tx_id_input: string
           updated_at: string
         }
         Insert: {
+          affected_count?: number
           agent_actions_taken?: Json | null
           agent_resolved_at?: string | null
           agent_response?: string | null
@@ -1051,15 +1055,18 @@ export type Database = {
           preset_key?: string | null
           raw_customer_message?: string | null
           resolution_outcome?: string | null
+          scope?: string | null
           status?: string
           submitted_by_admin_id?: string | null
           submitted_by_name?: string | null
           ticket_type: string
           transaction_id?: string | null
+          triage_results?: Json
           tx_id_input: string
           updated_at?: string
         }
         Update: {
+          affected_count?: number
           agent_actions_taken?: Json | null
           agent_resolved_at?: string | null
           agent_response?: string | null
@@ -1075,11 +1082,13 @@ export type Database = {
           preset_key?: string | null
           raw_customer_message?: string | null
           resolution_outcome?: string | null
+          scope?: string | null
           status?: string
           submitted_by_admin_id?: string | null
           submitted_by_name?: string | null
           ticket_type?: string
           transaction_id?: string | null
+          triage_results?: Json
           tx_id_input?: string
           updated_at?: string
         }
