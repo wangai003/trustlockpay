@@ -583,6 +583,15 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <TransportLegsViewer legs={order.transportLegs} compact />
             )}
             <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
+            {!isTestnet && order.vendorId && (
+              <DigitalDeliverableVault
+                transactionId={order.dbId}
+                vendorId={order.vendorId}
+                buyerId={order.buyerId}
+                status={order.status}
+                role="buyer"
+              />
+            )}
             <EscrowExtensionRequest transactionId={order.dbId} txId={order.id} status={order.status} />
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>
