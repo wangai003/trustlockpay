@@ -917,7 +917,9 @@ Deno.serve(async (req) => {
 
       // 2) Buyer portion — full amount, $0 gas
       if (buyerAmount > 0) {
-        const buyerWallet = body.buyerWallet || "buyer_pending";
+        const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+          ? body.buyerWallet
+          : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
         const buyerTx = await transferOnChain(
           WALLETS.escrow.address, buyerWallet,
           buyerAmount, token,
