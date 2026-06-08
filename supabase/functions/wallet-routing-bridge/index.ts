@@ -1296,7 +1296,9 @@ Deno.serve(async (req) => {
       if (!milestone) return json({ error: "Milestone not found" }, 404);
 
       const milestoneAmount = Number(milestone.amount) || 0;
-      const buyerWallet = body.buyerWallet || "buyer_pending";
+      const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+        ? body.buyerWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
 
       const transfers = [];
 
