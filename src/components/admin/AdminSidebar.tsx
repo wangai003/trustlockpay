@@ -115,7 +115,7 @@ function getAccessibleModules(): string[] | null {
         "disputes", "audit", "blockchain",
         "emmanuel", "analytics", "reports", "industry",
         "team-chat", "messages", "staff-dms",
-        "documents", "training",
+        "documents", "training", "system-health", "autonomous-fixer",
       ],
       correspondence: ["overview", "messages", "team-chat", "staff-dms", "vendors", "buyers", "training", "emmanuel"],
       technical: ["overview", "system-health", "autonomous-fixer", "blockchain", "gas", "platforms", "team-chat", "staff-dms", "training", "emmanuel"],
