@@ -42,6 +42,11 @@ const AdminSharedInbox = () => {
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const [adminNames, setAdminNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [forwardThread, setForwardThread] = useState<ThreadWithClaim | null>(null);
+
+  const myDeptSlug = (() => {
+    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").departmentSlug || null; } catch { return null; }
+  })();
 
   const { data: aliases = [] } = useAdminAliases();
   const claimThread = useClaimThread();
