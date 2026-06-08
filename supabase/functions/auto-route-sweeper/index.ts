@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
   const txIds = Array.from(new Set(candidates.map((s: any) => s.transaction_id)));
   const { data: txs, error: tErr } = await supabase
     .from("transactions")
-    .select("id, status, settlement_completed_at, amount")
+    .select("id, status, settlement_completed_at, inbound_routed_at, amount")
     .in("id", txIds);
   if (tErr) return json({ error: tErr.message }, 500);
 
@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     const tx: any = txById.get(s.transaction_id);
     if (!tx) { results.push({ session: s.id, skipped: "tx_not_found" }); continue; }
     if (tx.settlement_completed_at) { results.push({ session: s.id, skipped: "already_settled" }); continue; }
+    if (tx.inbound_routed_at) { results.push({ session: s.id, skipped: "already_routed" }); continue; }
     if (!ROUTEABLE.has(tx.status)) { results.push({ session: s.id, skipped: `status_${tx.status}` }); continue; }
 
     try {

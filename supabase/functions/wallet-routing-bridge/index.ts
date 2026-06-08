@@ -393,14 +393,23 @@ Deno.serve(async (req) => {
         `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
 
-      // Update transaction with fee breakdown
+      // Update transaction with fee breakdown.
+      // IMPORTANT: never downgrade a status that has progressed past `locked`
+      // (shipped / delivered / released / disputed / etc.). The vendor's
+      // workflow state must be preserved when this runs after the fact via
+      // the auto-route sweeper.
+      const preservedStatus = ["shipped", "delivered", "released", "disputed", "refunded", "completed", "split_resolved", "cancelled", "kyc_hold", "compliance_hold", "compliance_review"].includes(String(tx.status));
+      const txUpdate: Record<string, unknown> = {
+        fee: transactionWalletRetains,
+        updated_at: new Date().toISOString(),
+        inbound_routed_at: new Date().toISOString(),
+      };
+      if (!preservedStatus) {
+        txUpdate.status = "locked";
+      }
       await supabase
         .from("transactions")
-        .update({
-          status: "locked",
-          fee: transactionWalletRetains,
-          updated_at: new Date().toISOString(),
-        })
+        .update(txUpdate)
         .eq("id", transactionId);
 
       // Log tax collection to tax_ledger for admin remittance tracking
