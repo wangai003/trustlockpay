@@ -98,6 +98,8 @@ const VendorTransactions = () => {
         dbId: tx.id,
         id: tx.tx_id,
         buyer: tx.buyer_name || "Unknown",
+        buyerId: (tx as any).buyer_id as string | null,
+        vendorId: (tx as any).vendor_id as string | null,
         amount: Number(tx.amount),
         status: tx.status as "locked" | "shipped" | "released" | "disputed",
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
