@@ -68,7 +68,7 @@ const HeroSection = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-3 text-sm text-[hsl(160,5%,46%)] max-w-xl mx-auto"
+              className="mt-3 text-sm text-[hsl(160,10%,72%)] max-w-xl mx-auto"
             >
               Built for importers, exporters, and SMEs trading across any corridor.
             </motion.p>
@@ -104,7 +104,7 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
-              className="mt-12 flex flex-wrap justify-center gap-8 text-xs text-[hsl(160,5%,46%)]"
+              className="mt-12 flex flex-wrap justify-center gap-8 text-sm text-[hsl(160,10%,72%)]"
             >
               {[
                 { icon: Shield, label: "Blockchain-verified" },
