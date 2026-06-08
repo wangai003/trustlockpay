@@ -290,6 +290,17 @@ const AdminSharedInbox = () => {
           })}
         </div>
       </ScrollArea>
+
+      {forwardThread && currentAdminId && (
+        <ForwardMessageDialog
+          open={!!forwardThread}
+          onOpenChange={(o) => !o && setForwardThread(null)}
+          callerAdminId={currentAdminId}
+          fromDepartmentSlug={myDeptSlug}
+          bodyPlaintext={`Client thread reassignment requested.\n\nUser: ${getUserName(forwardThread)}\nSubject: ${forwardThread.subject || "(no subject)"}\nCategory: ${forwardThread.category}\nThread ID: ${forwardThread.id}\n\nPlease open the Client Inbox and claim this thread.`}
+          excludeSlug={myDeptSlug}
+        />
+      )}
     </div>
   );
 };
