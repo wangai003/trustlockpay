@@ -5,11 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Users, Lock } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock, Forward } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { serverEncrypt, serverDecryptBatch } from "@/lib/cryptoUtils";
+import ForwardMessageDialog from "@/components/admin/ForwardMessageDialog";
 import MessageTranslateButton from "@/components/shared/MessageTranslateButton";
 
 interface AdminStaff {
