@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import DigitalDeliverableVault from "@/components/shared/DigitalDeliverableVault";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,16 @@ const MilestoneWorkOrderPanel = ({
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
   const { anchor: anchorProof } = useBlockchainAnchor();
+  const [txParties, setTxParties] = useState<{ buyer_id: string | null; vendor_id: string | null } | null>(null);
+
+  useEffect(() => {
+    if (isTestnet || !transactionId || (role !== "buyer" && role !== "vendor")) return;
+    let cancelled = false;
+    supabase.from("transactions").select("buyer_id, vendor_id").eq("id", transactionId).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data) setTxParties(data as any); });
+    return () => { cancelled = true; };
+  }, [transactionId, isTestnet, role]);
+
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
@@ -506,6 +517,18 @@ const MilestoneWorkOrderPanel = ({
           })}
         </CardContent>
       </Card>
+
+      {!isTestnet && transactionId && (role === "buyer" || role === "vendor") && txParties?.vendor_id && (
+        <div className="mt-4">
+          <DigitalDeliverableVault
+            transactionId={transactionId}
+            vendorId={txParties.vendor_id}
+            buyerId={txParties.buyer_id}
+            status={transactionStatus || ""}
+            role={role}
+          />
+        </div>
+      )}
 
     <MilestoneDialogs
       isTestnet={isTestnet}
