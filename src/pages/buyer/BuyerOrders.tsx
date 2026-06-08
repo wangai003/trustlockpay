@@ -371,6 +371,7 @@ const BuyerOrders = () => {
               testnet={testnet}
               confirmDeliveryHook={confirmDeliveryHook}
               openDisputeHook={openDisputeHook}
+              markDeliveredHook={markDeliveredHook}
               queryClient={queryClient}
               getSourceBadge={getSourceBadge}
               onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
