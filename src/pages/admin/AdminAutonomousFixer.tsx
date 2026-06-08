@@ -332,8 +332,9 @@ const AdminAutonomousFixer = () => {
         <Dialog open={!!activePreset} onOpenChange={o => !o && setActivePreset(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {activePreset && (<><activePreset.icon className="w-5 h-5 inline mr-2" />{activePreset.label}</>)}
+              <DialogTitle className="flex items-center gap-2">
+                {activePreset && (() => { const I = activePreset.icon; return <I className={`w-5 h-5 ${activePreset.color}`} />; })()}
+                {activePreset?.label}
               </DialogTitle>
               <DialogDescription>{activePreset?.description}</DialogDescription>
             </DialogHeader>
