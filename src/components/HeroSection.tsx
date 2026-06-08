@@ -177,7 +177,7 @@ const HeroSection = () => {
           transition={{ duration: 2, repeat: Infinity }}
           className="absolute bottom-6 left-1/2 -translate-x-1/2"
         >
-          <ChevronDown className="w-5 h-5 text-[hsl(160,5%,30%)]" />
+          <ChevronDown className="w-5 h-5 text-[hsl(160,10%,55%)]" />
         </motion.div>
       </section>
       <PortalPicker open={portalOpen} onOpenChange={setPortalOpen} mode="signup" />

@@ -43,7 +43,7 @@ const WidgetPromoSection = () => {
             </motion.div>
           </div>
 
-          <p className="text-xs text-[hsl(160,5%,40%)] pt-2">
+          <p className="text-xs text-[hsl(160,10%,72%)] pt-2">
             Works on Shopify · WordPress · WooCommerce · Wix · Squarespace · Any HTML site
           </p>
         </motion.div>
