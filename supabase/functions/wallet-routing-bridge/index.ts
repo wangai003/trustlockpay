@@ -466,6 +466,21 @@ Deno.serve(async (req) => {
         }, 400);
       }
 
+      // ─── HARD GUARD: Escrow Wallet must be configured and distinct from Transaction Wallet ───
+      if (!WALLETS.escrow.address || !ethers.isAddress(WALLETS.escrow.address)) {
+        console.error(`[wallet-routing] ABORT route_inbound: ESCROW_WALLET_ADDRESS missing or invalid`, {
+          escrow: WALLETS.escrow.address,
+          transactionId,
+        });
+        return json({ success: false, error: "ESCROW_WALLET_ADDRESS is not configured. Inbound routing aborted to prevent fund loss." }, 500);
+      }
+      if (!WALLETS.transaction.address || !ethers.isAddress(WALLETS.transaction.address)) {
+        return json({ success: false, error: "TRANSACTION_WALLET_ADDRESS is not configured. Inbound routing aborted." }, 500);
+      }
+      if (WALLETS.escrow.address.toLowerCase() === WALLETS.transaction.address.toLowerCase()) {
+        return json({ success: false, error: "ESCROW_WALLET_ADDRESS must differ from TRANSACTION_WALLET_ADDRESS." }, 500);
+      }
+
       // Transfer: vendor subtotal → Escrow Wallet (1% escrow fee baked in, extracted at release)
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
@@ -474,6 +489,7 @@ Deno.serve(async (req) => {
         token,
         `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
+
 
       if (routingTransfer.status !== "confirmed") {
         console.error(`[wallet-routing] Inbound route not confirmed — transaction left unchanged`, {
