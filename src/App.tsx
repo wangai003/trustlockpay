@@ -54,6 +54,7 @@ const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
 const AdminLenderKYB = lazy(() => import("./pages/admin/AdminLenderKYB"));
 const AdminSystemHealth = lazy(() => import("./pages/admin/AdminSystemHealth"));
+const AdminAutonomousFixer = lazy(() => import("./pages/admin/AdminAutonomousFixer"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
