@@ -1,0 +1,8 @@
+CREATE POLICY "Users can self-assign buyer or vendor role"
+ON public.user_roles
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  auth.uid() = user_id
+  AND role IN ('buyer'::app_role, 'vendor'::app_role)
+);
