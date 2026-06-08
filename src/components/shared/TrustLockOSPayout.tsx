@@ -43,6 +43,7 @@ import InternationalBankSelector from "@/components/shared/InternationalBankSele
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import FundMovementTracker, { type FundFlowType } from "@/components/shared/FundMovementTracker";
 import TransactionFailureState from "@/components/shared/TransactionFailureState";
+import SavedPayoutWallets from "@/components/shared/SavedPayoutWallets";
 import {
   type PaymentProvider,
   PRIVACY_DISCLAIMER,
