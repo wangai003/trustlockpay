@@ -61,15 +61,12 @@ for (const file of walk(ROOT)) {
   if (ALLOWLIST.has(fnName)) continue;
 
   const src = readFileSync(file, "utf8");
-  if (!TX_FROM_RE.test(src)) continue;
-  if (!STATUS_UPDATE_RE.test(src)) continue;
-
-  // Per-line report for offending lines.
-  src.split("\n").forEach((line, i) => {
-    if (STATUS_UPDATE_RE.test(line)) {
-      violations.push(`${file}:${i + 1}  ${line.trim()}`);
-    }
-  });
+  TX_STATUS_UPDATE_RE.lastIndex = 0;
+  let m;
+  while ((m = TX_STATUS_UPDATE_RE.exec(src)) !== null) {
+    const lineNum = src.slice(0, m.index).split("\n").length;
+    violations.push(`${file}:${lineNum}  ${m[0].split("\n").pop().trim()}`);
+  }
 }
 
 if (violations.length > 0) {
