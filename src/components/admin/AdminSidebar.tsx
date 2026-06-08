@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound, Rocket, Bug
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound, Rocket, Bug, Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
