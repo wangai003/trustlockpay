@@ -50,6 +50,7 @@ const BuyerOrders = () => {
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
   const openDisputeHook = useOpenDispute();
+  const markDeliveredHook = useMarkDelivered();
   const testnet = useTestnetData();
 
   const handleClaimOrder = async () => {
