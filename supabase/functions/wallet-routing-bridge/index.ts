@@ -1172,7 +1172,9 @@ Deno.serve(async (req) => {
       }
 
       // Vendor payout — milestone amount minus fractional escrow fee
-      const vendorWallet = body.vendorWallet || "vendor_pending";
+      const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+        ? body.vendorWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
       const payoutTx = await transferOnChain(
         WALLETS.escrow.address, vendorWallet,
         vendorNet, token,
