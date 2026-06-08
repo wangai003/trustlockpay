@@ -6699,6 +6699,10 @@ export type Database = {
         Args: { p_amount: number; p_lender_id: string }
         Returns: undefined
       }
+      is_valid_status_transition: {
+        Args: { _from: string; _is_service_role?: boolean; _to: string }
+        Returns: boolean
+      }
       route_department_alert: {
         Args: {
           _admin_id?: string
@@ -6712,6 +6716,10 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      update_transaction_status: {
+        Args: { _new_status: string; _reason?: string; _transaction_id: string }
+        Returns: Json
       }
       verify_admin_password: {
         Args: { _account_id: string; _password: string }
