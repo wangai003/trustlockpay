@@ -219,6 +219,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="deploy-contracts" element={<AdminDeployContracts />} />
                 <Route path="system-health" element={<AdminSystemHealth />} />
+                <Route path="autonomous-fixer" element={<AdminAutonomousFixer />} />
               </Route>
 
               {/* Vendor Dashboard */}
