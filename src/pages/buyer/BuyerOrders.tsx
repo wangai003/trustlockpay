@@ -406,7 +406,7 @@ interface OrderRowProps {
   onOpenWizard: (scenario: PayoutScenario) => void;
 }
 
-function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, queryClient, getSourceBadge, onOpenWizard }: OrderRowProps) {
+function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, markDeliveredHook, queryClient, getSourceBadge, onOpenWizard }: OrderRowProps) {
   const cfg = statusConfig[order.status] || statusConfig.locked;
   const row = rowIdx + 1;
   const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
