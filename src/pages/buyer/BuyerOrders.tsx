@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info, ExternalLink } from "lucide-react";
+import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info, ExternalLink, XCircle, RotateCcw, Gavel, Ban, Archive } from "lucide-react";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import { useTransactions, useConfirmDelivery, useOpenDispute, useMarkDelivered } from "@/hooks/useSupabaseData";
 import DigitalDeliverableVault from "@/components/shared/DigitalDeliverableVault";
@@ -27,7 +27,10 @@ import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import TransportLegsViewer from "@/components/shared/TransportLegsViewer";
 import EscrowExtensionRequest from "@/components/buyer/EscrowExtensionRequest";
 
-type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed";
+type OrderStatus = "all" | "locked" | "shipped" | "delivered" | "released" | "disputed" | "rejected" | "refunded" | "resolved" | "cancelled" | "history";
+
+const TERMINAL_STATUSES = ["released", "rejected", "refunded", "resolved", "cancelled"] as const;
+const ARCHIVE_DAYS = 90;
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
@@ -35,6 +38,11 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
   delivered: { label: "Confirm Delivery", color: "bg-accent text-accent-foreground", icon: CheckCircle },
   released: { label: "Completed", color: "bg-primary/15 text-primary", icon: CheckCircle },
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
+  rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive", icon: XCircle },
+  refunded: { label: "Refunded", color: "bg-muted text-muted-foreground", icon: RotateCcw },
+  resolved: { label: "Resolved", color: "bg-primary/10 text-primary", icon: Gavel },
+  cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: Ban },
+  history: { label: "History", color: "bg-muted text-muted-foreground", icon: Archive },
 };
 
 const BuyerOrders = () => {
@@ -179,6 +187,7 @@ const BuyerOrders = () => {
         amount: `$${tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
         status: tx.status,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        createdAtRaw: tx.created_at,
         item: tx.item,
         tracking: tx.tracking,
         industry: tx.industry,
@@ -196,6 +205,7 @@ const BuyerOrders = () => {
         amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
         status: tx.status,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        createdAtRaw: tx.created_at,
         item: tx.item || "—",
         tracking: tx.tracking || null,
         industry: tx.industry || null,
@@ -208,9 +218,18 @@ const BuyerOrders = () => {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [expandedCart, setExpandedCart] = useState<string | null>(null);
 
+  const isTerminal = (s: string) => (TERMINAL_STATUSES as readonly string[]).includes(s);
+  const ageInDays = (iso: string) => (Date.now() - new Date(iso).getTime()) / 86400000;
+
   const filtered = allOrders
-    .filter((o) => filter === "all" || o.status === filter)
+    .filter((o) => {
+      if (filter === "all") return !isTerminal(o.status) || ageInDays(o.createdAtRaw) < ARCHIVE_DAYS;
+      if (filter === "history") return isTerminal(o.status);
+      return o.status === filter;
+    })
     .filter((o) => o.id.toLowerCase().includes(search.toLowerCase()) || o.vendor.toLowerCase().includes(search.toLowerCase()) || o.item.toLowerCase().includes(search.toLowerCase()));
+
+  const historyCount = allOrders.filter(o => isTerminal(o.status)).length;
 
   // Group orders by cart_id for marketplace multi-vendor carts
   const { cartGroups, standaloneOrders } = useMemo(() => {
@@ -279,9 +298,12 @@ const BuyerOrders = () => {
             <Input placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {(["all", "locked", "shipped", "delivered", "released", "disputed"] as OrderStatus[]).map((s) => (
-              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize">
+            {(["all", "locked", "shipped", "delivered", "released", "disputed", "rejected", "refunded", "resolved", "cancelled", "history"] as OrderStatus[]).map((s) => (
+              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize gap-1">
                 {s === "all" ? "All" : statusConfig[s].label}
+                {s === "history" && historyCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{historyCount}</Badge>
+                )}
               </Button>
             ))}
           </div>

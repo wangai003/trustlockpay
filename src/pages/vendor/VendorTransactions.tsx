@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import {
   Search, Eye, Clock, CheckCircle, AlertTriangle, Download, Truck, Lock,
-  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale, Info, Wallet
+  ArrowUpCircle, XCircle, ChevronDown, ChevronUp, PackageCheck, FileText, Send, Scale, Info, Wallet,
+  RotateCcw, Gavel, Ban, Archive
 } from "lucide-react";
 import { toast } from "sonner";
 import { getArbitrationFee } from "@/lib/arbitrationFees";
@@ -38,13 +39,21 @@ import { dynTLId } from "@/lib/tlIdRegistry";
 import OrderStepGuide from "@/components/shared/OrderStepGuide";
 import ArbitratorProposalPanel from "@/components/shared/ArbitratorProposalPanel";
 
-type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed";
+type TxStatus = "all" | "locked" | "shipped" | "released" | "disputed" | "rejected" | "refunded" | "resolved" | "cancelled" | "history";
 
-const statusConfig = {
+const TERMINAL_STATUSES = ["released", "rejected", "refunded", "resolved", "cancelled"] as const;
+const ARCHIVE_DAYS = 90;
+
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   locked: { label: "Funds Locked", color: "bg-accent/15 text-accent-foreground", icon: Clock },
   shipped: { label: "Shipped", color: "bg-primary/15 text-primary", icon: Truck },
   released: { label: "Released", color: "bg-primary/15 text-primary", icon: CheckCircle },
   disputed: { label: "Disputed", color: "bg-destructive/15 text-destructive", icon: AlertTriangle },
+  rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive", icon: XCircle },
+  refunded: { label: "Refunded", color: "bg-muted text-muted-foreground", icon: RotateCcw },
+  resolved: { label: "Resolved", color: "bg-primary/10 text-primary", icon: Gavel },
+  cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: Ban },
+  history: { label: "History", color: "bg-muted text-muted-foreground", icon: Archive },
 };
 
 import { INDUSTRY_LABELS } from "@/lib/industryList";
@@ -86,8 +95,9 @@ const VendorTransactions = () => {
         buyerId: null as string | null,
         vendorId: null as string | null,
         amount: tx.amount,
-        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        status: tx.status as string,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        createdAtRaw: tx.created_at,
         item: tx.item,
         tracking: tx.tracking,
         order: tx.order_number,
@@ -104,8 +114,9 @@ const VendorTransactions = () => {
         buyerId: (tx as any).buyer_id as string | null,
         vendorId: (tx as any).vendor_id as string | null,
         amount: Number(tx.amount),
-        status: tx.status as "locked" | "shipped" | "released" | "disputed",
+        status: tx.status as string,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        createdAtRaw: tx.created_at,
         item: tx.item || "—",
         tracking: tx.tracking || null,
         order: tx.order_number ?? (i + 1),
@@ -123,10 +134,19 @@ const VendorTransactions = () => {
   // Get unique industries from data
   const industries = [...new Set(allTx.map(t => t.industry).filter(Boolean))];
 
+  const isTerminal = (s: string) => (TERMINAL_STATUSES as readonly string[]).includes(s);
+  const ageInDays = (iso: string) => (Date.now() - new Date(iso).getTime()) / 86400000;
+
   const filtered = allTx
-    .filter((t) => filter === "all" || t.status === filter)
+    .filter((t) => {
+      if (filter === "all") return !isTerminal(t.status) || ageInDays(t.createdAtRaw) < ARCHIVE_DAYS;
+      if (filter === "history") return isTerminal(t.status);
+      return t.status === filter;
+    })
     .filter((t) => industryFilter === "all" || t.industry === industryFilter)
     .filter((t) => t.id.toLowerCase().includes(search.toLowerCase()) || t.buyer.toLowerCase().includes(search.toLowerCase()) || t.item.toLowerCase().includes(search.toLowerCase()));
+
+  const historyCount = allTx.filter(t => isTerminal(t.status)).length;
 
   const isGrayedOut = (orderNum: number) => !isUnlimited && orderNum > orderMax;
   const grayedCount = filtered.filter(t => isGrayedOut(t.order)).length;
@@ -225,9 +245,12 @@ const VendorTransactions = () => {
             </Select>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {(["all", "locked", "shipped", "released", "disputed"] as TxStatus[]).map((s) => (
-              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize text-xs">
+            {(["all", "locked", "shipped", "released", "disputed", "rejected", "refunded", "resolved", "cancelled", "history"] as TxStatus[]).map((s) => (
+              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize text-xs gap-1">
                 {s === "all" ? "All" : statusConfig[s].label}
+                {s === "history" && historyCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{historyCount}</Badge>
+                )}
               </Button>
             ))}
           </div>
