@@ -116,6 +116,35 @@
     badge {
       min-height: unset;
     }
+
+    /* Readability floors — applied inside <main> only so compact
+       headers / nav / badges stay tidy. Lifts every portal page's
+       micro-text to a no-zoom-needed minimum. */
+    main .text-\[9px\],
+    main .text-\[10px\],
+    main .text-\[11px\] {
+      font-size: 12px !important;
+      line-height: 1.35 !important;
+    }
+    main .text-xs {
+      font-size: 13px !important;
+      line-height: 1.4 !important;
+    }
+    main .text-sm {
+      font-size: 14.5px !important;
+      line-height: 1.5 !important;
+    }
+    /* Tables can stay slightly more compact to fit columns */
+    main table .text-\[9px\],
+    main table .text-\[10px\],
+    main table .text-xs {
+      font-size: 12px !important;
+    }
+
+    /* Brighten faded muted text on dark portal backgrounds */
+    .dark main .text-muted-foreground {
+      color: hsl(160 8% 72%) !important;
+    }
   }
 }
 
