@@ -24,6 +24,8 @@ const WALLETS = {
 const USDC_ADDRESS = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 const TOKEN_DECIMALS = 6;
+const GAS_TOP_UP_BUFFER_WEI = ethers.parseEther("0.01");
+const GAS_TOP_UP_MAX_WEI = ethers.parseEther("0.02");
 
 // ─── Fee Rate Constants ──────────────────────────────────
 // CORRECTED FEE MODEL:
@@ -110,14 +112,24 @@ async function ensureGasFromRelayer(
   }
 
   const currentBalance = await provider.getBalance(sourceAddress);
-  // Headroom multiplier — fund 1.5× the estimated cost for price drift safety
-  const required = (estimatedGasCostWei * 15n) / 10n;
+  const required = estimatedGasCostWei + GAS_TOP_UP_BUFFER_WEI;
 
   if (currentBalance >= required) {
     return; // Source wallet already has enough gas
   }
 
   const topUp = required - currentBalance;
+  if (topUp > GAS_TOP_UP_MAX_WEI) {
+    console.error(`[wallet-routing] Refusing oversized relayer gas top-up`, {
+      sourceAddress,
+      currentBalance: currentBalance.toString(),
+      estimatedGasCostWei: estimatedGasCostWei.toString(),
+      requestedTopUp: topUp.toString(),
+      maxTopUp: GAS_TOP_UP_MAX_WEI.toString(),
+      memo,
+    });
+    throw new Error("Relayer gas top-up exceeds safety cap");
+  }
   const relayer = new ethers.Wallet(relayerKey, provider);
 
   // Don't drain the relayer below a small reserve
