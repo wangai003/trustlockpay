@@ -179,6 +179,39 @@ async function transferOnChain(
     return failedTransfer("invalid_address");
   }
 
+  // ─── HARD GUARDS (post-incident: Jun 5 funds were routed to Relayer) ───
+  // 1. Refuse if source == destination (would burn gas for no movement).
+  if (fromWallet.toLowerCase() === toWallet.toLowerCase()) {
+    console.error(`[wallet-routing] Refusing transfer where source equals destination`, { fromWallet, toWallet, memo });
+    return failedTransfer("source_equals_destination");
+  }
+
+  // 2. Refuse if destination is the Polygon Relayer wallet. The relayer only
+  //    pays MATIC gas — it must NEVER receive USDC/USDT principal or fees.
+  //    This is the exact misconfiguration that caused the Jun 5 leak.
+  try {
+    const relayerKey = Deno.env.get("POLYGON_RELAYER_PRIVATE_KEY");
+    if (relayerKey) {
+      const relayerAddr = new ethers.Wallet(relayerKey).address.toLowerCase();
+      if (toWallet.toLowerCase() === relayerAddr) {
+        console.error(`[wallet-routing] BLOCKED: destination matches Relayer wallet`, { toWallet, relayerAddr, memo });
+        return failedTransfer("destination_is_relayer");
+      }
+      if (fromWallet.toLowerCase() === relayerAddr) {
+        console.error(`[wallet-routing] BLOCKED: source matches Relayer wallet (relayer must not hold principal)`, { fromWallet, memo });
+        return failedTransfer("source_is_relayer");
+      }
+    }
+  } catch (e) {
+    console.error(`[wallet-routing] Relayer address derivation failed`, { error: (e as Error).message });
+    return failedTransfer("relayer_check_failed");
+  }
+
+  // 3. Refuse if destination is not one of the two managed custodian wallets
+  //    AND not a user-payout address. For inbound routing the destination MUST
+  //    be the Escrow Wallet; this is enforced at the call site below as well.
+
+
   let privateKey: string | undefined;
   if (fromLower && fromLower === txWalletAddr) {
     privateKey = Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
@@ -433,6 +466,21 @@ Deno.serve(async (req) => {
         }, 400);
       }
 
+      // ─── HARD GUARD: Escrow Wallet must be configured and distinct from Transaction Wallet ───
+      if (!WALLETS.escrow.address || !ethers.isAddress(WALLETS.escrow.address)) {
+        console.error(`[wallet-routing] ABORT route_inbound: ESCROW_WALLET_ADDRESS missing or invalid`, {
+          escrow: WALLETS.escrow.address,
+          transactionId,
+        });
+        return json({ success: false, error: "ESCROW_WALLET_ADDRESS is not configured. Inbound routing aborted to prevent fund loss." }, 500);
+      }
+      if (!WALLETS.transaction.address || !ethers.isAddress(WALLETS.transaction.address)) {
+        return json({ success: false, error: "TRANSACTION_WALLET_ADDRESS is not configured. Inbound routing aborted." }, 500);
+      }
+      if (WALLETS.escrow.address.toLowerCase() === WALLETS.transaction.address.toLowerCase()) {
+        return json({ success: false, error: "ESCROW_WALLET_ADDRESS must differ from TRANSACTION_WALLET_ADDRESS." }, 500);
+      }
+
       // Transfer: vendor subtotal → Escrow Wallet (1% escrow fee baked in, extracted at release)
       const routingTransfer = await transferOnChain(
         WALLETS.transaction.address,
@@ -441,6 +489,7 @@ Deno.serve(async (req) => {
         token,
         `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
+
 
       if (routingTransfer.status !== "confirmed") {
         console.error(`[wallet-routing] Inbound route not confirmed — transaction left unchanged`, {
