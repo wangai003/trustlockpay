@@ -83,6 +83,13 @@ const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
 ];
 
+function failedTransfer(reason: string): { txHash: string; status: string } {
+  return {
+    txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${reason}`,
+    status: "failed",
+  };
+}
+
 // ─── Gas station: relayer funds every source wallet's gas ─────────────
 // All on-chain ERC-20 transfers in TrustLock are gas-funded by the Polygon
 // Relayer wallet (POLYGON_RELAYER_PRIVATE_KEY). Before any transfer we
@@ -155,13 +162,19 @@ async function transferOnChain(
   const escrowWalletAddr = (Deno.env.get("ESCROW_WALLET_ADDRESS") || Deno.env.get("AZIX_ESCROW_WALLET") || "").toLowerCase();
   const fromLower = (fromWallet || "").toLowerCase();
 
+  if (!ethers.isAddress(fromWallet) || !ethers.isAddress(toWallet)) {
+    console.error(`[wallet-routing] Invalid transfer address — refusing on-chain send`, { fromWallet, toWallet, memo });
+    return failedTransfer("invalid_address");
+  }
+
   let privateKey: string | undefined;
   if (fromLower && fromLower === txWalletAddr) {
     privateKey = Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
   } else if (fromLower && fromLower === escrowWalletAddr) {
     privateKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
   } else {
-    privateKey = Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+    console.error(`[wallet-routing] Refusing transfer from unmanaged source wallet`, { fromWallet, memo });
+    return failedTransfer("unmanaged_source");
   }
 
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
@@ -187,16 +200,26 @@ async function transferOnChain(
         expectedFrom: fromWallet,
         memo,
       });
-      return {
-        txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        status: "failed",
-      };
+      return failedTransfer("signer_mismatch");
     }
 
 
     const tokenContract = new ethers.Contract(token, ERC20_ABI, wallet);
 
     const contractUnits = BigInt(Math.round(amount * Math.pow(10, TOKEN_DECIMALS)));
+
+    const tokenBalance = await tokenContract.balanceOf(wallet.address) as bigint;
+    if (tokenBalance < contractUnits) {
+      console.error(`[wallet-routing] Source wallet has insufficient token balance — no gas top-up attempted`, {
+        from: wallet.address,
+        to: toWallet,
+        token,
+        needed: contractUnits.toString(),
+        balance: tokenBalance.toString(),
+        memo,
+      });
+      return failedTransfer("insufficient_token_balance");
+    }
 
     console.log(`[wallet-routing] Sending ERC-20 transfer: ${amount} tokens`, {
       from: wallet.address,
@@ -209,9 +232,12 @@ async function transferOnChain(
     let estimatedGas: bigint;
     try {
       estimatedGas = await tokenContract.transfer.estimateGas(toWallet, contractUnits);
-    } catch (gasErr) {
-      // Fallback to a safe upper bound for an ERC-20 transfer on Polygon
-      estimatedGas = 100_000n;
+    } catch (gasErr: any) {
+      console.error(`[wallet-routing] Gas estimate failed — no relayer top-up attempted`, {
+        reason: gasErr?.message || String(gasErr),
+        memo,
+      });
+      return failedTransfer("gas_estimate_failed");
     }
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice ?? 50_000_000_000n; // 50 gwei fallback
@@ -228,10 +254,7 @@ async function transferOnChain(
     return { txHash: receipt.hash, status: "confirmed" };
   } catch (err: any) {
     console.error(`[wallet-routing] ERC-20 transfer failed: ${err.message}`, { memo });
-    return {
-      txHash: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      status: "failed",
-    };
+    return failedTransfer("send_failed");
   }
 }
 
@@ -406,6 +429,21 @@ Deno.serve(async (req) => {
         token,
         `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
+
+      if (routingTransfer.status !== "confirmed") {
+        console.error(`[wallet-routing] Inbound route not confirmed — transaction left unchanged`, {
+          transactionId,
+          txRef: tx.tx_id,
+          transfer: routingTransfer,
+        });
+        return json({
+          success: false,
+          action: "route_inbound",
+          transactionId,
+          skipped: "transfer_not_confirmed",
+          transfer: routingTransfer,
+        }, 409);
+      }
 
       // Update transaction with fee breakdown.
       // IMPORTANT: never downgrade a status that has progressed past `locked`

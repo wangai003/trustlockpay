@@ -202,11 +202,11 @@ Deno.serve(async (req) => {
       const missing = [];
       if (!buyerWallet) missing.push("buyer");
       if (!vendorWallet) missing.push("vendor");
-      console.warn(`Missing wallet addresses for ${missing.join(", ")} — contract call will use placeholder`);
+      console.warn(`Missing wallet addresses for ${missing.join(", ")} — escrow contract call blocked`);
     }
 
-    const effectiveBuyerAddr = buyerWallet || `0x${"0".repeat(40)}`; // placeholder until wallet registered
-    const effectiveVendorAddr = vendorWallet || `0x${"0".repeat(40)}`;
+    const effectiveBuyerAddr = buyerWallet || "";
+    const effectiveVendorAddr = vendorWallet || "";
 
     // ══════════════════════════════════════════════════
     //  ACTION: LOCK — Lock net principal in escrow (fees already deducted off-chain)
@@ -226,6 +226,18 @@ Deno.serve(async (req) => {
           skipped: "already_locked",
           status: tx.status,
         });
+      }
+
+      if (!ethers.isAddress(effectiveBuyerAddr) || !ethers.isAddress(effectiveVendorAddr)) {
+        return json({
+          success: false,
+          action: "lock",
+          skipped: "missing_wallet_address",
+          missing: {
+            buyer: !ethers.isAddress(effectiveBuyerAddr),
+            vendor: !ethers.isAddress(effectiveVendorAddr),
+          },
+        }, 409);
       }
 
       // Check if milestones exist
