@@ -8,12 +8,11 @@ export interface Department {
 
 export const DEPARTMENTS: Department[] = [
   { slug: "executive", name: "Executive Office", description: "Full platform access — Chief Admin oversight", canMessageClients: true },
-  { slug: "technical", name: "Technical & Engineering", description: "System health, bug triage, infrastructure & blockchain anchoring", canMessageClients: false },
   { slug: "correspondence", name: "Correspondence & Client Relations", description: "Client messaging, onboarding support", canMessageClients: true },
   { slug: "disputes", name: "Disputes & Arbitration", description: "Case management, arbitrator portal, rulings", canMessageClients: false },
   { slug: "finance", name: "Finance & Payouts", description: "OS Pay, payouts, tax remittance, gas treasury", canMessageClients: false },
   { slug: "compliance", name: "Compliance & Risk", description: "KYC/KYB, sanctions, document scanning", canMessageClients: false },
-  { slug: "operations", name: "IT Department", description: "Consolidated IT — transactions, milestones, vendor/buyer accounts, platform config, blockchain proofs, autonomous fixer triage, code defect relay.", canMessageClients: false },
+  { slug: "operations", name: "IT Department", description: "Consolidated IT — transactions, milestones, vendor/buyer accounts, platform config, blockchain proofs, gas treasury, system health, and autonomous fixer triage.", canMessageClients: false },
 ];
 
 // Module slug → sidebar route mapping for access control
