@@ -51,6 +51,7 @@ const AdminDirectMessages = () => {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [forwardSource, setForwardSource] = useState<{ body: string; fromDept: string | null } | null>(null);
 
   const loadStaff = useCallback(async () => {
     if (!currentAdminId) return;
