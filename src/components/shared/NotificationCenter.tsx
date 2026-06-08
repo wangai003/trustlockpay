@@ -257,14 +257,22 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
 
   const dismiss = (id: string) => {
     const n = notifications.find(x => x.id === id);
+    if (!n) return;
     // Block dismissal of action-required items
-    if (n?.is_action_required && !n.action_completed_at) {
+    if (n.is_action_required && !n.action_completed_at) {
       toast.error("This notification requires you to complete an action before it can be dismissed");
       return;
     }
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (isMainnet) {
-      supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    // Dismiss every notification grouped under the same (title + related entity),
+    // so collapsing duplicates from the bell icon removes the whole stack at once.
+    const groupKey = `${n.title}::${n.related_entity_id ?? n.related_entity_type ?? "_"}`;
+    const groupIds = notifications
+      .filter(x => `${x.title}::${x.related_entity_id ?? x.related_entity_type ?? "_"}` === groupKey
+        && !(x.is_action_required && !x.action_completed_at))
+      .map(x => x.id);
+    setNotifications((prev) => prev.filter((x) => !groupIds.includes(x.id)));
+    if (isMainnet && groupIds.length > 0) {
+      supabase.from("notifications").update({ is_read: true }).in("id", groupIds);
     }
   };
 
