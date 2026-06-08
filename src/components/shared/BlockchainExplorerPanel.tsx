@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight
+  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -171,7 +172,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
             Search orders, verify hashes, and trace the immutable proof chain
           </p>
           {(contractAddresses.registry || contractAddresses.escrow) && (
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               {contractAddresses.registry && (
                 <a
                   href={explorerAddressUrl(contractAddresses.registry, contractAddresses.network)}
@@ -194,6 +195,21 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
                   Escrow Contract
                 </a>
               )}
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-xs leading-relaxed">
+                    <p className="font-medium mb-1">Why are these public?</p>
+                    <p>
+                      Smart contract addresses are public by design on the blockchain — like a bank's SWIFT code. Only the private key that controls the wallet is secret. Publishing these addresses lets anyone independently verify the contract is deployed, untampered, and actively anchoring records. Hiding them would be a red flag.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
         </SheetHeader>
