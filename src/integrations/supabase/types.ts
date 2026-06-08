@@ -4499,6 +4499,45 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_payout_wallets: {
+        Row: {
+          address: string
+          chain: string
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string | null
+          token: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          address: string
+          chain: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          token?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          address?: string
+          chain?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          token?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       seed_token_audit_logs: {
         Row: {
           action: string
