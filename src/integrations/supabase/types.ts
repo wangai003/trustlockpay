@@ -5362,6 +5362,7 @@ export type Database = {
           delivered_date: string | null
           fee: number | null
           id: string
+          inbound_routed_at: string | null
           incoterm: string | null
           industry: string | null
           item: string | null
@@ -5410,6 +5411,7 @@ export type Database = {
           delivered_date?: string | null
           fee?: number | null
           id?: string
+          inbound_routed_at?: string | null
           incoterm?: string | null
           industry?: string | null
           item?: string | null
@@ -5458,6 +5460,7 @@ export type Database = {
           delivered_date?: string | null
           fee?: number | null
           id?: string
+          inbound_routed_at?: string | null
           incoterm?: string | null
           industry?: string | null
           item?: string | null
