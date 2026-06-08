@@ -5394,6 +5394,65 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_deliverables: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          external_url: string | null
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          notes: string | null
+          original_filename: string | null
+          released_at: string | null
+          released_to_buyer: boolean
+          storage_path: string | null
+          transaction_id: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          external_url?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          original_filename?: string | null
+          released_at?: string | null
+          released_to_buyer?: boolean
+          storage_path?: string | null
+          transaction_id: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          external_url?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          original_filename?: string | null
+          released_at?: string | null
+          released_to_buyer?: boolean
+          storage_path?: string | null
+          transaction_id?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_deliverables_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_milestones: {
         Row: {
           assigned_to: string | null

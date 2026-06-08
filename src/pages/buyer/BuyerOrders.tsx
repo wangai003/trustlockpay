@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Eye, Clock, CheckCircle, AlertTriangle, Package, Truck, MapPin, ChevronDown, ChevronUp, PackagePlus, Loader2, Unlock, ShoppingCart, Globe, Link2, CreditCard, Store, Info, ExternalLink } from "lucide-react";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
-import { useTransactions, useConfirmDelivery, useOpenDispute } from "@/hooks/useSupabaseData";
+import { useTransactions, useConfirmDelivery, useOpenDispute, useMarkDelivered } from "@/hooks/useSupabaseData";
+import DigitalDeliverableVault from "@/components/shared/DigitalDeliverableVault";
 import { useTestnetData } from "@/hooks/useTestnetData";
 import { useBuyer } from "@/contexts/BuyerContext";
 import MilestoneProgress from "@/components/shared/MilestoneProgress";
@@ -49,6 +50,7 @@ const BuyerOrders = () => {
   const { data: rawTransactions = [] } = useTransactions();
   const confirmDeliveryHook = useConfirmDelivery();
   const openDisputeHook = useOpenDispute();
+  const markDeliveredHook = useMarkDelivered();
   const testnet = useTestnetData();
 
   const handleClaimOrder = async () => {
@@ -172,6 +174,8 @@ const BuyerOrders = () => {
         dbId: tx.id,
         id: tx.tx_id,
         vendor: tx.vendor_name,
+        vendorId: (tx as any).vendor_id as string | null,
+        buyerId: (tx as any).buyer_id as string | null,
         amount: `$${tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
         status: tx.status,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -187,6 +191,8 @@ const BuyerOrders = () => {
         dbId: tx.id,
         id: tx.tx_id,
         vendor: tx.vendor_name || "Unknown",
+        vendorId: (tx as any).vendor_id as string | null,
+        buyerId: (tx as any).buyer_id as string | null,
         amount: `$${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
         status: tx.status,
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -339,6 +345,7 @@ const BuyerOrders = () => {
                           testnet={testnet}
                           confirmDeliveryHook={confirmDeliveryHook}
                           openDisputeHook={openDisputeHook}
+                          markDeliveredHook={markDeliveredHook}
                           queryClient={queryClient}
                           getSourceBadge={getSourceBadge}
                           onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
@@ -365,6 +372,7 @@ const BuyerOrders = () => {
               testnet={testnet}
               confirmDeliveryHook={confirmDeliveryHook}
               openDisputeHook={openDisputeHook}
+              markDeliveredHook={markDeliveredHook}
               queryClient={queryClient}
               getSourceBadge={getSourceBadge}
               onOpenWizard={(s) => { setWizardScenario(s); setWizardOpen(true); }}
@@ -392,12 +400,13 @@ interface OrderRowProps {
   testnet: any;
   confirmDeliveryHook: any;
   openDisputeHook: any;
+  markDeliveredHook: any;
   queryClient: any;
   getSourceBadge: (source: string | null, platformId: string | null) => { label: string; icon: any; variant: "secondary" | "outline" } | null;
   onOpenWizard: (scenario: PayoutScenario) => void;
 }
 
-function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, queryClient, getSourceBadge, onOpenWizard }: OrderRowProps) {
+function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrderId, setReleaseOrderId, isTestnet, testnet, confirmDeliveryHook, openDisputeHook, markDeliveredHook, queryClient, getSourceBadge, onOpenWizard }: OrderRowProps) {
   const cfg = statusConfig[order.status] || statusConfig.locked;
   const row = rowIdx + 1;
   const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
@@ -490,18 +499,31 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               </>
             )}
             {order.status === "shipped" && (
-              <Button variant="outline" size="sm" onClick={() => {
-                  const legs = order.transportLegs;
-                  if (legs && legs.length > 0) {
-                    const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
-                    if (firstUrl) window.open(firstUrl, "_blank");
-                    else setExpandedOrder(order.id);
-                  } else if (order.tracking) {
-                    setExpandedOrder(order.id);
-                  }
-                }}>
-                  <ExternalLink className="w-3 h-3 mr-1" /> Track
+              <>
+                <Button variant="outline" size="sm" onClick={() => {
+                    const legs = order.transportLegs;
+                    if (legs && legs.length > 0) {
+                      const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
+                      if (firstUrl) window.open(firstUrl, "_blank");
+                      else setExpandedOrder(order.id);
+                    } else if (order.tracking) {
+                      setExpandedOrder(order.id);
+                    }
+                  }}>
+                    <ExternalLink className="w-3 h-3 mr-1" /> Track
+                  </Button>
+                <Button
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    if (!confirm("Mark this order as received? This stops the auto-release clock and lets you confirm or release funds.")) return;
+                    if (isTestnet) { testnet.confirmDelivery(order.id); }
+                    else { markDeliveredHook.mutate(order.id); }
+                  }}
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> Mark Received
                 </Button>
+              </>
             )}
             {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
               <Button
@@ -561,6 +583,15 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <TransportLegsViewer legs={order.transportLegs} compact />
             )}
             <MilestoneTimeline industry={order.industry} status={order.status} transactionId={order.dbId} />
+            {!isTestnet && order.vendorId && (
+              <DigitalDeliverableVault
+                transactionId={order.dbId}
+                vendorId={order.vendorId}
+                buyerId={order.buyerId}
+                status={order.status}
+                role="buyer"
+              />
+            )}
             <EscrowExtensionRequest transactionId={order.dbId} txId={order.id} status={order.status} />
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">View list format</summary>

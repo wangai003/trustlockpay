@@ -30,6 +30,7 @@ import TransactionDocuments from "@/components/shared/TransactionDocuments";
 import IndustryBlueprintCard from "@/components/shared/IndustryBlueprintCard";
 import { isMilestoneIndustry } from "@/components/shared/PreOrderSignatoryContract";
 import MilestoneWorkOrderPanel from "@/components/shared/MilestoneWorkOrderPanel";
+import DigitalDeliverableVault from "@/components/shared/DigitalDeliverableVault";
 import ExternalFeeSummary from "@/components/shared/ExternalFeeSummary";
 import ShipmentConfirmModal from "@/components/shared/ShipmentConfirmModal";
 import TrackingDetailsModal from "@/components/shared/TrackingDetailsModal";
@@ -82,6 +83,8 @@ const VendorTransactions = () => {
         dbId: tx.id,
         id: tx.tx_id,
         buyer: tx.buyer_name,
+        buyerId: null as string | null,
+        vendorId: null as string | null,
         amount: tx.amount,
         status: tx.status as "locked" | "shipped" | "released" | "disputed",
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -98,6 +101,8 @@ const VendorTransactions = () => {
         dbId: tx.id,
         id: tx.tx_id,
         buyer: tx.buyer_name || "Unknown",
+        buyerId: (tx as any).buyer_id as string | null,
+        vendorId: (tx as any).vendor_id as string | null,
         amount: Number(tx.amount),
         status: tx.status as "locked" | "shipped" | "released" | "disputed",
         date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -562,6 +567,15 @@ const VendorTransactions = () => {
                                 onTestnetRelease={testnet.releaseMilestonePayment}
                                 onTestnetAddGps={testnet.addGpsToMilestone}
                               />
+                              {!isTestnet && tx.vendorId && (
+                                <DigitalDeliverableVault
+                                  transactionId={tx.dbId}
+                                  vendorId={tx.vendorId}
+                                  buyerId={tx.buyerId}
+                                  status={tx.status}
+                                  role="vendor"
+                                />
+                              )}
                               <div className="pt-2 border-t border-border mt-2">
                                 <TransactionDocuments
                                   tx={{
