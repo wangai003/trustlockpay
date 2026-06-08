@@ -590,6 +590,9 @@ const VendorTransactions = () => {
                                 onTestnetRelease={testnet.releaseMilestonePayment}
                                 onTestnetAddGps={testnet.addGpsToMilestone}
                               />
+                              {!isTestnet && (
+                                <EscrowExtensionRequest transactionId={tx.dbId} txId={tx.id} status={tx.status} />
+                              )}
                               {!isTestnet && tx.vendorId && (
                                 <DigitalDeliverableVault
                                   transactionId={tx.dbId}
