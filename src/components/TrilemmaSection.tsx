@@ -56,7 +56,7 @@ const TrilemmaSection = () => {
         >
           <div className="flex items-center gap-2.5 mb-4">
             <img src={trustlockLogo} alt="" className="h-7 w-7 object-contain" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground font-medium">
+            <span className="text-xs sm:text-[11px] tracking-[0.2em] uppercase text-primary/80 font-semibold">
               The $1.7 Trillion Question
             </span>
           </div>
