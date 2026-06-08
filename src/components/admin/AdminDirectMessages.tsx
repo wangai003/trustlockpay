@@ -67,7 +67,10 @@ const AdminDirectMessages = () => {
         .filter((s: any) => s.id !== currentAdminId && !s.is_deleted)
         .map((s: any) => ({ ...s, alias: aliasMap[s.id] }));
 
-      if (!isChief && myDeptSlug && myDeptSlug !== "executive") {
+      // Executive + Correspondence + Chiefs see everyone (cross-dept routing desks).
+      // Other departments only see own dept + Executive + Chiefs.
+      const ALL_VISIBLE_DEPTS = new Set(["executive", "correspondence"]);
+      if (!isChief && myDeptSlug && !ALL_VISIBLE_DEPTS.has(myDeptSlug)) {
         list = list.filter((s: AdminStaff) =>
           s.department_slug === myDeptSlug || s.department_slug === "executive" || s.is_chief
         );
