@@ -210,17 +210,29 @@ const AdminDirectMessages = () => {
             )}
             {messages.map((msg) => {
               const isMine = msg.sender_id === currentAdminId;
+              const body = getDisplayBody(msg);
+              const canForward = !isMine && !body.startsWith("🔒");
               return (
-                <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+                <div key={msg.id} className={cn("flex flex-col gap-1", isMine ? "items-end" : "items-start")}>
                   <div className={cn(
                     "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                     isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                   )}>
-                    <p className="whitespace-pre-wrap break-words">{getDisplayBody(msg)}</p>
+                    <p className="whitespace-pre-wrap break-words">{body}</p>
                     <p className={cn("text-[9px] mt-1", isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground")}>
                       {format(new Date(msg.created_at), "MMM d, h:mm a")}
                     </p>
                   </div>
+                  {canForward && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => setForwardSource({ body, fromDept: selectedPeer?.department_slug || null })}
+                    >
+                      <Forward className="w-3 h-3" /> Forward to department
+                    </Button>
+                  )}
                 </div>
               );
             })}
