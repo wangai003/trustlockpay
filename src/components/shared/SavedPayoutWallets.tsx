@@ -87,7 +87,7 @@ const SavedPayoutWallets = ({
     if (!u?.user) { setWallets([]); setLoading(false); return; }
     const { data, error } = await supabase
       .from("saved_payout_wallets")
-      .select("id,chain,token,address,label,is_default,verified_at")
+      .select("id,chain,token,address,label,is_default")
       .eq("user_id", u.user.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
@@ -109,6 +109,10 @@ const SavedPayoutWallets = ({
   const handleSave = async () => {
     const v = validateAddress(newAddress, newChain);
     if (!v.ok) { toast.error(v.reason!); return; }
+    if (newAddress.trim() !== confirmAddress.trim()) {
+      toast.error("Addresses do not match — please re-enter to confirm");
+      return;
+    }
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
