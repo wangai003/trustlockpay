@@ -36,10 +36,11 @@ const ALLOWLIST = new Set([
   "refund-router",           // refund finalization
 ]);
 
-// Regex: `.update({` block on the same chain as `.from("transactions")` that
-// includes `status:`. We grep loosely then narrow per-file.
-const STATUS_UPDATE_RE = /\.update\(\s*\{[^}]*\bstatus\s*:/;
-const TX_FROM_RE = /\.from\(\s*["']transactions["']\s*\)/;
+// Match a `.from("transactions")` followed (within the same statement, up to
+// ~400 chars / a few chained calls) by `.update({ ... status: ... })`.
+// Using [\s\S] to span newlines; lazy match keeps it tight.
+const TX_STATUS_UPDATE_RE =
+  /\.from\(\s*["']transactions["']\s*\)[\s\S]{0,400}?\.update\(\s*\{[^}]*\bstatus\s*:/g;
 
 function walk(dir) {
   const out = [];
