@@ -122,7 +122,7 @@ function getAccessibleModules(): string[] | null {
       disputes: ["overview", "disputes", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       finance: ["overview", "transactions", "finance", "payout", "tax", "gas", "analytics", "team-chat", "staff-dms", "training", "emmanuel"],
       compliance: ["overview", "compliance", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
-      operations: ["overview", "transactions", "workflow", "vendors", "buyers", "platforms", "blockchain", "industry", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
+      operations: ["overview", "transactions", "workflow", "vendors", "buyers", "platforms", "blockchain", "gas", "industry", "documents", "system-health", "autonomous-fixer", "team-chat", "staff-dms", "training", "emmanuel"],
     };
     const base = ACCESS_MAP[deptSlug] || ["overview", "emmanuel", "team-chat", "staff-dms", "training"];
     // Strip any chief-only modules that may have slipped into a dept allow-list
