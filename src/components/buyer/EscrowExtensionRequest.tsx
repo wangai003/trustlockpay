@@ -123,6 +123,9 @@ const EscrowExtensionRequest = ({ transactionId, txId, status }: EscrowExtension
             onChange={(e) => setReason(e.target.value)}
             className="text-xs min-h-[60px]"
           />
+          <p className="text-[10px] text-muted-foreground">
+            Need to share photos or documents? Attach them in the transaction message thread — they'll be linked to this escrow for the reviewer.
+          </p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
