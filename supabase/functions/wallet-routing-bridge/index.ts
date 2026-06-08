@@ -350,6 +350,86 @@ async function notify(
   });
 }
 
+// Admin sentinel id used across the platform for system-originated messages
+const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
+
+/**
+ * Drops a message into the user's inbox from the admin sentinel so payout
+ * outcomes appear in BOTH the notifications dropdown AND the Messages screen.
+ * Failures here are non-blocking — payout routing must never fail because the
+ * message channel had a hiccup.
+ */
+async function sendInboxMessage(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  body: string,
+  transactionId?: string,
+  subject = "Payout update"
+) {
+  if (!userId) return;
+  try {
+    // Find or create a system thread between sentinel + user (scoped to tx if provided)
+    let threadId: string | null = null;
+    const lookup = await supabase
+      .from("message_threads")
+      .select("id")
+      .eq("category", "system")
+      .or(`and(participant_1.eq.${ADMIN_SENTINEL_ID},participant_2.eq.${userId}),and(participant_1.eq.${userId},participant_2.eq.${ADMIN_SENTINEL_ID})`)
+      .limit(1)
+      .maybeSingle();
+    threadId = lookup.data?.id ?? null;
+    if (!threadId) {
+      const ins = await supabase
+        .from("message_threads")
+        .insert({
+          participant_1: ADMIN_SENTINEL_ID,
+          participant_2: userId,
+          participant_1_role: "admin",
+          subject,
+          category: "system",
+          transaction_id: transactionId ?? null,
+          last_message_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      threadId = ins.data?.id ?? null;
+    }
+    if (!threadId) return;
+    await supabase.from("messages").insert({
+      thread_id: threadId,
+      sender_id: ADMIN_SENTINEL_ID,
+      body,
+      is_read: false,
+    });
+    await supabase
+      .from("message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", threadId);
+  } catch (e) {
+    console.warn("[wallet-routing] sendInboxMessage failed (non-blocking):", e);
+  }
+}
+
+/**
+ * Unified payout outcome announcer: drops a notification AND an inbox message
+ * so the user always knows whether a release / refund / split succeeded.
+ */
+async function announcePayoutOutcome(
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  success: boolean,
+  titleSuccess: string,
+  titleFailure: string,
+  body: string,
+  transactionId?: string
+) {
+  if (!userId) return;
+  const title = success ? titleSuccess : titleFailure;
+  const prefix = success ? "✅ " : "⚠️ ";
+  await notify(supabase, userId, title, body, success ? "success" : "error", transactionId);
+  await sendInboxMessage(supabase, userId, `${prefix}${title}\n\n${body}`, transactionId, title);
+}
+
 // ═══════════════════════════════════════════════════════════
 //  ROUTING LOGIC — CORRECTED FEE MODEL
 // ═══════════════════════════════════════════════════════════
