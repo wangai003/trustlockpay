@@ -399,6 +399,7 @@ interface OrderRowProps {
   testnet: any;
   confirmDeliveryHook: any;
   openDisputeHook: any;
+  markDeliveredHook: any;
   queryClient: any;
   getSourceBadge: (source: string | null, platformId: string | null) => { label: string; icon: any; variant: "secondary" | "outline" } | null;
   onOpenWizard: (scenario: PayoutScenario) => void;
