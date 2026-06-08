@@ -52,7 +52,7 @@ const MobileBottomNav = ({ role }: MobileBottomNavProps) => {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-stretch justify-around h-14">
+      <div className="flex items-stretch justify-around h-16">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -60,22 +60,22 @@ const MobileBottomNav = ({ role }: MobileBottomNavProps) => {
             end={item.end}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center justify-center flex-1 gap-0.5 text-[10px] font-medium transition-colors min-w-0 active:scale-95",
+                "flex flex-col items-center justify-center flex-1 gap-1 text-[11px] font-medium transition-colors min-w-0 active:scale-95",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground"
               )
             }
           >
-            <item.icon className="w-5 h-5" />
+            <item.icon className="w-6 h-6" />
             <span className="truncate">{item.label}</span>
           </NavLink>
         ))}
         <button
           onClick={handleMore}
-          className="flex flex-col items-center justify-center flex-1 gap-0.5 text-[10px] font-medium text-muted-foreground min-w-0 active:scale-95"
+          className="flex flex-col items-center justify-center flex-1 gap-1 text-[11px] font-medium text-muted-foreground min-w-0 active:scale-95"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-6 h-6" />
           <span>More</span>
         </button>
       </div>
