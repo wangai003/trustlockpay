@@ -137,8 +137,8 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Link to="/" className="absolute top-4 left-4 p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      <Link to="/trustlock" aria-label="Back to TrustLock" className="absolute top-4 left-4 p-3 -m-1 rounded-md bg-background/60 backdrop-blur-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-50">
         <ArrowLeft className="w-5 h-5" />
       </Link>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">

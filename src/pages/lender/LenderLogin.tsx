@@ -144,7 +144,7 @@ const LenderLogin = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px]" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] rounded-full bg-accent/5 blur-[100px]" />
       </div>
-      <Link to="/trustlock" className="absolute top-4 left-4 p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-10">
+      <Link to="/trustlock" aria-label="Back to TrustLock" className="absolute top-4 left-4 p-3 -m-1 rounded-md bg-background/60 backdrop-blur-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-50">
         <ArrowLeft className="w-5 h-5" />
       </Link>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="w-full max-w-md relative z-10">
