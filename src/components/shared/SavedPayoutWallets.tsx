@@ -27,7 +27,6 @@ interface SavedWallet {
   address: string;
   label: string | null;
   is_default: boolean;
-  verified_at: string | null;
 }
 
 interface SavedPayoutWalletsProps {
