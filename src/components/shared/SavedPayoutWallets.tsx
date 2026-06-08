@@ -145,6 +145,7 @@ const SavedPayoutWallets = ({
       toast.success("Payout wallet saved");
       setShowAdd(false);
       setNewLabel("");
+      setConfirmAddress("");
       setMakeDefault(false);
       await load();
     } catch (err: any) {
@@ -231,7 +232,7 @@ const SavedPayoutWallets = ({
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {w.is_default && <Badge className="text-[8px] bg-primary text-primary-foreground border-0 gap-0.5"><Star className="w-2.5 h-2.5" /> Default</Badge>}
-                  {w.verified_at && <Badge className="text-[8px] bg-emerald-500/20 text-emerald-600 border-0 gap-0.5"><CheckCircle2 className="w-2.5 h-2.5" /> Verified</Badge>}
+                  <Badge className="text-[8px] bg-emerald-500/20 text-emerald-600 border-0 gap-0.5"><CheckCircle2 className="w-2.5 h-2.5" /> Confirmed</Badge>
                   {w.label && <span className="text-[10px] font-semibold text-foreground truncate">{w.label}</span>}
                 </div>
                 <p className="text-[10px] font-mono text-muted-foreground break-all mt-0.5">{w.address}</p>
@@ -299,7 +300,35 @@ const SavedPayoutWallets = ({
               onChange={(e) => setNewAddress(e.target.value)}
               placeholder={newChain === "solana" ? "Enter Solana address" : newChain === "tron" ? "Enter Tron address (T…)" : "0x..."}
               className="mt-1 h-8 text-[11px] font-mono"
+              autoComplete="off"
+              spellCheck={false}
             />
+          </div>
+
+          <div>
+            <Label className="text-[9px] uppercase tracking-wider text-muted-foreground">
+              Confirm Wallet Address
+              {confirmAddress && newAddress && (
+                confirmAddress.trim() === newAddress.trim()
+                  ? <span className="ml-2 text-emerald-600 normal-case tracking-normal">✓ Match</span>
+                  : <span className="ml-2 text-destructive normal-case tracking-normal">✗ Does not match</span>
+              )}
+            </Label>
+            <Input
+              value={confirmAddress}
+              onChange={(e) => setConfirmAddress(e.target.value)}
+              placeholder="Re-enter the same address to confirm"
+              className={cn(
+                "mt-1 h-8 text-[11px] font-mono",
+                confirmAddress && newAddress && confirmAddress.trim() !== newAddress.trim() && "border-destructive"
+              )}
+              autoComplete="off"
+              spellCheck={false}
+              onPaste={(e) => { e.preventDefault(); toast.error("Paste disabled — please type the address to confirm"); }}
+            />
+            <p className="text-[9px] text-muted-foreground mt-1">
+              Type the address again (paste is disabled). Once saved, the routing bridge automatically uses this as your payout destination — no separate verification step.
+            </p>
           </div>
 
           <div>
