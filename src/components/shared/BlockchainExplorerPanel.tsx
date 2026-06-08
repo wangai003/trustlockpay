@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { explorerTxUrl, explorerAddressUrl, explorerName, explorerBase } from "@/lib/polygonExplorer";
+import { explorerTxUrl, explorerAddressUrl, explorerName } from "@/lib/polygonExplorer";
 
 const RECORD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   invoice: { label: "Invoice", color: "bg-blue-500/20 text-blue-400" },
