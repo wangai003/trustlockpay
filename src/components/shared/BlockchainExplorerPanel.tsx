@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight
+  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
