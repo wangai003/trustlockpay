@@ -228,6 +228,15 @@ const AdminSharedInbox = () => {
                     </div>
 
                     <div className="flex gap-2 shrink-0 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 text-xs h-8"
+                        onClick={() => setForwardThread(thread)}
+                        title="Forward to another department (round-robin)"
+                      >
+                        <Forward className="w-3 h-3" /> Forward
+                      </Button>
                       {!thread.claimed_by && (
                         <Button
                           size="sm"
