@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Clock, Hand, MessageSquare, Search, UserCheck, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Forward, Hand, MessageSquare, Search, UserCheck, XCircle } from "lucide-react";
 import { useAdminAliases, useClaimThread, useUnclaimThread, useUpdateCaseStatus } from "@/hooks/useAdminMessaging";
 import { format } from "date-fns";
+import ForwardMessageDialog from "@/components/admin/ForwardMessageDialog";
 
 const ADMIN_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -41,6 +42,11 @@ const AdminSharedInbox = () => {
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const [adminNames, setAdminNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [forwardThread, setForwardThread] = useState<ThreadWithClaim | null>(null);
+
+  const myDeptSlug = (() => {
+    try { return JSON.parse(localStorage.getItem("tl_admin_auth") || "{}").departmentSlug || null; } catch { return null; }
+  })();
 
   const { data: aliases = [] } = useAdminAliases();
   const claimThread = useClaimThread();
@@ -222,6 +228,15 @@ const AdminSharedInbox = () => {
                     </div>
 
                     <div className="flex gap-2 shrink-0 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 text-xs h-8"
+                        onClick={() => setForwardThread(thread)}
+                        title="Forward to another department (round-robin)"
+                      >
+                        <Forward className="w-3 h-3" /> Forward
+                      </Button>
                       {!thread.claimed_by && (
                         <Button
                           size="sm"
@@ -275,6 +290,17 @@ const AdminSharedInbox = () => {
           })}
         </div>
       </ScrollArea>
+
+      {forwardThread && currentAdminId && (
+        <ForwardMessageDialog
+          open={!!forwardThread}
+          onOpenChange={(o) => !o && setForwardThread(null)}
+          callerAdminId={currentAdminId}
+          fromDepartmentSlug={myDeptSlug}
+          bodyPlaintext={`Client thread reassignment requested.\n\nUser: ${getUserName(forwardThread)}\nSubject: ${forwardThread.subject || "(no subject)"}\nCategory: ${forwardThread.category}\nThread ID: ${forwardThread.id}\n\nPlease open the Client Inbox and claim this thread.`}
+          excludeSlug={myDeptSlug}
+        />
+      )}
     </div>
   );
 };
