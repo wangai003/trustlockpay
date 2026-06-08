@@ -43,6 +43,7 @@ import InternationalBankSelector from "@/components/shared/InternationalBankSele
 import type { InternationalRegion } from "@/lib/internationalBankData";
 import FundMovementTracker, { type FundFlowType } from "@/components/shared/FundMovementTracker";
 import TransactionFailureState from "@/components/shared/TransactionFailureState";
+import SavedPayoutWallets from "@/components/shared/SavedPayoutWallets";
 import {
   type PaymentProvider,
   PRIVACY_DISCLAIMER,
@@ -1278,6 +1279,20 @@ const TrustLockOSPayout = ({
                   <Wallet className="w-4 h-4 text-primary" />
                   <h4 className="text-sm font-bold text-foreground">Crypto Payout Details</h4>
                 </div>
+
+                {/* Saved Payout Wallets — address book for one-click selection */}
+                <SavedPayoutWallets
+                  chain={selectedChain}
+                  token="USDC"
+                  supportedChains={SUPPORTED_CHAINS}
+                  currentAddress={cryptoWalletAddress}
+                  onSelect={(addr, chainId) => {
+                    setSelectedChain(chainId);
+                    setCryptoWalletAddress(addr);
+                    setCryptoAddressConfirmed(false);
+                    setLiabilityAccepted(false);
+                  }}
+                />
 
                 {/* Chain Selector */}
                 <div>

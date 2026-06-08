@@ -92,6 +92,33 @@ function failedTransfer(reason: string): { txHash: string; status: string } {
   };
 }
 
+// ─── Saved Payout Wallet Resolver ─────────────────────────
+// Strict resolution: when a release/refund/split needs a destination, look up the
+// user's DEFAULT saved Polygon USDC wallet. If the caller passes a valid 0x address
+// AND it matches the saved default, use it. Otherwise prefer the saved default —
+// this is the single source of truth that eliminates typo risk at payout time.
+// Returns null if no saved default exists; caller should reject the request.
+async function resolveSavedPayoutDestination(
+  supabase: ReturnType<typeof getSupabase>,
+  userId: string | null | undefined,
+  chain = "polygon",
+  token = "USDC",
+): Promise<string | null> {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("saved_payout_wallets")
+    .select("address")
+    .eq("user_id", userId)
+    .eq("chain", chain)
+    .eq("token", token)
+    .eq("is_default", true)
+    .maybeSingle();
+  if (error) {
+    console.warn("[wallet-routing] saved_payout_wallets lookup failed:", error.message);
+    return null;
+  }
+  return data?.address ?? null;
+
 // ─── Gas station: relayer funds every source wallet's gas ─────────────
 // All on-chain ERC-20 transfers in TrustLock are gas-funded by the Polygon
 // Relayer wallet (POLYGON_RELAYER_PRIVATE_KEY). Before any transfer we
@@ -642,7 +669,9 @@ Deno.serve(async (req) => {
       );
 
       // Transfer 2: Vendor payout (principal minus 1% escrow fee)
-      const vendorWallet = body.vendorWallet || "vendor_pending";
+      const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+        ? body.vendorWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
       const payoutTransfer = await transferOnChain(
         WALLETS.escrow.address,
         vendorWallet,
@@ -757,7 +786,9 @@ Deno.serve(async (req) => {
       // Escrow Wallet holds ONLY the vendor principal (1% escrow fee baked in).
       // On refund, return the FULL locked amount to buyer — $0 deductions.
       const lockedPrincipal = tx.amount;
-      const buyerWallet = body.buyerWallet || "buyer_pending";
+      const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+        ? body.buyerWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
 
       const refundTransfer = await transferOnChain(
         WALLETS.escrow.address,
@@ -886,7 +917,9 @@ Deno.serve(async (req) => {
 
       // 2) Buyer portion — full amount, $0 gas
       if (buyerAmount > 0) {
-        const buyerWallet = body.buyerWallet || "buyer_pending";
+        const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+          ? body.buyerWallet
+          : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
         const buyerTx = await transferOnChain(
           WALLETS.escrow.address, buyerWallet,
           buyerAmount, token,
@@ -903,7 +936,9 @@ Deno.serve(async (req) => {
 
       // 3) Vendor net payout — escrow fee deducted, $0 gas
       if (vendorNet > 0) {
-        const vendorWallet = body.vendorWallet || "vendor_pending";
+        const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+          ? body.vendorWallet
+          : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
         const vendorTx = await transferOnChain(
           WALLETS.escrow.address, vendorWallet,
           vendorNet, token,
@@ -1137,7 +1172,9 @@ Deno.serve(async (req) => {
       }
 
       // Vendor payout — milestone amount minus fractional escrow fee
-      const vendorWallet = body.vendorWallet || "vendor_pending";
+      const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+        ? body.vendorWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
       const payoutTx = await transferOnChain(
         WALLETS.escrow.address, vendorWallet,
         vendorNet, token,
@@ -1259,7 +1296,9 @@ Deno.serve(async (req) => {
       if (!milestone) return json({ error: "Milestone not found" }, 404);
 
       const milestoneAmount = Number(milestone.amount) || 0;
-      const buyerWallet = body.buyerWallet || "buyer_pending";
+      const buyerWallet = (body.buyerWallet && /^0x[a-fA-F0-9]{40}$/.test(body.buyerWallet))
+        ? body.buyerWallet
+        : (await resolveSavedPayoutDestination(supabase, tx.buyer_id)) || "buyer_pending";
 
       const transfers = [];
 
