@@ -13,7 +13,7 @@ export const DEPARTMENTS: Department[] = [
   { slug: "disputes", name: "Disputes & Arbitration", description: "Case management, arbitrator portal, rulings", canMessageClients: false },
   { slug: "finance", name: "Finance & Payouts", description: "OS Pay, payouts, tax remittance, gas treasury", canMessageClients: false },
   { slug: "compliance", name: "Compliance & Risk", description: "KYC/KYB, sanctions, document scanning", canMessageClients: false },
-  { slug: "operations", name: "Operations & Workflow", description: "Transactions, milestones, vendor/buyer accounts", canMessageClients: false },
+  { slug: "operations", name: "IT Department", description: "Consolidated IT — transactions, milestones, vendor/buyer accounts, platform config, blockchain proofs, autonomous fixer triage, code defect relay.", canMessageClients: false },
 ];
 
 // Module slug → sidebar route mapping for access control
