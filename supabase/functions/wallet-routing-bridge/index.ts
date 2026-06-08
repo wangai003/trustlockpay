@@ -936,7 +936,9 @@ Deno.serve(async (req) => {
 
       // 3) Vendor net payout — escrow fee deducted, $0 gas
       if (vendorNet > 0) {
-        const vendorWallet = body.vendorWallet || "vendor_pending";
+        const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
+          ? body.vendorWallet
+          : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
         const vendorTx = await transferOnChain(
           WALLETS.escrow.address, vendorWallet,
           vendorNet, token,
