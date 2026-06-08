@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Clock, TimerReset, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEscrowExtensions, useRequestExtension, MAX_EXTENSIONS } from "@/hooks/useEscrowExtension";
+import { useEscrowExtensions, useRequestExtension, useReviewExtension, MAX_EXTENSIONS } from "@/hooks/useEscrowExtension";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EscrowExtensionRequestProps {
   transactionId: string;
