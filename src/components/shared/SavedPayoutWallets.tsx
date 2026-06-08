@@ -77,6 +77,7 @@ const SavedPayoutWallets = ({
   const [newChain, setNewChain] = useState(chain);
   const [newToken, setNewToken] = useState(token);
   const [newAddress, setNewAddress] = useState(currentAddress || "");
+  const [confirmAddress, setConfirmAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
 
