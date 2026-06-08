@@ -258,7 +258,7 @@ const AdminTrainingManual = () => {
                       { name: "Disputes & Arbitration", desc: "Dispute management, arbitration fees, case file packaging, arbitrator portal, ruling enforcement." },
                       { name: "Finance & Payouts", desc: "OS Pay, payout processing, fee auditing, gas treasury, tax remittance, revenue analytics." },
                       { name: "Compliance & Risk", desc: "KYC/KYB review, sanctions screening, document scanning, compliance flags, anti-structuring." },
-                      { name: "Operations & Workflow", desc: "Transaction monitoring, milestone verification, vendor/buyer accounts, platform config, blockchain proofs." },
+                      { name: "IT Department", desc: "Consolidated IT — transaction monitoring, milestone verification, vendor/buyer accounts, platform config, blockchain proofs, autonomous fixer triage, code defect relay." },
                     ].map(d => (
                       <div key={d.name} className="p-2 border rounded-lg bg-muted/30">
                         <p className="font-medium text-foreground text-xs">{d.name}</p>
