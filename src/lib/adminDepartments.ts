@@ -44,6 +44,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   sandbox: "/trustlock/admin/sandbox-leads",
   platforms: "/trustlock/admin/platforms",
   "system-health": "/trustlock/admin/system-health",
+  "autonomous-fixer": "/trustlock/admin/autonomous-fixer",
   settings: "/trustlock/admin/settings",
   staff: "/trustlock/admin/settings",
 };

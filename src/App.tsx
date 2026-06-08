@@ -54,6 +54,7 @@ const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
 const AdminLenderKYB = lazy(() => import("./pages/admin/AdminLenderKYB"));
 const AdminSystemHealth = lazy(() => import("./pages/admin/AdminSystemHealth"));
+const AdminAutonomousFixer = lazy(() => import("./pages/admin/AdminAutonomousFixer"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -218,6 +219,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="deploy-contracts" element={<AdminDeployContracts />} />
                 <Route path="system-health" element={<AdminSystemHealth />} />
+                <Route path="autonomous-fixer" element={<AdminAutonomousFixer />} />
               </Route>
 
               {/* Vendor Dashboard */}
