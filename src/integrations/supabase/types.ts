@@ -1060,6 +1060,78 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by_admin_id: string | null
+          category: string
+          context: Json | null
+          created_at: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          message: string
+          occurrence_count: number
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_admin_id: string | null
+          route: string | null
+          severity: string
+          source: string
+          stack_trace: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by_admin_id?: string | null
+          category: string
+          context?: Json | null
+          created_at?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          message: string
+          occurrence_count?: number
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_admin_id?: string | null
+          route?: string | null
+          severity: string
+          source: string
+          stack_trace?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by_admin_id?: string | null
+          category?: string
+          context?: Json | null
+          created_at?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          message?: string
+          occurrence_count?: number
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_admin_id?: string | null
+          route?: string | null
+          severity?: string
+          source?: string
+          stack_trace?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       bulk_import_jobs: {
         Row: {
           created_at: string
@@ -6702,6 +6774,21 @@ export type Database = {
       is_valid_status_transition: {
         Args: { _from: string; _is_service_role?: boolean; _to: string }
         Returns: boolean
+      }
+      report_bug: {
+        Args: {
+          _category: string
+          _context?: Json
+          _message: string
+          _route?: string
+          _severity: string
+          _source: string
+          _stack_trace?: string
+          _title: string
+          _user_id?: string
+          _user_role?: string
+        }
+        Returns: string
       }
       route_department_alert: {
         Args: {

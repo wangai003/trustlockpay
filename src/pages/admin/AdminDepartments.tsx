@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star } from "lucide-react";
+import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck, GitBranch, Star, Wrench } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 import DepartmentWorkflow from "@/components/admin/DepartmentWorkflow";
 import DepartmentAlertInbox from "@/components/admin/DepartmentAlertInbox";
@@ -32,6 +32,7 @@ const TESTNET_MOCK_STAFF = [
 
 const DEPT_ICONS: Record<string, any> = {
   executive: Crown,
+  technical: Wrench,
   correspondence: MessageSquare,
   disputes: Shield,
   finance: DollarSign,
@@ -41,6 +42,7 @@ const DEPT_ICONS: Record<string, any> = {
 
 const DEPT_COLORS: Record<string, string> = {
   executive: "bg-primary/10 text-primary border-primary/20",
+  technical: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
   correspondence: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   disputes: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
   finance: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",

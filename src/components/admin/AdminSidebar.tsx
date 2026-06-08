@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, AlertTriangle, Users, UserCheck,
-  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound, Rocket
+  ShieldCheck, FileText, BarChart3, Bot, Settings, LogOut, Shield, Menu, X, GitBranch, Banknote, Info, BookOpen, Landmark, MessageSquare, Fuel, ClipboardList, FlaskConical, Building2, Activity, Network, Inbox, UsersRound, Rocket, Bug
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,7 @@ const allNavGroups: SidebarNavGroup[] = [
       { label: "Documents", icon: FileText, to: "/trustlock/admin/documents", tip: "Archived files, contracts, and evidence", moduleKey: "documents" },
       { label: "Settings", icon: Settings, to: "/trustlock/admin/settings", tip: "Platform configuration and preferences", moduleKey: "settings" },
       { label: "Deploy Contracts", icon: Rocket, to: "/trustlock/admin/deploy-contracts", tip: "Deploy escrow & registry smart contracts to Polygon", moduleKey: "deploy-contracts" },
+      { label: "System Health", icon: Bug, to: "/trustlock/admin/system-health", tip: "Bug Sentry — live error stream across the platform", moduleKey: "system-health" },
     ],
   },
 ];
@@ -116,6 +117,7 @@ function getAccessibleModules(): string[] | null {
         "documents", "training",
       ],
       correspondence: ["overview", "messages", "team-chat", "staff-dms", "vendors", "buyers", "training", "emmanuel"],
+      technical: ["overview", "system-health", "blockchain", "gas", "platforms", "team-chat", "staff-dms", "training", "emmanuel"],
       disputes: ["overview", "disputes", "documents", "team-chat", "staff-dms", "training", "emmanuel"],
       finance: ["overview", "transactions", "finance", "payout", "tax", "gas", "analytics", "team-chat", "staff-dms", "training", "emmanuel"],
       compliance: ["overview", "compliance", "documents", "team-chat", "staff-dms", "training", "emmanuel"],

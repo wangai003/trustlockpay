@@ -53,6 +53,7 @@ const AdminSandboxLeads = lazy(() => import("./pages/admin/AdminSandboxLeads"));
 const AdminPlatforms = lazy(() => import("./pages/admin/AdminPlatforms"));
 const AdminPlatformAnalytics = lazy(() => import("./pages/admin/AdminPlatformAnalytics"));
 const AdminLenderKYB = lazy(() => import("./pages/admin/AdminLenderKYB"));
+const AdminSystemHealth = lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AuditPortal = lazy(() => import("./pages/audit/AuditPortal"));
 
 // Buyer
@@ -216,6 +217,7 @@ const App = () => (
                 <Route path="lender-kyb" element={<AdminLenderKYB />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="deploy-contracts" element={<AdminDeployContracts />} />
+                <Route path="system-health" element={<AdminSystemHealth />} />
               </Route>
 
               {/* Vendor Dashboard */}
