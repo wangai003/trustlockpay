@@ -430,6 +430,21 @@ Deno.serve(async (req) => {
         `Vendor principal ($${escrowWalletReceives}) for TX ${tx.tx_id} — 1% escrow fee baked in`
       );
 
+      if (routingTransfer.status !== "confirmed") {
+        console.error(`[wallet-routing] Inbound route not confirmed — transaction left unchanged`, {
+          transactionId,
+          txRef: tx.tx_id,
+          transfer: routingTransfer,
+        });
+        return json({
+          success: false,
+          action: "route_inbound",
+          transactionId,
+          skipped: "transfer_not_confirmed",
+          transfer: routingTransfer,
+        }, 409);
+      }
+
       // Update transaction with fee breakdown.
       // IMPORTANT: never downgrade a status that has progressed past `locked`
       // (shipped / delivered / released / disputed / etc.). The vendor's
