@@ -69,6 +69,16 @@ const MilestoneWorkOrderPanel = ({
   const [tradeScope, setTradeScope] = useState<TradeScope>("international");
   const { capturePosition, loading: gpsLoading } = useGeolocation();
   const { anchor: anchorProof } = useBlockchainAnchor();
+  const [txParties, setTxParties] = useState<{ buyer_id: string | null; vendor_id: string | null } | null>(null);
+
+  useEffect(() => {
+    if (isTestnet || !transactionId || (role !== "buyer" && role !== "vendor")) return;
+    let cancelled = false;
+    supabase.from("transactions").select("buyer_id, vendor_id").eq("id", transactionId).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data) setTxParties(data as any); });
+    return () => { cancelled = true; };
+  }, [transactionId, isTestnet, role]);
+
 
   const fundsAreLocked = FUNDS_LOCKED_STATUSES.has(transactionStatus || "");
   const layoutMode = resolveLayoutMode(industry, orderType);
