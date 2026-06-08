@@ -175,8 +175,37 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
   /* ── Filtered list — action-required items pinned to top ── */
   const filtered = useMemo(() => {
     const list = activeTab === "all" ? notifications : notifications.filter((n) => toPriority(n.type) === activeTab);
+
+    // Collapse near-duplicates: notifications with the same title + related entity
+    // are grouped into a single row showing the most recent one with a count badge.
+    // This prevents bell-icon spam when multiple backend services (escrow-bridge,
+    // wallet-routing-bridge, cron sweepers) emit the same event for one transaction.
+    const groups = new Map<string, { latest: DbNotification; count: number; anyUnread: boolean; anyAction: boolean }>();
+    for (const n of list) {
+      const key = `${n.title}::${n.related_entity_id ?? n.related_entity_type ?? "_"}`;
+      const existing = groups.get(key);
+      const isActionPending = !!n.is_action_required && !n.action_completed_at;
+      if (!existing) {
+        groups.set(key, { latest: n, count: 1, anyUnread: !n.is_read, anyAction: isActionPending });
+      } else {
+        existing.count += 1;
+        existing.anyUnread = existing.anyUnread || !n.is_read;
+        existing.anyAction = existing.anyAction || isActionPending;
+        if (new Date(n.created_at).getTime() > new Date(existing.latest.created_at).getTime()) {
+          existing.latest = n;
+        }
+      }
+    }
+
+    const deduped = Array.from(groups.values()).map((g) => ({
+      ...g.latest,
+      is_read: g.anyUnread ? false : g.latest.is_read,
+      // attach a synthetic `_groupCount` so the row can render an "xN" badge
+      _groupCount: g.count,
+    } as DbNotification & { _groupCount: number }));
+
     // Sort: action-required pending first, then unread, then by date
-    return [...list].sort((a, b) => {
+    return deduped.sort((a, b) => {
       const aAction = a.is_action_required && !a.action_completed_at ? 1 : 0;
       const bAction = b.is_action_required && !b.action_completed_at ? 1 : 0;
       if (aAction !== bAction) return bAction - aAction;
@@ -228,14 +257,22 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
 
   const dismiss = (id: string) => {
     const n = notifications.find(x => x.id === id);
+    if (!n) return;
     // Block dismissal of action-required items
-    if (n?.is_action_required && !n.action_completed_at) {
+    if (n.is_action_required && !n.action_completed_at) {
       toast.error("This notification requires you to complete an action before it can be dismissed");
       return;
     }
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (isMainnet) {
-      supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    // Dismiss every notification grouped under the same (title + related entity),
+    // so collapsing duplicates from the bell icon removes the whole stack at once.
+    const groupKey = `${n.title}::${n.related_entity_id ?? n.related_entity_type ?? "_"}`;
+    const groupIds = notifications
+      .filter(x => `${x.title}::${x.related_entity_id ?? x.related_entity_type ?? "_"}` === groupKey
+        && !(x.is_action_required && !x.action_completed_at))
+      .map(x => x.id);
+    setNotifications((prev) => prev.filter((x) => !groupIds.includes(x.id)));
+    if (isMainnet && groupIds.length > 0) {
+      supabase.from("notifications").update({ is_read: true }).in("id", groupIds);
     }
   };
 
@@ -362,6 +399,11 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className={cn("text-xs flex-1 truncate", (isActionPending || !n.is_read) && "font-semibold")}>{n.title}</p>
+                            {((n as DbNotification & { _groupCount?: number })._groupCount ?? 1) > 1 && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground font-semibold shrink-0" title="Duplicate notifications grouped">
+                                ×{(n as DbNotification & { _groupCount?: number })._groupCount}
+                              </span>
+                            )}
                             {isActionPending && (
                               <span className="text-[8px] px-1 py-0.5 rounded bg-primary text-primary-foreground font-bold shrink-0 flex items-center gap-0.5">
                                 ACTION
