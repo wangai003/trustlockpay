@@ -496,18 +496,31 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               </>
             )}
             {order.status === "shipped" && (
-              <Button variant="outline" size="sm" onClick={() => {
-                  const legs = order.transportLegs;
-                  if (legs && legs.length > 0) {
-                    const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
-                    if (firstUrl) window.open(firstUrl, "_blank");
-                    else setExpandedOrder(order.id);
-                  } else if (order.tracking) {
-                    setExpandedOrder(order.id);
-                  }
-                }}>
-                  <ExternalLink className="w-3 h-3 mr-1" /> Track
+              <>
+                <Button variant="outline" size="sm" onClick={() => {
+                    const legs = order.transportLegs;
+                    if (legs && legs.length > 0) {
+                      const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
+                      if (firstUrl) window.open(firstUrl, "_blank");
+                      else setExpandedOrder(order.id);
+                    } else if (order.tracking) {
+                      setExpandedOrder(order.id);
+                    }
+                  }}>
+                    <ExternalLink className="w-3 h-3 mr-1" /> Track
+                  </Button>
+                <Button
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    if (!confirm("Mark this order as received? This stops the auto-release clock and lets you confirm or release funds.")) return;
+                    if (isTestnet) { testnet.confirmDelivery(order.id); }
+                    else { markDeliveredHook.mutate(order.id); }
+                  }}
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> Mark Received
                 </Button>
+              </>
             )}
             {(order.status === "locked" || order.status === "shipped" || order.status === "delivered") && (
               <Button
