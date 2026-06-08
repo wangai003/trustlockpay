@@ -170,11 +170,38 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           <p className="text-xs text-muted-foreground">
             Search orders, verify hashes, and trace the immutable proof chain
           </p>
+          {(contractAddresses.registry || contractAddresses.escrow) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {contractAddresses.registry && (
+                <a
+                  href={explorerAddressUrl(contractAddresses.registry, contractAddresses.network)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline border border-primary/30 rounded px-2 py-0.5"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Registry on {explorerName(contractAddresses.network)}
+                </a>
+              )}
+              {contractAddresses.escrow && (
+                <a
+                  href={explorerAddressUrl(contractAddresses.escrow, contractAddresses.network)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline border border-primary/30 rounded px-2 py-0.5"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Escrow Contract
+                </a>
+              )}
+            </div>
+          )}
         </SheetHeader>
 
-        <Tabs defaultValue="order" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="order" className="flex-1 flex flex-col overflow-hidden" onValueChange={(v) => { if (v === "feed" && feedProofs.length === 0) loadRecentFeed(); }}>
           <TabsList className="mx-4 mt-3 w-auto">
             <TabsTrigger value="order" className="text-xs">By Order</TabsTrigger>
+            <TabsTrigger value="feed" className="text-xs">Recent Activity</TabsTrigger>
             <TabsTrigger value="verify" className="text-xs">Verify Hash</TabsTrigger>
           </TabsList>
 
@@ -193,22 +220,9 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
               </Button>
             </div>
 
-            {/* Demo Load Button */}
-            {proofs.length === 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadDemo}
-                className="mb-3 gap-2 border-dashed border-primary/40 text-primary hover:bg-primary/5"
-              >
-                <PlayCircle className="w-4 h-4" />
-                Load Demo: Agriculture Trade (KE → NG) — 9 Proof Blocks
-              </Button>
-            )}
-
             <ScrollArea className="flex-1">
               {selectedProof ? (
-                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={(txId) => {
+                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => {
                   setOpen(false);
                   const path = location.pathname;
                   if (path.includes("/admin")) {
@@ -223,6 +237,36 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
                 }} />
               ) : (
                 <ProofTimeline proofs={proofs} onSelect={setSelectedProof} truncate={truncate} loading={loading} />
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Recent Activity Feed Tab */}
+          <TabsContent value="feed" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+            <div className="flex gap-2 mb-2">
+              <Select value={feedFilter} onValueChange={(v) => { setFeedFilter(v); loadRecentFeed(v); }}>
+                <SelectTrigger className="text-xs h-9 flex-1">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All record types</SelectItem>
+                  {Object.entries(RECORD_TYPE_LABELS).map(([key, { label }]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={() => loadRecentFeed()} disabled={feedLoading}>
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">
+              Latest anchored proofs across all orders. Click any record → PolygonScan to verify on chain.
+            </p>
+            <ScrollArea className="flex-1">
+              {selectedProof ? (
+                <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => { setOpen(false); }} />
+              ) : (
+                <ProofTimeline proofs={feedProofs} onSelect={setSelectedProof} truncate={truncate} loading={feedLoading} />
               )}
             </ScrollArea>
           </TabsContent>
