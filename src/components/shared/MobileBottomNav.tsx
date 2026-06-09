@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, Package, AlertTriangle, Bot,
-  MessageSquare, Menu
+  MessageSquare, Menu, Briefcase, ClipboardList, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ interface NavItem {
 }
 
 interface MobileBottomNavProps {
-  role: "vendor" | "buyer" | "admin";
+  role: "vendor" | "buyer" | "admin" | "lender";
 }
 
 const vendorPrimary: NavItem[] = [
@@ -37,10 +37,18 @@ const adminPrimary: NavItem[] = [
   { label: "Messages", icon: MessageSquare, to: "/trustlock/admin/messages" },
 ];
 
+const lenderPrimary: NavItem[] = [
+  { label: "Home", icon: LayoutDashboard, to: "/trustlock/lender", end: true },
+  { label: "Portfolio", icon: Briefcase, to: "/trustlock/lender/portfolio" },
+  { label: "Apps", icon: ClipboardList, to: "/trustlock/lender/applications" },
+  { label: "Messages", icon: MessageSquare, to: "/trustlock/lender/messages" },
+];
+
 const primaryItems: Record<string, NavItem[]> = {
   vendor: vendorPrimary,
   buyer: buyerPrimary,
   admin: adminPrimary,
+  lender: lenderPrimary,
 };
 
 const MobileBottomNav = ({ role }: MobileBottomNavProps) => {
