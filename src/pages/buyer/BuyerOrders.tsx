@@ -512,8 +512,12 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                     variant="default"
                     className="gap-1 shrink-0 snap-start"
                     onClick={() => {
-                      setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
+                      setReleaseOrderId(order.id);
                       if (expandedOrder !== order.id) setExpandedOrder(order.id);
+                      setTimeout(() => {
+                        const el = document.getElementById(`release-panel-${order.id}`);
+                        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 150);
                     }}
                   >
                     <Unlock className="w-3.5 h-3.5" />
@@ -665,7 +669,8 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             </div>
 
             {releaseOrderId === order.id && order.status === "delivered" && (
-              <div className="pt-3 border-t-2 border-primary/30">
+              <div id={`release-panel-${order.id}`} className="pt-3 border-t-2 border-primary/30 scroll-mt-24">
+
                 <div className="flex items-center gap-2 mb-3">
                   <Unlock className="w-4 h-4 text-primary" />
                   <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
