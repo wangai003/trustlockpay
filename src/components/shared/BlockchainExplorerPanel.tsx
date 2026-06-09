@@ -67,6 +67,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedFilter, setFeedFilter] = useState<string>("all");
   const [contractAddresses, setContractAddresses] = useState<{ registry?: string; escrow?: string; network?: string }>({});
+  const [expanded, setExpanded] = useState(false);
 
   const sb = supabase as any;
 
