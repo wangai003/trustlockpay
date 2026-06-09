@@ -678,6 +678,19 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
         </div>
       </div>
 
+      {/* Tool Information Tip */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
+        <div className="flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span className="text-xs font-semibold text-foreground">What is TrustLock OS Pay?</span>
+        </div>
+        <p className="text-[10px] leading-relaxed text-muted-foreground">
+          {isAdmin
+            ? "Use this tool to process refunds, split payments, or internal service charges from the TrustLock platform."
+            : "Use this tool to pay for TrustLock services, subscriptions, AI queries, widget fees, and other platform charges."}
+        </p>
+      </div>
+
       <Card className="rounded-t-none -mt-4 border-t-0">
         <CardContent className="p-4 space-y-5">
 
