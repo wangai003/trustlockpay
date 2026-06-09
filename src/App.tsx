@@ -77,6 +77,9 @@ const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlay
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
 const BuyerMessages = lazy(() => import("./pages/buyer/BuyerMessages"));
 const BuyerVendorLookup = lazy(() => import("./pages/buyer/BuyerVendorLookup"));
+const BuyerCancelOrder = lazy(() => import("./pages/buyer/BuyerCancelOrder"));
+const ProofExplorer = lazy(() => import("./pages/shared/ProofExplorer"));
+const CompliancePreflight = lazy(() => import("./pages/shared/CompliancePreflight"));
 
 // Vendor
 const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
@@ -112,6 +115,10 @@ const VendorBuyerLookup = lazy(() => import("./pages/vendor/VendorBuyerLookup"))
 const VendorLenderLookup = lazy(() => import("./pages/vendor/VendorLenderLookup"));
 const VendorRequestFinancing = lazy(() => import("./pages/vendor/VendorRequestFinancing"));
 const VendorRepayments = lazy(() => import("./pages/vendor/VendorRepayments"));
+const VendorProforma = lazy(() => import("./pages/vendor/VendorProforma"));
+const VendorWidgetTheme = lazy(() => import("./pages/vendor/VendorWidgetTheme"));
+const VendorCorridorSetup = lazy(() => import("./pages/vendor/VendorCorridorSetup"));
+const VendorBulkActions = lazy(() => import("./pages/vendor/VendorBulkActions"));
 
 const VendorClaimAccount = lazy(() => import("./pages/vendor/VendorClaimAccount"));
 const PublicCheckout = lazy(() => import("./pages/public/PublicCheckout"));
@@ -263,6 +270,12 @@ const App = () => (
                 <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="widget-config-advanced" element={<VendorWidgetConfig />} />
+                <Route path="widget-theme" element={<VendorWidgetTheme />} />
+                <Route path="proforma" element={<VendorProforma />} />
+                <Route path="corridor-setup" element={<VendorCorridorSetup />} />
+                <Route path="bulk-actions" element={<VendorBulkActions />} />
+                <Route path="proof-explorer" element={<ProofExplorer role="vendor" />} />
+                <Route path="compliance-preflight" element={<CompliancePreflight role="vendor" />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 
@@ -316,6 +329,9 @@ const App = () => (
                 <Route path="messages" element={<BuyerMessages />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
                 <Route path="vendor-lookup" element={<BuyerVendorLookup />} />
+                <Route path="cancel-order" element={<BuyerCancelOrder />} />
+                <Route path="proof-explorer" element={<ProofExplorer role="buyer" />} />
+                <Route path="compliance-preflight" element={<CompliancePreflight role="buyer" />} />
                 <Route path="settings" element={<BuyerSettings />} />
               </Route>
 

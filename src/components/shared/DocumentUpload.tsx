@@ -91,6 +91,7 @@ const DocumentUpload = ({
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [uploading, setUploading] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [intelReports, setIntelReports] = useState<{ name: string; pageCount?: number; minExpected?: number; issues?: string[]; aiRecommendation?: string | null; valid: boolean }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const bucketConfig = context ? BUCKET_CONFIG[context.bucket] : BUCKET_CONFIG["milestone-documents"];
@@ -175,6 +176,38 @@ const DocumentUpload = ({
           ...prev,
           { name: file.name, type: file.type, size: sizeStr, sizeBytes: file.size, date: new Date().toLocaleDateString(), url: urlData.publicUrl, storagePath: path },
         ]);
+
+        // ── Document Intelligence: validate page count + AI analysis for known categories ──
+        if (documentCategory !== "general" && file.type === "application/pdf") {
+          try {
+            const { data: intel } = await supabase.functions.invoke("validate-document-pages", {
+              body: {
+                documentCategory,
+                storageBucket: context.bucket,
+                storagePath: path,
+              },
+            });
+            if (intel && !intel.skipped) {
+              setIntelReports((prev) => [
+                ...prev,
+                {
+                  name: file.name,
+                  pageCount: intel.pageCount,
+                  minExpected: intel.minExpected,
+                  issues: intel.issues || [],
+                  aiRecommendation: intel.aiRecommendation || null,
+                  valid: !!intel.valid,
+                },
+              ]);
+              if (!intel.valid && intel.issues?.length) {
+                toast.warning(`${file.name}: ${intel.issues[0]}`);
+              }
+            }
+          } catch (e) {
+            // Non-fatal: intelligence is advisory
+            console.warn("[DocumentUpload] intelligence scan failed:", e);
+          }
+        }
       } else {
         setUploads((prev) => [
           ...prev,
@@ -312,6 +345,38 @@ const DocumentUpload = ({
                 </div>
               </CardContent>
             </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Document Intelligence reports */}
+      {intelReports.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Document Intelligence</p>
+          {intelReports.map((r, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-lg border ${r.valid ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-900 dark:bg-emerald-950/20" : "border-yellow-300 bg-yellow-50/40 dark:border-yellow-900 dark:bg-yellow-950/20"}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold truncate">{r.name}</p>
+                <span className={`text-[10px] font-mono ${r.valid ? "text-emerald-700 dark:text-emerald-400" : "text-yellow-700 dark:text-yellow-400"}`}>
+                  {r.pageCount ?? "?"} / {r.minExpected ?? "?"} pages
+                </span>
+              </div>
+              {r.issues && r.issues.length > 0 && (
+                <ul className="mt-1.5 space-y-1">
+                  {r.issues.map((iss, j) => (
+                    <li key={j} className="text-[10px] text-yellow-800 dark:text-yellow-300 flex gap-1.5">
+                      <ShieldAlert className="w-3 h-3 shrink-0 mt-0.5" /> {iss}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {r.aiRecommendation && (
+                <p className="text-[10px] text-muted-foreground mt-1.5 italic">AI: {r.aiRecommendation}</p>
+              )}
+            </div>
           ))}
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, BookOpen, Users, MessageSquare, Search } from "lucide-react";
+import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, ShoppingBag, Store, Menu, X, Home, Bot, HelpCircle, BarChart3, Wallet, Banknote, Receipt, BookOpen, Users, MessageSquare, Search, Shield, Ban, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRoleSwitcher } from "@/hooks/useRoleSwitcher";
@@ -20,6 +20,7 @@ const navGroups: SidebarNavGroup[] = [
     label: "Orders & Payments",
     items: [
       { label: "My Orders", icon: Package, to: "/trustlock/buyer/orders", tip: "View all purchases and escrow order statuses" },
+      { label: "Cancel Order", icon: Ban, to: "/trustlock/buyer/cancel-order", tip: "Initiate a structured cancellation with refund protection" },
       { label: "Bill Payments", icon: Receipt, to: "/trustlock/buyer/bill-payments", tip: "Track service fees and pay-as-you-go charges" },
       { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/buyer/os-pay", tip: "Pay for TrustLock services, arbitration fees, and platform charges" },
       { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Receive refunds or released escrow funds to your saved wallet or bank account" },
@@ -37,6 +38,8 @@ const navGroups: SidebarNavGroup[] = [
     items: [
       { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/buyer/analytics", tip: "Spending trends and transaction reports" },
       { label: "Documents", icon: FileText, to: "/trustlock/buyer/documents", tip: "Receipts, invoices, and uploaded evidence" },
+      { label: "Proof Explorer", icon: Shield, to: "/trustlock/buyer/proof-explorer", tip: "Verify on-chain proof chains and download certificates" },
+      { label: "Compliance Pre-Flight", icon: ShieldCheck, to: "/trustlock/buyer/compliance-preflight", tip: "Preview disclosures, limits, and FATF Travel Rule before transacting" },
       { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/buyer/industry-playbook", tip: "Industry workflows and compliance overview" },
     ],
   },

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, DollarSign, Globe, ShieldCheck,
-  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle, Search, Landmark
+  Settings, LogOut, Store, FileText, Menu, X, Home, Bot, HelpCircle, CreditCard, BarChart3, Wallet, ShoppingBag, Banknote, Receipt, Link2, BookOpen, Users, MessageSquare, ClipboardList, AlertTriangle, Search, Landmark, Palette, Shield, Globe2, Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ const navGroups: SidebarNavGroup[] = [
     items: [
       { label: "Direct Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "Orders from your own website widget, standalone links, or OS Pay" },
       { label: "Marketplace Work Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders routed from multi-vendor platforms" },
+      { label: "Bulk Actions", icon: Layers, to: "/trustlock/vendor/bulk-actions", tip: "Apply release, ship, cancel, or archive across many orders at once" },
+      { label: "Proforma Invoices", icon: FileText, to: "/trustlock/vendor/proforma", tip: "Issue formal RFQ quotes with industry document gates" },
     ],
   },
   {
@@ -59,9 +61,13 @@ const navGroups: SidebarNavGroup[] = [
     label: "Tools & Insights",
     items: [
       { label: "My Sites & Widget", icon: Globe, to: "/trustlock/vendor/sites", tip: "Manage websites, widget installation, and behavior" },
+      { label: "Widget Theme", icon: Palette, to: "/trustlock/vendor/widget-theme", tip: "Customize checkout widget colors, fonts, radius, and logo" },
+      { label: "Corridor Setup", icon: Globe2, to: "/trustlock/vendor/corridor-setup", tip: "Configure your industry corridor, currency, and locale preferences" },
       { label: "KYC / KYB", icon: ShieldCheck, to: "/trustlock/vendor/kyc", tip: "Upload identity or business documents" },
       { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/vendor/analytics", tip: "Sales trends, revenue charts, and exports" },
       { label: "Documents", icon: FileText, to: "/trustlock/vendor/documents", tip: "Stored contracts, invoices, and evidence files" },
+      { label: "Proof Explorer", icon: Shield, to: "/trustlock/vendor/proof-explorer", tip: "Verify on-chain proof chains and download certificates" },
+      { label: "Compliance Pre-Flight", icon: ShieldCheck, to: "/trustlock/vendor/compliance-preflight", tip: "Preview disclosures, processor limits, and FATF Travel Rule" },
       { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/vendor/industry-playbook", tip: "Industry workflows and compliance overview" },
     ],
   },
