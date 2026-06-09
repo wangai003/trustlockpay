@@ -36,14 +36,40 @@ Deno.serve(async (req) => {
 
   const {
     transactionId,
+    action = "route_inbound",
     processor = "direct",
     paymentMethod = "crypto",
     verifiedAmount,
     network = "polygon",
     isTestnet = false,
+    vendorWallet,
+    buyerWallet,
   } = body || {};
 
   if (!transactionId) return json({ error: "transactionId is required" }, 400);
+
+  const allowedActions = new Set([
+    "route_inbound",
+    "route_release",
+    "route_refund",
+    "route_split",
+    "route_milestone",
+    "route_refund_milestone",
+    "route_principal_only",
+  ]);
+  if (!allowedActions.has(action)) return json({ error: `Unsupported action: ${action}` }, 400);
+
+  const payload: Record<string, unknown> = {
+    action,
+    transactionId,
+    network,
+    isTestnet,
+  };
+  if (action === "route_inbound") {
+    Object.assign(payload, { processor, paymentMethod, verifiedAmount });
+  }
+  if (vendorWallet) payload.vendorWallet = vendorWallet;
+  if (buyerWallet) payload.buyerWallet = buyerWallet;
 
   const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
   const res = await fetch(url, {
@@ -52,16 +78,9 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
     },
-    body: JSON.stringify({
-      action: "route_inbound",
-      transactionId,
-      processor,
-      paymentMethod,
-      verifiedAmount,
-      network,
-      isTestnet,
-    }),
+    body: JSON.stringify(payload),
   });
+
 
   const text = await res.text();
   let parsed: unknown = text;
