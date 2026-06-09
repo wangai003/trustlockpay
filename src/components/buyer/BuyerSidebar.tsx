@@ -38,6 +38,8 @@ const navGroups: SidebarNavGroup[] = [
     items: [
       { label: "Analytics & Reports", icon: BarChart3, to: "/trustlock/buyer/analytics", tip: "Spending trends and transaction reports" },
       { label: "Documents", icon: FileText, to: "/trustlock/buyer/documents", tip: "Receipts, invoices, and uploaded evidence" },
+      { label: "Proof Explorer", icon: Shield, to: "/trustlock/buyer/proof-explorer", tip: "Verify on-chain proof chains and download certificates" },
+      { label: "Compliance Pre-Flight", icon: ShieldCheck, to: "/trustlock/buyer/compliance-preflight", tip: "Preview disclosures, limits, and FATF Travel Rule before transacting" },
       { label: "Industry Playbook", icon: BookOpen, to: "/trustlock/buyer/industry-playbook", tip: "Industry workflows and compliance overview" },
     ],
   },
