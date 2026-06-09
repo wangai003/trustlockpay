@@ -155,14 +155,13 @@ const WidgetCheckout = () => {
         .maybeSingle();
 
       if (data) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", vendorId)
-          .maybeSingle();
+        const { data: profileRows } = await supabase.rpc("get_public_vendor_display" as any, {
+          _id: vendorId,
+        });
+        const profile = ((profileRows as any[]) || [])[0] || null;
 
         setVendor({
-          name: profile?.full_name || "Vendor",
+          name: profile?.full_name || profile?.company_name || "Vendor",
           industry: data.industry_category || "general",
           currency: (data.supported_currencies as string[] | null)?.[0] || "USD",
         });

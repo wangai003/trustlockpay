@@ -151,6 +151,7 @@ const VendorStandaloneLinks = () => {
       return;
     }
 
+    // vendorId === self → "Users can view own profile" policy permits this
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")

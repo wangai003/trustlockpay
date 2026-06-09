@@ -48,11 +48,10 @@ export const useMessageToast = (
           if (!thread) return;
 
           // Look up sender name
-          const { data: sender } = await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", msg.sender_id)
-            .maybeSingle();
+          const { data: senderRows } = await supabase.rpc("get_counterparty_profiles" as any, {
+            _ids: [msg.sender_id],
+          });
+          const sender = ((senderRows as any[]) || [])[0] || null;
 
           const senderName =
             msg.sender_id === ADMIN_SENTINEL_ID
