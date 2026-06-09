@@ -227,6 +227,42 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "release_funds": {
+        const { data: tx, error: txError } = await supabase
+          .from("transactions")
+          .select("id, tx_id, status, order_number")
+          .eq("tx_id", txId)
+          .single();
+        if (txError || !tx) throw new Error("Transaction not found");
+        if (tx.status !== "delivered") throw new Error(`Release requires delivered status. Current status: ${tx.status}`);
+
+        const bridgeUrl = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/wallet-routing-bridge`;
+        const bridgeRes = await fetch(bridgeUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ action: "route_release", transactionId: tx.id }),
+        });
+        const bridgeData = await bridgeRes.json().catch(() => ({}));
+        if (!bridgeRes.ok || bridgeData?.success === false) {
+          throw new Error(bridgeData?.error || bridgeData?.skipped || "Release routing failed");
+        }
+
+        await anchorProof(supabase, tx.id, "funds_released", {
+          event: "buyer_release_authorized",
+          tx_id: tx.tx_id,
+          order_number: tx.order_number,
+          vendor_payout: bridgeData.vendorPayout,
+          escrow_service_fee: bridgeData.escrowServiceFee,
+          transfers: bridgeData.transfers,
+          released_at: new Date().toISOString(),
+        });
+        result = bridgeData;
+        break;
+      }
+
       case "reject_orders": {
         const txIds: string[] = body.txIds || [];
 
