@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info
+  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info,
+  Maximize2, Minimize2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
