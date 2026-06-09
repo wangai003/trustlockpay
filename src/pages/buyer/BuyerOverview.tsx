@@ -43,8 +43,9 @@ const BuyerOverview = () => {
     item: tx.item || "—",
   }));
 
+  const escrowStatuses = ["locked", "shipped", "delivered", "disputed", "kyc_hold", "compliance_hold"];
   const activeOrders = transactions.filter(t => ["locked", "shipped", "delivered"].includes(t.status)).length;
-  const fundsInEscrow = transactions.filter(t => t.status === "locked").reduce((s, t) => s + Number(t.amount), 0);
+  const fundsInEscrow = transactions.filter(t => escrowStatuses.includes(t.status)).reduce((s, t) => s + Number(t.amount), 0);
   const completed = transactions.filter(t => t.status === "released").length;
   const openDisputes = transactions.filter(t => t.status === "disputed").length;
 

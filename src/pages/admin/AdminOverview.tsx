@@ -32,7 +32,8 @@ const AdminOverview = () => {
   }));
 
   const totalTx = transactions.length;
-  const fundsInEscrow = transactions.filter(t => t.status === "locked").reduce((s, t) => s + Number(t.amount), 0);
+  const escrowStatuses = ["locked", "shipped", "delivered", "disputed", "kyc_hold", "compliance_hold"];
+  const fundsInEscrow = transactions.filter(t => escrowStatuses.includes(t.status)).reduce((s, t) => s + Number(t.amount), 0);
   const totalReleased = transactions.filter(t => t.status === "released").reduce((s, t) => s + Number(t.amount), 0);
   const activeDisputes = disputes.filter(d => d.status !== "resolved").length;
 
