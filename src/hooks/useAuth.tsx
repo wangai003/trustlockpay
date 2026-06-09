@@ -58,12 +58,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, metadata?: Record<string, unknown>) => {
+    const role = typeof metadata?.role === "string" ? metadata.role : "";
+    const portalRedirect = role === "vendor"
+      ? "/trustlock/vendor/login"
+      : role === "lender"
+        ? "/trustlock/lender/login"
+        : role === "buyer"
+          ? "/trustlock/buyer/login"
+          : "";
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: metadata,
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}${portalRedirect}`,
       },
     });
     return { error: error as Error | null };
