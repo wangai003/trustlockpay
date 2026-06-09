@@ -1,6 +1,6 @@
 // Returns live MATIC + USDC + USDT balances for all system custodian wallets.
 // Safe to expose addresses + balances (public on-chain data).
-import { ethers } from "https://esm.sh/ethers@6.13.4";
+import { ethers } from "npm:ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
