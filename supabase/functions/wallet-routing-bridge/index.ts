@@ -94,9 +94,41 @@ function failedTransfer(reason: string): { txHash: string; status: string } {
 
 function normalizePrivateKey(raw?: string): string | null {
   if (!raw) return null;
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+  // Be tolerant of values pasted from .env files or password managers.
+  // The key is still accepted only if it derives to the exact source wallet.
+  if (/^(export\s+)?[A-Z0-9_]+\s*=/.test(trimmed)) {
+    trimmed = trimmed.slice(trimmed.indexOf("=") + 1).trim();
+  }
+  trimmed = trimmed.replace(/^['"]|['"]$/g, "").replace(/\s+/g, "");
   const key = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
   return /^0x[a-fA-F0-9]{64}$/.test(key) ? key : null;
+}
+
+function selectSignerKeyForSource(
+  fromWallet: string,
+  candidates: Array<{ label: string; value?: string | null }>,
+): { privateKey: string; label: string } | null {
+  const expected = fromWallet.toLowerCase();
+  const mismatches: string[] = [];
+
+  for (const candidate of candidates) {
+    const privateKey = normalizePrivateKey(candidate.value || undefined);
+    if (!privateKey) continue;
+    try {
+      const address = new ethers.Wallet(privateKey).address.toLowerCase();
+      if (address === expected) return { privateKey, label: candidate.label };
+      mismatches.push(`${candidate.label}:${address}`);
+    } catch {
+      // Invalid keys are ignored; final failure below logs a safe summary.
+    }
+  }
+
+  console.error(`[wallet-routing] No configured signer matches source wallet`, {
+    fromWallet,
+    candidateAddresses: mismatches,
+  });
+  return null;
 }
 
 // ─── Saved Payout Wallet Resolver ─────────────────────────
