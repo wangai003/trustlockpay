@@ -45,6 +45,6 @@ export async function serverAdminLookup(identifier: string): Promise<{ exists: b
   return callAdminAuth("lookup", { identifier });
 }
 
-export async function serverCheckPassword(password: string): Promise<{ valid: boolean }> {
-  return callAdminAuth("checkPassword", { password });
-}
+// serverCheckPassword removed — it backed an unauthenticated password-oracle
+// endpoint. UI visibility of reset/setup flows must rely on successful login.
+

@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ── Authenticate caller ──────────────────────────────
+    // ── Authenticate caller (REQUIRED) ───────────────────
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
@@ -331,6 +331,34 @@ Deno.serve(async (req) => {
       const { data } = await anonClient.auth.getUser();
       userId = data?.user?.id ?? null;
     }
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized — sign in required to process payments." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate the caller-supplied role against their actual role(s).
+    if (role && role !== "buyer" && role !== "vendor" && role !== "admin") {
+      return new Response(
+        JSON.stringify({ error: "Invalid role." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (role) {
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      const heldRoles = new Set((roleRows || []).map((r: any) => r.role));
+      if (!heldRoles.has(role)) {
+        return new Response(
+          JSON.stringify({ error: "Role mismatch — caller does not hold the requested role." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
 
     // ── Calculate tax if country info provided ───────────
     let taxBreakdown: TaxBreakdown | null = null;
