@@ -371,7 +371,7 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         if (t.participant_2 !== ADMIN_SENTINEL_ID) participantIds.add(t.participant_2);
       });
 
-      // Also load profiles to allow admin to initiate conversations
+      // Admin uses base table (admins can view all profiles via RLS); search by recent users via thread participants
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, email")
@@ -402,11 +402,10 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
 
       const vendorIds = [...new Set((apps || []).map((a: any) => a.vendor_id).filter(Boolean))];
       if (vendorIds.length > 0) {
-        const { data: vendorProfiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", vendorIds);
-        vendorProfiles?.forEach((p) => {
+        const { data: vendorRows } = await supabase.rpc("get_counterparty_profiles" as any, {
+          _ids: vendorIds,
+        });
+        ((vendorRows as any[]) || []).forEach((p: any) => {
           contactList.push({
             id: p.id,
             label: `${p.full_name || p.email || p.id.slice(0, 8)} (Vendor)`,
@@ -475,11 +474,10 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
           .in("status", ["approved", "active"]);
         const lenderIds = [...new Set((lenderApps || []).map((a: any) => a.lender_id).filter(Boolean))];
         if (lenderIds.length > 0) {
-          const { data: lenderProfiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, email")
-            .in("id", lenderIds);
-          lenderProfiles?.forEach((p) => {
+          const { data: lenderRows } = await supabase.rpc("get_counterparty_profiles" as any, {
+            _ids: lenderIds,
+          });
+          ((lenderRows as any[]) || []).forEach((p: any) => {
             contactList.push({
               id: p.id,
               label: `${p.full_name || p.email || p.id.slice(0, 8)} (Lender)`,
@@ -507,13 +505,12 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
       setRecipientSearching(true);
       const term = `%${query.trim()}%`;
 
-      // Search profiles by name, email, or company name
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, company_name")
-        .or(`full_name.ilike.${term},email.ilike.${term},company_name.ilike.${term}`)
-        .neq("id", userId || "")
-        .limit(15);
+      // Search counterparties via masked RPC (returns safe columns only)
+      const { data: rpcRows } = await supabase.rpc("search_counterparty_profiles" as any, {
+        _query: query.trim(),
+        _limit: 15,
+      });
+      const profiles = ((rpcRows as any[]) || []).filter((p: any) => p.id !== userId);
 
       // Also search lender_profiles by institution name to find lenders by company
       const { data: lenderHits } = await supabase
@@ -523,23 +520,20 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
         .eq("is_verified", true)
         .limit(10);
 
-      // Merge lender user_ids that weren't already found via profiles
-      const profileIds = (profiles || []).map((p) => p.id);
+      const profileIds = profiles.map((p: any) => p.id);
       const lenderOnlyIds = (lenderHits || [])
         .map((l: any) => l.user_id)
         .filter((id: string) => id && !profileIds.includes(id));
 
-      // Fetch profiles for lender-only hits
       let lenderProfiles: any[] = [];
       if (lenderOnlyIds.length > 0) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", lenderOnlyIds);
-        lenderProfiles = data || [];
+        const { data } = await supabase.rpc("get_counterparty_profiles" as any, {
+          _ids: lenderOnlyIds,
+        });
+        lenderProfiles = (data as any[]) || [];
       }
 
-      const allProfiles = [...(profiles || []), ...lenderProfiles];
+      const allProfiles = [...profiles, ...lenderProfiles];
       const allProfileIds = allProfiles.map((p) => p.id);
 
       // Build institution name map for lenders
@@ -619,13 +613,12 @@ const MessageInbox = ({ role, transactionId, transactionLabel }: MessageInboxPro
     ids.delete(ADMIN_SENTINEL_ID);
     if (ids.size === 0) return;
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", Array.from(ids));
+    const { data } = await supabase.rpc("get_counterparty_profiles" as any, {
+      _ids: Array.from(ids),
+    });
 
     const names: Record<string, string> = { [ADMIN_SENTINEL_ID]: "TrustLock Admin" };
-    data?.forEach((p) => {
+    ((data as any[]) || []).forEach((p: any) => {
       names[p.id] = p.full_name || p.email || p.id.slice(0, 8);
     });
     setParticipantNames(names);

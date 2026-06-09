@@ -47,13 +47,11 @@ const BuyerVendorLookup = () => {
 
       if (!vendorOnlyIds.length) return [];
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, company_name, entity_type, location, onboarding_industry, corridor, avatar_url")
-        .in("id", vendorOnlyIds)
-        .eq("status", "active");
+      const { data: profiles } = await supabase.rpc("get_counterparty_profiles" as any, {
+        _ids: vendorOnlyIds,
+      });
 
-      return (profiles || []) as LookupUser[];
+      return ((profiles as any[]) || []) as LookupUser[];
     },
     enabled: !!user?.id,
   });

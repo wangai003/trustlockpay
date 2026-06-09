@@ -30,16 +30,15 @@ const LenderVendorLookup = () => {
     if (!query.trim()) return;
     setSearching(true);
     try {
-      // Search profiles that have vendor role
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, company_name, entity_type")
-        .or(`full_name.ilike.%${query}%,company_name.ilike.%${query}%,email.ilike.%${query}%`)
-        .limit(20);
+      // Search via masked RPC (counterparty-safe columns only)
+      const { data } = await supabase.rpc("search_counterparty_profiles" as any, {
+        _query: query,
+        _limit: 20,
+      });
 
-      // Filter to only vendors
-      if (data && data.length > 0) {
-        const vendorIds = data.map(d => d.id);
+      const rows = (data as any[]) || [];
+      if (rows.length > 0) {
+        const vendorIds = rows.map((d: any) => d.id);
         const { data: roles } = await supabase
           .from("user_roles")
           .select("user_id")
@@ -47,7 +46,7 @@ const LenderVendorLookup = () => {
           .eq("role", "vendor");
 
         const vendorSet = new Set(roles?.map(r => r.user_id) || []);
-        setResults(data.filter(d => vendorSet.has(d.id)) as VendorResult[]);
+        setResults(rows.filter((d: any) => vendorSet.has(d.id)) as VendorResult[]);
       } else {
         setResults([]);
       }

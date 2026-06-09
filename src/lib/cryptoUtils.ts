@@ -149,17 +149,91 @@ export async function e2eDecrypt(
 }
 
 // ─── Key management helpers ─────────────────────────────────────────────
+// Private E2E keys are stored in IndexedDB (origin-scoped, not in JS heap by default)
+// instead of localStorage to reduce XSS exfiltration surface. The key remains
+// extractable to allow ECDH derivation, but is gated by an async getter so it
+// is no longer trivially accessible via `localStorage.getItem` in DevTools.
 
-const PRIVATE_KEY_STORAGE = "tl_e2e_private_key";
+const DB_NAME = "trustlock_e2e";
+const STORE = "keys";
+const KEY_ID = "private_key";
+const LEGACY_LS_KEY = "tl_e2e_private_key";
 
-export function storePrivateKey(key: string): void {
-  localStorage.setItem(PRIVATE_KEY_STORAGE, key);
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-export function getStoredPrivateKey(): string | null {
-  return localStorage.getItem(PRIVATE_KEY_STORAGE);
+async function idbPut(key: string, value: string): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
 }
 
-export function clearPrivateKey(): void {
-  localStorage.removeItem(PRIVATE_KEY_STORAGE);
+async function idbGet(key: string): Promise<string | null> {
+  const db = await openDb();
+  const value = await new Promise<string | null>((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => resolve((req.result as string | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return value;
+}
+
+async function idbDelete(key: string): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function storePrivateKey(key: string): Promise<void> {
+  try {
+    await idbPut(KEY_ID, key);
+    // Remove any legacy copy left in localStorage from prior versions
+    try { localStorage.removeItem(LEGACY_LS_KEY); } catch { /* ignore */ }
+  } catch (e) {
+    // Fall back to localStorage if IndexedDB is unavailable (rare, e.g. private mode)
+    try { localStorage.setItem(LEGACY_LS_KEY, key); } catch { /* ignore */ }
+  }
+}
+
+export async function getStoredPrivateKey(): Promise<string | null> {
+  try {
+    const v = await idbGet(KEY_ID);
+    if (v) return v;
+    // One-time migration: pull from legacy localStorage and move into IDB
+    const legacy = (() => { try { return localStorage.getItem(LEGACY_LS_KEY); } catch { return null; } })();
+    if (legacy) {
+      await idbPut(KEY_ID, legacy);
+      try { localStorage.removeItem(LEGACY_LS_KEY); } catch { /* ignore */ }
+      return legacy;
+    }
+    return null;
+  } catch {
+    try { return localStorage.getItem(LEGACY_LS_KEY); } catch { return null; }
+  }
+}
+
+export async function clearPrivateKey(): Promise<void> {
+  try { await idbDelete(KEY_ID); } catch { /* ignore */ }
+  try { localStorage.removeItem(LEGACY_LS_KEY); } catch { /* ignore */ }
 }

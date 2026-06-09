@@ -50,13 +50,11 @@ const VendorBuyerLookup = () => {
       // This prevents a vendor from finding themselves as a buyer
       if (!buyerOnlyIds.length) return [];
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, company_name, entity_type, location, onboarding_industry, corridor, avatar_url")
-        .in("id", buyerOnlyIds)
-        .eq("status", "active");
+      const { data: profiles } = await supabase.rpc("get_counterparty_profiles" as any, {
+        _ids: buyerOnlyIds,
+      });
 
-      return (profiles || []) as LookupUser[];
+      return ((profiles as any[]) || []) as LookupUser[];
     },
     enabled: !!user?.id,
   });

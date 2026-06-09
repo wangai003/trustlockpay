@@ -629,7 +629,7 @@ Deno.serve(async (req) => {
       error: `Unknown action: ${action}. Supported: route_vendor_payout, check_vendor_payout_status, resolve_manual_payout`,
     }, 400);
   } catch (err) {
-    console.error("payout-router error:", err);
-    return json({ success: false, error: err.message }, 500);
+    console.error("[payout-router] error:", err);
+    return json({ success: false, error: "Internal server error" }, 500);
   }
 });
