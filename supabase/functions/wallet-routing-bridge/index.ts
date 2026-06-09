@@ -71,6 +71,10 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function releaseFailure(data: Record<string, unknown>) {
+  return json({ success: false, fallback: true, ...data }, 200);
+}
+
 function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -819,13 +823,12 @@ Deno.serve(async (req) => {
           `Release for order #${tx.order_number || tx.tx_id} did not complete because the vendor payout failed. Support has been notified.`,
           transactionId
         );
-        return json({
-          success: false,
+        return releaseFailure({
           action: "route_release",
           transactionId,
           error: "Vendor payout transfer did not confirm",
           transfer: payoutTransfer,
-        }, 409);
+        });
       }
 
       // Transfer 2: Escrow fee → Transaction Wallet (trickle-down)
@@ -845,14 +848,13 @@ Deno.serve(async (req) => {
           `$${vendorPayout.toFixed(2)} reached your saved payout wallet, but the escrow service fee did not settle. Support must reconcile this transaction before it is closed.`,
           transactionId
         );
-        return json({
-          success: false,
+        return releaseFailure({
           action: "route_release",
           transactionId,
           error: "Escrow service fee transfer did not confirm after vendor payout",
           vendorPayoutTransfer: payoutTransfer,
           feeTransfer: trickleTransfer,
-        }, 409);
+        });
       }
 
       await supabase
