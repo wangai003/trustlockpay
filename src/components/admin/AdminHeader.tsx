@@ -17,12 +17,12 @@ const AdminHeader = ({ title }: { title: string }) => {
   const navigate = useNavigate();
 
   return (
-    <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30 px-4 sm:px-6">
-      <div className="flex items-center justify-between h-14 sm:h-16">
-        <h1 className="font-heading font-bold text-base sm:text-lg text-foreground pl-10 lg:pl-0 truncate">{title}</h1>
+    <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30 px-3 sm:px-6">
+      <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+        <h1 className="sr-only sm:not-sr-only font-heading font-bold text-base sm:text-lg text-foreground pl-10 lg:pl-0 truncate min-w-0 flex-1">{title}</h1>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-4 min-w-0 flex-1 sm:flex-none">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className={`text-[10px] sm:text-xs font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>
               Test
             </span>
@@ -60,7 +60,7 @@ const AdminHeader = ({ title }: { title: string }) => {
             )}
           </Button>
 
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="hidden sm:flex w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 items-center justify-center">
             <span className="text-[10px] sm:text-xs font-bold text-primary">SA</span>
           </div>
         </div>
