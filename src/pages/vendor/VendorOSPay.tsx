@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const VendorOSPay = () => {
   const { isTestnet } = useVendor();
+  const { user } = useAuth();
   const [params] = useSearchParams();
   const prefillService = params.get("service") || "";
   const prefillAmount = params.get("amount") || "";
@@ -16,6 +17,7 @@ const VendorOSPay = () => {
     <div>
       <VendorHeader title="TrustLock OS Pay" />
       <div className="p-3 sm:p-6">
+        <PendingRoutingCard surface="trustlock_os_pay" userId={user?.id} />
         <TrustLockOSPay
             role="vendor"
             isTestnet={isTestnet}
