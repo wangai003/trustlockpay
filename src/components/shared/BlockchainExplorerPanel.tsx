@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Shield, Search, CheckCircle2, XCircle, Copy, ExternalLink,
-  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info
+  Link2, Hash, Clock, ChevronRight, Layers, ArrowUpRight, Info,
+  Maximize2, Minimize2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedFilter, setFeedFilter] = useState<string>("all");
   const [contractAddresses, setContractAddresses] = useState<{ registry?: string; escrow?: string; network?: string }>({});
+  const [expanded, setExpanded] = useState(false);
 
   const sb = supabase as any;
 
@@ -162,15 +164,36 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
         )}
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:w-[480px] md:w-[540px] p-0 flex flex-col">
+      <SheetContent
+        side="right"
+        className={`p-0 flex flex-col transition-[width,max-width] duration-200 ${
+          expanded
+            ? "w-screen sm:w-screen md:w-[92vw] lg:w-[88vw] xl:w-[1280px] sm:max-w-none"
+            : "w-full sm:w-[520px] md:w-[640px] lg:w-[760px]"
+        }`}
+      >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border">
-          <SheetTitle className="flex items-center gap-2 text-lg">
-            <Shield className="w-5 h-5 text-primary" />
-            Blockchain Explorer
-          </SheetTitle>
-          <p className="text-xs text-muted-foreground">
-            Search orders, verify hashes, and trace the immutable proof chain
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <SheetTitle className="flex items-center gap-2 text-lg">
+                <Shield className="w-5 h-5 text-primary" />
+                Blockchain Explorer
+              </SheetTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Search orders, verify hashes, and trace the immutable proof chain
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 shrink-0 mr-6"
+              onClick={() => setExpanded((v) => !v)}
+              title={expanded ? "Collapse panel" : "Expand panel"}
+              aria-label={expanded ? "Collapse panel" : "Expand panel"}
+            >
+              {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+          </div>
           {(contractAddresses.registry || contractAddresses.escrow) && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {contractAddresses.registry && (
@@ -222,7 +245,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsList>
 
           {/* Order Search Tab */}
-          <TabsContent value="order" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="order" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-2">
               <Input
                 placeholder="Transaction ID or order ref..."
@@ -236,7 +259,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
               </Button>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {selectedProof ? (
                 <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => {
                   setOpen(false);
@@ -258,7 +281,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsContent>
 
           {/* Recent Activity Feed Tab */}
-          <TabsContent value="feed" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="feed" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-2">
               <Select value={feedFilter} onValueChange={(v) => { setFeedFilter(v); loadRecentFeed(v); }}>
                 <SelectTrigger className="text-xs h-9 flex-1">
@@ -278,7 +301,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
             <p className="text-[10px] text-muted-foreground mb-2">
               Latest anchored proofs across all orders. Click any record → PolygonScan to verify on chain.
             </p>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {selectedProof ? (
                 <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => { setOpen(false); }} />
               ) : (
@@ -288,7 +311,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsContent>
 
           {/* Verify Hash Tab */}
-          <TabsContent value="verify" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="verify" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-3">
               <Input
                 placeholder="Paste SHA-256 content hash..."
@@ -311,7 +334,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
               </div>
             )}
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <ProofTimeline proofs={proofs} onSelect={setSelectedProof} truncate={truncate} loading={loading} />
             </ScrollArea>
           </TabsContent>
