@@ -6906,56 +6906,6 @@ export type Database = {
         }
         Relationships: []
       }
-      transaction_observers_safe: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string | null
-          invite_accepted: boolean | null
-          invited_by: string | null
-          milestone_ids: string[] | null
-          observer_email: string | null
-          observer_name: string | null
-          observer_role: string | null
-          permissions: string[] | null
-          transaction_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string | null
-          invite_accepted?: boolean | null
-          invited_by?: string | null
-          milestone_ids?: string[] | null
-          observer_email?: string | null
-          observer_name?: string | null
-          observer_role?: string | null
-          permissions?: string[] | null
-          transaction_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string | null
-          invite_accepted?: boolean | null
-          invited_by?: string | null
-          milestone_ids?: string[] | null
-          observer_email?: string | null
-          observer_name?: string | null
-          observer_role?: string | null
-          permissions?: string[] | null
-          transaction_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transaction_observers_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Functions: {
       add_admin_account: {
@@ -7109,6 +7059,22 @@ export type Database = {
           match_score: number
           onboarding_industry: string
           user_id: string
+        }[]
+      }
+      get_transaction_observers: {
+        Args: { _transaction_id: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          invite_accepted: boolean
+          invited_by: string
+          milestone_ids: string[]
+          observer_email: string
+          observer_name: string
+          observer_role: string
+          permissions: string[]
+          transaction_id: string
         }[]
       }
       get_vendor_claim_by_token: {
