@@ -10,6 +10,8 @@ interface DocumentComplianceProgressProps {
   transactionId: string;
   /** If true, show a minimal single-line version */
   compact?: boolean;
+  /** Demo/testnet orders should not query the live milestone table */
+  skipRemote?: boolean;
 }
 
 interface DocStatus {
@@ -26,8 +28,9 @@ export default function DocumentComplianceProgress({
   industry,
   transactionId,
   compact = false,
+  skipRemote = false,
 }: DocumentComplianceProgressProps) {
-  const { data: dbMilestones, isLoading } = useTransactionMilestones(transactionId);
+  const { data: dbMilestones, isLoading } = useTransactionMilestones(transactionId, !skipRemote);
 
   const templates = useMemo(() => {
     if (!industry) return [];
@@ -39,7 +42,7 @@ export default function DocumentComplianceProgress({
     if (!templates.length) return [];
 
     const uploadedNames = new Set<string>();
-    if (dbMilestones) {
+    if (!skipRemote && dbMilestones) {
       for (const ms of dbMilestones) {
         if (ms.uploaded_documents && Array.isArray(ms.uploaded_documents)) {
           for (const doc of ms.uploaded_documents as Array<{ name?: string }>) {
@@ -62,7 +65,7 @@ export default function DocumentComplianceProgress({
       }
     }
     return docs;
-  }, [templates, dbMilestones]);
+  }, [templates, dbMilestones, skipRemote]);
 
   if (!industry || requiredDocs.length === 0) return null;
 
@@ -72,7 +75,7 @@ export default function DocumentComplianceProgress({
   const isComplete = uploadedCount === totalCount;
   const hasStarted = uploadedCount > 0;
 
-  if (isLoading) {
+  if (!skipRemote && isLoading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground p-2">
         <Loader2 className="w-3 h-3 animate-spin" />

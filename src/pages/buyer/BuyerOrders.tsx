@@ -467,6 +467,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 industry={order.industry}
                 transactionId={order.dbId}
                 compact
+                skipRemote={isTestnet}
               />
             )}
             <ExternalFeeSummary
@@ -598,6 +599,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <DocumentComplianceProgress
                 industry={order.industry}
                 transactionId={order.dbId}
+                skipRemote={isTestnet}
               />
             )}
             {/* Transport Legs Viewer */}

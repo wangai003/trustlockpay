@@ -155,7 +155,7 @@ export function useOpenDispute() {
 }
 
 // ─── Milestones / Observers ────────────────────────────────
-export function useTransactionMilestones(transactionId?: string) {
+export function useTransactionMilestones(transactionId?: string, enabled = true) {
   return useQuery({
     queryKey: ["transaction_milestones", transactionId],
     queryFn: async () => {
@@ -167,7 +167,7 @@ export function useTransactionMilestones(transactionId?: string) {
       if (error) throw error;
       return data;
     },
-    enabled: !!transactionId,
+    enabled: enabled && !!transactionId,
   });
 }
 
