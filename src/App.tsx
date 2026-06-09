@@ -270,6 +270,12 @@ const App = () => (
                 <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
                 <Route path="widget-config-advanced" element={<VendorWidgetConfig />} />
+                <Route path="widget-theme" element={<VendorWidgetTheme />} />
+                <Route path="proforma" element={<VendorProforma />} />
+                <Route path="corridor-setup" element={<VendorCorridorSetup />} />
+                <Route path="bulk-actions" element={<VendorBulkActions />} />
+                <Route path="proof-explorer" element={<ProofExplorer role="vendor" />} />
+                <Route path="compliance-preflight" element={<CompliancePreflight role="vendor" />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 
