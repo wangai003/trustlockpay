@@ -7020,6 +7020,21 @@ export type Database = {
         Args: { _transaction_id: string }
         Returns: Json
       }
+      get_counterparty_profiles: {
+        Args: { _ids: string[] }
+        Returns: {
+          account_type: string
+          avatar_url: string
+          company_name: string
+          corridor: string
+          email: string
+          entity_type: string
+          full_name: string
+          id: string
+          location: string
+          onboarding_industry: string
+        }[]
+      }
       get_industry_release_days: {
         Args: { p_industry: string }
         Returns: number
@@ -7034,6 +7049,15 @@ export type Database = {
       get_masked_arbitrator_proposals: {
         Args: { _dispute_id: string; _user_id: string }
         Returns: Json[]
+      }
+      get_public_vendor_display: {
+        Args: { _id: string }
+        Returns: {
+          avatar_url: string
+          company_name: string
+          full_name: string
+          id: string
+        }[]
       }
       get_recommended_matches: {
         Args: {
@@ -7096,10 +7120,28 @@ export type Database = {
           vendor_name: string
         }[]
       }
-      get_vendor_counter_proposals: {
-        Args: { _vendor_id: string }
-        Returns: Json[]
-      }
+      get_vendor_counter_proposals:
+        | {
+            Args: never
+            Returns: {
+              buyer_id: string
+              created_at: string
+              id: string
+              industry: string
+              order_amount: number
+              order_item: string
+              proposal_number: string
+              proposed_schedule: Json
+              site_id: string
+              standalone_link_id: string
+              status: string
+              updated_at: string
+              vendor_id: string
+              vendor_notes: string
+              vendor_schedule: Json
+            }[]
+          }
+        | { Args: { _vendor_id: string }; Returns: Json[] }
       get_vendor_rfq_requests: { Args: { _vendor_id: string }; Returns: Json[] }
       has_role: {
         Args: {
@@ -7168,6 +7210,21 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      search_counterparty_profiles: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          account_type: string
+          avatar_url: string
+          company_name: string
+          corridor: string
+          email: string
+          entity_type: string
+          full_name: string
+          id: string
+          location: string
+          onboarding_industry: string
+        }[]
       }
       submit_autonomous_fixer_ticket: {
         Args: {
