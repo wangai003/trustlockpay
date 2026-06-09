@@ -329,6 +329,9 @@ const App = () => (
                 <Route path="messages" element={<BuyerMessages />} />
                 <Route path="industry-playbook" element={<BuyerIndustryPlaybook />} />
                 <Route path="vendor-lookup" element={<BuyerVendorLookup />} />
+                <Route path="cancel-order" element={<BuyerCancelOrder />} />
+                <Route path="proof-explorer" element={<ProofExplorer role="buyer" />} />
+                <Route path="compliance-preflight" element={<CompliancePreflight role="buyer" />} />
                 <Route path="settings" element={<BuyerSettings />} />
               </Route>
 
