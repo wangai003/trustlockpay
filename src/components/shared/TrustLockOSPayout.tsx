@@ -1463,7 +1463,7 @@ const TrustLockOSPayout = ({
           <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
         </button>
         {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
-        {!showPrivacy && <p className="text-[10px] text-muted-foreground">We do not save your card, bank, or wallet details. Tap to read more.</p>}
+        {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
       </div>
 
       {/* Actions */}

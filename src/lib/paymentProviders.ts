@@ -332,7 +332,7 @@ export const SUPPORTED_COUNTRIES = [
   "Gabon", "Mauritius", "Namibia", "Tunisia",
 ];
 
-export const PRIVACY_DISCLAIMER = "TrustLock does not save, store, or retain any card numbers, bank account details, mobile money credentials, or crypto wallet addresses. All payment information is transmitted securely via encrypted API connections to our licensed payment processors (Stripe, Coinbase, Transak, Thirdweb Pay) and is used solely for the purpose of completing this single transaction. Your financial data never touches our servers or databases.";
+export const PRIVACY_DISCLAIMER = "TrustLock securely retains the payout routing details you save (bank account, mobile money number, or crypto wallet address) so the routing bridge can disburse escrow releases, refunds, and split payouts to the correct destination. Raw card numbers and CVVs are never stored on TrustLock — those are tokenized by our licensed processors (Stripe, Coinbase, Transak, Thirdweb Pay) under PCI DSS. Stored payout details are encrypted at rest, scoped to your account, and can be edited or deleted by you at any time.";
 
 export const FEE_DISCLOSURE = `TrustLock Pay fees consist of three components: Platform Fee (1.0%–1.5%) charged at checkout covering payment processing and infrastructure; Processor Fee (1.5%–2.9%) paid to the external processor for fiat-to-crypto conversion (direct crypto bypasses this); and Escrow Service Fee (1.0%) pre-paid at checkout and held with your escrow funds — fully refunded on cancellation before work begins. No TrustLock service fees are charged on refunds.
 

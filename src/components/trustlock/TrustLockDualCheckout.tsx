@@ -579,7 +579,7 @@ const TrustLockDualCheckout = () => {
               <div className="space-y-1">
                 <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground">
                   <AlertTriangle className="w-3 h-3" />
-                  <span>We do not save your payment details. {showPrivacy ? "" : "Tap for details."}</span>
+                  <span>Payout details are encrypted & used by the routing bridge. {showPrivacy ? "" : "Tap for details."}</span>
                 </button>
                 {showPrivacy && (
                   <p className="text-[9px] text-muted-foreground leading-relaxed text-center px-2">{PRIVACY_DISCLAIMER}</p>
