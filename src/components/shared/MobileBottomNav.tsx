@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, Package, AlertTriangle, Bot,
-  MessageSquare, Menu, Briefcase, ClipboardList, Search
+  MessageSquare, Menu, Briefcase, ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

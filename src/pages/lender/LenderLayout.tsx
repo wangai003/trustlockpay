@@ -8,6 +8,7 @@ import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import MobileBottomNav from "@/components/shared/MobileBottomNav";
 
 const CURRENT_CONTRACT_VERSION = 1;
 
@@ -63,9 +64,10 @@ const LenderLayoutInner = () => {
     <LanguageProvider>
       <div className="flex min-h-screen bg-background">
         <LenderSidebar />
-        <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+        <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
           <Outlet />
         </main>
+        <MobileBottomNav role="lender" />
       </div>
     </LanguageProvider>
   );
