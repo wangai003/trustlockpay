@@ -58,13 +58,23 @@ const AuditManager = () => {
   const [createdToken, setCreatedToken] = useState("");
 
   const callAudit = async (body: Record<string, unknown>) => {
+    // Attach the signed-in admin's JWT — required by the edge function.
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: API_KEY,
+    };
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
     const res = await fetch(FUNCTION_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: API_KEY },
+      headers,
       body: JSON.stringify(body),
     });
     return res.json();
   };
+
 
   const loadSessions = async () => {
     setLoading(true);
