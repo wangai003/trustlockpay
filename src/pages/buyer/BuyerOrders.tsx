@@ -61,6 +61,8 @@ const BuyerOrders = () => {
   const openDisputeHook = useOpenDispute();
   const markDeliveredHook = useMarkDelivered();
   const testnet = useTestnetData();
+  const releaseFundsHook = useReleaseFunds();
+  const [releasing, setReleasing] = useState(false);
 
   const handleClaimOrder = async () => {
     const code = claimCode.trim();
