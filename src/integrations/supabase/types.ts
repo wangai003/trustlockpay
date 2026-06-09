@@ -7086,28 +7086,10 @@ export type Database = {
           vendor_name: string
         }[]
       }
-      get_vendor_counter_proposals:
-        | {
-            Args: never
-            Returns: {
-              buyer_id: string
-              created_at: string
-              id: string
-              industry: string
-              order_amount: number
-              order_item: string
-              proposal_number: string
-              proposed_schedule: Json
-              site_id: string
-              standalone_link_id: string
-              status: string
-              updated_at: string
-              vendor_id: string
-              vendor_notes: string
-              vendor_schedule: Json
-            }[]
-          }
-        | { Args: { _vendor_id: string }; Returns: Json[] }
+      get_vendor_counter_proposals: {
+        Args: { _vendor_id: string }
+        Returns: Json[]
+      }
       get_vendor_rfq_requests: { Args: { _vendor_id: string }; Returns: Json[] }
       has_role: {
         Args: {
