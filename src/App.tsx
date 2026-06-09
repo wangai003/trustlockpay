@@ -97,6 +97,8 @@ const VendorCheckout = lazy(() => import("./pages/vendor/VendorCheckout"));
 const VendorAnalytics = lazy(() => import("./pages/vendor/VendorAnalytics"));
 const VendorOSPay = lazy(() => import("./pages/vendor/VendorOSPay"));
 const VendorPayout = lazy(() => import("./pages/vendor/VendorPayout"));
+const VendorPayouts = lazy(() => import("./pages/vendor/VendorPayouts"));
+const VendorWidgetConfig = lazy(() => import("./pages/vendor/VendorWidgetConfig"));
 const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"));
 const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
