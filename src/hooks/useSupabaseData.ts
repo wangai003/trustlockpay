@@ -604,12 +604,13 @@ export function useVendorSettings() {
   return useQuery({
     queryKey: ["vendor_settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendor_settings")
-        .select(VENDOR_SETTINGS_COLS as any)
+      // Cast select string to avoid TS GenericStringError; column list omits shipping_api_key_encrypted
+      const { data, error } = await (supabase
+        .from("vendor_settings") as any)
+        .select(VENDOR_SETTINGS_COLS)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as any;
     },
   });
 }
