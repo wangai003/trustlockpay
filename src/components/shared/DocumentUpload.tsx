@@ -348,6 +348,38 @@ const DocumentUpload = ({
           ))}
         </div>
       )}
+
+      {/* Document Intelligence reports */}
+      {intelReports.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Document Intelligence</p>
+          {intelReports.map((r, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-lg border ${r.valid ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-900 dark:bg-emerald-950/20" : "border-yellow-300 bg-yellow-50/40 dark:border-yellow-900 dark:bg-yellow-950/20"}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold truncate">{r.name}</p>
+                <span className={`text-[10px] font-mono ${r.valid ? "text-emerald-700 dark:text-emerald-400" : "text-yellow-700 dark:text-yellow-400"}`}>
+                  {r.pageCount ?? "?"} / {r.minExpected ?? "?"} pages
+                </span>
+              </div>
+              {r.issues && r.issues.length > 0 && (
+                <ul className="mt-1.5 space-y-1">
+                  {r.issues.map((iss, j) => (
+                    <li key={j} className="text-[10px] text-yellow-800 dark:text-yellow-300 flex gap-1.5">
+                      <ShieldAlert className="w-3 h-3 shrink-0 mt-0.5" /> {iss}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {r.aiRecommendation && (
+                <p className="text-[10px] text-muted-foreground mt-1.5 italic">AI: {r.aiRecommendation}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
