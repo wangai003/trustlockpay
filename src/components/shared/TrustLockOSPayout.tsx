@@ -979,6 +979,21 @@ const TrustLockOSPayout = ({
         </div>
       </div>
 
+      {/* Tool Information Tip */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
+        <div className="flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span className="text-xs font-semibold text-foreground">What is TrustLock OS Payout?</span>
+        </div>
+        <p className="text-[10px] leading-relaxed text-muted-foreground">
+          {isAdmin
+            ? "Use this tool to execute escrow fund movements: release funds to the vendor, refund the buyer, or process split settlements."
+            : role === "vendor"
+              ? "Use this tool to withdraw your earned escrow funds to your saved crypto wallet or bank account."
+              : "Use this tool to receive refunds or released escrow funds to your saved wallet or bank account."}
+        </p>
+      </div>
+
       {/* Upfront Fee Disclosure */}
       {!isAdmin && (
         <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-1.5">
