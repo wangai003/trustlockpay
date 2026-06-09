@@ -77,6 +77,9 @@ const BuyerIndustryPlaybook = lazy(() => import("./pages/buyer/BuyerIndustryPlay
 const BuyerTeams = lazy(() => import("./pages/buyer/BuyerTeams"));
 const BuyerMessages = lazy(() => import("./pages/buyer/BuyerMessages"));
 const BuyerVendorLookup = lazy(() => import("./pages/buyer/BuyerVendorLookup"));
+const BuyerCancelOrder = lazy(() => import("./pages/buyer/BuyerCancelOrder"));
+const ProofExplorer = lazy(() => import("./pages/shared/ProofExplorer"));
+const CompliancePreflight = lazy(() => import("./pages/shared/CompliancePreflight"));
 
 // Vendor
 const VendorLogin = lazy(() => import("./pages/vendor/VendorLogin"));
