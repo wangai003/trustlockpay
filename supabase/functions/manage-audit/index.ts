@@ -19,12 +19,61 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // ── Admin-only gate for management actions ─────────────
+    // create/list/revoke/logs expose or mint long-lived audit tokens
+    // that read sensitive financial tables, so they require a verified
+    // admin JWT. validate/fetch_data remain auditor-token-scoped.
+    const ADMIN_ONLY = new Set(["create", "list", "revoke", "logs"]);
+    if (ADMIN_ONLY.has(action)) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized — admin sign-in required." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const anonClient = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: userData } = await anonClient.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized — invalid session." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (!roleRows || roleRows.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden — admin role required." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Hardcoded permitted audit tables — caller-supplied list is ignored
+    const PERMITTED_AUDIT_TABLES = [
+      "transactions",
+      "disputes",
+      "compliance_flags",
+      "tax_ledger",
+      "blockchain_proofs",
+    ];
+    const MAX_EXPIRES_DAYS = 7;
+
+
     // ── CREATE AUDIT SESSION ──
     if (action === "create") {
       const {
         auditor_name,
         auditor_email,
-        allowed_tables,
         can_export,
         expires_in_days,
         password,
@@ -38,8 +87,13 @@ Deno.serve(async (req) => {
         passwordHash = hash;
       }
 
+      // Cap session duration at MAX_EXPIRES_DAYS
+      const requestedDays = Math.min(
+        Math.max(Number(expires_in_days) || MAX_EXPIRES_DAYS, 1),
+        MAX_EXPIRES_DAYS
+      );
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + (expires_in_days || 30));
+      expiresAt.setDate(expiresAt.getDate() + requestedDays);
 
       const { data, error } = await supabase
         .from("audit_sessions")
@@ -47,18 +101,14 @@ Deno.serve(async (req) => {
           auditor_name,
           auditor_email: auditor_email || null,
           auditor_password_hash: passwordHash,
-          allowed_tables: allowed_tables || [
-            "transactions",
-            "disputes",
-            "compliance_flags",
-            "tax_ledger",
-            "blockchain_proofs",
-          ],
+          // Hardcoded server-side — caller cannot widen the scope
+          allowed_tables: PERMITTED_AUDIT_TABLES,
           can_export: can_export || false,
           expires_at: expiresAt.toISOString(),
         })
         .select("id, access_token, auditor_name, expires_at, allowed_tables, can_export")
         .single();
+
 
       if (error) throw error;
 

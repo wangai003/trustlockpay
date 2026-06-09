@@ -43,18 +43,18 @@ Deno.serve(async (req) => {
 
     const isOriginalChief = callerRank === 1;
 
-    // Mutation actions require password proof to prevent UUID spoofing
-    const MUTATION_ACTIONS = new Set(["add", "delete", "reinstate", "promote", "demote", "deleteSelf"]);
-    if (MUTATION_ACTIONS.has(action)) {
-      if (!chiefPassword) {
-        return json({ error: "Unauthorized — chief password required for this action." }, 401);
-      }
-      const { data: pwOk } = await supabase.rpc("verify_admin_password", {
-        _admin_id: chiefAdminId,
-        _password: chiefPassword,
-      });
-      if (!pwOk) return json({ error: "Unauthorized — invalid credentials." }, 401);
+    // ALL actions (including read-only list) require password proof to
+    // prevent an attacker who knows/guesses a chief admin UUID from
+    // enumerating admin accounts.
+    if (!chiefPassword) {
+      return json({ error: "Unauthorized — chief password required." }, 401);
     }
+    const { data: pwOk } = await supabase.rpc("verify_admin_password", {
+      _admin_id: chiefAdminId,
+      _password: chiefPassword,
+    });
+    if (!pwOk) return json({ error: "Unauthorized — invalid credentials." }, 401);
+
 
 
     // ── ADD NEW ADMIN (any chief can add) ──────────────────

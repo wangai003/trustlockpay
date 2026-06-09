@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Shield, Plus, Copy, Eye, Ban, Clock, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-audit`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -58,13 +59,23 @@ const AuditManager = () => {
   const [createdToken, setCreatedToken] = useState("");
 
   const callAudit = async (body: Record<string, unknown>) => {
+    // Attach the signed-in admin's JWT — required by the edge function.
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: API_KEY,
+    };
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
     const res = await fetch(FUNCTION_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: API_KEY },
+      headers,
       body: JSON.stringify(body),
     });
     return res.json();
   };
+
 
   const loadSessions = async () => {
     setLoading(true);

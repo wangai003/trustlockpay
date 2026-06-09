@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
-import { serverAdminLogin, serverAdminLookup, serverCheckPassword } from "@/lib/adminAuth";
+import { serverAdminLogin, serverAdminLookup } from "@/lib/adminAuth";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -38,11 +38,11 @@ const AdminLogin = () => {
         if (lookup.exists && lookup.isSetup) idValid = true;
       }
 
-      // Check password field against set-up accounts
-      if (password.length >= 6) {
-        const check = await serverCheckPassword(password);
-        if (check.valid) pwValid = true;
-      }
+      // Password validity can only be confirmed by attempting login;
+      // showing a side-effect-free password check would expose an
+      // unauthenticated oracle for credential stuffing.
+      if (password.length >= 6) pwValid = false;
+
 
       setIdentifierValid(idValid);
       setPasswordValid(pwValid);

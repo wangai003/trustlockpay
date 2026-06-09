@@ -249,29 +249,9 @@ Deno.serve(async (req) => {
       return json({ exists: !!account, isSetup: account?.is_setup ?? false });
     }
 
-    // ── CHECK PASSWORD (side-effect-free, for reset link visibility) ──
-    if (action === "checkPassword") {
-      const { password } = params;
-      if (!password) return json({ valid: false });
+    // checkPassword action removed — it allowed an unauthenticated oracle
+    // for guessing whether any password matched any admin account.
 
-      // Check if this password matches ANY set-up admin account
-      const { data: accounts } = await supabase
-        .from("admin_accounts")
-        .select("id, password_hash")
-        .eq("is_setup", true);
-
-      if (!accounts || accounts.length === 0) return json({ valid: false });
-
-      for (const acc of accounts) {
-        const { data: match } = await supabase.rpc("verify_admin_password", {
-          _account_id: acc.id,
-          _password: password,
-        });
-        if (match) return json({ valid: true });
-      }
-
-      return json({ valid: false });
-    }
 
     return json({ error: "Unknown action" }, 400);
   } catch (err) {
