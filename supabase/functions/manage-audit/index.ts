@@ -74,7 +74,6 @@ Deno.serve(async (req) => {
       const {
         auditor_name,
         auditor_email,
-        allowed_tables,
         can_export,
         expires_in_days,
         password,
@@ -88,8 +87,13 @@ Deno.serve(async (req) => {
         passwordHash = hash;
       }
 
+      // Cap session duration at MAX_EXPIRES_DAYS
+      const requestedDays = Math.min(
+        Math.max(Number(expires_in_days) || MAX_EXPIRES_DAYS, 1),
+        MAX_EXPIRES_DAYS
+      );
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + (expires_in_days || 30));
+      expiresAt.setDate(expiresAt.getDate() + requestedDays);
 
       const { data, error } = await supabase
         .from("audit_sessions")
@@ -97,18 +101,14 @@ Deno.serve(async (req) => {
           auditor_name,
           auditor_email: auditor_email || null,
           auditor_password_hash: passwordHash,
-          allowed_tables: allowed_tables || [
-            "transactions",
-            "disputes",
-            "compliance_flags",
-            "tax_ledger",
-            "blockchain_proofs",
-          ],
+          // Hardcoded server-side — caller cannot widen the scope
+          allowed_tables: PERMITTED_AUDIT_TABLES,
           can_export: can_export || false,
           expires_at: expiresAt.toISOString(),
         })
         .select("id, access_token, auditor_name, expires_at, allowed_tables, can_export")
         .single();
+
 
       if (error) throw error;
 
