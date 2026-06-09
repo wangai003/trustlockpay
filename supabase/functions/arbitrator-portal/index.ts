@@ -5,6 +5,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ADMIN_ONLY_ACTIONS = new Set([
+  "generate_bundle",
+  "create_session",
+  "revoke_session",
+]);
+
+function jsonErr(message: string, status: number) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function requireAdmin(req: Request, supabase: any): Promise<{ ok: true; userId: string } | { ok: false; res: Response }> {
+  const auth = req.headers.get("Authorization") || "";
+  const jwt = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!jwt) return { ok: false, res: jsonErr("Unauthorized", 401) };
+  const { data: userRes, error: userErr } = await supabase.auth.getUser(jwt);
+  if (userErr || !userRes?.user) return { ok: false, res: jsonErr("Unauthorized", 401) };
+  const { data: isAdmin } = await supabase.rpc("has_role", {
+    _user_id: userRes.user.id,
+    _role: "admin",
+  });
+  if (!isAdmin) return { ok: false, res: jsonErr("Forbidden", 403) };
+  return { ok: true, userId: userRes.user.id };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -13,7 +40,36 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { action, token, password, ...params } = await req.json();
+    const body = await req.json();
+    const { action, token, password, ...params } = body;
+
+    // Admin-gated actions
+    if (ADMIN_ONLY_ACTIONS.has(action)) {
+      const gate = await requireAdmin(req, supabase);
+      if (!gate.ok) return gate.res;
+    }
+
+    // record_ruling requires the arbitrator's token+password proof (not just session_id)
+    if (action === "record_ruling") {
+      const proofToken = params.access_token || token;
+      const proofPwd = params.access_password || password;
+      if (!proofToken || !proofPwd) return jsonErr("Unauthorized", 401);
+      const { data: s } = await supabase
+        .from("arbitrator_sessions")
+        .select("id, status, expires_at")
+        .eq("access_token", proofToken)
+        .maybeSingle();
+      if (!s || s.status !== "active" || new Date(s.expires_at) < new Date()) {
+        return jsonErr("Unauthorized", 401);
+      }
+      const { data: pwOk } = await supabase.rpc("verify_arbitrator_password", {
+        _session_id: s.id,
+        _password: proofPwd,
+      });
+      if (!pwOk) return jsonErr("Unauthorized", 401);
+      // Override any spoofed session_id with the proven one
+      params.session_id = s.id;
+    }
 
     // ── VERIFY: Validate token + password for arbitrator access ──
     if (action === "verify") {
@@ -215,7 +271,8 @@ Deno.serve(async (req) => {
       }).select().single();
 
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        console.error("[arbitrator-portal] create_session insert error:", error);
+        return jsonErr("Could not create session", 400);
       }
 
       return new Response(JSON.stringify({
@@ -376,8 +433,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, distributed: true, anchored: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return jsonErr("Unknown action", 400);
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.error("[arbitrator-portal] error:", err);
+    return jsonErr("Internal server error", 500);
   }
 });

@@ -175,12 +175,10 @@ export function useTransactionObservers(transactionId?: string) {
   return useQuery({
     queryKey: ["transaction_observers", transactionId],
     queryFn: async () => {
-      // Use safe view to exclude access_token from results
-      const { data, error } = await supabase
-        .from("transaction_observers_safe" as any)
-        .select("*")
-        .eq("transaction_id", transactionId!)
-        .order("created_at", { ascending: false });
+      // RPC excludes access_token and enforces party/admin scope server-side
+      const { data, error } = await supabase.rpc("get_transaction_observers" as any, {
+        _transaction_id: transactionId!,
+      });
       if (error) throw error;
       return data;
     },
@@ -598,13 +596,17 @@ export function useProcessPayment() {
 }
 
 // ─── Vendor Settings ────────────────────────────────────────
+// Explicit column list excludes shipping_api_key_encrypted (revoked at DB layer)
+const VENDOR_SETTINGS_COLS =
+  "id, vendor_id, payout_tier, payout_wallet_address, payout_provider, payout_currency, auto_delivery_enabled, pay_enabled, notifications, billing_settings, default_industry, locale, corridor_default, created_at, updated_at";
+
 export function useVendorSettings() {
   return useQuery({
     queryKey: ["vendor_settings"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vendor_settings")
-        .select("*")
+        .select(VENDOR_SETTINGS_COLS as any)
         .maybeSingle();
       if (error) throw error;
       return data;
