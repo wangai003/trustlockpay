@@ -91,6 +91,7 @@ const DocumentUpload = ({
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [uploading, setUploading] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [intelReports, setIntelReports] = useState<{ name: string; pageCount?: number; minExpected?: number; issues?: string[]; aiRecommendation?: string | null; valid: boolean }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const bucketConfig = context ? BUCKET_CONFIG[context.bucket] : BUCKET_CONFIG["milestone-documents"];
