@@ -164,15 +164,36 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
         )}
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:w-[480px] md:w-[540px] p-0 flex flex-col">
+      <SheetContent
+        side="right"
+        className={`p-0 flex flex-col transition-[width,max-width] duration-200 ${
+          expanded
+            ? "w-screen sm:w-screen md:w-[92vw] lg:w-[88vw] xl:w-[1280px] sm:max-w-none"
+            : "w-full sm:w-[520px] md:w-[640px] lg:w-[760px]"
+        }`}
+      >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border">
-          <SheetTitle className="flex items-center gap-2 text-lg">
-            <Shield className="w-5 h-5 text-primary" />
-            Blockchain Explorer
-          </SheetTitle>
-          <p className="text-xs text-muted-foreground">
-            Search orders, verify hashes, and trace the immutable proof chain
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <SheetTitle className="flex items-center gap-2 text-lg">
+                <Shield className="w-5 h-5 text-primary" />
+                Blockchain Explorer
+              </SheetTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Search orders, verify hashes, and trace the immutable proof chain
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 shrink-0 mr-6"
+              onClick={() => setExpanded((v) => !v)}
+              title={expanded ? "Collapse panel" : "Expand panel"}
+              aria-label={expanded ? "Collapse panel" : "Expand panel"}
+            >
+              {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+          </div>
           {(contractAddresses.registry || contractAddresses.escrow) && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {contractAddresses.registry && (
