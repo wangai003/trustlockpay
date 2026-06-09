@@ -24,9 +24,16 @@ interface BuyerContextType {
 
 const defaultTestnetBuyer: BuyerProfile = {
   id: "BYR-2026-0102",
-  name: "James O.",
+  name: "Test Buyer",
   email: "james@trustlocktest.com",
   location: "Chicago, USA",
+};
+
+const defaultMainnetBuyer: BuyerProfile = {
+  id: "",
+  name: "Buyer",
+  email: "",
+  location: "",
 };
 
 const getInitialBuyerMode = (): NetworkMode => {
@@ -45,7 +52,7 @@ export const useBuyer = () => {
 export const BuyerProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const [networkMode, setNetworkModeState] = useState<NetworkMode>(getInitialBuyerMode);
-  const [buyer, setBuyer] = useState<BuyerProfile>(defaultTestnetBuyer);
+  const [buyer, setBuyer] = useState<BuyerProfile>(() => getInitialBuyerMode() === "mainnet" ? defaultMainnetBuyer : defaultTestnetBuyer);
 
   const setNetworkMode = (mode: NetworkMode) => {
     setNetworkModeState(mode);
@@ -67,6 +74,8 @@ export const BuyerProvider = ({ children }: { children: ReactNode }) => {
 
     const loadMainnetProfile = async () => {
       if (!user) return;
+
+      setBuyer({ id: user.id, name: fallbackName, email: user.email || "", location: "" });
 
       const { data, error } = await supabase
         .from("profiles")
