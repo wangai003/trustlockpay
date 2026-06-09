@@ -94,9 +94,41 @@ function failedTransfer(reason: string): { txHash: string; status: string } {
 
 function normalizePrivateKey(raw?: string): string | null {
   if (!raw) return null;
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+  // Be tolerant of values pasted from .env files or password managers.
+  // The key is still accepted only if it derives to the exact source wallet.
+  if (/^(export\s+)?[A-Z0-9_]+\s*=/.test(trimmed)) {
+    trimmed = trimmed.slice(trimmed.indexOf("=") + 1).trim();
+  }
+  trimmed = trimmed.replace(/^['"]|['"]$/g, "").replace(/\s+/g, "");
   const key = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
   return /^0x[a-fA-F0-9]{64}$/.test(key) ? key : null;
+}
+
+function selectSignerKeyForSource(
+  fromWallet: string,
+  candidates: Array<{ label: string; value?: string | null }>,
+): { privateKey: string; label: string } | null {
+  const expected = fromWallet.toLowerCase();
+  const mismatches: string[] = [];
+
+  for (const candidate of candidates) {
+    const privateKey = normalizePrivateKey(candidate.value || undefined);
+    if (!privateKey) continue;
+    try {
+      const address = new ethers.Wallet(privateKey).address.toLowerCase();
+      if (address === expected) return { privateKey, label: candidate.label };
+      mismatches.push(`${candidate.label}:${address}`);
+    } catch {
+      // Invalid keys are ignored; final failure below logs a safe summary.
+    }
+  }
+
+  console.error(`[wallet-routing] No configured signer matches source wallet`, {
+    fromWallet,
+    candidateAddresses: mismatches,
+  });
+  return null;
 }
 
 // ─── Saved Payout Wallet Resolver ─────────────────────────
@@ -247,11 +279,18 @@ async function transferOnChain(
   //    be the Escrow Wallet; this is enforced at the call site below as well.
 
 
-  let privateKey: string | undefined;
+  let signer: { privateKey: string; label: string } | null = null;
   if (fromLower && fromLower === txWalletAddr) {
-    privateKey = normalizePrivateKey(Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY")) || undefined;
+    signer = selectSignerKeyForSource(fromWallet, [
+      { label: "TRANSACTION_WALLET_PRIVATE_KEY", value: Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") },
+      { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+    ]);
   } else if (fromLower && fromLower === escrowWalletAddr) {
-    privateKey = normalizePrivateKey(Deno.env.get("ESCROW_WALLET_PRIVATE_KEY")) || undefined;
+    signer = selectSignerKeyForSource(fromWallet, [
+      { label: "ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") },
+      { label: "AZIX_ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("AZIX_ESCROW_WALLET_PRIVATE_KEY") },
+      { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+    ]);
   } else {
     console.error(`[wallet-routing] Refusing transfer from unmanaged source wallet`, { fromWallet, memo });
     return failedTransfer("unmanaged_source");
@@ -259,7 +298,7 @@ async function transferOnChain(
 
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
 
-  if (!privateKey) {
+  if (!signer) {
     console.error(`[wallet-routing] Missing or invalid source-wallet signer key`, { fromWallet, memo });
     return failedTransfer("invalid_or_missing_signer_key");
   }
@@ -275,7 +314,7 @@ async function transferOnChain(
   try {
     const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
     const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
-    const wallet = new ethers.Wallet(privateKey, provider);
+    const wallet = new ethers.Wallet(signer.privateKey, provider);
 
 
     if (fromLower && wallet.address.toLowerCase() !== fromLower) {
@@ -310,6 +349,7 @@ async function transferOnChain(
       to: toWallet,
       token,
       memo,
+      signerSecret: signer.label,
     });
 
     // ─── Estimate gas + top up from relayer if needed ───
@@ -1570,13 +1610,17 @@ Deno.serve(async (req) => {
       const principal = Number(amount);
       if (!(principal > 0)) return json({ error: "amount must be > 0" }, 400);
 
-      const escrowKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY");
+      const escrowSignerKey = selectSignerKeyForSource(WALLETS.escrow.address, [
+        { label: "ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") },
+        { label: "AZIX_ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("AZIX_ESCROW_WALLET_PRIVATE_KEY") },
+        { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+      ]);
       const rpcUrl = Deno.env.get("POLYGON_RPC_URL") || "https://polygon-rpc.com";
-      if (!escrowKey) return json({ success: false, error: "ESCROW_WALLET_PRIVATE_KEY not configured" }, 500);
+      if (!escrowSignerKey) return json({ success: false, error: "No signer key matches ESCROW_WALLET_ADDRESS" }, 500);
 
       try {
         const provider = new ethers.JsonRpcProvider(rpcUrl);
-        const escrowSigner = new ethers.Wallet(escrowKey, provider);
+        const escrowSigner = new ethers.Wallet(escrowSignerKey.privateKey, provider);
         const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, escrowSigner);
         const units = toContractUnits(principal);
 
