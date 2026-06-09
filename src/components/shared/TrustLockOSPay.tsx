@@ -22,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, CreditCard, Smartphone, Wallet, Check, ArrowRight, Lock,
   Undo2, Split, AlertTriangle, Globe, MapPin, Coins, Building2, Phone, Copy, CheckCircle2,
-  X, Home
+  X, Home, Info
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
