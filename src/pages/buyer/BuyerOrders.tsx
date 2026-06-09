@@ -297,7 +297,7 @@ const BuyerOrders = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
             {(["all", "locked", "shipped", "delivered", "released", "disputed", "rejected", "refunded", "resolved", "cancelled", "history"] as OrderStatus[]).map((s) => (
               <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize gap-1 shrink-0">
                 {s === "all" ? "All" : statusConfig[s].label}
@@ -499,7 +499,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               </div>
           </div>
 
-          <div className="flex gap-2 shrink-0 overflow-x-auto -mx-4 px-4 pb-1 lg:mx-0 lg:px-0 lg:overflow-visible max-w-[calc(100vw-2rem)] lg:max-w-none snap-x">
+          <div className="flex gap-2 shrink-0 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 lg:mx-0 lg:px-0 lg:overflow-visible max-w-[calc(100vw-2rem)] lg:max-w-none snap-x">
             {order.status === "delivered" && (
               <>
                 <Button size="sm" className="shrink-0 snap-start" onClick={() => {
