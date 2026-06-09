@@ -45,6 +45,19 @@ const defaultTestnetVendor: VendorProfile = {
   accountType: "individual",
 };
 
+const defaultMainnetVendor: VendorProfile = {
+  ...defaultTestnetVendor,
+  id: "",
+  name: "Vendor",
+  email: "",
+  sites: [],
+  categories: [],
+  subTypes: [],
+  location: "",
+  kycTier: 0,
+  onboardingComplete: false,
+};
+
 const getInitialVendorMode = (): NetworkMode => {
   if (typeof window === "undefined") return "testnet";
   return localStorage.getItem("tl_vendor_network") === "mainnet" ? "mainnet" : "testnet";
@@ -61,7 +74,7 @@ export const useVendor = () => {
 export const VendorProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const [networkMode, setNetworkModeState] = useState<NetworkMode>(getInitialVendorMode);
-  const [vendor, setVendor] = useState<VendorProfile>(defaultTestnetVendor);
+  const [vendor, setVendor] = useState<VendorProfile>(() => getInitialVendorMode() === "mainnet" ? defaultMainnetVendor : defaultTestnetVendor);
 
   const setNetworkMode = (mode: NetworkMode) => {
     setNetworkModeState(mode);
@@ -87,6 +100,13 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
 
     const loadMainnetProfile = async () => {
       if (!user) return;
+
+      setVendor((prev) => ({
+        ...prev,
+        id: user.id,
+        name: fallbackName,
+        email: user.email || prev.email,
+      }));
 
       const { data, error } = await supabase
         .from("profiles")

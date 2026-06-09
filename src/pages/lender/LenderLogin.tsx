@@ -226,7 +226,7 @@ const LenderLogin = () => {
               </Button>
               {!isTestnet && (
                 <>
-                  <SocialLoginButtons context="as Lender" />
+                  <SocialLoginButtons context="as Lender" redirectTo={`${window.location.origin}/trustlock/lender/login`} />
                   <div className="text-center space-y-2">
                     <Link to="/trustlock/lender/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
                     <div>

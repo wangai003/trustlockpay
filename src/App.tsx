@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { wagmiConfig } from "@/lib/walletConnect";
+import { useAuth } from "@/hooks/useAuth";
 
 
 // Lazy-loaded pages
@@ -171,6 +172,36 @@ const Loading = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
   </div>
 );
+
+const AuthenticatedHomeRedirect = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <Loading />;
+
+  const role = typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : "";
+  if (role === "vendor") return <Navigate to="/trustlock/vendor" replace />;
+  if (role === "lender") return <Navigate to="/trustlock/lender" replace />;
+  if (role === "buyer") return <Navigate to="/trustlock/buyer" replace />;
+
+  if (localStorage.getItem("tl_vendor_auth") === "true") return <Navigate to="/trustlock/vendor" replace />;
+  if (localStorage.getItem("tl_lender_auth") === "true") return <Navigate to="/trustlock/lender" replace />;
+  if (localStorage.getItem("tl_buyer_auth") === "true") return <Navigate to="/trustlock/buyer" replace />;
+
+  return <Index />;
+};
+
+const TrustLockEntryRedirect = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <Loading />;
+
+  const role = typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : "";
+  if (role === "vendor") return <Navigate to="/trustlock/vendor" replace />;
+  if (role === "lender") return <Navigate to="/trustlock/lender" replace />;
+  if (role === "buyer") return <Navigate to="/trustlock/buyer" replace />;
+
+  return <TrustLock />;
+};
 const App = () => (
   <WagmiProvider config={wagmiConfig}>
   <QueryClientProvider client={queryClient}>
@@ -182,8 +213,8 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/trustlock" element={<TrustLock />} />
+              <Route path="/" element={<AuthenticatedHomeRedirect />} />
+              <Route path="/trustlock" element={<TrustLockEntryRedirect />} />
               <Route path="/install" element={<Install />} />
 
               {/* Admin Dashboard */}

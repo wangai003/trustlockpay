@@ -4,7 +4,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 
 interface Props {
-  /** Where to redirect after OAuth completes. Defaults to current origin. */
+  /** Where to redirect after OAuth completes. Defaults to current page. */
   redirectTo?: string;
   /** Optional label tail e.g. "as Buyer" */
   context?: string;
@@ -31,8 +31,9 @@ export const SocialLoginButtons = ({ redirectTo, context }: Props) => {
   const handle = async (provider: "google" | "apple") => {
     try {
       setBusy(provider);
+      const target = redirectTo ?? `${window.location.origin}${window.location.pathname}`;
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: redirectTo ?? window.location.origin,
+        redirect_uri: target,
       });
       if (result.error) {
         toast.error(`Sign-in failed: ${result.error.message ?? "Unknown error"}`);

@@ -22,14 +22,14 @@ const AdminLayoutInner = () => {
       <AdminProvider>
         <div className="flex min-h-screen bg-background">
           <AdminSidebar />
-          <main className="flex-1 lg:ml-64 pb-16 lg:pb-0">
+          <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
             <SystemWalletBalancesPanel />
             <TestnetGuide role="admin" />
             <Outlet />
           </main>
           <CommandPalette role="admin" />
           <MobileBottomNav role="admin" />
-          <div className="fixed bottom-20 right-4 lg:bottom-4 z-40">
+          <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 lg:bottom-4 lg:right-4 z-30">
             <BlockchainExplorerPanel />
           </div>
         </div>

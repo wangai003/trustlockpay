@@ -268,7 +268,7 @@ const VendorLogin = () => {
               </Button>
               {!isTestnet && (
                 <>
-                  <SocialLoginButtons context="as Vendor" />
+                  <SocialLoginButtons context="as Vendor" redirectTo={`${window.location.origin}/trustlock/vendor/login`} />
                   <div className="text-center space-y-2">
                     <Link to="/trustlock/vendor/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
                     <div>

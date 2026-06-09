@@ -306,7 +306,7 @@ const NotificationCenter = ({ role }: { role: "vendor" | "buyer" | "admin" }) =>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="fixed left-3 right-3 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border">
                 <h3 className="text-sm font-semibold flex items-center gap-2">

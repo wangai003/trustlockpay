@@ -261,7 +261,7 @@ const BuyerOrders = () => {
   return (
     <div>
       <BuyerHeader title="My Orders" />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-x-clip">
         {/* Claim Order Card */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-5">
@@ -297,9 +297,9 @@ const BuyerOrders = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
             {(["all", "locked", "shipped", "delivered", "released", "disputed", "rejected", "refunded", "resolved", "cancelled", "history"] as OrderStatus[]).map((s) => (
-              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize gap-1">
+              <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" onClick={() => setFilter(s)} className="capitalize gap-1 shrink-0">
                 {s === "all" ? "All" : statusConfig[s].label}
                 {s === "history" && historyCount > 0 && (
                   <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{historyCount}</Badge>
@@ -434,12 +434,12 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
   const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
 
   return (
-    <Card className={order.status === "delivered" ? "border-accent/30" : ""}>
-      <CardContent className="p-5">
+    <Card className={order.status === "delivered" ? "border-accent/30 overflow-hidden" : "overflow-hidden"}>
+      <CardContent className="p-4 sm:p-5 min-w-0">
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-sm font-bold">{order.id}</span>
+              <span className="font-mono text-sm font-bold break-all min-w-0">{order.id}</span>
               <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
                   <cfg.icon className="w-3 h-3" /> {cfg.label}
                 </span>
@@ -449,16 +449,16 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 </Badge>
               )}
             </div>
-            <p className="text-sm">
+            <p className="text-sm break-words">
               <strong>{order.item}</strong>
               {" "}from{" "}
               <span className="text-muted-foreground">{order.vendor}</span>
             </p>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-xs text-muted-foreground min-w-0">
               <span>Amount: {order.amount}</span>
               <span>Date: {order.date}</span>
               {order.tracking && (
-                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {order.tracking}</span>
+                <span className="col-span-2 flex min-w-0 items-center gap-1 break-all"><MapPin className="w-3 h-3 shrink-0" /> {order.tracking}</span>
               )}
             </div>
             {/* Compact compliance docs indicator for pre-ship statuses */}
@@ -467,6 +467,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                 industry={order.industry}
                 transactionId={order.dbId}
                 compact
+                skipRemote={isTestnet}
               />
             )}
             <ExternalFeeSummary
@@ -499,17 +500,17 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               </div>
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 lg:mx-0 lg:px-0 lg:overflow-visible max-w-[calc(100vw-2rem)] lg:max-w-none snap-x">
             {order.status === "delivered" && (
               <>
-                <Button size="sm" onClick={() => {
+                <Button size="sm" className="shrink-0 snap-start" onClick={() => {
                     if (isTestnet) { testnet.confirmDelivery(order.id); }
                     else { confirmDeliveryHook.mutate(order.id); }
                   }}>Confirm Delivery</Button>
                 <Button
                     size="sm"
                     variant="default"
-                    className="gap-1"
+                    className="gap-1 shrink-0 snap-start"
                     onClick={() => {
                       setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
                       if (expandedOrder !== order.id) setExpandedOrder(order.id);
@@ -522,7 +523,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             )}
             {order.status === "shipped" && (
               <>
-                <Button variant="outline" size="sm" onClick={() => {
+                <Button variant="outline" size="sm" className="shrink-0 snap-start" onClick={() => {
                     const legs = order.transportLegs;
                     if (legs && legs.length > 0) {
                       const firstUrl = legs.find((l: any) => l.trackingUrl)?.trackingUrl;
@@ -536,7 +537,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                   </Button>
                 <Button
                   size="sm"
-                  className="gap-1"
+                  className="gap-1 shrink-0 snap-start"
                   onClick={() => {
                     if (!confirm("Mark this order as received? This stops the auto-release clock and lets you confirm or release funds.")) return;
                     if (isTestnet) { testnet.confirmDelivery(order.id); }
@@ -551,7 +552,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <Button
                   variant="outline"
                   size="sm"
-                  className="text-destructive border-destructive/30"
+                  className="text-destructive border-destructive/30 shrink-0 snap-start"
                   onClick={() => {
                     const reason = window.prompt("Reason for dispute:", "Item not as described") || "Dispute filed by buyer";
                     const description = window.prompt("Add note/details for dispute (optional):", "") || "";
@@ -566,7 +567,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1 text-xs"
+                className="gap-1 text-xs shrink-0 snap-start"
                 onClick={() => onOpenWizard("buyer_full_refund")}
               >
                 <Info className="w-3.5 h-3.5" />
@@ -577,15 +578,15 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1 text-xs"
+                className="gap-1 text-xs shrink-0 snap-start"
                 onClick={() => onOpenWizard("buyer_full_refund")}
               >
                 <Info className="w-3.5 h-3.5" />
                 Payout Guide
               </Button>
             )}
-            <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+            <Button variant="ghost" size="sm" className="shrink-0 snap-start"><Eye className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" className="shrink-0 snap-start" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
                 {expandedOrder === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </Button>
           </div>
@@ -598,6 +599,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
               <DocumentComplianceProgress
                 industry={order.industry}
                 transactionId={order.dbId}
+                skipRemote={isTestnet}
               />
             )}
             {/* Transport Legs Viewer */}
