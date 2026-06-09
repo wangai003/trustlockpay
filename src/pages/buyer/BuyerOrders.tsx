@@ -697,7 +697,7 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
 
                 <Button
                   className="w-full"
-                  disabled={releasing}
+                  disabled={releasing || releaseFundsHook.isPending}
                   onClick={async () => {
                     if (!order.dbId) {
                       toast.error("Missing transaction reference");
@@ -714,14 +714,21 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                       setReleaseOrderId(null);
                       queryClient.invalidateQueries({ queryKey: ["transactions"] });
                     } catch (e: any) {
-                      toast.error(e?.message || "Release failed");
+                      const message = e?.message || "Release failed. Funds remain safe in escrow.";
+                      toast.error(message, { duration: 9000 });
+                      console.error("Buyer release failed", { orderId: order.id, error: e });
                     } finally {
                       setReleasing(false);
                     }
                   }}
                 >
-                  {releasing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Releasing…</> : <>Confirm & Release to Vendor</>}
+                  {(releasing || releaseFundsHook.isPending) ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Releasing…</> : <>Confirm & Release to Vendor</>}
                 </Button>
+                {releaseFundsHook.isError && (
+                  <p className="mt-2 text-xs text-destructive break-words">
+                    {(releaseFundsHook.error as Error)?.message || "Release failed. Funds remain safe in escrow."}
+                  </p>
+                )}
               </div>
             )}
           </div>
