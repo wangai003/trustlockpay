@@ -10,21 +10,17 @@ const VendorCorridorSetup = () => {
   const { user } = useAuth();
 
   const handleComplete = async (cfg: any) => {
-    if (user?.id) {
+    try {
+      localStorage.setItem("tl_corridor_config", JSON.stringify(cfg));
+    } catch { /* ignore */ }
+    if (user?.id && cfg?.industry) {
       const { error } = await supabase
         .from("profiles")
-        .update({
-          industry: cfg.industry,
-          preferred_currency: cfg.preferredCurrency,
-          preferred_language: cfg.preferredLanguage,
-        })
+        .update({ industry: cfg.industry } as never)
         .eq("id", user.id);
-      if (error) {
-        toast.error("Saved locally — sync failed: " + error.message);
-      } else {
-        toast.success("Corridor preferences saved");
-      }
+      if (error) toast.error("Sync failed: " + error.message);
     }
+    toast.success("Corridor preferences saved");
     navigate("/trustlock/vendor");
   };
 
