@@ -149,7 +149,8 @@ const LenderLogin = () => {
         type="button"
         aria-label="Go back"
         onClick={() => {
-          if (window.history.length > 1) navigate(-1);
+          const sameOriginReferrer = document.referrer && document.referrer.startsWith(window.location.origin);
+          if (sameOriginReferrer && window.history.length > 1) navigate(-1);
           else navigate("/trustlock");
         }}
         className="absolute top-4 left-4 p-3 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-50 cursor-pointer"
