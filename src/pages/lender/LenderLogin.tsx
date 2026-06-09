@@ -10,6 +10,7 @@ import { Landmark, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-re
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
@@ -148,7 +149,8 @@ const LenderLogin = () => {
         type="button"
         aria-label="Go back"
         onClick={() => {
-          if (window.history.length > 1) navigate(-1);
+          const sameOriginReferrer = document.referrer && document.referrer.startsWith(window.location.origin);
+          if (sameOriginReferrer && window.history.length > 1) navigate(-1);
           else navigate("/trustlock");
         }}
         className="absolute top-4 left-4 p-3 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground z-50 cursor-pointer"
@@ -223,12 +225,15 @@ const LenderLogin = () => {
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
               {!isTestnet && (
-                <div className="text-center space-y-2">
-                  <Link to="/trustlock/lender/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
-                  <div>
-                    <Link to="/trustlock/lender/signup" className="text-xs text-primary hover:underline">New lender? Create an account →</Link>
+                <>
+                  <SocialLoginButtons context="as Lender" />
+                  <div className="text-center space-y-2">
+                    <Link to="/trustlock/lender/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
+                    <div>
+                      <Link to="/trustlock/lender/signup" className="text-xs text-primary hover:underline">New lender? Create an account →</Link>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </form>
           </CardContent>
