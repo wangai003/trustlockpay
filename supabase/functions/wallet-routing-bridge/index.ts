@@ -118,6 +118,7 @@ async function resolveSavedPayoutDestination(
     return null;
   }
   return data?.address ?? null;
+}
 
 // ─── Gas station: relayer funds every source wallet's gas ─────────────
 // All on-chain ERC-20 transfers in TrustLock are gas-funded by the Polygon
