@@ -598,7 +598,7 @@ export function useProcessPayment() {
 // ─── Vendor Settings ────────────────────────────────────────
 // Explicit column list excludes shipping_api_key_encrypted (revoked at DB layer)
 const VENDOR_SETTINGS_COLS =
-  "id, vendor_id, payout_tier, payout_wallet_address, payout_provider, payout_currency, auto_delivery_enabled, pay_enabled, notifications, billing_settings, default_industry, locale, corridor_default, created_at, updated_at";
+  "id, vendor_id, auto_delivery, pay_enabled, payout_tier, notifications, updated_at, widget_theme, widget_mode, supported_currencies, industry_category, transaction_types, shipping_api_provider, auto_milestone_template, marketplace_integrations";
 
 export function useVendorSettings() {
   return useQuery({
