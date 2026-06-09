@@ -669,7 +669,8 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
             </div>
 
             {releaseOrderId === order.id && order.status === "delivered" && (
-              <div className="pt-3 border-t-2 border-primary/30">
+              <div id={`release-panel-${order.id}`} className="pt-3 border-t-2 border-primary/30 scroll-mt-24">
+
                 <div className="flex items-center gap-2 mb-3">
                   <Unlock className="w-4 h-4 text-primary" />
                   <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
