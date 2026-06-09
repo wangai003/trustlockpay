@@ -709,7 +709,18 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                         await testnet.releaseFunds(order.dbId);
                         toast.success("Funds released to vendor (testnet)");
                       } else {
-                        await releaseFundsHook.mutateAsync(order.dbId);
+                        const { data, error } = await supabase.functions.invoke("wallet-routing-bridge", {
+                          body: { action: "route_release", transactionId: order.dbId },
+                        });
+                        if (error) throw error;
+                        if (data?.success === false) throw new Error(data?.error || "Release failed");
+                        const v = data?.vendorPayout;
+                        const f = data?.escrowServiceFee;
+                        toast.success(
+                          typeof v === "number"
+                            ? `Released $${v.toFixed(2)} to vendor · $${(f ?? 0).toFixed(2)} escrow fee to TrustLock`
+                            : "Funds released to vendor"
+                        );
                       }
                       setReleaseOrderId(null);
                       queryClient.invalidateQueries({ queryKey: ["transactions"] });
