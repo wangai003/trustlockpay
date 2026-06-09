@@ -1507,9 +1507,94 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone, route_refund_milestone` }, 400);
+    // ═════════════════════════════════════════════════
+    //  ACTION: route_principal_only — Fee-safe retry path.
+    //  Transfers fixed USDC from Escrow Wallet → destination
+    //  with NO fee math. Used by routing-retry-worker when the
+    //  1% escrow fee was already extracted on a prior attempt,
+    //  so it can never be double-charged.
+    // ═════════════════════════════════════════════════
+    if (action === "route_principal_only") {
+      const { destination, amount, retryId } = body as Record<string, unknown>;
+      if (!destination || !amount) return json({ error: "destination and amount required" }, 400);
+      const principal = Number(amount);
+      if (!(principal > 0)) return json({ error: "amount must be > 0" }, 400);
+
+      const escrowKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY");
+      const rpcUrl = Deno.env.get("POLYGON_RPC_URL") || "https://polygon-rpc.com";
+      if (!escrowKey) return json({ success: false, error: "ESCROW_WALLET_PRIVATE_KEY not configured" }, 500);
+
+      try {
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const escrowSigner = new ethers.Wallet(escrowKey, provider);
+        const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, escrowSigner);
+        const units = toContractUnits(principal);
+
+        try {
+          const gasEstimate = await usdc.transfer.estimateGas(destination, units);
+          const feeData = await provider.getFeeData();
+          const gasPrice = feeData.gasPrice ?? ethers.parseUnits("50", "gwei");
+          await ensureGasFromRelayer(provider, escrowSigner.address, gasEstimate * gasPrice, "route_principal_only");
+        } catch (e) {
+          console.warn("Gas top-up skipped:", (e as Error).message);
+        }
+
+        const txResp = await usdc.transfer(destination as string, units);
+        const receipt = await txResp.wait();
+
+        await supabase.from("blockchain_proofs").insert({
+          content_hash: "0x" + String(retryId || transactionId || "principal").padEnd(64, "0").slice(0, 64),
+          record_type: "principal_only_retry",
+          tx_ref: receipt?.hash || txResp.hash,
+          transaction_id: transactionId || null,
+          event_data: { destination, amount: principal, retryId, action: "route_principal_only" },
+          chain_status: "confirmed",
+        });
+
+        return json({
+          success: true,
+          txHash: receipt?.hash || txResp.hash,
+          destination,
+          amount: principal,
+          feeCharged: 0,
+          mode: "principal_only_fee_safe_retry",
+        });
+      } catch (err) {
+        return json({ success: false, error: (err as Error).message, feeCharged: 0 }, 500);
+      }
+    }
+
+    return json({ error: `Unknown action: ${action}. Supported: route_inbound, route_release, route_refund, route_split, route_milestone, route_refund_milestone, route_principal_only` }, 400);
   } catch (err) {
     console.error("wallet-routing-bridge error:", err);
-    return json({ success: false, error: err.message }, 500);
+    // Best-effort enqueue for auto-retry
+    try {
+      const sb = getSupabase();
+      const bodyClone = await (req.clone().json().catch(() => ({}))) as Record<string, unknown>;
+      if (bodyClone?.action && bodyClone?.transactionId) {
+        await sb.from("routing_retry_queue").insert({
+          transaction_id: bodyClone.transactionId,
+          milestone_id: bodyClone.milestoneId ?? null,
+          surface: bodyClone.action === "route_inbound" ? "trustlock_os_pay" : "admin_os_pay",
+          action: bodyClone.action,
+          recipient_user_id: bodyClone.recipientUserId ?? null,
+          recipient_role: bodyClone.recipientRole ?? null,
+          recipient_address: bodyClone.destination ?? bodyClone.recipientAddress ?? null,
+          recipient_chain: bodyClone.chain ?? "polygon",
+          recipient_method: bodyClone.paymentMethod ?? null,
+          amount_principal: Number(bodyClone.amount ?? bodyClone.verifiedAmount ?? 0),
+          amount_fee_already_taken: Number(bodyClone.feeAlreadyTaken ?? 0),
+          fee_phase: bodyClone.feeAlreadyTaken ? "escrow_fee_taken" : "none",
+          original_payload: bodyClone,
+          failure_reason: (err as Error).message,
+          failure_code: "bridge_exception",
+          status: "queued",
+          next_retry_at: new Date(Date.now() + 60_000).toISOString(),
+        });
+      }
+    } catch (e) {
+      console.error("Failed to enqueue retry:", e);
+    }
+    return json({ success: false, error: (err as Error).message, queued_for_retry: true }, 500);
   }
 });
