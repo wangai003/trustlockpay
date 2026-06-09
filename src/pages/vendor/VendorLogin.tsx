@@ -10,6 +10,7 @@ import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
