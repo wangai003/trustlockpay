@@ -1,7 +1,7 @@
 // Deploy pre-compiled TrustLock contracts to Polygon Amoy or Mainnet.
 // Compilation happens client-side; this function only signs & broadcasts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { ethers } from "https://esm.sh/ethers@6.13.4";
+import { ethers } from "npm:ethers@6.13.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
