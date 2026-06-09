@@ -225,12 +225,15 @@ const LenderLogin = () => {
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
               {!isTestnet && (
-                <div className="text-center space-y-2">
-                  <Link to="/trustlock/lender/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
-                  <div>
-                    <Link to="/trustlock/lender/signup" className="text-xs text-primary hover:underline">New lender? Create an account →</Link>
+                <>
+                  <SocialLoginButtons context="as Lender" />
+                  <div className="text-center space-y-2">
+                    <Link to="/trustlock/lender/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
+                    <div>
+                      <Link to="/trustlock/lender/signup" className="text-xs text-primary hover:underline">New lender? Create an account →</Link>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </form>
           </CardContent>
