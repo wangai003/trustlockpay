@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { wagmiConfig } from "@/lib/walletConnect";
 import { useAuth } from "@/hooks/useAuth";
+import AppErrorBoundary from "@/components/AppErrorBoundary";
 
 
 // Lazy-loaded pages
@@ -212,7 +213,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<Loading />}>
-            <Routes>
+            <AppErrorBoundary>
+              <Routes>
               <Route path="/" element={<AuthenticatedHomeRedirect />} />
               <Route path="/trustlock" element={<TrustLockEntryRedirect />} />
               <Route path="/install" element={<Install />} />
@@ -402,7 +404,8 @@ const App = () => (
               </Route>
 
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </AppErrorBoundary>
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
