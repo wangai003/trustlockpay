@@ -97,6 +97,8 @@ const VendorCheckout = lazy(() => import("./pages/vendor/VendorCheckout"));
 const VendorAnalytics = lazy(() => import("./pages/vendor/VendorAnalytics"));
 const VendorOSPay = lazy(() => import("./pages/vendor/VendorOSPay"));
 const VendorPayout = lazy(() => import("./pages/vendor/VendorPayout"));
+const VendorPayouts = lazy(() => import("./pages/vendor/VendorPayouts"));
+const VendorWidgetConfig = lazy(() => import("./pages/vendor/VendorWidgetConfig"));
 const VendorBillPayments = lazy(() => import("./pages/vendor/VendorBillPayments"));
 const VendorStandaloneLinks = lazy(() => import("./pages/vendor/VendorStandaloneLinks"));
 const VendorIndustryPlaybook = lazy(() => import("./pages/vendor/VendorIndustryPlaybook"));
@@ -246,6 +248,7 @@ const App = () => (
                 <Route path="analytics" element={<VendorAnalytics />} />
                 <Route path="os-pay" element={<VendorOSPay />} />
                 <Route path="payout" element={<VendorPayout />} />
+                <Route path="payout-history" element={<VendorPayouts />} />
                 <Route path="standalone-links" element={<VendorStandaloneLinks />} />
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="messages" element={<VendorMessages />} />
@@ -259,6 +262,7 @@ const App = () => (
                 <Route path="request-financing" element={<VendorRequestFinancing />} />
                 <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
+                <Route path="widget-config-advanced" element={<VendorWidgetConfig />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 

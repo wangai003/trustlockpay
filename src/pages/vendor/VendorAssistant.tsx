@@ -7,6 +7,7 @@ const VendorAssistant = () => (
     <div className="p-3 sm:p-6 max-w-4xl">
       <AssistantChat
           role="vendor"
+          assistantName="amani"
           title="TrustLock Vendor Support"
           placeholder="Ask Amani about orders, payouts, disputes, KYC..."
         />

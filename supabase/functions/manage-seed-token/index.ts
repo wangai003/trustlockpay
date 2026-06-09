@@ -345,7 +345,19 @@ Deno.serve(async (req) => {
           const routingBody: Record<string, unknown> = {
             action: routingAction,
             transactionId: transactionId || null,
+            paymentProvider: paymentProvider || null,
+            paymentCategory: paymentCategory || null,
           };
+
+          // Forward last-mile destination + provider details so payout-router/refund-router
+          // can resolve the correct disbursement path (saved wallet, Stripe Connect, Transak, etc.)
+          if (payoutRole === "vendor") {
+            routingBody.vendorPaymentDetails = providerDetails || null;
+            if (providerDetails?.wallet_address) routingBody.vendorWallet = providerDetails.wallet_address;
+          } else if (payoutRole === "buyer") {
+            routingBody.buyerPaymentDetails = providerDetails || null;
+            if (providerDetails?.wallet_address) routingBody.buyerWallet = providerDetails.wallet_address;
+          }
 
           // For split payouts, include share ratios
           if (payoutType === "split" && splitVendorShare !== undefined) {
