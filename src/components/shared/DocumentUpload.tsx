@@ -176,6 +176,38 @@ const DocumentUpload = ({
           ...prev,
           { name: file.name, type: file.type, size: sizeStr, sizeBytes: file.size, date: new Date().toLocaleDateString(), url: urlData.publicUrl, storagePath: path },
         ]);
+
+        // ── Document Intelligence: validate page count + AI analysis for known categories ──
+        if (documentCategory !== "general" && file.type === "application/pdf") {
+          try {
+            const { data: intel } = await supabase.functions.invoke("validate-document-pages", {
+              body: {
+                documentCategory,
+                storageBucket: context.bucket,
+                storagePath: path,
+              },
+            });
+            if (intel && !intel.skipped) {
+              setIntelReports((prev) => [
+                ...prev,
+                {
+                  name: file.name,
+                  pageCount: intel.pageCount,
+                  minExpected: intel.minExpected,
+                  issues: intel.issues || [],
+                  aiRecommendation: intel.aiRecommendation || null,
+                  valid: !!intel.valid,
+                },
+              ]);
+              if (!intel.valid && intel.issues?.length) {
+                toast.warning(`${file.name}: ${intel.issues[0]}`);
+              }
+            }
+          } catch (e) {
+            // Non-fatal: intelligence is advisory
+            console.warn("[DocumentUpload] intelligence scan failed:", e);
+          }
+        }
       } else {
         setUploads((prev) => [
           ...prev,
