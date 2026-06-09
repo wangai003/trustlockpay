@@ -279,11 +279,18 @@ async function transferOnChain(
   //    be the Escrow Wallet; this is enforced at the call site below as well.
 
 
-  let privateKey: string | undefined;
+  let signer: { privateKey: string; label: string } | null = null;
   if (fromLower && fromLower === txWalletAddr) {
-    privateKey = normalizePrivateKey(Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY")) || undefined;
+    signer = selectSignerKeyForSource(fromWallet, [
+      { label: "TRANSACTION_WALLET_PRIVATE_KEY", value: Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") },
+      { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+    ]);
   } else if (fromLower && fromLower === escrowWalletAddr) {
-    privateKey = normalizePrivateKey(Deno.env.get("ESCROW_WALLET_PRIVATE_KEY")) || undefined;
+    signer = selectSignerKeyForSource(fromWallet, [
+      { label: "ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") },
+      { label: "AZIX_ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("AZIX_ESCROW_WALLET_PRIVATE_KEY") },
+      { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+    ]);
   } else {
     console.error(`[wallet-routing] Refusing transfer from unmanaged source wallet`, { fromWallet, memo });
     return failedTransfer("unmanaged_source");
@@ -291,7 +298,7 @@ async function transferOnChain(
 
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
 
-  if (!privateKey) {
+  if (!signer) {
     console.error(`[wallet-routing] Missing or invalid source-wallet signer key`, { fromWallet, memo });
     return failedTransfer("invalid_or_missing_signer_key");
   }
@@ -307,7 +314,7 @@ async function transferOnChain(
   try {
     const chainId = Number(Deno.env.get("POLYGON_CHAIN_ID") || "137");
     const provider = new ethers.JsonRpcProvider(rpcUrl, { name: "polygon", chainId });
-    const wallet = new ethers.Wallet(privateKey, provider);
+    const wallet = new ethers.Wallet(signer.privateKey, provider);
 
 
     if (fromLower && wallet.address.toLowerCase() !== fromLower) {
@@ -342,6 +349,7 @@ async function transferOnChain(
       to: toWallet,
       token,
       memo,
+      signerSecret: signer.label,
     });
 
     // ─── Estimate gas + top up from relayer if needed ───
