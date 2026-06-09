@@ -248,6 +248,7 @@ const App = () => (
                 <Route path="analytics" element={<VendorAnalytics />} />
                 <Route path="os-pay" element={<VendorOSPay />} />
                 <Route path="payout" element={<VendorPayout />} />
+                <Route path="payout-history" element={<VendorPayouts />} />
                 <Route path="standalone-links" element={<VendorStandaloneLinks />} />
                 <Route path="teams" element={<VendorTeams />} />
                 <Route path="messages" element={<VendorMessages />} />
@@ -261,6 +262,7 @@ const App = () => (
                 <Route path="request-financing" element={<VendorRequestFinancing />} />
                 <Route path="repayments" element={<VendorRepayments />} />
                 <Route path="widget-config" element={<VendorSitesAndWidget />} />
+                <Route path="widget-config-advanced" element={<VendorWidgetConfig />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
 
