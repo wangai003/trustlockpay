@@ -1115,7 +1115,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
               <p className="text-xs font-semibold text-foreground">💳 Card Payment</p>
               <p className="text-[10px] text-muted-foreground">
                 You'll be securely redirected to our payment processor (Stripe) to enter your card details.
-                TrustLock never stores or handles your card information directly.
+                Card numbers and CVVs are tokenized by Stripe under PCI DSS.
               </p>
               <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
                 <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
