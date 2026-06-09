@@ -1,7 +1,9 @@
 import { useSearchParams } from "react-router-dom";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import TrustLockOSPay from "@/components/shared/TrustLockOSPay";
+import PendingRoutingCard from "@/components/shared/PendingRoutingCard";
 import { useVendor } from "@/contexts/VendorContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const VendorOSPay = () => {
   const { isTestnet } = useVendor();
