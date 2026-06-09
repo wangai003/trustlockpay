@@ -26,7 +26,8 @@ const TrustLockDashboard = () => {
   const [filter, setFilter] = useState<TxStatus>("all");
 
   const filtered = filter === "all" ? mockTransactions : mockTransactions.filter((t) => t.status === filter);
-  const lockedTotal = mockTransactions.filter((t) => t.status === "locked").reduce((sum, t) => sum + parseFloat(t.amount.replace(/[$,]/g, "")), 0);
+  const escrowStatuses = ["locked", "shipped", "delivered", "disputed", "kyc_hold", "compliance_hold"] as const;
+  const lockedTotal = mockTransactions.filter((t) => escrowStatuses.includes(t.status as typeof escrowStatuses[number])).reduce((sum, t) => sum + parseFloat(t.amount.replace(/[$,]/g, "")), 0);
   const releasedTotal = mockTransactions.filter((t) => t.status === "released").reduce((sum, t) => sum + parseFloat(t.amount.replace(/[$,]/g, "")), 0);
 
   return (
