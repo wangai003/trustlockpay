@@ -435,6 +435,8 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
   const cfg = statusConfig[order.status] || statusConfig.locked;
   const row = rowIdx + 1;
   const sourceBadge = getSourceBadge(order.transactionSource, order.platformId);
+  const releaseFundsHook = useReleaseFunds();
+  const [releasing, setReleasing] = useState(false);
 
   return (
     <Card className={order.status === "delivered" ? "border-accent/30 overflow-hidden" : "overflow-hidden"}>
