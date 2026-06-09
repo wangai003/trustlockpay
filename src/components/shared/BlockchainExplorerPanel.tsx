@@ -245,7 +245,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsList>
 
           {/* Order Search Tab */}
-          <TabsContent value="order" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="order" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-2">
               <Input
                 placeholder="Transaction ID or order ref..."
@@ -259,7 +259,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
               </Button>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {selectedProof ? (
                 <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => {
                   setOpen(false);
@@ -281,7 +281,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsContent>
 
           {/* Recent Activity Feed Tab */}
-          <TabsContent value="feed" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="feed" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-2">
               <Select value={feedFilter} onValueChange={(v) => { setFeedFilter(v); loadRecentFeed(v); }}>
                 <SelectTrigger className="text-xs h-9 flex-1">
@@ -301,7 +301,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
             <p className="text-[10px] text-muted-foreground mb-2">
               Latest anchored proofs across all orders. Click any record → PolygonScan to verify on chain.
             </p>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {selectedProof ? (
                 <ProofDetail proof={selectedProof} onBack={() => setSelectedProof(null)} copyHash={copyHash} truncate={truncate} onNavigateToSource={() => { setOpen(false); }} />
               ) : (
@@ -311,7 +311,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
           </TabsContent>
 
           {/* Verify Hash Tab */}
-          <TabsContent value="verify" className="flex-1 flex flex-col overflow-hidden px-4 mt-2">
+          <TabsContent value="verify" className="flex-1 flex flex-col overflow-hidden px-4 mt-2 min-h-0 data-[state=inactive]:hidden">
             <div className="flex gap-2 mb-3">
               <Input
                 placeholder="Paste SHA-256 content hash..."
@@ -334,7 +334,7 @@ const BlockchainExplorerPanel = ({ trigger, defaultTransactionId }: BlockchainEx
               </div>
             )}
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <ProofTimeline proofs={proofs} onSelect={setSelectedProof} truncate={truncate} loading={loading} />
             </ScrollArea>
           </TabsContent>
