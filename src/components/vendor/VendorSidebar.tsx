@@ -32,8 +32,8 @@ const navGroups: SidebarNavGroup[] = [
     label: "Payments & Finance",
     items: [
       { label: "Bill Payments", icon: Receipt, to: "/trustlock/vendor/bill-payments", tip: "View subscription charges and service fees" },
-      { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Process internal OS service payments" },
-      { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw funds via local or international rails" },
+      { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/vendor/os-pay", tip: "Pay for TrustLock subscriptions, AI queries, widget services, and platform fees" },
+      { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/vendor/payout", tip: "Withdraw your earned escrow funds to your saved crypto wallet or bank account" },
       { label: "Fee Simulator", icon: DollarSign, to: "/trustlock/vendor/fee-simulator", tip: "Preview cross-border fees for any corridor" },
       { label: "Standalone Links", icon: Link2, to: "/trustlock/vendor/standalone-links", tip: "Create shareable payment links for P2P deals" },
       { label: "Plans & Pricing", icon: CreditCard, to: "/trustlock/vendor/pricing", tip: "View and upgrade your subscription plan" },

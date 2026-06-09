@@ -41,7 +41,7 @@ const allNavGroups: SidebarNavGroup[] = [
   {
     label: "Finance",
     items: [
-      { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Manage fund withdrawals and disbursements", moduleKey: "finance" },
+      { label: "Admin OS Pay", icon: Banknote, to: "/trustlock/admin/os-pay", tip: "Admin escrow control: release funds to vendor, refund buyer, or execute split settlements", moduleKey: "finance" },
       { label: "Tax Remittance", icon: Landmark, to: "/trustlock/admin/tax-remittance", tip: "Track collected taxes by jurisdiction", moduleKey: "tax" },
       { label: "Gas Treasury", icon: Fuel, to: "/trustlock/admin/gas-treasury", tip: "Monitor Polygon wallet balance and anchoring costs", moduleKey: "gas" },
     ],

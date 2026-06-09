@@ -21,8 +21,8 @@ const navGroups: SidebarNavGroup[] = [
     items: [
       { label: "My Orders", icon: Package, to: "/trustlock/buyer/orders", tip: "View all purchases and escrow order statuses" },
       { label: "Bill Payments", icon: Receipt, to: "/trustlock/buyer/bill-payments", tip: "Track service fees and pay-as-you-go charges" },
-      { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/buyer/os-pay", tip: "Make internal OS service payments" },
-      { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Withdraw refunded or split funds" },
+      { label: "TrustLock OS Pay", icon: Wallet, to: "/trustlock/buyer/os-pay", tip: "Pay for TrustLock services, arbitration fees, and platform charges" },
+      { label: "TrustLock OS Payout", icon: Banknote, to: "/trustlock/buyer/payout", tip: "Receive refunds or released escrow funds to your saved wallet or bank account" },
     ],
   },
   {
