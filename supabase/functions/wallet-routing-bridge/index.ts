@@ -1610,13 +1610,17 @@ Deno.serve(async (req) => {
       const principal = Number(amount);
       if (!(principal > 0)) return json({ error: "amount must be > 0" }, 400);
 
-      const escrowKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY");
+      const escrowSignerKey = selectSignerKeyForSource(WALLETS.escrow.address, [
+        { label: "ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") },
+        { label: "AZIX_ESCROW_WALLET_PRIVATE_KEY", value: Deno.env.get("AZIX_ESCROW_WALLET_PRIVATE_KEY") },
+        { label: "DEPLOYER_WALLET_PRIVATE_KEY", value: Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY") },
+      ]);
       const rpcUrl = Deno.env.get("POLYGON_RPC_URL") || "https://polygon-rpc.com";
-      if (!escrowKey) return json({ success: false, error: "ESCROW_WALLET_PRIVATE_KEY not configured" }, 500);
+      if (!escrowSignerKey) return json({ success: false, error: "No signer key matches ESCROW_WALLET_ADDRESS" }, 500);
 
       try {
         const provider = new ethers.JsonRpcProvider(rpcUrl);
-        const escrowSigner = new ethers.Wallet(escrowKey, provider);
+        const escrowSigner = new ethers.Wallet(escrowSignerKey.privateKey, provider);
         const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, escrowSigner);
         const units = toContractUnits(principal);
 
