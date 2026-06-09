@@ -26,6 +26,8 @@ const navGroups: SidebarNavGroup[] = [
     items: [
       { label: "Direct Work Orders", icon: ArrowLeftRight, to: "/trustlock/vendor/transactions", tip: "Orders from your own website widget, standalone links, or OS Pay" },
       { label: "Marketplace Work Orders", icon: Store, to: "/trustlock/vendor/marketplace-orders", tip: "Orders routed from multi-vendor platforms" },
+      { label: "Bulk Actions", icon: Layers, to: "/trustlock/vendor/bulk-actions", tip: "Apply release, ship, cancel, or archive across many orders at once" },
+      { label: "Proforma Invoices", icon: FileText, to: "/trustlock/vendor/proforma", tip: "Issue formal RFQ quotes with industry document gates" },
     ],
   },
   {
