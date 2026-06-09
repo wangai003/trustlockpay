@@ -329,6 +329,20 @@ Deno.serve(async (req) => {
         [escrowId]
       );
 
+      if (result.status !== "confirmed") {
+        console.warn("[escrow-bridge] Release contract call not confirmed — skipping released status + completion notifications", {
+          transactionId,
+          txRef: tx.tx_id,
+          result,
+        });
+        return json({
+          success: false,
+          action: "release",
+          skipped: "contract_call_not_confirmed",
+          contractTx: result,
+        }, 409);
+      }
+
       await supabase
         .from("transactions")
         .update({

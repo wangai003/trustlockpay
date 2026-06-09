@@ -92,6 +92,13 @@ function failedTransfer(reason: string): { txHash: string; status: string } {
   };
 }
 
+function normalizePrivateKey(raw?: string): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  const key = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+  return /^0x[a-fA-F0-9]{64}$/.test(key) ? key : null;
+}
+
 // ─── Saved Payout Wallet Resolver ─────────────────────────
 // Strict resolution: when a release/refund/split needs a destination, look up the
 // user's DEFAULT saved Polygon USDC wallet. If the caller passes a valid 0x address
@@ -242,9 +249,9 @@ async function transferOnChain(
 
   let privateKey: string | undefined;
   if (fromLower && fromLower === txWalletAddr) {
-    privateKey = Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+    privateKey = normalizePrivateKey(Deno.env.get("TRANSACTION_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY")) || undefined;
   } else if (fromLower && fromLower === escrowWalletAddr) {
-    privateKey = Deno.env.get("ESCROW_WALLET_PRIVATE_KEY") || Deno.env.get("DEPLOYER_WALLET_PRIVATE_KEY");
+    privateKey = normalizePrivateKey(Deno.env.get("ESCROW_WALLET_PRIVATE_KEY")) || undefined;
   } else {
     console.error(`[wallet-routing] Refusing transfer from unmanaged source wallet`, { fromWallet, memo });
     return failedTransfer("unmanaged_source");
@@ -252,8 +259,12 @@ async function transferOnChain(
 
   const rpcUrl = Deno.env.get("POLYGON_RPC_URL");
 
-  if (!privateKey || !rpcUrl) {
-    console.warn(`[wallet-routing] Queued (missing signer key or RPC URL): ${memo}`, { fromWallet });
+  if (!privateKey) {
+    console.error(`[wallet-routing] Missing or invalid source-wallet signer key`, { fromWallet, memo });
+    return failedTransfer("invalid_or_missing_signer_key");
+  }
+  if (!rpcUrl) {
+    console.warn(`[wallet-routing] Queued (missing RPC URL): ${memo}`, { fromWallet });
     return {
       txHash: `queued_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       status: "queued",
@@ -740,16 +751,8 @@ Deno.serve(async (req) => {
       const escrowServiceFee = round(escrowPrincipal * (FEE_RATES.escrow_service / 100));
       const vendorPayout = round(escrowPrincipal - escrowServiceFee);
 
-      // Transfer 1: Escrow fee → Transaction Wallet (trickle-down)
-      const trickleTransfer = await transferOnChain(
-        WALLETS.escrow.address,
-        WALLETS.transaction.address,
-        escrowServiceFee,
-        token,
-        `Escrow fee trickle-down for TX ${tx.tx_id}`
-      );
-
-      // Transfer 2: Vendor payout (principal minus 1% escrow fee)
+      // Transfer 1: Vendor payout (principal minus 1% escrow fee).
+      // Payout first avoids extracting the fee if the vendor transfer cannot confirm.
       const vendorWallet = (body.vendorWallet && /^0x[a-fA-F0-9]{40}$/.test(body.vendorWallet))
         ? body.vendorWallet
         : (await resolveSavedPayoutDestination(supabase, tx.vendor_id)) || "vendor_pending";
@@ -760,6 +763,57 @@ Deno.serve(async (req) => {
         token,
         `Vendor payout for TX ${tx.tx_id} (principal - 1% escrow fee)`
       );
+
+      if (payoutTransfer.status !== "confirmed") {
+        await announcePayoutOutcome(
+          supabase, tx.vendor_id, false,
+          "Funds Released",
+          "Payout Failed — Action Required",
+          `We were unable to send $${vendorPayout.toFixed(2)} to your saved payout wallet (reason: ${payoutTransfer.txHash}). Funds remain safe in escrow.`,
+          transactionId
+        );
+        await announcePayoutOutcome(
+          supabase, tx.buyer_id, false,
+          "Order Completed",
+          "Release Pending — Vendor Payout Issue",
+          `Release for order #${tx.order_number || tx.tx_id} did not complete because the vendor payout failed. Support has been notified.`,
+          transactionId
+        );
+        return json({
+          success: false,
+          action: "route_release",
+          transactionId,
+          error: "Vendor payout transfer did not confirm",
+          transfer: payoutTransfer,
+        }, 409);
+      }
+
+      // Transfer 2: Escrow fee → Transaction Wallet (trickle-down)
+      const trickleTransfer = await transferOnChain(
+        WALLETS.escrow.address,
+        WALLETS.transaction.address,
+        escrowServiceFee,
+        token,
+        `Escrow fee trickle-down for TX ${tx.tx_id}`
+      );
+
+      if (trickleTransfer.status !== "confirmed") {
+        await announcePayoutOutcome(
+          supabase, tx.vendor_id, false,
+          "Funds Released",
+          "Escrow Fee Routing Failed — Action Required",
+          `$${vendorPayout.toFixed(2)} reached your saved payout wallet, but the escrow service fee did not settle. Support must reconcile this transaction before it is closed.`,
+          transactionId
+        );
+        return json({
+          success: false,
+          action: "route_release",
+          transactionId,
+          error: "Escrow service fee transfer did not confirm after vendor payout",
+          vendorPayoutTransfer: payoutTransfer,
+          feeTransfer: trickleTransfer,
+        }, 409);
+      }
 
       await supabase
         .from("transactions")
@@ -810,24 +864,19 @@ Deno.serve(async (req) => {
         console.warn("Payout router forward failed (non-blocking):", e);
       }
 
-      const releaseOk = payoutTransfer.status === "confirmed";
       await announcePayoutOutcome(
-        supabase, tx.vendor_id, releaseOk,
+        supabase, tx.vendor_id, true,
         "Funds Released",
         "Payout Failed — Action Required",
-        releaseOk
-          ? `$${vendorPayout.toFixed(2)} released to your saved payout wallet. 1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`
-          : `We were unable to send $${vendorPayout.toFixed(2)} to your saved payout wallet (reason: ${payoutTransfer.txHash}). Please check your saved payout address in TrustLock OS Payout and contact support if the issue persists. Funds remain safe in escrow.`,
+        `$${vendorPayout.toFixed(2)} released to your saved payout wallet. 1% escrow service fee ($${escrowServiceFee.toFixed(2)}) deducted from your principal and trickled to the Transaction Wallet.`,
         transactionId
       );
 
       await announcePayoutOutcome(
-        supabase, tx.buyer_id, releaseOk,
+        supabase, tx.buyer_id, true,
         "Order Completed",
         "Release Pending — Vendor Payout Issue",
-        releaseOk
-          ? `Funds for order #${tx.order_number || tx.tx_id} have been released to the vendor.`
-          : `Release for order #${tx.order_number || tx.tx_id} was initiated but the vendor payout did not confirm. Support has been notified.`,
+        `Funds for order #${tx.order_number || tx.tx_id} have been released to the vendor.`,
         transactionId
       );
 
