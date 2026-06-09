@@ -17,20 +17,20 @@ import { toast } from "sonner";
 import { explorerTxUrl, explorerAddressUrl, explorerName } from "@/lib/polygonExplorer";
 
 const RECORD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  invoice: { label: "Invoice", color: "bg-blue-500/20 text-blue-400" },
-  contract: { label: "Contract", color: "bg-purple-500/20 text-purple-400" },
-  signature: { label: "Signature", color: "bg-green-500/20 text-green-400" },
-  milestone: { label: "Milestone", color: "bg-amber-500/20 text-amber-400" },
-  observer_signoff: { label: "Observer", color: "bg-cyan-500/20 text-cyan-400" },
-  dispute_ruling: { label: "Dispute", color: "bg-red-500/20 text-red-400" },
-  document_upload: { label: "Document", color: "bg-indigo-500/20 text-indigo-400" },
-  acknowledgement: { label: "Acknowledgement", color: "bg-emerald-500/20 text-emerald-400" },
-  payout: { label: "Payout", color: "bg-orange-500/20 text-orange-400" },
-  aml_screening: { label: "AML Check", color: "bg-rose-500/20 text-rose-400" },
-  gps_verification: { label: "GPS Proof", color: "bg-teal-500/20 text-teal-400" },
-  price_lock: { label: "Price Lock", color: "bg-yellow-500/20 text-yellow-400" },
-  rejection: { label: "Rejection", color: "bg-red-600/20 text-red-300" },
-  hash_chain_anchor: { label: "Chain Anchor", color: "bg-slate-500/20 text-slate-400" },
+  invoice: { label: "Invoice", color: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30" },
+  contract: { label: "Contract", color: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" },
+  signature: { label: "Signature", color: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30" },
+  milestone: { label: "Milestone", color: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+  observer_signoff: { label: "Observer", color: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30" },
+  dispute_ruling: { label: "Dispute", color: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30" },
+  document_upload: { label: "Document", color: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30" },
+  acknowledgement: { label: "Acknowledgement", color: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
+  payout: { label: "Payout", color: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30" },
+  aml_screening: { label: "AML Check", color: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30" },
+  gps_verification: { label: "GPS Proof", color: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30" },
+  price_lock: { label: "Price Lock", color: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30" },
+  rejection: { label: "Rejection", color: "bg-red-600/15 text-red-700 dark:text-red-300 border-red-600/30" },
+  hash_chain_anchor: { label: "Chain Anchor", color: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30" },
 };
 
 interface ProofRecord {
