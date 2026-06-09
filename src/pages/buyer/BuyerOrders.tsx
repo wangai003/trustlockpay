@@ -676,25 +676,52 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
 
                 <div className="flex items-center gap-2 mb-3">
                   <Unlock className="w-4 h-4 text-primary" />
-                  <h4 className="text-sm font-bold text-foreground">Release Funds to Vendor</h4>
+                  <h4 className="text-sm font-bold text-foreground">Authorize Release to Vendor</h4>
                   <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setReleaseOrderId(null)}>Cancel</Button>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                  By releasing funds, you confirm that you have received the goods/services as described and authorize TrustLock to transfer the escrowed amount to the vendor's account.
+                  You're authorizing TrustLock to release the escrowed funds to the vendor. The vendor will receive the payout on the method they've already set up on their end — you don't need to enter any payment details here.
                 </p>
-                <TrustLockOSPayout
-                  role="buyer"
-                  payoutType="release"
-                  prefillOrderNumber={order.id}
-                  prefillAmount={order.amount.replace(/[$,]/g, "")}
-                  transactionId={order.dbId}
-                  isTestnet={isTestnet}
-                  onComplete={(code) => {
-                    toast.success(`Funds released! Confirmation: ${code}`);
-                    setReleaseOrderId(null);
-                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
+                <div className="rounded-lg border border-border bg-muted/30 p-3 mb-3 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                    <Shield className="w-3.5 h-3.5 text-primary" /> Release summary
+                  </div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Order</span><span className="font-mono text-foreground">{order.id}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Vendor</span><span className="text-foreground">{order.vendor || "Vendor"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Escrow amount</span><span className="font-semibold text-foreground">{order.amount}</span></div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground pt-1 border-t border-border/60">
+                    <ArrowRight className="w-3 h-3" /> Routes to vendor's saved payout method (auto-detected by TrustLock).
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  disabled={releasing}
+                  onClick={async () => {
+                    if (!order.dbId) {
+                      toast.error("Missing transaction reference");
+                      return;
+                    }
+                    setReleasing(true);
+                    try {
+                      if (isTestnet) {
+                        await testnet.releaseFunds(order.dbId);
+                        toast.success("Funds released to vendor (testnet)");
+                      } else {
+                        await releaseFundsHook.mutateAsync(order.dbId);
+                      }
+                      setReleaseOrderId(null);
+                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                    } catch (e: any) {
+                      toast.error(e?.message || "Release failed");
+                    } finally {
+                      setReleasing(false);
+                    }
                   }}
-                />
+                >
+                  {releasing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Releasing…</> : <>Confirm & Release to Vendor</>}
+                </Button>
               </div>
             )}
           </div>
