@@ -4338,6 +4338,93 @@ export type Database = {
           },
         ]
       }
+      routing_retry_queue: {
+        Row: {
+          action: string
+          amount_fee_already_taken: number
+          amount_principal: number
+          attempt_count: number
+          created_at: string
+          failure_code: string | null
+          failure_details: Json | null
+          failure_reason: string | null
+          fee_phase: string
+          id: string
+          last_attempted_at: string | null
+          max_attempts: number
+          milestone_id: string | null
+          next_retry_at: string
+          original_payload: Json
+          recipient_address: string | null
+          recipient_chain: string | null
+          recipient_method: string | null
+          recipient_role: string | null
+          recipient_user_id: string | null
+          resolved_at: string | null
+          status: string
+          surface: string
+          transaction_id: string | null
+          unblocked_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          amount_fee_already_taken?: number
+          amount_principal?: number
+          attempt_count?: number
+          created_at?: string
+          failure_code?: string | null
+          failure_details?: Json | null
+          failure_reason?: string | null
+          fee_phase?: string
+          id?: string
+          last_attempted_at?: string | null
+          max_attempts?: number
+          milestone_id?: string | null
+          next_retry_at?: string
+          original_payload?: Json
+          recipient_address?: string | null
+          recipient_chain?: string | null
+          recipient_method?: string | null
+          recipient_role?: string | null
+          recipient_user_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          surface: string
+          transaction_id?: string | null
+          unblocked_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          amount_fee_already_taken?: number
+          amount_principal?: number
+          attempt_count?: number
+          created_at?: string
+          failure_code?: string | null
+          failure_details?: Json | null
+          failure_reason?: string | null
+          fee_phase?: string
+          id?: string
+          last_attempted_at?: string | null
+          max_attempts?: number
+          milestone_id?: string | null
+          next_retry_at?: string
+          original_payload?: Json
+          recipient_address?: string | null
+          recipient_chain?: string | null
+          recipient_method?: string | null
+          recipient_role?: string | null
+          recipient_user_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          surface?: string
+          transaction_id?: string | null
+          unblocked_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sanctions_screening_logs: {
         Row: {
           admin_notes: string | null
