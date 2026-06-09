@@ -234,12 +234,15 @@ const BuyerLogin = () => {
                 {loading ? "Signing in..." : isTestnet ? "Enter Testnet Dashboard" : "Sign In"}
               </Button>
               {!isTestnet && (
-                <div className="text-center space-y-2">
-                  <Link to="/trustlock/buyer/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
-                  <div>
-                    <Link to="/trustlock/buyer/signup" className="text-xs text-primary hover:underline">New buyer? Create an account →</Link>
+                <>
+                  <SocialLoginButtons context="as Buyer" />
+                  <div className="text-center space-y-2">
+                    <Link to="/trustlock/buyer/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</Link>
+                    <div>
+                      <Link to="/trustlock/buyer/signup" className="text-xs text-primary hover:underline">New buyer? Create an account →</Link>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </form>
           </CardContent>
