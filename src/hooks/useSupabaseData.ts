@@ -20,8 +20,18 @@ async function callEdgeFunction(functionName: string, body: Record<string, unkno
     headers,
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || "Request failed");
+  const raw = await res.text();
+  let data: any = null;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error("The release service returned an unreadable response. Please try again or contact support.");
+  }
+
+  if (!res.ok || !data?.success) {
+    const message = data?.error || data?.message || data?.skipped || `Request failed (${res.status})`;
+    throw new Error(message);
+  }
   return data;
 }
 
