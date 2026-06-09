@@ -95,21 +95,35 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
-    overscroll-behavior-y: contain;
+    /* Allow native vertical scroll everywhere. Use `clip` (not `hidden`)
+       so descendant `position: sticky` and iOS momentum scrolling keep
+       working — `overflow-x: hidden` on <html> breaks scroll on iOS
+       Safari and was the root cause of the frozen viewport. */
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Strictly vertical (Play Store style) portal layout — prevent any
-     horizontal page overflow so nothing is cut off on the left or right
-     at any viewport width. Wide elements opt into their own horizontal
-     scroll containers instead of pushing the page sideways. */
-  html, body, #root {
-    max-width: 100vw;
-    overflow-x: hidden;
+  html {
+    /* Never set overflow:hidden here — it disables the entire page scroll
+       on iOS/Android WebView. Only the body clips horizontally. */
+    height: auto;
   }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Wide elements (tables, charts) must scroll inside their own
+     container instead of pushing the page sideways. */
   main {
     min-width: 0;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
   main img, main video, main canvas, main svg {
     max-width: 100%;
@@ -119,6 +133,7 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
