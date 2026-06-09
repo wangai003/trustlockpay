@@ -512,8 +512,12 @@ function OrderRow({ order, rowIdx, expandedOrder, setExpandedOrder, releaseOrder
                     variant="default"
                     className="gap-1 shrink-0 snap-start"
                     onClick={() => {
-                      setReleaseOrderId(releaseOrderId === order.id ? null : order.id);
+                      setReleaseOrderId(order.id);
                       if (expandedOrder !== order.id) setExpandedOrder(order.id);
+                      setTimeout(() => {
+                        const el = document.getElementById(`release-panel-${order.id}`);
+                        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 150);
                     }}
                   >
                     <Unlock className="w-3.5 h-3.5" />
