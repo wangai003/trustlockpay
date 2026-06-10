@@ -16,7 +16,6 @@ interface BuyerProfile {
 
 interface BuyerContextType {
   networkMode: NetworkMode;
-  setNetworkMode: (mode: NetworkMode) => void;
   isTestnet: boolean;
   buyer: BuyerProfile;
   setBuyer: (buyer: BuyerProfile | ((prev: BuyerProfile) => BuyerProfile)) => void;
