@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2, Star, ArrowRightLeft } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2, Star, ArrowRightLeft, ShieldCheck, ShieldOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 
@@ -18,6 +18,7 @@ const TESTNET_CHIEF_ADMIN_ID = "a0ac136f-de82-45bd-8219-0fc5ab25d098";
 
 const MUTATION_ACTIONS = new Set([
   "add", "delete", "reinstate", "promote", "demote", "deleteSelf",
+  "toggleTeamLead", "transferDepartment", "setMainnetAccess",
 ]);
 
 function callStaffApi(body: Record<string, unknown>) {
@@ -61,6 +62,7 @@ interface AdminAccount {
   reinstated_at: string | null;
   created_at: string;
   department_slug?: string;
+  mainnet_enabled?: boolean;
 }
 
 // Testnet mock staff for simulation
@@ -273,6 +275,22 @@ export default function AdminStaffManager() {
       toast.success("Staff transferred to new department");
     },
   });
+
+  const setMainnetAccessMutation = useMutation({
+    mutationFn: ({ adminId, enabled }: { adminId: string; enabled: boolean }) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === adminId ? { ...s, mainnet_enabled: enabled } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "setMainnetAccess", chiefAdminId, adminId, enabled });
+    },
+    onSuccess: (_res, vars) => {
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success(vars.enabled ? "Mainnet access granted" : "Mainnet access revoked");
+    },
+    onError: () => toast.error("Could not update mainnet access"),
+  });
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -365,7 +383,16 @@ export default function AdminStaffManager() {
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Awaiting Setup</Badge>
                   )}
-                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
+                    {a.mainnet_enabled ? (
+                     <Badge variant="default" className="text-[10px] gap-1 bg-destructive/90 hover:bg-destructive/90">
+                       <ShieldCheck className="w-2.5 h-2.5" /> Mainnet
+                     </Badge>
+                   ) : (
+                     <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/40 text-muted-foreground">
+                       <ShieldOff className="w-2.5 h-2.5" /> Sandbox only
+                     </Badge>
+                   )}
+                    {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
                    {a.is_team_lead && (
                      <Badge variant="default" className="text-[10px] gap-0.5 bg-emerald-600">
                        <Star className="w-2.5 h-2.5" /> Team Lead
@@ -396,6 +423,17 @@ export default function AdminStaffManager() {
                      </Button>
                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setTransferTarget(a); setTransferDept(a.department_slug || ""); }}>
                        <ArrowRightLeft className="w-3 h-3" /> Transfer
+                     </Button>
+                     <Button
+                       size="sm"
+                       variant={a.mainnet_enabled ? "secondary" : "outline"}
+                       className="gap-1 text-xs"
+                       onClick={() => setMainnetAccessMutation.mutate({ adminId: a.id, enabled: !a.mainnet_enabled })}
+                       disabled={setMainnetAccessMutation.isPending}
+                       title={a.mainnet_enabled ? "Revoke mainnet (live) access" : "Grant mainnet (live) access"}
+                     >
+                       {a.mainnet_enabled ? <ShieldOff className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
+                       {a.mainnet_enabled ? "Revoke Mainnet" : "Grant Mainnet"}
                      </Button>
                      <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
                        <Trash2 className="w-3 h-3" /> Delete

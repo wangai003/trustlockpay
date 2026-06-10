@@ -75,7 +75,7 @@ const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
     setLoading(true);
 
     try {
-      const result = await serverAdminLogin(identifier, password);
+      const result = await serverAdminLogin(identifier, password, forceNetwork);
 
       if (result.locked) {
         setError("Account locked after 5 failed attempts. Please reset your password.");

@@ -96,6 +96,7 @@ export type Database = {
           is_setup: boolean
           is_team_lead: boolean
           locked_at: string | null
+          mainnet_enabled: boolean
           name: string
           password_hash: string | null
           reinstated_at: string | null
@@ -119,6 +120,7 @@ export type Database = {
           is_setup?: boolean
           is_team_lead?: boolean
           locked_at?: string | null
+          mainnet_enabled?: boolean
           name: string
           password_hash?: string | null
           reinstated_at?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           is_setup?: boolean
           is_team_lead?: boolean
           locked_at?: string | null
+          mainnet_enabled?: boolean
           name?: string
           password_hash?: string | null
           reinstated_at?: string | null
