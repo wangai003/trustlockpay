@@ -34,7 +34,7 @@ const SandboxLogin = () => {
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
 
   // Check localStorage on mount
-  useState(() => {
+  useEffect(() => {
     const raw = localStorage.getItem("tl_sandbox_session");
     if (raw) {
       try {
@@ -45,7 +45,7 @@ const SandboxLogin = () => {
         }
       } catch { /* ignore */ }
     }
-  });
+  }, []);
 
   const createSession = (userName: string, userEmail: string) => {
     const session = {
