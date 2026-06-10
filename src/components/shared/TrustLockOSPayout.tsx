@@ -1539,36 +1539,41 @@ const TrustLockOSPayout = ({
         </Card>
       )}
 
-      {/* Privacy Disclaimer */}
-      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-        <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground">
-          <AlertTriangle className="w-3 h-3" />
-          <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
-        </button>
-        {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
-        {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
-      </div>
+      {/* Privacy + Actions — only shown when admin OR manual form is expanded */}
+      {(isAdmin || showManualForm) && (
+        <>
+          {/* Privacy Disclaimer */}
+          <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+            <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground">
+              <AlertTriangle className="w-3 h-3" />
+              <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
+            </button>
+            {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
+            {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
+          </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          className="flex-1 h-12 gap-2 font-semibold"
-          onClick={handleProceedToReview}
-          disabled={processing}
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              Review & Submit
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </Button>
-      </div>
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 h-12 gap-2 font-semibold"
+              onClick={handleProceedToReview}
+              disabled={processing}
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Review & Submit
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
 
       <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
         <Lock className="w-3 h-3" />
