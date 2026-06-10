@@ -5,35 +5,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ShoppingBag, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
-const BuyerLogin = () => {
+interface BuyerLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const BuyerLogin = ({ forceNetwork = "mainnet" }: BuyerLoginProps) => {
   const navigate = useNavigate();
   const { signIn, user, loading: authLoading } = useAuth();
+  const isTestnet = forceNetwork === "testnet";
 
-  // Auto-redirect if already authenticated (e.g. after email verification)
   useEffect(() => {
-    if (!authLoading && user) {
-      localStorage.setItem("tl_buyer_network", "mainnet");
+    if (!isTestnet && !authLoading && user) {
+      void stampNetworkScope("buyer", "mainnet");
       navigate("/trustlock/buyer", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, isTestnet]);
 
-  // Detect if coming from email verification
-  const comingFromVerification = window.location.hash.includes("access_token") || 
-    window.location.search.includes("verified") ||
-    document.referrer.includes("/verify");
-
-  const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(comingFromVerification ? "" : "james@trustlocktest.com");
+  const [email, setEmail] = useState(isTestnet ? "james@trustlocktest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
