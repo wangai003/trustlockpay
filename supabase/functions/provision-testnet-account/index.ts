@@ -130,9 +130,8 @@ Deno.serve(async (req) => {
     }
 
     // 5. Lender extras — 2 sample applications + 1 issued certificate
-    const seededLenderRecords: { applications: number; certificates: number } = {
+    const seededLenderRecords: { applications: number } = {
       applications: 0,
-      certificates: 0,
     };
     if (role === "lender") {
       const { count: appCount } = await admin
