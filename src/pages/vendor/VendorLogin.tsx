@@ -71,14 +71,6 @@ const VendorLogin = ({ forceNetwork = "mainnet" }: VendorLoginProps) => {
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
   const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    setEmail(!checked ? "vendor@kentetest.com" : "");
-    setPassword("");
-    setError("");
-    setResendMessage("");
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -88,7 +80,7 @@ const VendorLogin = ({ forceNetwork = "mainnet" }: VendorLoginProps) => {
     if (isTestnet) {
       if (password === "333") {
         localStorage.setItem("tl_vendor_auth", "true");
-        localStorage.setItem("tl_vendor_network", "testnet");
+        await stampNetworkScope("vendor", "testnet", { authed: false });
         localStorage.setItem("tl_vendor_onboarded", "true");
         localStorage.removeItem("tl_vendor_failed");
         navigate("/trustlock/vendor");
@@ -113,7 +105,7 @@ const VendorLogin = ({ forceNetwork = "mainnet" }: VendorLoginProps) => {
       return;
     }
 
-    localStorage.setItem("tl_vendor_network", "mainnet");
+    await stampNetworkScope("vendor", "mainnet");
     localStorage.removeItem("tl_vendor_failed");
     localStorage.removeItem("tl_vendor_lockout");
     navigate("/trustlock/vendor");
