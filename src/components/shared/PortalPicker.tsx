@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Shield, ShoppingBag, Store, Landmark } from "lucide-react";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Shield, ShoppingBag, Store, Landmark, FlaskConical, Globe } from "lucide-react";
 
 interface PortalPickerProps {
   open: boolean;
@@ -11,15 +15,28 @@ interface PortalPickerProps {
   mode: "login" | "signup";
 }
 
-const portals = [
+type Portal = {
+  role: string;
+  label: string;
+  sublabel: string;
+  desc: string;
+  icon: typeof Store;
+  mainnetLogin: string;
+  mainnetSignup: string;
+  testnetLogin: string;
+  // Sandbox/testnet signup falls back to the testnet login (sandbox flow handles enrollment).
+};
+
+const portals: Portal[] = [
   {
     role: "vendor",
     label: "Vendor",
     sublabel: "(Contractor · Supplier · Exporter)",
     desc: "Sell products & services with escrow protection",
     icon: Store,
-    loginPath: "/trustlock/vendor/login",
-    signupPath: "/trustlock/vendor/signup",
+    mainnetLogin: "/trustlock/vendor/login",
+    mainnetSignup: "/trustlock/vendor/signup",
+    testnetLogin: "/trustlock/vendor/sandbox/login",
   },
   {
     role: "buyer",
@@ -27,8 +44,9 @@ const portals = [
     sublabel: "(Investor · Client · Funder · Principal)",
     desc: "Shop securely with funds held in escrow",
     icon: ShoppingBag,
-    loginPath: "/trustlock/buyer/login",
-    signupPath: "/trustlock/buyer/signup",
+    mainnetLogin: "/trustlock/buyer/login",
+    mainnetSignup: "/trustlock/buyer/signup",
+    testnetLogin: "/trustlock/buyer/sandbox/login",
   },
   {
     role: "lender",
@@ -36,8 +54,9 @@ const portals = [
     sublabel: "(Bank · DFI · Fund Manager)",
     desc: "Finance vendors & manage loan portfolios",
     icon: Landmark,
-    loginPath: "/trustlock/lender/login",
-    signupPath: "/trustlock/lender/signup",
+    mainnetLogin: "/trustlock/lender/login",
+    mainnetSignup: "/trustlock/lender/signup",
+    testnetLogin: "/trustlock/lender/sandbox/login",
   },
   {
     role: "admin",
@@ -45,13 +64,54 @@ const portals = [
     sublabel: "",
     desc: "Manage platform operations & compliance",
     icon: Shield,
-    loginPath: "/trustlock/admin/login",
-    signupPath: "/trustlock/admin/login",
+    mainnetLogin: "/trustlock/admin/login",
+    mainnetSignup: "/trustlock/admin/login",
+    testnetLogin: "/trustlock/admin/sandbox/login",
   },
 ];
 
 const PortalPicker = ({ open, onOpenChange, mode }: PortalPickerProps) => {
   const navigate = useNavigate();
+  const [section, setSection] = useState<string>("mainnet");
+
+  const go = (path: string) => {
+    onOpenChange(false);
+    navigate(path);
+  };
+
+  const renderPortalList = (network: "mainnet" | "testnet") => (
+    <div className="space-y-2 pt-2">
+      {portals.map((p) => {
+        const path =
+          network === "mainnet"
+            ? mode === "login"
+              ? p.mainnetLogin
+              : p.mainnetSignup
+            : p.testnetLogin;
+        return (
+          <Button
+            key={`${network}-${p.role}`}
+            variant="outline"
+            className="w-full justify-start gap-3 h-auto py-3 px-4"
+            onClick={() => go(path)}
+          >
+            <p.icon className="w-5 h-5 text-primary shrink-0" />
+            <div className="text-left">
+              <p className="text-sm font-semibold">
+                {p.label}{" "}
+                {p.sublabel && (
+                  <span className="text-[10px] font-normal text-muted-foreground">
+                    {p.sublabel}
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground font-normal">{p.desc}</p>
+            </div>
+          </Button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,33 +119,43 @@ const PortalPicker = ({ open, onOpenChange, mode }: PortalPickerProps) => {
         <DialogHeader>
           <DialogTitle>{mode === "login" ? "Log In" : "Get Started"}</DialogTitle>
           <DialogDescription>
-            {mode === "login"
-              ? "Choose your portal to log in."
-              : "Select how you'd like to use TrustLock."}
+            Select a network, then choose your portal.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
-          {portals.map((p) => (
-            <Button
-              key={p.role}
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-3 px-4"
-              onClick={() => {
-                onOpenChange(false);
-                navigate(mode === "login" ? p.loginPath : p.signupPath);
-              }}
-            >
-              <p.icon className="w-5 h-5 text-primary shrink-0" />
-              <div className="text-left">
-                <p className="text-sm font-semibold">
-                  {p.label}{" "}
-                  {p.sublabel && <span className="text-[10px] font-normal text-muted-foreground">{p.sublabel}</span>}
-                </p>
-                <p className="text-xs text-muted-foreground font-normal">{p.desc}</p>
+
+        <Accordion
+          type="single"
+          collapsible
+          value={section}
+          onValueChange={(v) => setSection(v)}
+          className="w-full"
+        >
+          <AccordionItem value="mainnet">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold">Mainnet</span>
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  Live network · Real funds
+                </span>
               </div>
-            </Button>
-          ))}
-        </div>
+            </AccordionTrigger>
+            <AccordionContent>{renderPortalList("mainnet")}</AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="testnet">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-semibold">Testnet</span>
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  Sandbox · Practice mode
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>{renderPortalList("testnet")}</AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </DialogContent>
     </Dialog>
   );
