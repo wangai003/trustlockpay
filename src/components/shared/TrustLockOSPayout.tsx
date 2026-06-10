@@ -32,7 +32,7 @@ import {
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
   Check, Copy, Info, Loader2, X, Home,
-  Wallet, ArrowDown, ExternalLink, CheckCircle2,
+  Wallet, ArrowDown, ExternalLink, CheckCircle2, Zap, ChevronDown, ChevronUp, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -242,6 +242,25 @@ const TrustLockOSPayout = ({
       onSuccess: (data) => setSeedToken(data?.token?.token || "TL-DEMO-TOKEN-XXXX"),
     });
   }, []);
+
+  // ─── Auto-routing detection: does this user have a default saved wallet? ───
+  const [defaultWallet, setDefaultWallet] = useState<{ chain: string; token: string; address: string; label: string | null } | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
+  useEffect(() => {
+    if (role === "admin") return;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u?.user) return;
+      const { data } = await supabase
+        .from("saved_payout_wallets")
+        .select("chain,token,address,label")
+        .eq("user_id", u.user.id)
+        .eq("is_default", true)
+        .limit(1)
+        .maybeSingle();
+      if (data) setDefaultWallet(data as any);
+    })();
+  }, [role]);
 
   // ─── Testnet auto-fill: no longer pre-selects crypto; simulation uses provider search ───
 
@@ -989,8 +1008,8 @@ const TrustLockOSPayout = ({
           {isAdmin
             ? "Use this tool to execute escrow fund movements: release funds to the vendor, refund the buyer, or process split settlements."
             : role === "vendor"
-              ? "Use this tool to withdraw your earned escrow funds to your saved crypto wallet or bank account."
-              : "Use this tool to receive refunds or released escrow funds to your saved wallet or bank account."}
+              ? "Releases from any completed order are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."
+              : "Refunds and releases are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."}
         </p>
       </div>
 
@@ -1008,6 +1027,70 @@ const TrustLockOSPayout = ({
             A full breakdown will be shown before you confirm.
           </p>
         </div>
+      )}
+
+      {/* ═══ AUTO-ROUTING STATUS (vendor/buyer) ═══
+          Releases triggered by the buyer automatically route to the user's default
+          saved wallet via the routing bridge. This page is only needed for managing
+          destinations or rare one-off manual withdrawals. */}
+      {!isAdmin && (
+        <Card className={cn("border-2", defaultWallet ? "border-primary/40 bg-primary/5" : "border-accent/40 bg-accent/5")}>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              {defaultWallet ? (
+                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground flex items-center gap-1.5 flex-wrap">
+                  {defaultWallet ? (
+                    <>
+                      <Zap className="w-3.5 h-3.5 text-primary" />
+                      Auto-Routing Active — no action needed
+                    </>
+                  ) : (
+                    <>No default payout destination saved</>
+                  )}
+                </p>
+                {defaultWallet ? (
+                  <>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                      {role === "vendor"
+                        ? "When a buyer releases your escrow on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."
+                        : "When a refund or release is approved on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."}
+                    </p>
+                    <div className="mt-2 p-2.5 rounded border border-primary/30 bg-background flex items-center gap-2 flex-wrap">
+                      <Badge className="text-[9px] bg-primary text-primary-foreground border-0 gap-0.5"><Star className="w-2.5 h-2.5" /> Default</Badge>
+                      <span className="text-[10px] font-semibold text-foreground">{defaultWallet.token} · {defaultWallet.chain}</span>
+                      {defaultWallet.label && <span className="text-[10px] text-muted-foreground">· {defaultWallet.label}</span>}
+                      <span className="text-[10px] font-mono text-muted-foreground break-all w-full">{defaultWallet.address}</span>
+                    </div>
+                    <p className="text-[9.5px] text-muted-foreground mt-2">
+                      To change where future releases are sent, manage your <strong>Saved Payout Wallets</strong> above. To force a one-off withdrawal to a different destination right now, expand the manual form below.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                    Save a default payout wallet in the <strong>Saved Payout Wallets</strong> card above so the bridge can auto-route releases and refunds to you. Until then, you'll need to fill the manual form each time.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowManualForm((s) => !s)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border bg-background hover:bg-muted text-[11px] font-semibold text-foreground transition-colors"
+            >
+              {showManualForm ? (
+                <><ChevronUp className="w-3.5 h-3.5" /> Hide one-time manual withdrawal form</>
+              ) : (
+                <><ChevronDown className="w-3.5 h-3.5" /> {defaultWallet ? "Send a one-time withdrawal to a different destination" : "Open manual withdrawal form"}</>
+              )}
+            </button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
@@ -1142,8 +1225,8 @@ const TrustLockOSPayout = ({
         </Card>
       )}
 
-      {/* ═══ VENDOR / BUYER FLOW ═══ */}
-      {!isAdmin && (
+      {/* ═══ VENDOR / BUYER FLOW (manual one-time withdrawal — hidden by default) ═══ */}
+      {!isAdmin && showManualForm && (
         <>
           {/* Order Number Field */}
           <Card className="border-2 border-primary/20">
@@ -1456,36 +1539,41 @@ const TrustLockOSPayout = ({
         </Card>
       )}
 
-      {/* Privacy Disclaimer */}
-      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-        <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground">
-          <AlertTriangle className="w-3 h-3" />
-          <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
-        </button>
-        {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
-        {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
-      </div>
+      {/* Privacy + Actions — only shown when admin OR manual form is expanded */}
+      {(isAdmin || showManualForm) && (
+        <>
+          {/* Privacy Disclaimer */}
+          <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+            <button onClick={() => setShowPrivacy(!showPrivacy)} className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground">
+              <AlertTriangle className="w-3 h-3" />
+              <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
+            </button>
+            {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
+            {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
+          </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          className="flex-1 h-12 gap-2 font-semibold"
-          onClick={handleProceedToReview}
-          disabled={processing}
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              Review & Submit
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </Button>
-      </div>
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 h-12 gap-2 font-semibold"
+              onClick={handleProceedToReview}
+              disabled={processing}
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Review & Submit
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
 
       <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
         <Lock className="w-3 h-3" />
