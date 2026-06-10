@@ -57,6 +57,11 @@ export default {
         },
         "green-light": "hsl(var(--green-light))",
         "green-dark": "hsl(var(--green-dark))",
+        testnet: {
+          DEFAULT: "hsl(var(--testnet))",
+          foreground: "hsl(var(--testnet-foreground))",
+          muted: "hsl(var(--testnet-muted))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
