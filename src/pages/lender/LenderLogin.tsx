@@ -68,14 +68,6 @@ const LenderLogin = ({ forceNetwork = "mainnet" }: LenderLoginProps) => {
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
   const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    setEmail(!checked ? "lender@testbank.com" : "");
-    setPassword("");
-    setError("");
-    setResendMessage("");
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -85,7 +77,7 @@ const LenderLogin = ({ forceNetwork = "mainnet" }: LenderLoginProps) => {
     if (isTestnet) {
       if (password === "333") {
         localStorage.setItem("tl_lender_auth", "true");
-        localStorage.setItem("tl_lender_network", "testnet");
+        await stampNetworkScope("lender", "testnet", { authed: false });
         localStorage.removeItem("tl_lender_failed");
         navigate("/trustlock/lender");
       } else {
@@ -106,7 +98,7 @@ const LenderLogin = ({ forceNetwork = "mainnet" }: LenderLoginProps) => {
 
     if (error) { handleFailedAttempt(); return; }
 
-    localStorage.setItem("tl_lender_network", "mainnet");
+    await stampNetworkScope("lender", "mainnet");
     localStorage.removeItem("tl_lender_failed");
     localStorage.removeItem("tl_lender_lockout");
     navigate("/trustlock/lender");
