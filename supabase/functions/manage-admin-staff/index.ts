@@ -257,11 +257,53 @@ Deno.serve(async (req) => {
       return json({ success: true, succession: true });
     }
 
+    // ── SET MAINNET ACCESS — original chief only ───────────
+    if (action === "setMainnetAccess") {
+      if (!isOriginalChief) {
+        return json({ error: "Only the original Chief Admin can change mainnet access." }, 403);
+      }
+      const { adminId, enabled } = params;
+      if (!adminId || typeof enabled !== "boolean") {
+        return json({ error: "adminId and enabled (boolean) required." }, 400);
+      }
+      if (adminId === chiefAdminId && enabled === false) {
+        return json({ error: "Cannot revoke your own mainnet access." }, 400);
+      }
+
+      const { error } = await supabase
+        .from("admin_accounts")
+        .update({ mainnet_enabled: enabled, updated_at: new Date().toISOString() })
+        .eq("id", adminId);
+
+      if (error) return json({ error: error.message }, 500);
+
+      // Audit trail
+      await supabase.from("admin_action_log").insert({
+        admin_id: chiefAdminId,
+        action_type: enabled ? "mainnet_access_granted" : "mainnet_access_revoked",
+        case_id: adminId,
+        case_type: "admin_account",
+        metadata: { target_admin_id: adminId, mainnet_enabled: enabled },
+      });
+
+      // If revoking, force-logout any active mainnet sessions for that admin.
+      if (!enabled) {
+        await supabase
+          .from("user_network_sessions")
+          .update({ revoked_at: new Date().toISOString() })
+          .eq("user_id", adminId)
+          .eq("network_scope", "mainnet")
+          .is("revoked_at", null);
+      }
+
+      return json({ success: true });
+    }
+
     // ── LIST ALL ───────────────────────────────────────────
     if (action === "list") {
       const { data: accounts, error } = await supabase
         .from("admin_accounts")
-        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at, department_id")
+        .select("id, username, name, email, is_setup, is_deleted, deleted_at, reinstated_at, created_at, department_id, mainnet_enabled")
         .order("created_at", { ascending: true });
 
       if (error) return json({ error: error.message }, 500);
