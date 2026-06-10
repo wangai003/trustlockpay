@@ -146,10 +146,10 @@ const PortalPicker = ({ open, onOpenChange, mode }: PortalPickerProps) => {
           <AccordionItem value="testnet">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-amber-500" />
-                <span className="text-sm font-semibold">Testnet</span>
+                <FlaskConical className="w-4 h-4 text-testnet" />
+                <span className="text-sm font-semibold">Testnet (Sandbox)</span>
                 <span className="text-[10px] font-normal text-muted-foreground">
-                  Sandbox · Practice mode
+                  Practice mode · No real funds
                 </span>
               </div>
             </AccordionTrigger>
