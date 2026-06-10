@@ -62,6 +62,7 @@ interface AdminAccount {
   reinstated_at: string | null;
   created_at: string;
   department_slug?: string;
+  mainnet_enabled?: boolean;
 }
 
 // Testnet mock staff for simulation
