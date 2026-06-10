@@ -5,39 +5,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
-const VendorLogin = () => {
+interface VendorLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const VendorLogin = ({ forceNetwork = "mainnet" }: VendorLoginProps) => {
   const navigate = useNavigate();
   const { signIn, user, loading: authLoading } = useAuth();
+  const isTestnet = forceNetwork === "testnet";
 
-  // Auto-redirect if already authenticated (e.g. after email verification)
+  // Auto-redirect if already authenticated (e.g. after email verification).
+  // Only valid on the mainnet route — testnet route never has a real session.
   useEffect(() => {
-    if (!authLoading && user) {
-      localStorage.setItem("tl_vendor_network", "mainnet");
+    if (!isTestnet && !authLoading && user) {
+      void stampNetworkScope("vendor", "mainnet");
       navigate("/trustlock/vendor", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, isTestnet]);
 
-  // Prefer mainnet when arriving from verification or when last successful mode was mainnet
-  const comingFromVerification = window.location.hash.includes("access_token") ||
-    window.location.search.includes("verified") ||
-    document.referrer.includes("/verify");
-  const shouldPreferMainnet = comingFromVerification || localStorage.getItem("tl_vendor_network") === "mainnet";
-
-  const [isTestnet, setIsTestnet] = useState(!shouldPreferMainnet);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(shouldPreferMainnet ? "" : "vendor@kentetest.com");
+  const [email, setEmail] = useState(isTestnet ? "vendor@kentetest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
