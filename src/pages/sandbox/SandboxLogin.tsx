@@ -183,7 +183,7 @@ const SandboxLogin = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock Sandbox</h1>
-            <p className="text-xs text-muted-foreground">Live Demo Environment</p>
+            <p className="text-xs text-muted-foreground">Testnet (Sandbox)</p>
           </div>
         </div>
 
