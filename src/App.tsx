@@ -266,7 +266,8 @@ const App = () => (
               </Route>
 
               {/* Vendor Dashboard */}
-              <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
+              <Route path="/trustlock/vendor/login" element={<VendorLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/vendor/sandbox/login" element={<VendorLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
               <Route path="/trustlock/vendor/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
