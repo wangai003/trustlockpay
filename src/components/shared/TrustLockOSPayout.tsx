@@ -1477,7 +1477,7 @@ const TrustLockOSPayout = ({
       )}
 
       {/* Privacy + Actions — only shown when admin OR manual form is expanded */}
-      {(isAdmin || showManualForm) && (
+      {(
         <>
           {/* Privacy Disclaimer */}
           <div className="bg-muted/50 rounded-lg p-3 space-y-1">
