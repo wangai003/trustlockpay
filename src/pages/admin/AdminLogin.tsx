@@ -105,12 +105,11 @@ const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
         }));
         await stampNetworkScope("admin", "mainnet", { authed: false });
         localStorage.setItem("tl_admin_name", result.name || "Admin");
-        // Stash the chief password for the session so privileged staff-management
-        // mutations can prove credential ownership server-side. Cleared on tab
-        // close, logout, or session timeout.
-        if (result.isChief) {
-          sessionStorage.setItem("tl_admin_session_pw", password);
-        }
+        // Stash the password for the session so the admin shell and privileged
+        // gates can prove credential ownership server-side. Cleared on tab
+        // close, logout, or session timeout. Stored for ALL admins so the
+        // layout-level verification can run on every page load.
+        sessionStorage.setItem("tl_admin_session_pw", password);
         setLoading(false);
         navigate("/trustlock/admin");
         return;
