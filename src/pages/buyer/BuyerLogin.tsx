@@ -73,13 +73,6 @@ const BuyerLogin = ({ forceNetwork = "mainnet" }: BuyerLoginProps) => {
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
   const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    setEmail(!checked ? "james@trustlocktest.com" : "");
-    setPassword("");
-    setError("");
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -92,7 +85,7 @@ const BuyerLogin = ({ forceNetwork = "mainnet" }: BuyerLoginProps) => {
     if (isTestnet) {
       if (password === "333") {
         localStorage.setItem("tl_buyer_auth", "true");
-        localStorage.setItem("tl_buyer_network", "testnet");
+        await stampNetworkScope("buyer", "testnet", { authed: false });
         localStorage.removeItem("tl_buyer_failed");
         navigate("/trustlock/buyer");
       } else {
@@ -105,7 +98,7 @@ const BuyerLogin = ({ forceNetwork = "mainnet" }: BuyerLoginProps) => {
       if (error) {
         handleFailedAttempt();
       } else {
-        localStorage.setItem("tl_buyer_network", "mainnet");
+        await stampNetworkScope("buyer", "mainnet");
         localStorage.removeItem("tl_buyer_failed");
         localStorage.removeItem("tl_buyer_lockout");
         navigate("/trustlock/buyer");
