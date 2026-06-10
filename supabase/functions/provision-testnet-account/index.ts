@@ -150,18 +150,9 @@ Deno.serve(async (req) => {
           });
           if (!error) seededLenderRecords.applications += 1;
         }
-
-        const { error: certErr } = await admin
-          .from("lender_certificates")
-          .insert({
-            lender_id: userId,
-            vendor_id: bot.bot_user_id,
-            amount: 5000,
-            status: "issued",
-            expires_at: new Date(Date.now() + 90 * 86400000).toISOString(),
-            is_testnet_demo: true,
-          });
-        if (!certErr) seededLenderRecords.certificates = 1;
+        // Certificate issuance is mission L2 — left for the user to perform
+        // through the real UI rather than auto-seeded, since it must be tied
+        // to a real transaction_id under the current schema.
       }
     }
 
