@@ -491,13 +491,15 @@ const TrustLockOSPayout = ({
     // Order number always required
     if (!orderNumber?.trim()) return false;
 
-    // Admin: just needs order number + action (split needs percentages)
+    // Admin: order number + amount > 0 + action (split needs percentages) + authorization checkbox
     if (isAdmin) {
+      if (!(amountNum > 0)) return false;
       if (payoutType === "split") {
         const bp = parseFloat(splitBuyerPercent);
         const vp = parseFloat(splitVendorPercent);
         if (isNaN(bp) || isNaN(vp) || bp < 0 || vp < 0 || Math.abs(bp + vp - 100) > 0.01) return false;
       }
+      if (!adminAuthorizeConfirmed) return false;
       return true;
     }
 
