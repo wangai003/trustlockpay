@@ -532,15 +532,19 @@ const TrustLockOSPayout = ({
   const getFieldErrors = () => {
     const errors: Record<string, boolean> = {};
     if (!orderNumber?.trim()) errors.orderNumber = true;
-    if (isAdmin && payoutType === "split") {
-      const bp = parseFloat(splitBuyerPercent);
-      const vp = parseFloat(splitVendorPercent);
-      if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
-      if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
-      if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
-        errors.splitBuyerPercent = true;
-        errors.splitVendorPercent = true;
+    if (isAdmin) {
+      if (!(amountNum > 0)) errors.amount = true;
+      if (payoutType === "split") {
+        const bp = parseFloat(splitBuyerPercent);
+        const vp = parseFloat(splitVendorPercent);
+        if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
+        if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
+        if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
+          errors.splitBuyerPercent = true;
+          errors.splitVendorPercent = true;
+        }
       }
+      if (!adminAuthorizeConfirmed) errors.adminAuthorizeConfirmed = true;
     }
     if (!isAdmin) {
       if (isCrypto) {
