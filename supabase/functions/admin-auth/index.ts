@@ -28,8 +28,12 @@ Deno.serve(async (req) => {
 
     // ── LOGIN ──────────────────────────────────────────────
     if (action === "login") {
-      const { identifier, password } = params;
+      const { identifier, password, network } = params;
       if (!identifier || !password) return json({ error: "Missing fields" }, 400);
+
+      // Network gate only applies to mainnet logins. Testnet/sandbox is open
+      // to every active admin for training & QA.
+      const isMainnet = network === "mainnet";
 
       const id = identifier.toLowerCase().trim();
 
