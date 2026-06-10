@@ -57,19 +57,6 @@ const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
     return () => clearTimeout(timer);
   }, [identifier, password, isTestnet]);
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    if (!checked) {
-      setIdentifier("admin@trustlock.test");
-      setPassword("");
-    } else {
-      setIdentifier("");
-      setPassword("");
-    }
-    setError("");
-    setShowResetLink(false);
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
