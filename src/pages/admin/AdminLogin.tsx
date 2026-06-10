@@ -103,7 +103,7 @@ const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
           chiefRank: result.chiefRank || null,
           departmentSlug: result.departmentSlug || null,
         }));
-        localStorage.setItem("tl_network", "mainnet");
+        await stampNetworkScope("admin", "mainnet", { authed: false });
         localStorage.setItem("tl_admin_name", result.name || "Admin");
         // Stash the chief password for the session so privileged staff-management
         // mutations can prove credential ownership server-side. Cleared on tab
