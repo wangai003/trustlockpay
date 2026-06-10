@@ -1029,6 +1029,70 @@ const TrustLockOSPayout = ({
         </div>
       )}
 
+      {/* ═══ AUTO-ROUTING STATUS (vendor/buyer) ═══
+          Releases triggered by the buyer automatically route to the user's default
+          saved wallet via the routing bridge. This page is only needed for managing
+          destinations or rare one-off manual withdrawals. */}
+      {!isAdmin && (
+        <Card className={cn("border-2", defaultWallet ? "border-primary/40 bg-primary/5" : "border-accent/40 bg-accent/5")}>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              {defaultWallet ? (
+                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground flex items-center gap-1.5 flex-wrap">
+                  {defaultWallet ? (
+                    <>
+                      <Zap className="w-3.5 h-3.5 text-primary" />
+                      Auto-Routing Active — no action needed
+                    </>
+                  ) : (
+                    <>No default payout destination saved</>
+                  )}
+                </p>
+                {defaultWallet ? (
+                  <>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                      {role === "vendor"
+                        ? "When a buyer releases your escrow on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."
+                        : "When a refund or release is approved on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."}
+                    </p>
+                    <div className="mt-2 p-2.5 rounded border border-primary/30 bg-background flex items-center gap-2 flex-wrap">
+                      <Badge className="text-[9px] bg-primary text-primary-foreground border-0 gap-0.5"><Star className="w-2.5 h-2.5" /> Default</Badge>
+                      <span className="text-[10px] font-semibold text-foreground">{defaultWallet.token} · {defaultWallet.chain}</span>
+                      {defaultWallet.label && <span className="text-[10px] text-muted-foreground">· {defaultWallet.label}</span>}
+                      <span className="text-[10px] font-mono text-muted-foreground break-all w-full">{defaultWallet.address}</span>
+                    </div>
+                    <p className="text-[9.5px] text-muted-foreground mt-2">
+                      To change where future releases are sent, manage your <strong>Saved Payout Wallets</strong> above. To force a one-off withdrawal to a different destination right now, expand the manual form below.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                    Save a default payout wallet in the <strong>Saved Payout Wallets</strong> card above so the bridge can auto-route releases and refunds to you. Until then, you'll need to fill the manual form each time.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowManualForm((s) => !s)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border bg-background hover:bg-muted text-[11px] font-semibold text-foreground transition-colors"
+            >
+              {showManualForm ? (
+                <><ChevronUp className="w-3.5 h-3.5" /> Hide one-time manual withdrawal form</>
+              ) : (
+                <><ChevronDown className="w-3.5 h-3.5" /> {defaultWallet ? "Send a one-time withdrawal to a different destination" : "Open manual withdrawal form"}</>
+              )}
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
 
       {isAdmin && (
