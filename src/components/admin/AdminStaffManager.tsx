@@ -421,6 +421,9 @@ export default function AdminStaffManager() {
                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => toggleTeamLeadMutation.mutate(a)}>
                        <Star className="w-3 h-3" /> {a.is_team_lead ? "Remove Lead" : "Make Lead"}
                      </Button>
+                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setTransferTarget(a); setTransferDept(a.department_slug || ""); }}>
+                       <ArrowRightLeft className="w-3 h-3" /> Transfer
+                     </Button>
                      <Button
                        size="sm"
                        variant={a.mainnet_enabled ? "secondary" : "outline"}
