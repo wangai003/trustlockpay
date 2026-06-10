@@ -8,6 +8,7 @@ import { Building2, Users, Crown, MessageSquare, Shield, DollarSign, ShieldCheck
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 import DepartmentWorkflow from "@/components/admin/DepartmentWorkflow";
 import DepartmentAlertInbox from "@/components/admin/DepartmentAlertInbox";
+import ChiefOnlyGate from "@/components/admin/ChiefOnlyGate";
 
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin-staff`;
 const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -83,6 +84,7 @@ const AdminDepartments = () => {
   const [activeTab, setActiveTab] = useState("directory");
 
   return (
+    <ChiefOnlyGate pageName="Departments">
     <div>
       <AdminHeader title="Departments" />
       <div className="p-4 sm:p-6 space-y-6">
@@ -205,6 +207,7 @@ const AdminDepartments = () => {
         </Tabs>
       </div>
     </div>
+    </ChiefOnlyGate>
   );
 };
 
