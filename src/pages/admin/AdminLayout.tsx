@@ -21,6 +21,7 @@ const AdminLayoutInner = () => {
   return (
     <LanguageProvider>
       <AdminProvider>
+        <TestnetWatermark />
         <div className="flex min-h-screen bg-background">
           <AdminSidebar />
           <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
