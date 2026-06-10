@@ -32,7 +32,7 @@ import {
 import {
   Shield, Lock, Globe, Smartphone, ArrowRight, AlertTriangle,
   Check, Copy, Info, Loader2, X, Home,
-  Wallet, ArrowDown, ExternalLink, CheckCircle2,
+  Wallet, ArrowDown, ExternalLink, CheckCircle2, Zap, ChevronDown, ChevronUp, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
