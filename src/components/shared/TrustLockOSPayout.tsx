@@ -1361,16 +1361,12 @@ const TrustLockOSPayout = ({
                   )}
                 </div>
 
-                <div>
-                  <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.cryptoWalletAddress ? "text-destructive" : "text-muted-foreground")}>Your {SUPPORTED_CHAINS.find(c => c.id === selectedChain)?.name} Wallet Address *</Label>
-                  <Input
-                    placeholder={selectedChain === "solana" ? "Enter your Solana address" : "0x..."}
-                    value={cryptoWalletAddress}
-                    onChange={(e) => { const cleaned = e.target.value.replace(/[^a-fA-F0-9x]/g, "").slice(0, 42); setCryptoWalletAddress(cleaned); setCryptoAddressConfirmed(false); setLiabilityAccepted(false); }}
-                    className={cn("mt-1 text-sm font-mono", fieldErrors.cryptoWalletAddress && "border-destructive ring-destructive/30 ring-2")}
-                  />
-                  {fieldErrors.cryptoWalletAddress && <p className="text-[9px] text-destructive mt-1 font-medium">Wallet address is required</p>}
-                </div>
+                {!cryptoWalletAddress.trim() && (
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Pick a saved address above, or tap <strong>Add new wallet</strong> to register one. The destination cannot be typed in-line at payout time — it must come from your saved address book so the routing bridge can re-use it.
+                  </p>
+                )}
+
 
                 {/* Address Confirmation Gate */}
                 {cryptoWalletAddress.trim() && (
