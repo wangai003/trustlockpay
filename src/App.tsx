@@ -343,7 +343,8 @@ const App = () => (
               </Route>
 
               {/* Buyer Dashboard */}
-              <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+              <Route path="/trustlock/buyer/login" element={<BuyerLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/buyer/sandbox/login" element={<BuyerLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
               <Route path="/trustlock/buyer/forgot-password" element={<ForgotPassword role="buyer" />} />
               <Route path="/trustlock/buyer" element={
