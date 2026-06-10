@@ -275,6 +275,22 @@ export default function AdminStaffManager() {
       toast.success("Staff transferred to new department");
     },
   });
+
+  const setMainnetAccessMutation = useMutation({
+    mutationFn: ({ adminId, enabled }: { adminId: string; enabled: boolean }) => {
+      if (isTestnet) {
+        const updated = testnetStaff.map(s => s.id === adminId ? { ...s, mainnet_enabled: enabled } : s);
+        saveTestnetStaff(updated);
+        return Promise.resolve({});
+      }
+      return callStaffApi({ action: "setMainnetAccess", chiefAdminId, adminId, enabled });
+    },
+    onSuccess: (_res, vars) => {
+      if (!isTestnet) qc.invalidateQueries({ queryKey: ["admin-staff-list"] });
+      toast.success(vars.enabled ? "Mainnet access granted" : "Mainnet access revoked");
+    },
+    onError: () => toast.error("Could not update mainnet access"),
+  });
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
