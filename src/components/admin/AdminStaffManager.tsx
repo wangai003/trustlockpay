@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2, Star, ArrowRightLeft } from "lucide-react";
+import { UserPlus, Trash2, RotateCcw, Crown, Copy, Check, ArrowDown, Building2, Star, ArrowRightLeft, ShieldCheck, ShieldOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEPARTMENTS } from "@/lib/adminDepartments";
 
@@ -18,6 +18,7 @@ const TESTNET_CHIEF_ADMIN_ID = "a0ac136f-de82-45bd-8219-0fc5ab25d098";
 
 const MUTATION_ACTIONS = new Set([
   "add", "delete", "reinstate", "promote", "demote", "deleteSelf",
+  "toggleTeamLead", "transferDepartment", "setMainnetAccess",
 ]);
 
 function callStaffApi(body: Record<string, unknown>) {
