@@ -1009,7 +1009,7 @@ const TrustLockOSPayout = ({
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
         <div className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-primary shrink-0" />
-          <span className="text-xs font-semibold text-foreground">What is {isAdmin ? "Admin OS Payout" : "TrustLock OS Payout"}?</span>
+          <span className="text-xs font-semibold text-foreground">What is {isAdmin ? "Admin OS Pay" : "TrustLock OS Payout"}?</span>
         </div>
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           {isAdmin
