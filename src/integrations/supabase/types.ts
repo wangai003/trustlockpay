@@ -2021,6 +2021,7 @@ export type Database = {
           created_at: string
           extra_days: number
           id: string
+          is_testnet_demo: boolean
           network_scope: string
           reason: string
           requested_by: string
@@ -2034,6 +2035,7 @@ export type Database = {
           created_at?: string
           extra_days?: number
           id?: string
+          is_testnet_demo?: boolean
           network_scope?: string
           reason: string
           requested_by: string
@@ -2047,6 +2049,7 @@ export type Database = {
           created_at?: string
           extra_days?: number
           id?: string
+          is_testnet_demo?: boolean
           network_scope?: string
           reason?: string
           requested_by?: string
@@ -2625,6 +2628,7 @@ export type Database = {
           file_url: string | null
           generation_status: string
           id: string
+          is_testnet_demo: boolean
           network_scope: string
           status: string
           transaction_id: string
@@ -2641,6 +2645,7 @@ export type Database = {
           file_url?: string | null
           generation_status?: string
           id?: string
+          is_testnet_demo?: boolean
           network_scope?: string
           status?: string
           transaction_id: string
@@ -2657,6 +2662,7 @@ export type Database = {
           file_url?: string | null
           generation_status?: string
           id?: string
+          is_testnet_demo?: boolean
           network_scope?: string
           status?: string
           transaction_id?: string
@@ -3892,6 +3898,7 @@ export type Database = {
           entity_type_confirmed: boolean
           full_name: string | null
           id: string
+          is_system: boolean
           location: string | null
           notification_channels: Json | null
           onboarding_industry: string | null
@@ -3921,6 +3928,7 @@ export type Database = {
           entity_type_confirmed?: boolean
           full_name?: string | null
           id: string
+          is_system?: boolean
           location?: string | null
           notification_channels?: Json | null
           onboarding_industry?: string | null
@@ -3950,6 +3958,7 @@ export type Database = {
           entity_type_confirmed?: boolean
           full_name?: string | null
           id?: string
+          is_system?: boolean
           location?: string | null
           notification_channels?: Json | null
           onboarding_industry?: string | null
@@ -5448,6 +5457,96 @@ export type Database = {
           },
         ]
       }
+      testnet_clock_config: {
+        Row: {
+          compression_ratio: number
+          enabled_for_roles: string[]
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          compression_ratio?: number
+          enabled_for_roles?: string[]
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          compression_ratio?: number
+          enabled_for_roles?: string[]
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testnet_demo_counterparties: {
+        Row: {
+          bot_user_id: string
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          response_delay_seconds: number
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          bot_user_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          response_delay_seconds?: number
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          bot_user_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          response_delay_seconds?: number
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testnet_onboarding: {
+        Row: {
+          created_at: string
+          graduated_at: string | null
+          id: string
+          missions: Json
+          paired_mode: boolean
+          role: string
+          seeded_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          graduated_at?: string | null
+          id?: string
+          missions?: Json
+          paired_mode?: boolean
+          role: string
+          seeded_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          graduated_at?: string | null
+          id?: string
+          missions?: Json
+          paired_mode?: boolean
+          role?: string
+          seeded_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       thread_internal_notes: {
         Row: {
           admin_account_id: string
@@ -5851,6 +5950,7 @@ export type Database = {
           inbound_routed_at: string | null
           incoterm: string | null
           industry: string | null
+          is_testnet_demo: boolean
           item: string | null
           locked_price: number | null
           milestone_proposed_by: string | null
@@ -5901,6 +6001,7 @@ export type Database = {
           inbound_routed_at?: string | null
           incoterm?: string | null
           industry?: string | null
+          is_testnet_demo?: boolean
           item?: string | null
           locked_price?: number | null
           milestone_proposed_by?: string | null
@@ -5951,6 +6052,7 @@ export type Database = {
           inbound_routed_at?: string | null
           incoterm?: string | null
           industry?: string | null
+          is_testnet_demo?: boolean
           item?: string | null
           locked_price?: number | null
           milestone_proposed_by?: string | null
@@ -7265,6 +7367,10 @@ export type Database = {
           _tx_id_input: string
         }
         Returns: Json
+      }
+      testnet_clock_effective_now: {
+        Args: { network?: string; real_start: string }
+        Returns: string
       }
       update_transaction_status: {
         Args: { _new_status: string; _reason?: string; _transaction_id: string }
