@@ -188,7 +188,8 @@ const TrustLockOSPayout = ({
   const [mode, setMode] = useState<"diaspora" | "local">("local");
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider | null>(null);
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
-  const [amount] = useState(prefillAmount);
+  const [amount, setAmount] = useState(prefillAmount);
+  const [adminAuthorizeConfirmed, setAdminAuthorizeConfirmed] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(false);
   const [reviewStep, setReviewStep] = useState(false);
@@ -490,13 +491,15 @@ const TrustLockOSPayout = ({
     // Order number always required
     if (!orderNumber?.trim()) return false;
 
-    // Admin: just needs order number + action (split needs percentages)
+    // Admin: order number + amount > 0 + action (split needs percentages) + authorization checkbox
     if (isAdmin) {
+      if (!(amountNum > 0)) return false;
       if (payoutType === "split") {
         const bp = parseFloat(splitBuyerPercent);
         const vp = parseFloat(splitVendorPercent);
         if (isNaN(bp) || isNaN(vp) || bp < 0 || vp < 0 || Math.abs(bp + vp - 100) > 0.01) return false;
       }
+      if (!adminAuthorizeConfirmed) return false;
       return true;
     }
 
@@ -529,15 +532,19 @@ const TrustLockOSPayout = ({
   const getFieldErrors = () => {
     const errors: Record<string, boolean> = {};
     if (!orderNumber?.trim()) errors.orderNumber = true;
-    if (isAdmin && payoutType === "split") {
-      const bp = parseFloat(splitBuyerPercent);
-      const vp = parseFloat(splitVendorPercent);
-      if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
-      if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
-      if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
-        errors.splitBuyerPercent = true;
-        errors.splitVendorPercent = true;
+    if (isAdmin) {
+      if (!(amountNum > 0)) errors.amount = true;
+      if (payoutType === "split") {
+        const bp = parseFloat(splitBuyerPercent);
+        const vp = parseFloat(splitVendorPercent);
+        if (isNaN(bp) || bp < 0) errors.splitBuyerPercent = true;
+        if (isNaN(vp) || vp < 0) errors.splitVendorPercent = true;
+        if (!isNaN(bp) && !isNaN(vp) && Math.abs(bp + vp - 100) > 0.01) {
+          errors.splitBuyerPercent = true;
+          errors.splitVendorPercent = true;
+        }
       }
+      if (!adminAuthorizeConfirmed) errors.adminAuthorizeConfirmed = true;
     }
     if (!isAdmin) {
       if (isCrypto) {
@@ -986,7 +993,7 @@ const TrustLockOSPayout = ({
       <div className={cn("bg-primary p-4 flex items-center justify-between", isTestnet ? "rounded-none -mt-4" : "rounded-t-xl")}>
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-primary-foreground" />
-          <span className="font-heading font-bold text-sm text-primary-foreground">TrustLock OS Payout</span>
+          <span className="font-heading font-bold text-sm text-primary-foreground">{isAdmin ? "Admin OS Payout" : "TrustLock OS Payout"}</span>
         </div>
         <div className="flex items-center gap-2">
           <Badge className={cn("text-[10px] border-0", isTestnet ? "bg-accent/30 text-accent" : "bg-primary-foreground/20 text-primary-foreground")}>
@@ -1002,7 +1009,7 @@ const TrustLockOSPayout = ({
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1">
         <div className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-primary shrink-0" />
-          <span className="text-xs font-semibold text-foreground">What is TrustLock OS Payout?</span>
+          <span className="text-xs font-semibold text-foreground">What is {isAdmin ? "Admin OS Payout" : "TrustLock OS Payout"}?</span>
         </div>
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           {isAdmin
@@ -1145,6 +1152,34 @@ const TrustLockOSPayout = ({
               </p>
             </div>
 
+            {/* Order Amount (escrow principal under dispute) */}
+            <div>
+              <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.amount ? "text-destructive" : "text-muted-foreground")}>Order Amount (USD) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g., 1500.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
+                className={cn("mt-1 text-sm", fieldErrors.amount && "border-destructive ring-destructive/30 ring-2")}
+              />
+              {fieldErrors.amount && <p className="text-[9px] text-destructive mt-1 font-medium">Enter the escrow principal under dispute</p>}
+              <p className="text-[9px] text-muted-foreground mt-1">
+                The escrow principal being disbursed. Required to compute processor fees and (for split outcomes) the live per-party preview below.
+              </p>
+            </div>
+
+            {/* Split $ preview (only when split + amount present) */}
+            {adminAction === "split" && amountNum > 0 && splitVendorPercent && splitBuyerPercent &&
+             Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01 && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] space-y-1">
+                <p className="font-semibold text-foreground">Split Disbursement Preview</p>
+                <div className="flex justify-between"><span className="text-muted-foreground">Vendor ({splitVendorPercent}%)</span><span className="font-mono font-semibold text-foreground">${(amountNum * parseFloat(splitVendorPercent) / 100).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Buyer ({splitBuyerPercent}%)</span><span className="font-mono font-semibold text-foreground">${(amountNum * parseFloat(splitBuyerPercent) / 100).toFixed(2)}</span></div>
+              </div>
+            )}
+
             {/* Admin visual feedback for escrow flow */}
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground space-y-1">
               <p className="font-semibold text-foreground">🔐 Escrow Flow Preview</p>
@@ -1156,6 +1191,36 @@ const TrustLockOSPayout = ({
               )}
               {adminAction === "split" && (
                 <p>TrustLock Escrow Wallet → Payment Processor API → Vendor ({splitVendorPercent || "?"}%) + Buyer ({splitBuyerPercent || "?"}%) via their respective payment methods</p>
+              )}
+            </div>
+
+            {/* Irreversible-disbursement authorization gate (mirrors vendor crypto gate) */}
+            <div className={cn(
+              "p-3 rounded-lg border-2 space-y-2",
+              fieldErrors.adminAuthorizeConfirmed ? "border-destructive bg-destructive/5" : "border-accent/40 bg-accent/5"
+            )}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-accent">⚠️ Admin Authorization Required</p>
+                  <p className="text-[9px] text-foreground leading-relaxed">
+                    You are acting on behalf of buyer and vendor. Once authorized, the escrow smart contract disburses funds and the action <strong>cannot be reversed</strong>.
+                  </p>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={adminAuthorizeConfirmed}
+                  onChange={(e) => setAdminAuthorizeConfirmed(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-[10px] text-foreground">
+                  I authorize this irreversible {adminAction === "split" ? "split disbursement" : adminAction === "refund" ? "refund" : "release"} on behalf of the parties to order {orderNumber || "—"}.
+                </span>
+              </label>
+              {fieldErrors.adminAuthorizeConfirmed && (
+                <p className="text-[9px] text-destructive font-medium">Authorization checkbox is required before review</p>
               )}
             </div>
           </CardContent>
@@ -1482,7 +1547,7 @@ const TrustLockOSPayout = ({
               <span className="font-semibold uppercase tracking-wider">Confidential Data Notice</span>
             </button>
             {showPrivacy && <p className="text-[10px] text-muted-foreground leading-relaxed">{PRIVACY_DISCLAIMER}</p>}
-            {!showPrivacy && <p className="text-[10px] text-muted-foreground">Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more.</p>}
+            {!showPrivacy && <p className="text-[10px] text-muted-foreground">{isAdmin ? "Recipient payout details are encrypted end-to-end; only the routing bridge can decrypt them at disbursement time. Tap to read more." : "Your saved payout details are encrypted and used by the routing bridge to disburse funds. Tap to read more."}</p>}
           </div>
 
           {/* Actions */}

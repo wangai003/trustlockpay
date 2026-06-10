@@ -10,7 +10,7 @@ const AdminPayout = () => {
   const { user } = useAuth();
   return (
     <div>
-      <AdminHeader title="Admin OS Pay" />
+      <AdminHeader title="Admin OS Payout" />
       <div className="p-3 sm:p-6 space-y-4">
         <PendingRoutingCard surface="admin_os_pay" userId={user?.id} />
         <TrustLockOSPayout role="admin" isTestnet={isTestnet} />
