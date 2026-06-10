@@ -113,10 +113,10 @@ const SandboxLayout = () => {
           </Button>
         </header>
 
-        {/* Sandbox banner */}
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-between">
-          <p className="text-xs text-primary font-medium">
-            🧪 Sandbox Mode — Welcome, {session.name}. No real payments are processed.
+        {/* Testnet banner */}
+        <div className="bg-testnet/10 border-b border-testnet/30 px-4 py-2 flex items-center justify-between">
+          <p className="text-xs text-testnet font-semibold flex items-center gap-1">
+            🧪 Testnet (Sandbox) — Welcome, {session.name}. No real payments are processed.
           </p>
           <div className="hidden md:block">
             <SandboxCountdown />
