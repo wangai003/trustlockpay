@@ -4,18 +4,15 @@ import AdminActionLogViewer from "@/components/admin/AdminActionLogViewer";
 import ChiefAdminOverridePanel from "@/components/admin/ChiefAdminOverridePanel";
 import AdminSharedInbox from "@/components/admin/AdminSharedInbox";
 import AdminStaffManager from "@/components/admin/AdminStaffManager";
+import ChiefOnlyGate from "@/components/admin/ChiefOnlyGate";
+import { useIsChief } from "@/hooks/useIsChief";
 import { ClipboardList, Gavel, MessageSquare, Users } from "lucide-react";
 
 const AdminAccountability = () => {
-  // Check if current admin is chief
-  const isChief = (() => {
-    try {
-      const auth = JSON.parse(localStorage.getItem("tl_admin_auth") || "{}");
-      return auth.isChief === true;
-    } catch { return false; }
-  })();
+  const isChief = useIsChief();
 
   return (
+    <ChiefOnlyGate pageName="Accountability & Oversight">
     <div>
       <AdminHeader title="Accountability & Oversight" />
       <div className="p-4 sm:p-6">
@@ -43,6 +40,7 @@ const AdminAccountability = () => {
         </Tabs>
       </div>
     </div>
+    </ChiefOnlyGate>
   );
 };
 
