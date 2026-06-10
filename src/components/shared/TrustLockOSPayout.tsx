@@ -1225,8 +1225,8 @@ const TrustLockOSPayout = ({
         </Card>
       )}
 
-      {/* ═══ VENDOR / BUYER FLOW ═══ */}
-      {!isAdmin && (
+      {/* ═══ VENDOR / BUYER FLOW (manual one-time withdrawal — hidden by default) ═══ */}
+      {!isAdmin && showManualForm && (
         <>
           {/* Order Number Field */}
           <Card className="border-2 border-primary/20">
