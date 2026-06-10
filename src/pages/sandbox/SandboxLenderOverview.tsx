@@ -232,14 +232,16 @@ const SandboxLenderOverview = () => {
 
       {/* Main Tabs */}
       <Tabs defaultValue="risk" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-6">
-          <TabsTrigger value="risk" className="text-xs">Risk Engine</TabsTrigger>
-          <TabsTrigger value="applications" className="text-xs">Applications</TabsTrigger>
-          <TabsTrigger value="vendors" className="text-xs">Vendors</TabsTrigger>
-          <TabsTrigger value="flashvet" className="text-xs">FlashVet</TabsTrigger>
-          <TabsTrigger value="kyb" className="text-xs">KYB</TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 md:mx-0 overflow-x-auto">
+          <TabsList className="inline-flex w-max md:w-full md:grid md:grid-cols-6 px-4 md:px-0">
+            <TabsTrigger value="risk" className="text-xs whitespace-nowrap">Risk Engine</TabsTrigger>
+            <TabsTrigger value="applications" className="text-xs whitespace-nowrap">Applications</TabsTrigger>
+            <TabsTrigger value="vendors" className="text-xs whitespace-nowrap">Vendors</TabsTrigger>
+            <TabsTrigger value="flashvet" className="text-xs whitespace-nowrap">FlashVet</TabsTrigger>
+            <TabsTrigger value="kyb" className="text-xs whitespace-nowrap">KYB</TabsTrigger>
+            <TabsTrigger value="documents" className="text-xs whitespace-nowrap">Documents</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Risk Engine Tab */}
         <TabsContent value="risk" className="space-y-4">

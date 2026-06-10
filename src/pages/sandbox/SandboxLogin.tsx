@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,7 +34,7 @@ const SandboxLogin = () => {
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
 
   // Check localStorage on mount
-  useState(() => {
+  useEffect(() => {
     const raw = localStorage.getItem("tl_sandbox_session");
     if (raw) {
       try {
@@ -45,7 +45,7 @@ const SandboxLogin = () => {
         }
       } catch { /* ignore */ }
     }
-  });
+  }, []);
 
   const createSession = (userName: string, userEmail: string) => {
     const session = {
@@ -183,7 +183,7 @@ const SandboxLogin = () => {
           </div>
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">TrustLock Sandbox</h1>
-            <p className="text-xs text-muted-foreground">Live Demo Environment</p>
+            <p className="text-xs text-muted-foreground">Testnet (Sandbox)</p>
           </div>
         </div>
 
