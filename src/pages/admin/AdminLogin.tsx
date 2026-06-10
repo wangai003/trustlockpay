@@ -5,13 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { serverAdminLogin, serverAdminLookup } from "@/lib/adminAuth";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
-const AdminLogin = () => {
+interface AdminLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
   const navigate = useNavigate();
-  const [isTestnet, setIsTestnet] = useState(true);
+  const isTestnet = forceNetwork === "testnet";
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
   const [password, setPassword] = useState("");
