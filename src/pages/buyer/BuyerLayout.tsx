@@ -10,6 +10,8 @@ import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
 import EntityClassificationPrompt from "@/components/shared/EntityClassificationPrompt";
+import { MissionChecklist } from "@/components/testnet/MissionChecklist";
+import { GraduationBanner } from "@/components/testnet/GraduationBanner";
 
 const BuyerLayoutInner = () => {
   useSessionTimeout("/trustlock/buyer/login");
@@ -23,8 +25,13 @@ const BuyerLayoutInner = () => {
         <div className="flex min-h-screen bg-background">
           <BuyerSidebar />
           <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
+            <GraduationBanner role="buyer" />
             <TestnetGuide role="buyer" />
             <Outlet />
+          </main>
+          <MissionChecklist role="buyer" />
+          <div className="hidden">{/* anchor */}</div>
+          <div style={{ display: "none" }}>
           </main>
           <CommandPalette role="buyer" />
           <MobileBottomNav role="buyer" />
