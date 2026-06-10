@@ -5,39 +5,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Store, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
 const isLikelyEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
-const VendorLogin = () => {
+interface VendorLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const VendorLogin = ({ forceNetwork = "mainnet" }: VendorLoginProps) => {
   const navigate = useNavigate();
   const { signIn, user, loading: authLoading } = useAuth();
+  const isTestnet = forceNetwork === "testnet";
 
-  // Auto-redirect if already authenticated (e.g. after email verification)
+  // Auto-redirect if already authenticated (e.g. after email verification).
+  // Only valid on the mainnet route — testnet route never has a real session.
   useEffect(() => {
-    if (!authLoading && user) {
-      localStorage.setItem("tl_vendor_network", "mainnet");
+    if (!isTestnet && !authLoading && user) {
+      void stampNetworkScope("vendor", "mainnet");
       navigate("/trustlock/vendor", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, isTestnet]);
 
-  // Prefer mainnet when arriving from verification or when last successful mode was mainnet
-  const comingFromVerification = window.location.hash.includes("access_token") ||
-    window.location.search.includes("verified") ||
-    document.referrer.includes("/verify");
-  const shouldPreferMainnet = comingFromVerification || localStorage.getItem("tl_vendor_network") === "mainnet";
-
-  const [isTestnet, setIsTestnet] = useState(!shouldPreferMainnet);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(shouldPreferMainnet ? "" : "vendor@kentetest.com");
+  const [email, setEmail] = useState(isTestnet ? "vendor@kentetest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,14 +71,6 @@ const VendorLogin = () => {
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
   const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    setEmail(!checked ? "vendor@kentetest.com" : "");
-    setPassword("");
-    setError("");
-    setResendMessage("");
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -88,7 +80,7 @@ const VendorLogin = () => {
     if (isTestnet) {
       if (password === "333") {
         localStorage.setItem("tl_vendor_auth", "true");
-        localStorage.setItem("tl_vendor_network", "testnet");
+        await stampNetworkScope("vendor", "testnet", { authed: false });
         localStorage.setItem("tl_vendor_onboarded", "true");
         localStorage.removeItem("tl_vendor_failed");
         navigate("/trustlock/vendor");
@@ -113,7 +105,7 @@ const VendorLogin = () => {
       return;
     }
 
-    localStorage.setItem("tl_vendor_network", "mainnet");
+    await stampNetworkScope("vendor", "mainnet");
     localStorage.removeItem("tl_vendor_failed");
     localStorage.removeItem("tl_vendor_lockout");
     navigate("/trustlock/vendor");
@@ -191,20 +183,7 @@ const VendorLogin = () => {
           </div>
         </motion.div>
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className={`text-sm font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Testnet</span>
-          <Switch checked={!isTestnet} onCheckedChange={handleToggle} />
-          <span className={`text-sm font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Mainnet</span>
-        </div>
-
-        {isTestnet && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3 text-sm">
-              <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-accent-foreground"><strong>Testnet Mode</strong> — Simulated vendor data. No real transactions.</span>
-            </div>
-          </motion.div>
-        )}
+        <NetworkLockBanner scope={forceNetwork} />
 
         {isLocked && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">

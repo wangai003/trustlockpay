@@ -1,89 +1,66 @@
-# Failed Routing Queue & Auto-Retry Mechanism
+## Goal
+Complete the testnet/mainnet decoupling for all four portals (Admin, Vendor, Buyer, Lender) beyond the visual hard-lock already shipped. Network mode becomes a first-class auth boundary, not just a UI flag.
 
-Build a durable queue that captures every routing attempt that fails (inbound payments, escrow releases, splits, refunds, milestone payouts, vendor off-ramps) so the system can automatically retry once the blocking condition is resolved — without ever re-charging fees that were already deducted.
+---
 
-## 1. New table: `routing_retry_queue`
+## Step 1 — Dedicated sandbox login routes
 
-Columns:
-- `id` uuid pk
-- `transaction_id` uuid (nullable for pre-escrow inbound)
-- `milestone_id` uuid nullable
-- `surface` text — one of `trustlock_os_pay`, `trustlock_os_payout`, `admin_os_pay`
-- `action` text — `route_inbound`, `route_release`, `route_split`, `route_refund`, `route_milestone`, `route_refund_milestone`, `route_vendor_payout`
-- `recipient_user_id` uuid, `recipient_role` text (buyer/vendor/admin/platform)
-- `recipient_address` text, `recipient_chain` text, `recipient_method` text (crypto/stripe/transak/bank/mobile)
-- `amount_principal` numeric, `amount_fee_already_taken` numeric (locks in the prior fee skim — never re-deducted)
-- `fee_phase` text — `upfront_taken`, `escrow_fee_taken`, `none`
-- `original_payload` jsonb — exact bridge call args for replay
-- `failure_reason` text, `failure_code` text, `failure_details` jsonb
-- `attempt_count` int default 0, `max_attempts` int default 10
-- `next_retry_at` timestamptz, `last_attempted_at` timestamptz
-- `status` text — `queued`, `awaiting_update`, `retrying`, `completed`, `abandoned`, `manual_required`
-- `unblocked_by` text nullable — `wallet_added`, `wallet_verified`, `processor_configured`, `kyc_cleared`, `manual_admin`, `auto_backoff`
-- `created_at`, `updated_at`, `resolved_at`
+Split login surfaces so testnet and mainnet never share a form. Each portal gets two routes:
 
-Indexes on `(status, next_retry_at)`, `(recipient_user_id, status)`, `(transaction_id)`.
-RLS: service_role full; users SELECT their own rows; admins SELECT all.
-
-## 2. Wallet-routing-bridge changes
-
-Every failure path (missing wallet, unverified address, chain mismatch, processor 4xx/5xx, gas shortfall, KYC hold, etc.) now:
-1. Inserts a `routing_retry_queue` row capturing the **exact** payload + the fee phase already completed.
-2. Returns `{ queued: true, retryId, reason }` to the caller instead of just an error.
-3. Writes a notification to the affected user + admins (success or failure — always notified, per prior rule).
-4. Anchors a `routing_failure` proof to `blockchain_proofs`.
-
-A new bridge action `retry_queued(retryId)` re-executes the original payload but **forces** `skipFee: true` when `amount_fee_already_taken > 0`, so the 1% escrow fee or 0.5% upfront fee cannot be charged twice.
-
-## 3. New edge function: `routing-retry-worker`
-
-Cron-triggered every 2 minutes via pg_cron + pg_net. For each row where `status in ('queued','awaiting_update')` and `next_retry_at <= now()`:
-- Re-checks the unblock condition (e.g. wallet now saved/verified, processor key now configured, KYC cleared).
-- If unblocked → calls bridge `retry_queued`.
-- On success → `status='completed'`, notifies user.
-- On failure → exponential backoff (`2^attempt` minutes capped at 24h), increments `attempt_count`. At `max_attempts` → `status='manual_required'` and pages admins.
-
-## 4. Event-driven instant retry (no waiting for cron)
-
-Postgres triggers fire `pg_notify('routing_unblocked', retry_id)` when:
-- `saved_payout_wallets` insert/verify for a user with queued rows
-- `profiles.wallet_verified` flips true
-- `kyc_queue.status` → `approved`
-- `platform_config` / secret rotation marks a processor ready
-- Admin manually resolves via UI
-
-A lightweight listener inside `routing-retry-worker` (invoked by `admin-route-inbound` style trigger) processes the notify queue immediately so users see retries within seconds of fixing the blocker.
-
-## 5. UI surfacing
-
-- Vendor/Buyer dashboards: existing notifications already trigger; add a "Pending Routing" card in `TrustLockOSPay` and `TrustLockOSPayout` that lists their queued rows with the failure reason and a "Fix now" CTA deep-linking to the missing piece (wallet form, KYC, etc.).
-- Admin: new panel in Admin OS Pay → `RoutingRetryQueuePanel` showing all `manual_required` and `awaiting_update` rows with manual "Retry now" and "Abandon" buttons.
-
-## 6. Fee-safety invariant (critical)
-
-The bridge's retry path computes amounts as:
+```text
+/admin/login            -> mainnet only (stamps tl_network = 'mainnet')
+/admin/sandbox/login    -> testnet only (stamps tl_network = 'testnet')
+/vendor/login           -> mainnet
+/vendor/sandbox/login   -> testnet
+/buyer/login            -> mainnet
+/buyer/sandbox/login    -> testnet
+/lender/login           -> mainnet
+/lender/sandbox/login   -> testnet
 ```
-principal_to_route = amount_principal           // never re-multiplied
-fee_to_skim        = (amount_fee_already_taken > 0) ? 0 : original_fee_calc
-```
-A check constraint + the bridge guard both enforce this so the 1% can never be skimmed off the 99% on a refund retry.
 
-## Files to add/modify
+Implementation:
+- Add a `networkMode: 'testnet' | 'mainnet'` prop to each existing `*Login` page; render the mainnet route with `mainnet`, the sandbox route with `testnet`.
+- Sandbox routes get an amber sentinel strip + "SANDBOX — testnet only" banner. Mainnet routes get a red "LIVE" banner.
+- On successful auth, write `tl_network`, `tl_<portal>_network`, plus a new `tl_network_scope` key.
+- Logout clears all four keys.
+- Add `App.tsx` routes for the new `/sandbox/login` paths.
 
-- migration: `routing_retry_queue` + grants + RLS + indexes + triggers
-- new edge function: `supabase/functions/routing-retry-worker/index.ts`
-- edit: `supabase/functions/wallet-routing-bridge/index.ts` — wrap each action's failure path with `enqueueRetry()`, add `retry_queued` action, honor `skipFee`
-- edit: `supabase/functions/payout-router/index.ts`, `refund-router/index.ts`, `escrow-manager/index.ts` — pass `feeAlreadyTaken` to bridge
-- new component: `src/components/shared/PendingRoutingCard.tsx` (used in `TrustLockOSPay`, `TrustLockOSPayout`)
-- new component: `src/components/admin/RoutingRetryQueuePanel.tsx` mounted in Admin OS Pay page
-- cron job SQL (inserted, not migrated) to invoke `routing-retry-worker` every 2 minutes
+## Step 2 — JWT `network_scope` claim + RLS enforcement
 
-## Scope guarantees
+Tag each authenticated session with its network so server-side policies can enforce isolation. Without this, a hijacked mainnet token could still query testnet rows or vice-versa.
 
-- Covers all three surfaces: TrustLock OS Pay (inbound), TrustLock OS Payout (vendor off-ramp), Admin OS Pay (release/split/refund/milestone).
-- Captures recipient(s), UTC timestamps, failure reason, original payload, and fee phase for every failed leg.
-- Never double-charges fees; principal-only retries when fee already taken.
-- Auto-fires on real-world unblock events; cron as safety net.
-- User + admin notifications on every attempt (success or failure).
+Implementation:
+- New table `public.user_network_sessions` (user_id, session_id, network_scope, issued_at, revoked_at). Written on login by an edge function `stamp-network-scope` that the login page calls right after `signInWithPassword`.
+- New SECURITY DEFINER helper `public.current_network_scope()` returns `'testnet' | 'mainnet'` by reading the latest non-revoked row for `auth.uid()`.
+- Add a `network_scope` column (default `'mainnet'`, NOT NULL) to network-sensitive tables: `transactions`, `os_payments`, `payouts`, `payout_requests`, `escrow_extensions`, `blockchain_proofs`, `gas_reserve_ledger`, `lender_disbursement_records`, `lender_certificates`, `checkout_sessions`, `disputes`.
+- Backfill existing rows to `'mainnet'`.
+- Add an RLS policy filter to each: `USING (network_scope = public.current_network_scope())` ANDed with existing ownership checks. Write triggers default `network_scope` from `current_network_scope()` on INSERT so app code doesn't need to set it.
+- Logout calls `stamp-network-scope` with `revoke=true`.
 
-Approve to implement.
+## Step 3 — Separate TOTP enrollments per network (admin)
+
+Admin 2FA already exists. Today one TOTP secret covers both networks; a stolen sandbox device could sign off a real mainnet payout.
+
+Implementation:
+- Extend `admin_accounts` with `totp_secret_testnet` and `totp_secret_mainnet` columns (migrate existing `totp_secret` → both, then drop the legacy column in a follow-up migration after verification).
+- `AdminLogin` selects the column matching the route's `networkMode` during the TOTP step.
+- Admin Settings → Security gains two enrollment cards: "Testnet 2FA" and "Mainnet 2FA", each with its own QR/recovery codes. Disabling one does not affect the other.
+- Stealth-login behaviour unchanged (no feedback on bad code).
+
+---
+
+## Files (high level)
+- `src/App.tsx` — add 4 sandbox routes
+- `src/pages/admin/AdminLogin.tsx`, `VendorLogin.tsx`, `BuyerLogin.tsx`, `LenderLogin.tsx` — accept `networkMode` prop, write keys, call `stamp-network-scope`
+- `src/pages/admin/SandboxAdminLogin.tsx` + 3 sibling wrappers — thin route components
+- `src/pages/admin/AdminSecuritySettings.tsx` — dual-TOTP UI
+- `supabase/functions/stamp-network-scope/index.ts` — new edge function
+- Migration: `user_network_sessions`, `current_network_scope()`, `network_scope` columns + triggers + policies, admin TOTP split
+
+## Memory updates
+- Update `mem://auth/admin-network-isolation` to cover routes, JWT scope, dual TOTP across all portals.
+- Add `mem://tech/security/network-scope-rls` describing the `current_network_scope()` + per-table column pattern so future tables inherit it.
+
+## Out of scope
+- Dropping legacy `admin_accounts.totp_secret` (separate cleanup migration after verifying dual-TOTP works).
+- Per-portal RLS beyond the listed tables; we can expand once the pattern is proven.

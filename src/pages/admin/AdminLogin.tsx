@@ -5,13 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Shield, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { serverAdminLogin, serverAdminLookup } from "@/lib/adminAuth";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
-const AdminLogin = () => {
+interface AdminLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const AdminLogin = ({ forceNetwork = "mainnet" }: AdminLoginProps) => {
   const navigate = useNavigate();
-  const [isTestnet, setIsTestnet] = useState(true);
+  const isTestnet = forceNetwork === "testnet";
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState(isTestnet ? "admin@trustlock.test" : "");
   const [password, setPassword] = useState("");
@@ -52,19 +57,6 @@ const AdminLogin = () => {
     return () => clearTimeout(timer);
   }, [identifier, password, isTestnet]);
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    if (!checked) {
-      setIdentifier("admin@trustlock.test");
-      setPassword("");
-    } else {
-      setIdentifier("");
-      setPassword("");
-    }
-    setError("");
-    setShowResetLink(false);
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -72,7 +64,7 @@ const AdminLogin = () => {
     if (isTestnet) {
       if (password === "0321") {
         localStorage.setItem("tl_admin_auth", JSON.stringify({ authenticated: true, adminId: "a0ac136f-de82-45bd-8219-0fc5ab25d098", id: "a0ac136f-de82-45bd-8219-0fc5ab25d098", name: "Testnet Admin", isChief: true, chiefRank: 1, departmentSlug: "executive" }));
-        localStorage.setItem("tl_network", "testnet");
+        await stampNetworkScope("admin", "testnet", { authed: false });
         navigate("/trustlock/admin");
       } else {
         setError("Invalid credentials. Contact admin for testnet access.");
@@ -111,7 +103,7 @@ const AdminLogin = () => {
           chiefRank: result.chiefRank || null,
           departmentSlug: result.departmentSlug || null,
         }));
-        localStorage.setItem("tl_network", "mainnet");
+        await stampNetworkScope("admin", "mainnet", { authed: false });
         localStorage.setItem("tl_admin_name", result.name || "Admin");
         // Stash the chief password for the session so privileged staff-management
         // mutations can prove credential ownership server-side. Cleared on tab
@@ -160,20 +152,7 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className={`text-sm font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Testnet</span>
-          <Switch checked={!isTestnet} onCheckedChange={handleToggle} />
-          <span className={`text-sm font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Mainnet</span>
-        </div>
-
-        {isTestnet && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3 text-sm">
-              <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-accent-foreground"><strong>Testnet Mode</strong> — Simulated data. No real transactions.</span>
-            </div>
-          </motion.div>
-        )}
+        <NetworkLockBanner scope={forceNetwork} />
 
         <Card>
           <CardHeader>

@@ -220,7 +220,8 @@ const App = () => (
               <Route path="/install" element={<Install />} />
 
               {/* Admin Dashboard */}
-              <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+              <Route path="/trustlock/admin/login" element={<AdminLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/admin/sandbox/login" element={<AdminLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
               <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
               <Route path="/trustlock/admin" element={
@@ -265,7 +266,8 @@ const App = () => (
               </Route>
 
               {/* Vendor Dashboard */}
-              <Route path="/trustlock/vendor/login" element={<VendorLogin />} />
+              <Route path="/trustlock/vendor/login" element={<VendorLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/vendor/sandbox/login" element={<VendorLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/vendor/signup" element={<VendorSignup />} />
               <Route path="/trustlock/vendor/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/vendor/onboarding" element={<VendorOnboarding />} />
@@ -316,7 +318,8 @@ const App = () => (
               <Route path="/vendor/claim" element={<VendorClaimAccount />} />
 
               {/* Lender Dashboard */}
-              <Route path="/trustlock/lender/login" element={<LenderLogin />} />
+              <Route path="/trustlock/lender/login" element={<LenderLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/lender/sandbox/login" element={<LenderLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/lender/signup" element={<LenderSignup />} />
               <Route path="/trustlock/lender/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/lender" element={
@@ -340,7 +343,8 @@ const App = () => (
               </Route>
 
               {/* Buyer Dashboard */}
-              <Route path="/trustlock/buyer/login" element={<BuyerLogin />} />
+              <Route path="/trustlock/buyer/login" element={<BuyerLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/buyer/sandbox/login" element={<BuyerLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/buyer/signup" element={<BuyerSignup />} />
               <Route path="/trustlock/buyer/forgot-password" element={<ForgotPassword role="buyer" />} />
               <Route path="/trustlock/buyer" element={

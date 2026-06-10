@@ -38,29 +38,51 @@ const AdminSettings = () => {
     <div>
       <AdminHeader title="Settings" />
       <div className="p-6 space-y-6 max-w-4xl">
-        {/* 2FA */}
+        {/* Dual 2FA — testnet and mainnet enrollments are independent.
+            A compromised sandbox TOTP must not authorize a live payout. */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-primary" />
               <div>
                 <CardTitle className="text-base">Two-Factor Authentication</CardTitle>
-                <CardDescription>Required for all financial actions</CardDescription>
+                <CardDescription>
+                  Required for all financial actions. Testnet and mainnet
+                  use <strong>separate</strong> authenticator entries.
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">TOTP Authentication</p>
-                <p className="text-xs text-muted-foreground">Google Authenticator / Authy</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Testnet 2FA</p>
+                  <Badge className="bg-accent/15 text-accent text-[10px]">SANDBOX</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Used only when signing in via <code>/admin/sandbox/login</code>.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" disabled>
+                  Enroll testnet authenticator
+                </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-primary/15 text-primary text-[10px]">ENABLED</Badge>
-                <Switch checked disabled />
+
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Mainnet 2FA</p>
+                  <Badge className="bg-destructive/15 text-destructive text-[10px]">LIVE</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Used only when signing in via <code>/admin/login</code>. Required for releases, refunds, and splits.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" disabled>
+                  Enroll mainnet authenticator
+                </Button>
               </div>
             </div>
-            <div className="flex items-center justify-between">
+
+            <div className="flex items-center justify-between pt-2 border-t border-border/40">
               <div>
                 <p className="text-sm font-medium">Require 2FA for Escrow Release</p>
                 <p className="text-xs text-muted-foreground">Mandatory confirmation before releasing funds</p>

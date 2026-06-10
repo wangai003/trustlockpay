@@ -100,6 +100,10 @@ export type Database = {
           password_hash: string | null
           reinstated_at: string | null
           temp_password_hash: string
+          totp_enrolled_mainnet_at: string | null
+          totp_enrolled_testnet_at: string | null
+          totp_secret_mainnet: string | null
+          totp_secret_testnet: string | null
           updated_at: string
           username: string
         }
@@ -119,6 +123,10 @@ export type Database = {
           password_hash?: string | null
           reinstated_at?: string | null
           temp_password_hash: string
+          totp_enrolled_mainnet_at?: string | null
+          totp_enrolled_testnet_at?: string | null
+          totp_secret_mainnet?: string | null
+          totp_secret_testnet?: string | null
           updated_at?: string
           username: string
         }
@@ -138,6 +146,10 @@ export type Database = {
           password_hash?: string | null
           reinstated_at?: string | null
           temp_password_hash?: string
+          totp_enrolled_mainnet_at?: string | null
+          totp_enrolled_testnet_at?: string | null
+          totp_secret_mainnet?: string | null
+          totp_secret_testnet?: string | null
           updated_at?: string
           username?: string
         }
@@ -1113,6 +1125,7 @@ export type Database = {
           created_at: string
           event_data: Json
           id: string
+          network_scope: string
           polygon_tx_hash: string | null
           prev_hash: string
           record_type: string
@@ -1126,6 +1139,7 @@ export type Database = {
           created_at?: string
           event_data?: Json
           id?: string
+          network_scope?: string
           polygon_tx_hash?: string | null
           prev_hash?: string
           record_type: string
@@ -1139,6 +1153,7 @@ export type Database = {
           created_at?: string
           event_data?: Json
           id?: string
+          network_scope?: string
           polygon_tx_hash?: string | null
           prev_hash?: string
           record_type?: string
@@ -1347,6 +1362,7 @@ export type Database = {
           fee: number
           id: string
           industry: string | null
+          network_scope: string
           order_type: string | null
           payment_method: string
           payment_proof: Json | null
@@ -1369,6 +1385,7 @@ export type Database = {
           fee?: number
           id: string
           industry?: string | null
+          network_scope?: string
           order_type?: string | null
           payment_method: string
           payment_proof?: Json | null
@@ -1391,6 +1408,7 @@ export type Database = {
           fee?: number
           id?: string
           industry?: string | null
+          network_scope?: string
           order_type?: string | null
           payment_method?: string
           payment_proof?: Json | null
@@ -1646,6 +1664,7 @@ export type Database = {
           description: string | null
           dispute_id: string
           id: string
+          network_scope: string
           original_resolution: string | null
           overridden_at: string | null
           overridden_by: string | null
@@ -1676,6 +1695,7 @@ export type Database = {
           description?: string | null
           dispute_id: string
           id?: string
+          network_scope?: string
           original_resolution?: string | null
           overridden_at?: string | null
           overridden_by?: string | null
@@ -1706,6 +1726,7 @@ export type Database = {
           description?: string | null
           dispute_id?: string
           id?: string
+          network_scope?: string
           original_resolution?: string | null
           overridden_at?: string | null
           overridden_by?: string | null
@@ -1997,6 +2018,7 @@ export type Database = {
           created_at: string
           extra_days: number
           id: string
+          network_scope: string
           reason: string
           requested_by: string
           reviewed_at: string | null
@@ -2009,6 +2031,7 @@ export type Database = {
           created_at?: string
           extra_days?: number
           id?: string
+          network_scope?: string
           reason: string
           requested_by: string
           reviewed_at?: string | null
@@ -2021,6 +2044,7 @@ export type Database = {
           created_at?: string
           extra_days?: number
           id?: string
+          network_scope?: string
           reason?: string
           requested_by?: string
           reviewed_at?: string | null
@@ -2400,6 +2424,7 @@ export type Database = {
           created_at: string
           id: string
           matic_price_usd: number
+          network_scope: string
           order_amount: number
           reserve_matic: number
           reserve_rate: number
@@ -2412,6 +2437,7 @@ export type Database = {
           created_at?: string
           id?: string
           matic_price_usd?: number
+          network_scope?: string
           order_amount?: number
           reserve_matic?: number
           reserve_rate?: number
@@ -2424,6 +2450,7 @@ export type Database = {
           created_at?: string
           id?: string
           matic_price_usd?: number
+          network_scope?: string
           order_amount?: number
           reserve_matic?: number
           reserve_rate?: number
@@ -2595,6 +2622,7 @@ export type Database = {
           file_url: string | null
           generation_status: string
           id: string
+          network_scope: string
           status: string
           transaction_id: string
           updated_at: string
@@ -2610,6 +2638,7 @@ export type Database = {
           file_url?: string | null
           generation_status?: string
           id?: string
+          network_scope?: string
           status?: string
           transaction_id: string
           updated_at?: string
@@ -2625,6 +2654,7 @@ export type Database = {
           file_url?: string | null
           generation_status?: string
           id?: string
+          network_scope?: string
           status?: string
           transaction_id?: string
           updated_at?: string
@@ -2662,6 +2692,7 @@ export type Database = {
           lender_id: string
           local_currency_amount: number | null
           local_currency_code: string | null
+          network_scope: string
           notes: string | null
           reference_number: string | null
           source: string
@@ -2682,6 +2713,7 @@ export type Database = {
           lender_id: string
           local_currency_amount?: number | null
           local_currency_code?: string | null
+          network_scope?: string
           notes?: string | null
           reference_number?: string | null
           source?: string
@@ -2702,6 +2734,7 @@ export type Database = {
           lender_id?: string
           local_currency_amount?: number | null
           local_currency_code?: string | null
+          network_scope?: string
           notes?: string | null
           reference_number?: string | null
           source?: string
@@ -3369,6 +3402,7 @@ export type Database = {
           id: string
           metadata: Json | null
           method: string | null
+          network_scope: string
           refund_email: string | null
           refund_reason: string | null
           role: string | null
@@ -3387,6 +3421,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           method?: string | null
+          network_scope?: string
           refund_email?: string | null
           refund_reason?: string | null
           role?: string | null
@@ -3405,6 +3440,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           method?: string | null
+          network_scope?: string
           refund_email?: string | null
           refund_reason?: string | null
           role?: string | null
@@ -3462,6 +3498,7 @@ export type Database = {
           id: string
           mode: string | null
           net_amount: number | null
+          network_scope: string
           order_number: string | null
           payment_category: string | null
           payment_provider: string | null
@@ -3487,6 +3524,7 @@ export type Database = {
           id?: string
           mode?: string | null
           net_amount?: number | null
+          network_scope?: string
           order_number?: string | null
           payment_category?: string | null
           payment_provider?: string | null
@@ -3512,6 +3550,7 @@ export type Database = {
           id?: string
           mode?: string | null
           net_amount?: number | null
+          network_scope?: string
           order_number?: string | null
           payment_category?: string | null
           payment_provider?: string | null
@@ -3544,6 +3583,7 @@ export type Database = {
           eta: string | null
           id: string
           method: string | null
+          network_scope: string
           payout_id: string
           status: string
           transaction_id: string | null
@@ -3557,6 +3597,7 @@ export type Database = {
           eta?: string | null
           id?: string
           method?: string | null
+          network_scope?: string
           payout_id: string
           status?: string
           transaction_id?: string | null
@@ -3570,6 +3611,7 @@ export type Database = {
           eta?: string | null
           id?: string
           method?: string | null
+          network_scope?: string
           payout_id?: string
           status?: string
           transaction_id?: string | null
@@ -5810,6 +5852,7 @@ export type Database = {
           locked_price: number | null
           milestone_proposed_by: string | null
           milestone_status: string | null
+          network_scope: string
           order_number: number | null
           order_type: string
           platform_id: string | null
@@ -5859,6 +5902,7 @@ export type Database = {
           locked_price?: number | null
           milestone_proposed_by?: string | null
           milestone_status?: string | null
+          network_scope?: string
           order_number?: number | null
           order_type?: string
           platform_id?: string | null
@@ -5908,6 +5952,7 @@ export type Database = {
           locked_price?: number | null
           milestone_proposed_by?: string | null
           milestone_status?: string | null
+          network_scope?: string
           order_number?: number | null
           order_type?: string
           platform_id?: string | null
@@ -5990,6 +6035,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_network_sessions: {
+        Row: {
+          id: string
+          ip_address: string | null
+          issued_at: string
+          network_scope: string
+          portal: string
+          revoked_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          issued_at?: string
+          network_scope: string
+          portal: string
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          issued_at?: string
+          network_scope?: string
+          portal?: string
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_onboarding_tasks: {
         Row: {
@@ -6930,6 +7008,7 @@ export type Database = {
         }
         Returns: string
       }
+      current_network_scope: { Args: never; Returns: string }
       escalate_stale_bugs: { Args: never; Returns: Json }
       generate_admin_alias: { Args: never; Returns: string }
       generate_temp_password: { Args: never; Returns: string }

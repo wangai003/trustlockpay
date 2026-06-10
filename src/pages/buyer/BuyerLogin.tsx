@@ -5,35 +5,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ShoppingBag, Eye, EyeOff, AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import InlineLegalLinks from "@/components/shared/InlineLegalLinks";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
+import NetworkLockBanner from "@/components/auth/NetworkLockBanner";
+import { stampNetworkScope, type NetworkScope } from "@/lib/networkScope";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
-const BuyerLogin = () => {
+interface BuyerLoginProps {
+  forceNetwork?: NetworkScope;
+}
+
+const BuyerLogin = ({ forceNetwork = "mainnet" }: BuyerLoginProps) => {
   const navigate = useNavigate();
   const { signIn, user, loading: authLoading } = useAuth();
+  const isTestnet = forceNetwork === "testnet";
 
-  // Auto-redirect if already authenticated (e.g. after email verification)
   useEffect(() => {
-    if (!authLoading && user) {
-      localStorage.setItem("tl_buyer_network", "mainnet");
+    if (!isTestnet && !authLoading && user) {
+      void stampNetworkScope("buyer", "mainnet");
       navigate("/trustlock/buyer", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, isTestnet]);
 
-  // Detect if coming from email verification
-  const comingFromVerification = window.location.hash.includes("access_token") || 
-    window.location.search.includes("verified") ||
-    document.referrer.includes("/verify");
-
-  const [isTestnet, setIsTestnet] = useState(comingFromVerification ? false : true);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(comingFromVerification ? "" : "james@trustlocktest.com");
+  const [email, setEmail] = useState(isTestnet ? "james@trustlocktest.com" : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,13 +73,6 @@ const BuyerLogin = () => {
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
   const remainingMin = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 60000) : 0;
 
-  const handleToggle = (checked: boolean) => {
-    setIsTestnet(!checked);
-    setEmail(!checked ? "james@trustlocktest.com" : "");
-    setPassword("");
-    setError("");
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -93,7 +85,7 @@ const BuyerLogin = () => {
     if (isTestnet) {
       if (password === "333") {
         localStorage.setItem("tl_buyer_auth", "true");
-        localStorage.setItem("tl_buyer_network", "testnet");
+        await stampNetworkScope("buyer", "testnet", { authed: false });
         localStorage.removeItem("tl_buyer_failed");
         navigate("/trustlock/buyer");
       } else {
@@ -106,7 +98,7 @@ const BuyerLogin = () => {
       if (error) {
         handleFailedAttempt();
       } else {
-        localStorage.setItem("tl_buyer_network", "mainnet");
+        await stampNetworkScope("buyer", "mainnet");
         localStorage.removeItem("tl_buyer_failed");
         localStorage.removeItem("tl_buyer_lockout");
         navigate("/trustlock/buyer");
@@ -159,20 +151,7 @@ const BuyerLogin = () => {
           </div>
         </motion.div>
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className={`text-sm font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Testnet</span>
-          <Switch checked={!isTestnet} onCheckedChange={handleToggle} />
-          <span className={`text-sm font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Mainnet</span>
-        </div>
-
-        {isTestnet && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3 text-sm">
-              <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-accent-foreground"><strong>Testnet Mode</strong> — Simulated buyer data. No real transactions.</span>
-            </div>
-          </motion.div>
-        )}
+        <NetworkLockBanner scope={forceNetwork} />
 
         {isLocked && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
