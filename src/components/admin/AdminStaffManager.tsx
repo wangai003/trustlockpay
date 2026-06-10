@@ -383,7 +383,16 @@ export default function AdminStaffManager() {
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Awaiting Setup</Badge>
                   )}
-                   {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
+                    {a.mainnet_enabled ? (
+                     <Badge variant="default" className="text-[10px] gap-1 bg-destructive/90 hover:bg-destructive/90">
+                       <ShieldCheck className="w-2.5 h-2.5" /> Mainnet
+                     </Badge>
+                   ) : (
+                     <Badge variant="outline" className="text-[10px] gap-1 border-muted-foreground/40 text-muted-foreground">
+                       <ShieldOff className="w-2.5 h-2.5" /> Sandbox only
+                     </Badge>
+                   )}
+                    {a.reinstated_at && <Badge variant="outline" className="text-[10px]">Reinstated</Badge>}
                    {a.is_team_lead && (
                      <Badge variant="default" className="text-[10px] gap-0.5 bg-emerald-600">
                        <Star className="w-2.5 h-2.5" /> Team Lead
