@@ -1008,8 +1008,8 @@ const TrustLockOSPayout = ({
           {isAdmin
             ? "Use this tool to execute escrow fund movements: release funds to the vendor, refund the buyer, or process split settlements."
             : role === "vendor"
-              ? "Use this tool to withdraw your earned escrow funds to your saved crypto wallet or bank account."
-              : "Use this tool to receive refunds or released escrow funds to your saved wallet or bank account."}
+              ? "Releases from any completed order are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."
+              : "Refunds and releases are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."}
         </p>
       </div>
 
