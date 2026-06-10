@@ -146,7 +146,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
   }, [networkMode, user]);
 
   return (
-    <VendorContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", vendor, setVendor }}>
+    <VendorContext.Provider value={{ networkMode, isTestnet: networkMode === "testnet", vendor, setVendor }}>
       {children}
     </VendorContext.Provider>
   );
