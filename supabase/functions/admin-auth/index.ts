@@ -88,6 +88,22 @@ Deno.serve(async (req) => {
         });
 
         if (passMatch) {
+          // Mainnet access gate — stealth-fail if not enabled. We deliberately
+          // mirror the generic "Invalid credentials" path (and increment the
+          // failed_attempts counter) so an attacker can't distinguish a wrong
+          // password from a mainnet-disabled account.
+          if (isMainnet && account.mainnet_enabled !== true) {
+            const newAttempts = (account.failed_attempts ?? 0) + 1;
+            await supabase
+              .from("admin_accounts")
+              .update({
+                failed_attempts: newAttempts,
+                locked_at: newAttempts >= 5 ? new Date().toISOString() : account.locked_at,
+              })
+              .eq("id", account.id);
+            return json({ success: false, error: "Invalid credentials." });
+          }
+
           await supabase
             .from("admin_accounts")
             .update({ failed_attempts: 0, locked_at: null })
