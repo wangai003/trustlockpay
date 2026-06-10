@@ -22,7 +22,6 @@ interface VendorProfile {
 
 interface VendorContextType {
   networkMode: NetworkMode;
-  setNetworkMode: (mode: NetworkMode) => void;
   isTestnet: boolean;
   vendor: VendorProfile;
   setVendor: (v: VendorProfile) => void;
