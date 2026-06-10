@@ -161,20 +161,7 @@ const LenderLogin = ({ forceNetwork = "mainnet" }: LenderLoginProps) => {
           </div>
         </motion.div>
 
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className={`text-sm font-medium ${isTestnet ? "text-accent" : "text-muted-foreground"}`}>Testnet</span>
-          <Switch checked={!isTestnet} onCheckedChange={handleToggle} />
-          <span className={`text-sm font-medium ${!isTestnet ? "text-primary" : "text-muted-foreground"}`}>Mainnet</span>
-        </div>
-
-        {isTestnet && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3 text-sm">
-              <AlertTriangle className="w-4 h-4 text-accent shrink-0" />
-              <span className="text-accent-foreground"><strong>Testnet Mode</strong> — Simulated lender data. No real financing.</span>
-            </div>
-          </motion.div>
-        )}
+        <NetworkLockBanner scope={forceNetwork} />
 
         {isLocked && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
