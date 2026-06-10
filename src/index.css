@@ -50,6 +50,11 @@
     --gold-light: 43 70% 62%;
     --green-light: 152 30% 94%;
     --green-dark: 152 60% 16%;
+
+    /* Testnet sentinel — shared across all sandbox/testnet surfaces */
+    --testnet: 38 92% 50%;
+    --testnet-foreground: 0 0% 100%;
+    --testnet-muted: 38 92% 96%;
   }
 
   .dark {
