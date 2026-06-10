@@ -220,7 +220,8 @@ const App = () => (
               <Route path="/install" element={<Install />} />
 
               {/* Admin Dashboard */}
-              <Route path="/trustlock/admin/login" element={<AdminLogin />} />
+              <Route path="/trustlock/admin/login" element={<AdminLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/admin/sandbox/login" element={<AdminLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/admin/setup" element={<AdminSetup />} />
               <Route path="/trustlock/admin/reset-password" element={<AdminResetPassword />} />
               <Route path="/trustlock/admin" element={
