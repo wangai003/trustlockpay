@@ -421,8 +421,16 @@ export default function AdminStaffManager() {
                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => toggleTeamLeadMutation.mutate(a)}>
                        <Star className="w-3 h-3" /> {a.is_team_lead ? "Remove Lead" : "Make Lead"}
                      </Button>
-                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setTransferTarget(a); setTransferDept(a.department_slug || ""); }}>
-                       <ArrowRightLeft className="w-3 h-3" /> Transfer
+                     <Button
+                       size="sm"
+                       variant={a.mainnet_enabled ? "secondary" : "outline"}
+                       className="gap-1 text-xs"
+                       onClick={() => setMainnetAccessMutation.mutate({ adminId: a.id, enabled: !a.mainnet_enabled })}
+                       disabled={setMainnetAccessMutation.isPending}
+                       title={a.mainnet_enabled ? "Revoke mainnet (live) access" : "Grant mainnet (live) access"}
+                     >
+                       {a.mainnet_enabled ? <ShieldOff className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
+                       {a.mainnet_enabled ? "Revoke Mainnet" : "Grant Mainnet"}
                      </Button>
                      <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => { setDeleteTarget(a); setConfirmDeleteStep(1); }}>
                        <Trash2 className="w-3 h-3" /> Delete
