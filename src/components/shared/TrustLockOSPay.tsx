@@ -161,6 +161,7 @@ const TrustLockOSPay = ({ role, prefillService = "", prefillAmount = "", arbitra
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [polygonConfirmed, setPolygonConfirmed] = useState(false);
+  const [showManualFallback, setShowManualFallback] = useState(false);
   const [cumulativeReceived, setCumulativeReceived] = useState(0);
   const [intlBankSelected, setIntlBankSelected] = useState<string | null>(null);
   const [intlBankRegion, setIntlBankRegion] = useState<InternationalRegion | null>(null);
