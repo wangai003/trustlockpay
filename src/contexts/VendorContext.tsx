@@ -22,7 +22,6 @@ interface VendorProfile {
 
 interface VendorContextType {
   networkMode: NetworkMode;
-  setNetworkMode: (mode: NetworkMode) => void;
   isTestnet: boolean;
   vendor: VendorProfile;
   setVendor: (v: VendorProfile) => void;
@@ -147,7 +146,7 @@ export const VendorProvider = ({ children }: { children: ReactNode }) => {
   }, [networkMode, user]);
 
   return (
-    <VendorContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", vendor, setVendor }}>
+    <VendorContext.Provider value={{ networkMode, isTestnet: networkMode === "testnet", vendor, setVendor }}>
       {children}
     </VendorContext.Provider>
   );
