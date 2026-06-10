@@ -124,7 +124,7 @@ export const BuyerProvider = ({ children }: { children: ReactNode }) => {
   }, [networkMode, user, authLoading]);
 
   return (
-    <BuyerContext.Provider value={{ networkMode, setNetworkMode, isTestnet: networkMode === "testnet", buyer, setBuyer }}>
+    <BuyerContext.Provider value={{ networkMode, isTestnet: networkMode === "testnet", buyer, setBuyer }}>
       {children}
     </BuyerContext.Provider>
   );
