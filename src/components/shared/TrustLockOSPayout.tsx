@@ -993,7 +993,7 @@ const TrustLockOSPayout = ({
       <div className={cn("bg-primary p-4 flex items-center justify-between", isTestnet ? "rounded-none -mt-4" : "rounded-t-xl")}>
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-primary-foreground" />
-          <span className="font-heading font-bold text-sm text-primary-foreground">TrustLock OS Payout</span>
+          <span className="font-heading font-bold text-sm text-primary-foreground">{isAdmin ? "Admin OS Payout" : "TrustLock OS Payout"}</span>
         </div>
         <div className="flex items-center gap-2">
           <Badge className={cn("text-[10px] border-0", isTestnet ? "bg-accent/30 text-accent" : "bg-primary-foreground/20 text-primary-foreground")}>
