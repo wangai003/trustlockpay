@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!roleRow) return json({ error: "admin role required" }, 403);
 
+
+
     const results: Array<Record<string, unknown>> = [];
 
     for (const bot of BOTS) {
