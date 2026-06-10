@@ -318,7 +318,8 @@ const App = () => (
               <Route path="/vendor/claim" element={<VendorClaimAccount />} />
 
               {/* Lender Dashboard */}
-              <Route path="/trustlock/lender/login" element={<LenderLogin />} />
+              <Route path="/trustlock/lender/login" element={<LenderLogin forceNetwork="mainnet" />} />
+              <Route path="/trustlock/lender/sandbox/login" element={<LenderLogin forceNetwork="testnet" />} />
               <Route path="/trustlock/lender/signup" element={<LenderSignup />} />
               <Route path="/trustlock/lender/forgot-password" element={<ForgotPassword role="vendor" />} />
               <Route path="/trustlock/lender" element={
