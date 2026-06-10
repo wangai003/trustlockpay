@@ -29,8 +29,8 @@ export interface AdminLoginResult {
   error?: string;
 }
 
-export async function serverAdminLogin(identifier: string, password: string): Promise<AdminLoginResult> {
-  return callAdminAuth("login", { identifier, password });
+export async function serverAdminLogin(identifier: string, password: string, network: "testnet" | "mainnet" = "mainnet"): Promise<AdminLoginResult> {
+  return callAdminAuth("login", { identifier, password, network });
 }
 
 export async function serverAdminSetup(username: string, email: string, password: string, tempPassword: string): Promise<{ success: boolean; error?: string }> {
