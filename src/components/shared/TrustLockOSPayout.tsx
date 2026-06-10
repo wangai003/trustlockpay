@@ -1152,6 +1152,34 @@ const TrustLockOSPayout = ({
               </p>
             </div>
 
+            {/* Order Amount (escrow principal under dispute) */}
+            <div>
+              <Label className={cn("text-[10px] uppercase tracking-wider", fieldErrors.amount ? "text-destructive" : "text-muted-foreground")}>Order Amount (USD) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g., 1500.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
+                className={cn("mt-1 text-sm", fieldErrors.amount && "border-destructive ring-destructive/30 ring-2")}
+              />
+              {fieldErrors.amount && <p className="text-[9px] text-destructive mt-1 font-medium">Enter the escrow principal under dispute</p>}
+              <p className="text-[9px] text-muted-foreground mt-1">
+                The escrow principal being disbursed. Required to compute processor fees and (for split outcomes) the live per-party preview below.
+              </p>
+            </div>
+
+            {/* Split $ preview (only when split + amount present) */}
+            {adminAction === "split" && amountNum > 0 && splitVendorPercent && splitBuyerPercent &&
+             Math.abs(parseFloat(splitBuyerPercent) + parseFloat(splitVendorPercent) - 100) < 0.01 && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] space-y-1">
+                <p className="font-semibold text-foreground">Split Disbursement Preview</p>
+                <div className="flex justify-between"><span className="text-muted-foreground">Vendor ({splitVendorPercent}%)</span><span className="font-mono font-semibold text-foreground">${(amountNum * parseFloat(splitVendorPercent) / 100).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Buyer ({splitBuyerPercent}%)</span><span className="font-mono font-semibold text-foreground">${(amountNum * parseFloat(splitBuyerPercent) / 100).toFixed(2)}</span></div>
+              </div>
+            )}
+
             {/* Admin visual feedback for escrow flow */}
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[10px] text-muted-foreground space-y-1">
               <p className="font-semibold text-foreground">🔐 Escrow Flow Preview</p>
@@ -1163,6 +1191,36 @@ const TrustLockOSPayout = ({
               )}
               {adminAction === "split" && (
                 <p>TrustLock Escrow Wallet → Payment Processor API → Vendor ({splitVendorPercent || "?"}%) + Buyer ({splitBuyerPercent || "?"}%) via their respective payment methods</p>
+              )}
+            </div>
+
+            {/* Irreversible-disbursement authorization gate (mirrors vendor crypto gate) */}
+            <div className={cn(
+              "p-3 rounded-lg border-2 space-y-2",
+              fieldErrors.adminAuthorizeConfirmed ? "border-destructive bg-destructive/5" : "border-accent/40 bg-accent/5"
+            )}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-accent">⚠️ Admin Authorization Required</p>
+                  <p className="text-[9px] text-foreground leading-relaxed">
+                    You are acting on behalf of buyer and vendor. Once authorized, the escrow smart contract disburses funds and the action <strong>cannot be reversed</strong>.
+                  </p>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={adminAuthorizeConfirmed}
+                  onChange={(e) => setAdminAuthorizeConfirmed(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-[10px] text-foreground">
+                  I authorize this irreversible {adminAction === "split" ? "split disbursement" : adminAction === "refund" ? "refund" : "release"} on behalf of the parties to order {orderNumber || "—"}.
+                </span>
+              </label>
+              {fieldErrors.adminAuthorizeConfirmed && (
+                <p className="text-[9px] text-destructive font-medium">Authorization checkbox is required before review</p>
               )}
             </div>
           </CardContent>
