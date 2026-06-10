@@ -77,6 +77,10 @@
     --border: 160 15% 18%;
     --input: 160 15% 18%;
     --ring: 152 52% 40%;
+
+    --testnet: 38 92% 56%;
+    --testnet-foreground: 160 20% 6%;
+    --testnet-muted: 38 60% 14%;
   }
 }
 
