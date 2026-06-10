@@ -30,9 +30,6 @@ const BuyerLayoutInner = () => {
             <Outlet />
           </main>
           <MissionChecklist role="buyer" />
-          <div className="hidden">{/* anchor */}</div>
-          <div style={{ display: "none" }}>
-          </main>
           <CommandPalette role="buyer" />
           <MobileBottomNav role="buyer" />
           <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 lg:bottom-4 lg:right-4 z-30">
