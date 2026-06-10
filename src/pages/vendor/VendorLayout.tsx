@@ -11,6 +11,8 @@ import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMessageToast } from "@/hooks/useMessageToast";
 import { useAuth } from "@/hooks/useAuth";
 import EntityClassificationPrompt from "@/components/shared/EntityClassificationPrompt";
+import { MissionChecklist } from "@/components/testnet/MissionChecklist";
+import { GraduationBanner } from "@/components/testnet/GraduationBanner";
 
 const VendorLayoutInner = () => {
   useSessionTimeout("/trustlock/vendor/login");
@@ -24,10 +26,12 @@ const VendorLayoutInner = () => {
         <div className="flex min-h-screen bg-background">
           <VendorSidebar />
           <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
+            <GraduationBanner role="vendor" />
             <TrialBanner />
             <TestnetGuide role="vendor" />
             <Outlet />
           </main>
+          <MissionChecklist role="vendor" />
           <CommandPalette role="vendor" />
           <MobileBottomNav role="vendor" />
           <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 lg:bottom-4 lg:right-4 z-30">

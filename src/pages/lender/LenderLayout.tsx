@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
+import { MissionChecklist } from "@/components/testnet/MissionChecklist";
+import { GraduationBanner } from "@/components/testnet/GraduationBanner";
 
 const CURRENT_CONTRACT_VERSION = 1;
 
@@ -65,8 +67,10 @@ const LenderLayoutInner = () => {
       <div className="flex min-h-screen bg-background">
         <LenderSidebar />
         <main className="flex-1 min-w-0 lg:ml-64 pb-28 lg:pb-0">
+          <GraduationBanner role="lender" />
           <Outlet />
         </main>
+        <MissionChecklist role="lender" />
         <MobileBottomNav role="lender" />
       </div>
     </LanguageProvider>

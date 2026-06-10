@@ -1,66 +1,108 @@
+
+# Guided Testnet — Sandbox-Style Onboarding for Real Testnet Accounts
+
 ## Goal
-Complete the testnet/mainnet decoupling for all four portals (Admin, Vendor, Buyer, Lender) beyond the visual hard-lock already shipped. Network mode becomes a first-class auth boundary, not just a UI flag.
+Make the vendor, buyer, and lender **testnet** portals teach the mainnet workflow the way the public `/sandbox` teaches the product — with seeded state, scripted missions, AI coaching, and a compressed clock — without weakening network isolation or replacing the real testnet UI.
+
+## Principles
+- **Same auth, same chain, same RLS.** Testnet still means Polygon Amoy, JWT-stamped `network=testnet`, and the existing isolation pattern. We only layer onboarding state on top.
+- **Soft graduation.** Missions are encouraged, not required. Mainnet stays accessible; banners and CTAs nudge users to finish testnet first.
+- **Read the real UI, don't fork it.** Missions point users *into* the existing testnet dashboard rather than rebuilding a parallel UI. Tooltips and a checklist overlay are the only new surface.
+- **One demo counterparty per role, plus opt-in pairing.** Default = scripted bot. Power users can flip a switch and be matched with another real testnet user.
+- **Compressed clock is the default on testnet only.** Time-based logic (auto-release tiebreaker, billing deadlines, certificate expiry) reads from a `testnet_clock` helper that returns minutes-as-days.
 
 ---
 
-## Step 1 — Dedicated sandbox login routes
+## Phase 1 — Data model
 
-Split login surfaces so testnet and mainnet never share a form. Each portal gets two routes:
+### `testnet_onboarding` (new)
+Per (user_id, role) row tracking mission progress.
+- `user_id`, `role` (`vendor` | `buyer` | `lender`)
+- `seeded_at` (timestamp; null until first login provisioning runs)
+- `missions` (jsonb: `{ m1: 'done', m2: 'in_progress', ... }`)
+- `graduated_at` (nullable; set when all missions complete)
+- `paired_mode` (boolean, default false — true = match with real users instead of bot)
+- Standard RLS: owner read/write, service_role all.
 
-```text
-/admin/login            -> mainnet only (stamps tl_network = 'mainnet')
-/admin/sandbox/login    -> testnet only (stamps tl_network = 'testnet')
-/vendor/login           -> mainnet
-/vendor/sandbox/login   -> testnet
-/buyer/login            -> mainnet
-/buyer/sandbox/login    -> testnet
-/lender/login           -> mainnet
-/lender/sandbox/login   -> testnet
-```
+### `testnet_demo_counterparties` (new)
+System-owned bot accounts: `demo_vendor_bot`, `demo_buyer_bot`, `demo_lender_bot`. Each has a real `profiles` row + KYC-approved-demo flag. Bot replies are driven by `testnet_bot_responder` cron edge function.
 
-Implementation:
-- Add a `networkMode: 'testnet' | 'mainnet'` prop to each existing `*Login` page; render the mainnet route with `mainnet`, the sandbox route with `testnet`.
-- Sandbox routes get an amber sentinel strip + "SANDBOX — testnet only" banner. Mainnet routes get a red "LIVE" banner.
-- On successful auth, write `tl_network`, `tl_<portal>_network`, plus a new `tl_network_scope` key.
-- Logout clears all four keys.
-- Add `App.tsx` routes for the new `/sandbox/login` paths.
+### `testnet_clock_config` (new, single row)
+- `compression_ratio` (default 1440 → 1 day = 1 minute)
+- `enabled_for_roles` (text[])
 
-## Step 2 — JWT `network_scope` claim + RLS enforcement
-
-Tag each authenticated session with its network so server-side policies can enforce isolation. Without this, a hijacked mainnet token could still query testnet rows or vice-versa.
-
-Implementation:
-- New table `public.user_network_sessions` (user_id, session_id, network_scope, issued_at, revoked_at). Written on login by an edge function `stamp-network-scope` that the login page calls right after `signInWithPassword`.
-- New SECURITY DEFINER helper `public.current_network_scope()` returns `'testnet' | 'mainnet'` by reading the latest non-revoked row for `auth.uid()`.
-- Add a `network_scope` column (default `'mainnet'`, NOT NULL) to network-sensitive tables: `transactions`, `os_payments`, `payouts`, `payout_requests`, `escrow_extensions`, `blockchain_proofs`, `gas_reserve_ledger`, `lender_disbursement_records`, `lender_certificates`, `checkout_sessions`, `disputes`.
-- Backfill existing rows to `'mainnet'`.
-- Add an RLS policy filter to each: `USING (network_scope = public.current_network_scope())` ANDed with existing ownership checks. Write triggers default `network_scope` from `current_network_scope()` on INSERT so app code doesn't need to set it.
-- Logout calls `stamp-network-scope` with `revoke=true`.
-
-## Step 3 — Separate TOTP enrollments per network (admin)
-
-Admin 2FA already exists. Today one TOTP secret covers both networks; a stolen sandbox device could sign off a real mainnet payout.
-
-Implementation:
-- Extend `admin_accounts` with `totp_secret_testnet` and `totp_secret_mainnet` columns (migrate existing `totp_secret` → both, then drop the legacy column in a follow-up migration after verification).
-- `AdminLogin` selects the column matching the route's `networkMode` during the TOTP step.
-- Admin Settings → Security gains two enrollment cards: "Testnet 2FA" and "Mainnet 2FA", each with its own QR/recovery codes. Disabling one does not affect the other.
-- Stealth-login behaviour unchanged (no feedback on bad code).
+### `transactions` / `lender_certificates` / `escrow_extensions`
+Add `is_testnet_demo` boolean. No business logic changes — just lets the responder bot and missions filter their own records.
 
 ---
 
-## Files (high level)
-- `src/App.tsx` — add 4 sandbox routes
-- `src/pages/admin/AdminLogin.tsx`, `VendorLogin.tsx`, `BuyerLogin.tsx`, `LenderLogin.tsx` — accept `networkMode` prop, write keys, call `stamp-network-scope`
-- `src/pages/admin/SandboxAdminLogin.tsx` + 3 sibling wrappers — thin route components
-- `src/pages/admin/AdminSecuritySettings.tsx` — dual-TOTP UI
-- `supabase/functions/stamp-network-scope/index.ts` — new edge function
-- Migration: `user_network_sessions`, `current_network_scope()`, `network_scope` columns + triggers + policies, admin TOTP split
+## Phase 2 — Edge functions
 
-## Memory updates
-- Update `mem://auth/admin-network-isolation` to cover routes, JWT scope, dual TOTP across all portals.
-- Add `mem://tech/security/network-scope-rls` describing the `current_network_scope()` + per-table column pattern so future tables inherit it.
+### `provision-testnet-account` (new)
+Triggered on first testnet login per role. Creates:
+- 1 `testnet_onboarding` row
+- Pre-approved KYC/KYB rows in demo mode
+- Testnet POL + mock USDC top-up via existing faucet logic
+- 4 sample transactions across lifecycle states (negotiation, escrowed, in-dispute, settled) wired to the role-appropriate `demo_*_bot`
+- For lenders: 2 sample financing applications + 1 issued certificate
+- For vendors: 1 starter offering ("Demo Service") + 1 widget config
+
+Idempotent — re-running on existing `seeded_at` is a no-op.
+
+### `testnet-bot-responder` (new, cron every 30s)
+Scans pending bot-side actions and progresses them:
+- Buyer-bot funds escrows created by vendors in mission flow
+- Vendor-bot marks milestones complete after buyer approval
+- Lender-bot submits repayment confirmations
+Skips when `paired_mode = true` on the human side.
+
+### `testnet-clock` (new, helper)
+Returns "effective now" for any deadline: `real_elapsed_seconds * compression_ratio`. All testnet-only auto-release/expiry workers consult this instead of `now()`. Mainnet code path unchanged.
+
+### `mission-progress` (new)
+Single endpoint missions call: `{role, mission_id, action}` → updates `testnet_onboarding.missions`, returns next mission. Used by event listeners on key UI actions (offering created, escrow funded, milestone approved, dispute opened, certificate issued, etc.).
+
+---
+
+## Phase 3 — Frontend (new components, no fork of existing portals)
+
+### Shared
+- `src/components/testnet/MissionChecklist.tsx` — floating right-rail panel on every testnet dashboard. Shows current mission, "what to do next" CTA, progress bar, "Graduate" button.
+- `src/components/testnet/TestnetCoachOverlay.tsx` — reuses Amani/Zawadi/Emmanuel chat bubbles to narrate each mission step.
+- `src/components/testnet/GraduationBanner.tsx` — soft banner on mainnet portals when a role has not yet graduated on testnet.
+- `src/components/testnet/PairModeToggle.tsx` — in testnet settings; flips bot↔real-pair.
+- `src/lib/testnetMissions.ts` — declarative mission definitions per role.
+
+### Per portal
+- Vendor missions: Create offering → Receive demo order → Mark milestone complete → Trigger payout
+- Buyer missions: Browse demo widget → Fund escrow → Approve release → Open & resolve dispute
+- Lender missions: Review application → Issue certificate → Track repayment → Watch auto-release tiebreaker fire (compressed-clock demo)
+
+Each portal's dashboard renders `<MissionChecklist role="..." />` only when JWT scope = testnet AND `testnet_onboarding.graduated_at IS NULL`.
+
+---
+
+## Phase 4 — Compressed clock wiring
+
+Audit time-based workers (`auto-release-protocol`, `lender-certificate-expiry`, `billing-deadline-enforcer`, `escrow-extension-tiebreaker`) and replace direct `now()` reads with `testnet_clock_now(network, real_ts)`. Mainnet branch returns `real_ts`; testnet branch returns compressed value. One helper SQL function plus matching TS helper.
+
+---
+
+## Phase 5 — Memory + docs
+- New memory `mem://features/testnet/guided-onboarding` documenting the missions, seeded state, bot vs pair mode, soft graduation, and compressed clock.
+- Update `mem://auth/admin-network-isolation` cross-link.
+- Update `.lovable/plan.md`.
+
+---
 
 ## Out of scope
-- Dropping legacy `admin_accounts.totp_secret` (separate cleanup migration after verifying dual-TOTP works).
-- Per-portal RLS beyond the listed tables; we can expand once the pattern is proven.
+- No changes to mainnet UX besides the soft `GraduationBanner`.
+- No new auth routes — uses existing testnet logins.
+- No changes to admin sandbox (separate concern, already shipped).
+- Real-pair matchmaking ships as a stub queue in Phase 1; full pairing UI is a follow-up.
+
+## Technical notes
+- All new tables get explicit `GRANT` + RLS per project standard.
+- Bot accounts use service-role-only writes; their `profiles` rows are flagged `is_system = true` and hidden from matchmaking/search.
+- Compression helper is **read-side only** — we never write fake timestamps to `created_at`/`updated_at`; we only adjust elapsed-time comparisons. Anchoring & audit trails stay truthful.
+- Provisioning is rate-limited per user_id (1 per hour) to prevent faucet abuse.
