@@ -1007,90 +1007,27 @@ const TrustLockOSPayout = ({
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           {isAdmin
             ? "Use this tool to execute escrow fund movements: release funds to the vendor, refund the buyer, or process split settlements."
-            : role === "vendor"
-              ? "Releases from any completed order are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."
-              : "Refunds and releases are automatically routed to your default saved wallet by the bridge — you do not need to enter anything here. This page is only for managing your saved destinations or sending a one-off manual withdrawal."}
+            : "Use this tool to withdraw your earned escrow funds to your saved crypto wallet or bank account."}
         </p>
       </div>
 
-      {/* Upfront Fee Disclosure */}
+      {/* Upfront Fee Disclosure — tailored per role */}
       {!isAdmin && (
         <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-1.5">
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-accent shrink-0" />
             <span className="text-xs font-semibold text-foreground">Payout Fee Notice</span>
           </div>
-          <p className="text-[10px] leading-relaxed text-muted-foreground">
-            Your payout may include deductions for <strong className="text-foreground">Processor Fees</strong> (1.5–2.9% for fiat; $0 for direct crypto) 
-            and <strong className="text-foreground">Network Gas</strong> (variable, absorbed by TrustLock on standard releases). 
-            The <strong className="text-foreground">1% Escrow Fee</strong> was pre-paid at checkout and trickles back to TrustLock after you receive your funds — it is <em>not</em> deducted from your payout.
-            A full breakdown will be shown before you confirm.
-          </p>
+          {role === "vendor" ? (
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              You are receiving the <strong className="text-foreground">released principal</strong> from a completed order or milestone. Your payout may include deductions for <strong className="text-foreground">Processor Fees</strong> (1.5–2.9% for fiat off-ramp; $0 for direct crypto) and <strong className="text-foreground">Network Gas</strong> (variable, absorbed by TrustLock on standard releases). The <strong className="text-foreground">1% Escrow Service Fee</strong> trickles back to TrustLock from your principal after settlement — it is shown transparently and is the only TrustLock charge on your side. A full breakdown will be shown before you confirm.
+            </p>
+          ) : (
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              You are receiving an <strong className="text-foreground">approved refund or cancellation return</strong> from escrow. Your refund may include deductions for <strong className="text-foreground">Processor Fees</strong> (1.5–2.9% for fiat off-ramp; $0 for direct crypto) and <strong className="text-foreground">Network Gas</strong> (variable, absorbed by TrustLock on standard refunds). The <strong className="text-foreground">0.5% upfront checkout fee</strong> you paid is <em>non-refundable</em> per the escrow terms; the principal itself is returned in full. Split or partial outcomes follow the admin-approved ratio. A full breakdown will be shown before you confirm.
+            </p>
+          )}
         </div>
-      )}
-
-      {/* ═══ AUTO-ROUTING STATUS (vendor/buyer) ═══
-          Releases triggered by the buyer automatically route to the user's default
-          saved wallet via the routing bridge. This page is only needed for managing
-          destinations or rare one-off manual withdrawals. */}
-      {!isAdmin && (
-        <Card className={cn("border-2", defaultWallet ? "border-primary/40 bg-primary/5" : "border-accent/40 bg-accent/5")}>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-start gap-2">
-              {defaultWallet ? (
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              ) : (
-                <AlertTriangle className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground flex items-center gap-1.5 flex-wrap">
-                  {defaultWallet ? (
-                    <>
-                      <Zap className="w-3.5 h-3.5 text-primary" />
-                      Auto-Routing Active — no action needed
-                    </>
-                  ) : (
-                    <>No default payout destination saved</>
-                  )}
-                </p>
-                {defaultWallet ? (
-                  <>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-                      {role === "vendor"
-                        ? "When a buyer releases your escrow on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."
-                        : "When a refund or release is approved on any order, funds are automatically routed by the bridge to your default saved wallet below. You do not need to enter an order number or pick a payment method here."}
-                    </p>
-                    <div className="mt-2 p-2.5 rounded border border-primary/30 bg-background flex items-center gap-2 flex-wrap">
-                      <Badge className="text-[9px] bg-primary text-primary-foreground border-0 gap-0.5"><Star className="w-2.5 h-2.5" /> Default</Badge>
-                      <span className="text-[10px] font-semibold text-foreground">{defaultWallet.token} · {defaultWallet.chain}</span>
-                      {defaultWallet.label && <span className="text-[10px] text-muted-foreground">· {defaultWallet.label}</span>}
-                      <span className="text-[10px] font-mono text-muted-foreground break-all w-full">{defaultWallet.address}</span>
-                    </div>
-                    <p className="text-[9.5px] text-muted-foreground mt-2">
-                      To change where future releases are sent, manage your <strong>Saved Payout Wallets</strong> above. To force a one-off withdrawal to a different destination right now, expand the manual form below.
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-                    Save a default payout wallet in the <strong>Saved Payout Wallets</strong> card above so the bridge can auto-route releases and refunds to you. Until then, you'll need to fill the manual form each time.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowManualForm((s) => !s)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border bg-background hover:bg-muted text-[11px] font-semibold text-foreground transition-colors"
-            >
-              {showManualForm ? (
-                <><ChevronUp className="w-3.5 h-3.5" /> Hide one-time manual withdrawal form</>
-              ) : (
-                <><ChevronDown className="w-3.5 h-3.5" /> {defaultWallet ? "Send a one-time withdrawal to a different destination" : "Open manual withdrawal form"}</>
-              )}
-            </button>
-          </CardContent>
-        </Card>
       )}
 
       {/* Escrow seed token auto-linked in background — UI hidden, backend logic intact */}
@@ -1226,7 +1163,7 @@ const TrustLockOSPayout = ({
       )}
 
       {/* ═══ VENDOR / BUYER FLOW (manual one-time withdrawal — hidden by default) ═══ */}
-      {!isAdmin && showManualForm && (
+      {!isAdmin && (
         <>
           {/* Order Number Field */}
           <Card className="border-2 border-primary/20">
@@ -1540,7 +1477,7 @@ const TrustLockOSPayout = ({
       )}
 
       {/* Privacy + Actions — only shown when admin OR manual form is expanded */}
-      {(isAdmin || showManualForm) && (
+      {(
         <>
           {/* Privacy Disclaimer */}
           <div className="bg-muted/50 rounded-lg p-3 space-y-1">
