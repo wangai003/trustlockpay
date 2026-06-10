@@ -4,6 +4,7 @@ import SystemWalletBalancesPanel from "@/components/admin/SystemWalletBalancesPa
 import { AdminProvider } from "@/contexts/AdminContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import TestnetGuide from "@/components/shared/TestnetGuide";
+import TestnetWatermark from "@/components/admin/TestnetWatermark";
 import CommandPalette from "@/components/shared/CommandPalette";
 import MobileBottomNav from "@/components/shared/MobileBottomNav";
 import BlockchainExplorerPanel from "@/components/shared/BlockchainExplorerPanel";
