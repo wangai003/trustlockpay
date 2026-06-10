@@ -243,6 +243,25 @@ const TrustLockOSPayout = ({
     });
   }, []);
 
+  // ─── Auto-routing detection: does this user have a default saved wallet? ───
+  const [defaultWallet, setDefaultWallet] = useState<{ chain: string; token: string; address: string; label: string | null } | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
+  useEffect(() => {
+    if (role === "admin") return;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u?.user) return;
+      const { data } = await supabase
+        .from("saved_payout_wallets")
+        .select("chain,token,address,label")
+        .eq("user_id", u.user.id)
+        .eq("is_default", true)
+        .limit(1)
+        .maybeSingle();
+      if (data) setDefaultWallet(data as any);
+    })();
+  }, [role]);
+
   // ─── Testnet auto-fill: no longer pre-selects crypto; simulation uses provider search ───
 
   // For admin, auto-lock crypto method and wallet
