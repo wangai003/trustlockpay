@@ -106,3 +106,15 @@ Audit time-based workers (`auto-release-protocol`, `lender-certificate-expiry`, 
 - Bot accounts use service-role-only writes; their `profiles` rows are flagged `is_system = true` and hidden from matchmaking/search.
 - Compression helper is **read-side only** — we never write fake timestamps to `created_at`/`updated_at`; we only adjust elapsed-time comparisons. Anchoring & audit trails stay truthful.
 - Provisioning is rate-limited per user_id (1 per hour) to prevent faucet abuse.
+
+---
+
+## Status — 2026-06-10
+
+✅ **Phase 1 (data)** — `testnet_onboarding`, `testnet_demo_counterparties`, `testnet_clock_config`, `is_testnet_demo` markers, `testnet_clock_effective_now` SQL helper.
+✅ **Phase 2 (edge functions)** — `mission-progress`, `provision-testnet-account` (idempotent, rate-limited), `testnet-bot-responder` (cron `testnet-bot-responder-30s` every 30s via pg_cron + pg_net).
+✅ **Phase 3 (frontend)** — `MissionChecklist`, `GraduationBanner`, `testnetMissions`, wired into Vendor/Buyer/Lender layouts.
+✅ **Phase 4 (compressed clock)** — SQL helper + `src/lib/testnetClock.ts`. No existing time-based workers to rewire yet; future auto-release / certificate-expiry workers should call the helper.
+✅ **Phase 5 (docs)** — memory at `mem://tech/testnet/guided-onboarding`.
+
+**Outstanding (separate task):** seed real `auth.users` rows for the three demo bot accounts and populate `testnet_demo_counterparties.bot_user_id`. Until then, provisioning still creates onboarding rows but skips demo transactions.
